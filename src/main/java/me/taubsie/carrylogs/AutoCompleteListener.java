@@ -18,13 +18,14 @@
  */
 package me.taubsie.carrylogs;
 
-import me.taubsie.carrylogs.enums.CarryType;
 import me.taubsie.carrylogs.enums.IdList;
 import org.javacord.api.entity.channel.ChannelCategory;
 import org.javacord.api.event.interaction.AutocompleteCreateEvent;
 import org.javacord.api.listener.interaction.AutocompleteCreateListener;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * @author Taubsie
@@ -37,7 +38,7 @@ public class AutoCompleteListener implements AutocompleteCreateListener
         if (autocompleteCreateEvent.getAutocompleteInteraction().getChannel().isEmpty()
                 || autocompleteCreateEvent.getAutocompleteInteraction().getChannel().get().asCategorizable().isEmpty()
                 || autocompleteCreateEvent.getAutocompleteInteraction().getChannel().get().asCategorizable().get().getCategory().isEmpty()
-                || autocompleteCreateEvent.getAutocompleteInteraction().getChannel().get().asCategorizable().get().getCategory().get().getServer().getId() != IdList.TEST_SERVER.getId())
+                || autocompleteCreateEvent.getAutocompleteInteraction().getChannel().get().asCategorizable().get().getCategory().get().getServer().getId() != IdList.TEST_SERVER.getID())
         {
             autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(new ArrayList<>()).join();
             return;
@@ -48,37 +49,14 @@ public class AutoCompleteListener implements AutocompleteCreateListener
                 .asCategorizable().get()
                 .getCategory().get();
 
-        if (category.getId() == IdList.TEST_F4_CATEGORY.getId())
-        {
-            autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(CarryType.F4.getChoiceList());
-        }
-        else if (category.getId() == IdList.TEST_F5_CATEGORY.getId())
-        {
-            autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(CarryType.F5.getChoiceList());
-        }
-        else if (category.getId() == IdList.TEST_F6_CATEGORY.getId())
-        {
-            autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(CarryType.F6.getChoiceList());
-        }
-        else if (category.getId() == IdList.TEST_F7_CATEGORY.getId())
-        {
-            autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(CarryType.F7.getChoiceList());
-        }
-        else if (category.getId() == IdList.TEST_MASTER_CATEGORY.getId())
-        {
-            autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(CarryType.MASTER_MODE.getChoiceList());
-        }
-        else if (category.getId() == IdList.TEST_EMAN_CATEGORY.getId())
-        {
-            autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(CarryType.EMAN.getChoiceList());
-        }
-        else if (category.getId() == IdList.TEST_BLAZE_CATEGORY.getId())
-        {
-            autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(CarryType.BLAZE.getChoiceList());
-        }
-        else
+        Optional<IdList> idList = Arrays.stream(IdList.values()).filter(id -> id.getCARRY_TYPE() != null && id.getID() == category.getId()).findFirst();
+
+        if (idList.isEmpty())
         {
             autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(new ArrayList<>()).join();
+            return;
         }
+
+        autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(idList.get().getCARRY_TYPE().getChoiceList()).join();
     }
 }
