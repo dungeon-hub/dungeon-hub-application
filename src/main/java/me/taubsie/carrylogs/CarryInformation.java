@@ -18,11 +18,39 @@
  */
 package me.taubsie.carrylogs;
 
+import lombok.Getter;
+import lombok.Setter;
+import org.javacord.api.entity.user.User;
+
+import java.time.Instant;
+
 /**
  * @author Taubsie
  * @since 1.0.0
  */
-public class CarryLogs
+public class CarryInformation
 {
+    @Getter
+    @Setter
+    private Instant time;
 
+    @Getter
+    @Setter
+    private Long amountOfCarries;
+
+    @Getter
+    @Setter
+    private String carryType;
+
+    @Getter
+    @Setter
+    private String player;
+
+    @Getter
+    @Setter
+    private User carrier;
+
+    @Getter
+    @Setter
+    private String attachmentLink;
 }

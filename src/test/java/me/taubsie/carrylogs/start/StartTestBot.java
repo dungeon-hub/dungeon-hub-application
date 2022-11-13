@@ -16,48 +16,48 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package me.taubsie.carrylogs;
+package me.taubsie.carrylogs.start;
 
-import org.javacord.api.DiscordApi;
-import org.javacord.api.DiscordApiBuilder;
-import org.javacord.api.entity.activity.ActivityType;
-import org.javacord.api.entity.user.UserStatus;
-import org.javacord.api.interaction.*;
+import me.taubsie.carrylogs.enums.IdList;
+import org.javacord.api.entity.permission.Role;
+import org.javacord.api.entity.server.Server;
+import org.javacord.api.interaction.SlashCommandBuilder;
+import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.SlashCommandOptionBuilder;
+import org.javacord.api.interaction.SlashCommandOptionType;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Taubsie
  * @since 1.0.0
  */
-public class CarryLogs
+public class StartTestBot extends StartBot
 {
     public static void main(String[] args)
     {
-        DiscordApi bot = new DiscordApiBuilder()
-                .setToken("MTAyMzY4NDMwNjg2ODEyMTY3MA.G5ELro.wfl5fHcMHEytytuBWBv3MXKrsBjC4YxKuPv5Rk")
-                .setAllNonPrivilegedIntents()
-                .setWaitForServersOnStartup(true)
-                .login()
-                .join();
+        try
+        {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        }
+        catch (ClassNotFoundException e)
+        {
+            System.out.println("Connection to database couldn't be established successfully.");
+        }
 
-        bot.updateActivity(ActivityType.COMPETING, "faster startup times.");
-        bot.updateStatus(UserStatus.IDLE);
-
-        bot.updateActivity(ActivityType.LISTENING, "to your logs | /log");
-        bot.updateStatus(UserStatus.ONLINE);
-
-        bot.bulkOverwriteGlobalApplicationCommands(getCommands());
-
-        bot.addListener(new SlashCommandListener());
-        bot.addListener(new AutoCompleteListener());
+        new StartTestBot().startup();
     }
 
-    public static List<SlashCommandBuilder> getCommands()
+    @Override
+    String getBotToken()
     {
-        List<SlashCommandBuilder> commands = new ArrayList<>();
+        return "bot.test";
+    }
+
+    @Override
+    public Set<SlashCommandBuilder> getCommands()
+    {
+        Set<SlashCommandBuilder> commands = new HashSet<>();
 
         SlashCommandOption amountOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.LONG)
@@ -82,9 +82,25 @@ public class CarryLogs
         commands.add(logCommandBuilder);
 
         commands.add(new SlashCommandBuilder().setName("help").setDescription("List of available commands."));
-        commands.add(new SlashCommandBuilder().setName("unregisteredcommand").setDescription("test of unknown command"));
         commands.add(new SlashCommandBuilder().setName("modaltest").setDescription("test of modal interaction"));
 
         return commands;
+    }
+
+    @Override
+    public long getApprovingChannelId()
+    {
+        return IdList.TEST_APPROVING_CHANNEL.getID();
+    }
+
+    //TODO add permissions
+    @Override
+    public List<Role> getAllowedRolesForDiscardOthers(Server server)
+    {
+        List<Role> allowedRoles = new ArrayList<>();
+
+        allowedRoles.add(server.getRoleById(1036373005720358972L).orElse(null));
+
+        return allowedRoles;
     }
 }
