@@ -3,5 +3,6 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../carrylogs-common" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../carrylogs-server" vcs="Git" />
   </component>
 </project>
