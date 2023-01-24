@@ -113,7 +113,6 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                         //TODO
                         privateChannelOptional.ifPresent(privateChannel -> privateChannel
                                 .sendMessage("Your carry was logged!\n\n" +
-
                                                 "**Score gained:** " + gainedScore +
                                                 "\n**Your Updated Score:** " + updatedScore,
                                         ApplicationService.getInstance()

@@ -1,13 +1,9 @@
 package me.taubsie.carrylogs.application.start;
 
 import lombok.Getter;
-import me.taubsie.carrylogs.application.listener.AutoCompleteListener;
-import me.taubsie.carrylogs.application.listener.MessageComponentListener;
-import me.taubsie.carrylogs.application.listener.MessageListener;
-import me.taubsie.carrylogs.application.listener.SlashCommandListener;
+import me.taubsie.carrylogs.application.listener.*;
 import me.taubsie.carrylogs.*;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.service.ProfileModerationService;
 import me.taubsie.carrylogs.config.ConfigProperty;
 import me.taubsie.carrylogs.config.ConfigService;
 import me.taubsie.carrylogs.config.ConfigType;
@@ -56,7 +52,7 @@ public class StartBot
         bot = new DiscordApiBuilder()
                 .setToken(ConfigProperty.DISCORD_BOT_TOKEN.getValue())
                 .setAllNonPrivilegedIntents()
-                .addIntents(Intent.MESSAGE_CONTENT)
+                .addIntents(Intent.MESSAGE_CONTENT, Intent.GUILD_MEMBERS)
                 .setWaitForServersOnStartup(true)
                 .login()
                 .join();
@@ -73,6 +69,7 @@ public class StartBot
         bot.addListener(new AutoCompleteListener());
         bot.addListener(new MessageListener());
         bot.addListener(new MessageComponentListener());
+        bot.addListener(new MemberJoinListener());
     }
 
     // </commandName:ID>
@@ -133,7 +130,7 @@ public class StartBot
         Set<SlashCommandBuilder> commands = new HashSet<>();
 
         //Command: log
-        SlashCommandOption amountOption = new SlashCommandOptionBuilder()
+        SlashCommandOption carryAmountOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.LONG)
                 .setName("amount")
                 .setDescription("The amount of carries you did.")
@@ -141,9 +138,9 @@ public class StartBot
                 .setRequired(true)
                 .build();
 
-        SlashCommandOption typeOption = new SlashCommandOptionBuilder()
+        SlashCommandOption carryTypeOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
-                .setName("type")
+                .setName("carry-type")
                 .setDescription("The type of the carry.")
                 .setRequired(true)
                 .setAutocompletable(true)
@@ -153,24 +150,72 @@ public class StartBot
                 .setName("log")
                 .setDescription("Use this to log your carries.")
                 .setEnabledInDms(false)
-                .setOptions(Arrays.asList(amountOption, typeOption));
+                .setOptions(Arrays.asList(carryAmountOption, carryTypeOption));
 
         commands.add(logCommandBuilder);
 
-        //Command: manage-score
-        SlashCommandBuilder manageScoreCommandBuilder = new SlashCommandBuilder()
+        commands.add(getManageScoreCommand());
+
+        return commands;
+    }
+
+    //TODO probably proper javadoc
+
+    /**
+     * Command: manage-score
+     *
+     * @return Command: manage-score
+     */
+    private SlashCommandBuilder getManageScoreCommand()
+    {
+        SlashCommandOption userOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.USER)
+                .setName("user")
+                .setDescription("The user to manage score.")
+                .setRequired(true)
+                .build();
+
+        SlashCommandOption scoreTypeOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName("score-type")
+                .setDescription("The type of score to manage.")
+                .setRequired(true)
+                .build();
+
+        SlashCommandOption amountOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.LONG)
+                .setName("amount")
+                .setDescription("The amount of score to add/remove.")
+                .setLongMaxValue(10000L)
+                .setRequired(true)
+                .build();
+
+        List<SlashCommandOption> manageScoreSubOptions = Arrays.asList(userOption, scoreTypeOption, amountOption);
+
+        SlashCommandOption addCommand = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("add")
+                .setDescription("Add score.")
+                .setOptions(manageScoreSubOptions)
+                .build();
+
+        SlashCommandOption removeCommand = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("remove")
+                .setDescription("Remove score.")
+                .setOptions(manageScoreSubOptions)
+                .build();
+
+        return new SlashCommandBuilder()
                 .setName("manage-score")
                 .setDescription("Use this to manage the score of carriers.")
                 .setEnabledInDms(false)
+                .setOptions(Arrays.asList(addCommand, removeCommand))
                 .setDefaultEnabledForPermissions(
                         PermissionType.ADMINISTRATOR,
                         PermissionType.MANAGE_SERVER,
                         PermissionType.MANAGE_MESSAGES
                 );
-
-        commands.add(manageScoreCommandBuilder);
-
-        return commands;
     }
 
     public boolean mayDiscardOthers(User user, Server server)
