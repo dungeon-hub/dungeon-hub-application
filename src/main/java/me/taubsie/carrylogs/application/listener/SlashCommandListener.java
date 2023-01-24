@@ -142,7 +142,7 @@ public class SlashCommandListener implements SlashCommandCreateListener
             return;
         }
 
-        Optional<SlashCommandInteractionOption> carryType = slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("type");
+        Optional<SlashCommandInteractionOption> carryType = slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("carry-type");
 
         if (carryType.isEmpty()
                 || carryType.get().getStringValue().isEmpty()
@@ -210,7 +210,7 @@ public class SlashCommandListener implements SlashCommandCreateListener
 
                                 Type out `/log` **in the ticket** , you will then see a prompt showing you all you have to input.
 
-                                 **Usage:** `/log amount:NUMBER type:Completion/S/S+/Tier 2/Tier 3/Tier 4`
+                                 **Usage:** `/log amount:NUMBER carry-type:Completion/S/S+/Tier 2/Tier 3/Tier 4`
                                  
                                  To see the **score** you have gained, you can use `/score`
                                  To learn more about **score**, use `/score-help`""")
