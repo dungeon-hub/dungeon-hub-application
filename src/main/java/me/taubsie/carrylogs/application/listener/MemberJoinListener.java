@@ -15,7 +15,8 @@ public class MemberJoinListener implements ServerMemberJoinListener
     @Override
     public void onServerMemberJoin(ServerMemberJoinEvent serverMemberJoinEvent)
     {
-        if (ProfileModerationService.getInstance().isOverwritten(serverMemberJoinEvent.getUser().getId()))
+        if (serverMemberJoinEvent.getUser().isBot()
+                || ProfileModerationService.getInstance().isOverwritten(serverMemberJoinEvent.getUser().getId()))
         {
             return;
         }
