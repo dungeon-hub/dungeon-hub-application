@@ -100,6 +100,30 @@ public class MessageComponentListener implements MessageComponentCreateListener
                                                 .addInlineField("Carrier", carrier.getMentionTag())
                                                 .addInlineField("Transcript-Link", "[Click to open](https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")")).join());
                     }
+
+                    Optional<Server> server = messageComponentCreateEvent.getMessageComponentInteraction().getServer();
+
+                    if (server.isPresent())
+                    {
+                        Optional<ServerTextChannel> logChannel = server.get().getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getId(server.get().getId()));
+
+                        if (logChannel.isPresent())
+                        {
+                            System.out.println("Carry denied:" + carryInformation);
+
+                            logChannel.get().sendMessage(
+                                    ApplicationService.getInstance()
+                                            .getEmbed(carryInformation.getTime())
+                                            .setTitle("Carry-log denied.")
+                                            .setColor(new Color(0, 255, 0 /*TODO*/))
+                                            .addInlineField("Number of carries", String.valueOf(carryInformation.getAmountOfCarries()))
+                                            .addInlineField("Type of carry", carryInformation.getCarryDifficulty() + " - " + carryInformation.getCarryType())
+                                            .addInlineField("Player", messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
+                                            .addInlineField("Carrier", messageComponentCreateEvent.getApi().getUserById(carryInformation.getCarrier()).join().getMentionTag())
+                                            .addInlineField("Denied by", messageComponentCreateEvent.getMessageComponentInteraction().getUser().getMentionTag())
+                                            .addInlineField("Transcript-Link", "[Click to open](https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")"));
+                        }
+                    }
                 }
 
                 ConnectionService.getInstance().removeFromApprovingQueue(messageId);
@@ -171,6 +195,7 @@ public class MessageComponentListener implements MessageComponentCreateListener
                                             .addInlineField("Type of carry", carryInformation.getCarryDifficulty() + " - " + carryInformation.getCarryType())
                                             .addInlineField("Player", messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                             .addInlineField("Carrier", messageComponentCreateEvent.getApi().getUserById(carryInformation.getCarrier()).join().getMentionTag())
+                                            .addInlineField("Accepted by", messageComponentCreateEvent.getApi().getUserById(carryInformation.getApprover()).join().getMentionTag())
                                             .addInlineField("Transcript-Link", "[Click to open](https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")"));
                         }
                     }
