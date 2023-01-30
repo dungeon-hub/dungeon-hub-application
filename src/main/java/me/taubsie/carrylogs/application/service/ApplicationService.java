@@ -1,11 +1,14 @@
 package me.taubsie.carrylogs.application.service;
 
 import me.taubsie.carrylogs.application.enums.IdList;
+import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.start.StartBot;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.user.User;
+import org.javacord.api.interaction.SlashCommandInteractionOption;
+import org.javacord.api.interaction.SlashCommandInteractionOptionsProvider;
 
 import java.awt.*;
 import java.sql.Time;
@@ -133,5 +136,41 @@ public class ApplicationService
         {
             messageOptional.get().createUpdater().removeAllEmbeds().addEmbed(embed).applyChanges().join();
         }
+    }
+
+    public String getStringOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name)
+    {
+        Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByName(name);
+
+        if (interactionOption.isEmpty() || interactionOption.get().getStringValue().isEmpty())
+        {
+            throw new InvalidOptionException(name);
+        }
+
+        return interactionOption.get().getStringValue().get();
+    }
+
+    public Long getLongOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name)
+    {
+        Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByName(name);
+
+        if (interactionOption.isEmpty() || interactionOption.get().getLongValue().isEmpty())
+        {
+            throw new InvalidOptionException(name);
+        }
+
+        return interactionOption.get().getLongValue().get();
+    }
+
+    public User getUserOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name)
+    {
+        Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByName(name);
+
+        if (interactionOption.isEmpty() || interactionOption.get().getUserValue().isEmpty())
+        {
+            throw new InvalidOptionException(name);
+        }
+
+        return interactionOption.get().getUserValue().get();
     }
 }

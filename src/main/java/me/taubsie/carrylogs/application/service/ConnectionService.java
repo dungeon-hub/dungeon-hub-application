@@ -511,4 +511,51 @@ public class ConnectionService
 
         return result;
     }
+
+    public long modifyDungeonScore(Long id, Long amount)
+    {
+        return modifyScore(id, "dungeons", amount);
+    }
+
+    public long modifySlayerScore(Long id, Long amount)
+    {
+        return modifyScore(id, "slayer", amount);
+    }
+
+    public long modifyScore(Long id, String type, Long amount)
+    {
+        MediaType mediaType = MediaType.get("multipart/form-data; boundary=---011000010111000001101001");
+
+        RequestBody requestBody = new FormBody.Builder()
+                .add("amount", String.valueOf(amount))
+                .build();
+
+        Request request = new Request.Builder()
+                .url(ConfigProperty.API_URL + "v1/carry-score/" + id + "/" + type)
+                .put(requestBody)
+                .addHeader("Content-Type", mediaType.toString())
+                .addHeader("Authorization", "Bearer " + token)
+                .build();
+
+        try (Response response = httpClient.newCall(request).execute())
+        {
+            if (response.isSuccessful())
+            {
+                if (response.body() != null)
+                {
+                    return Long.parseLong(response.body().string());
+                }
+            }
+            else
+            {
+                System.out.println("Error when trying to update score.");
+            }
+        }
+        catch (IOException ioException)
+        {
+            ioException.printStackTrace();
+        }
+
+        return 0L;
+    }
 }

@@ -1,20 +1,24 @@
 package me.taubsie.carrylogs.application.listener;
 
+import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.start.StartBot;
 import me.taubsie.carrylogs.CarryInformation;
+import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.*;
 import org.javacord.api.entity.message.component.Button;
+import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.listener.interaction.SlashCommandCreateListener;
 
 import java.awt.*;
+import java.util.Arrays;
 import java.util.Map;
 import java.time.Instant;
 import java.util.Optional;
@@ -28,18 +32,97 @@ public class SlashCommandListener implements SlashCommandCreateListener
     @Override
     public void onSlashCommandCreate(SlashCommandCreateEvent slashCommandCreateEvent)
     {
-        switch (slashCommandCreateEvent.getSlashCommandInteraction().getCommandName().toLowerCase())
+        try
         {
-            case "log" -> log(slashCommandCreateEvent);
-            case "score" -> carryCount(slashCommandCreateEvent);
-            case "score-help" -> showScoreHelp(slashCommandCreateEvent);
-            case "help" -> showHelp(slashCommandCreateEvent);
-            default -> slashCommandCreateEvent.getSlashCommandInteraction()
+            switch (slashCommandCreateEvent.getSlashCommandInteraction().getCommandName().toLowerCase())
+            {
+                case "log" -> log(slashCommandCreateEvent);
+                case "score" -> carryCount(slashCommandCreateEvent);
+                case "manage-score" -> manageScore(slashCommandCreateEvent);
+                case "score-help" -> showScoreHelp(slashCommandCreateEvent);
+                case "help" -> showHelp(slashCommandCreateEvent);
+                default -> slashCommandCreateEvent.getSlashCommandInteraction()
+                        .createImmediateResponder()
+                        .setFlags(MessageFlag.EPHEMERAL)
+                        .setContent("Unknown command.")
+                        .respond();
+            }
+        }
+        catch (InvalidOptionException invalidOptionException)
+        {
+            slashCommandCreateEvent.getSlashCommandInteraction()
                     .createImmediateResponder()
                     .setFlags(MessageFlag.EPHEMERAL)
-                    .setContent("Unknown command.")
+                    .addEmbed(ApplicationService.getInstance()
+                            .getEmbed()
+                            .setDescription(invalidOptionException.getMessage())
+                            .setColor(new Color(255, 0, 0 /*TODO color*/)))
                     .respond();
         }
+    }
+
+    private void manageScore(SlashCommandCreateEvent slashCommandCreateEvent) throws InvalidOptionException
+    {
+        String[] validTypes = new String[]{"dungeons", "slayer"};
+
+        Optional<Server> server = slashCommandCreateEvent.getSlashCommandInteraction().getServer();
+
+        if (server.isEmpty())
+        {
+            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Use this on a server please!").setFlags(MessageFlag.EPHEMERAL).respond();
+            return;
+        }
+
+        if (!StartBot.getInstance().mayManageScore(slashCommandCreateEvent.getSlashCommandInteraction().getUser(), server.get()))
+        {
+            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("You aren't allowed to do that!").setFlags(MessageFlag.EPHEMERAL).respond();
+            return;
+        }
+
+        Optional<SlashCommandInteractionOption> addRemoveOption = slashCommandCreateEvent.getSlashCommandInteraction().getOptionByIndex(0);
+
+        if (addRemoveOption.isEmpty())
+        {
+            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Please either add or remove score.").setFlags(MessageFlag.EPHEMERAL).respond();
+            return;
+        }
+
+        SlashCommandInteractionOption subCommand = addRemoveOption.get();
+        boolean removed = subCommand.getName().equalsIgnoreCase("remove");
+
+        User user = ApplicationService.getInstance().getUserOption(slashCommandCreateEvent.getSlashCommandInteraction(), "user");
+
+        String scoreType = ApplicationService.getInstance().getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "score-type");
+
+        if (Arrays.stream(validTypes).noneMatch(s -> s.equalsIgnoreCase(scoreType)))
+        {
+            throw new InvalidOptionException("score-type", "Please enter a valid score-type (" + String.join(", ", validTypes) + ")");
+        }
+
+        Long amount = ApplicationService.getInstance().getLongOption(subCommand, "amount");
+
+        long updatedScore = ConnectionService.getInstance().modifyScore(user.getId(), scoreType, removed ? -amount : amount);
+
+        slashCommandCreateEvent
+                .getSlashCommandInteraction()
+                .createImmediateResponder()
+                .addEmbed(ApplicationService
+                        .getInstance()
+                        .getEmbed()
+                        .setColor(new Color(0, 255, 0 /*TODO*/))
+                        .setTitle("Score-Management")
+                        .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + ", the user " + user.getMentionTag() + " now has " + updatedScore + " score.\nYou " + (removed ? "removed" : "added") + " " + amount + " of that score."))
+                .respond();
+
+        Optional<ServerTextChannel> logs = server.get().getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getId(server.get().getId()));
+
+        logs.ifPresent(serverTextChannel ->
+                serverTextChannel.sendMessage(ApplicationService
+                        .getInstance()
+                        .getEmbed()
+                        .setColor(new Color(0, 255, 0 /*TODO*/))
+                        .setTitle("Score-Management")
+                        .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + " edited the score of " + user.getMentionTag() + ".\nThey " + (removed ? "removed" : "added") + " " + amount + " score, the user now has " + updatedScore + " score.")));
     }
 
     private void showScoreHelp(SlashCommandCreateEvent slashCommandCreateEvent)
@@ -83,7 +166,7 @@ public class SlashCommandListener implements SlashCommandCreateListener
             userToCheck = slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("user").get().getUserValue().get();
         }
 
-        Map<String, Long> carryCount = ConnectionService.getInstance().countScore(userToCheck.getId());
+        Map<String, Long> scoreCount = ConnectionService.getInstance().countScore(userToCheck.getId());
 
         slashCommandCreateEvent
                 .getSlashCommandInteraction()
@@ -96,12 +179,12 @@ public class SlashCommandListener implements SlashCommandCreateListener
                                 ? userToCheck.getDisplayName(slashCommandCreateEvent.getSlashCommandInteraction().getServer().get()) + "'s score:"
                                 : "Your score:")
                         .setColor(new Color(165, 23, 112 /*TODO color*/))
-                        .addInlineField("Dungeon-Score:", String.valueOf(carryCount.get("dungeon")))
-                        .addInlineField("Slayer-Score:", String.valueOf(carryCount.get("slayer"))))
+                        .addInlineField("Dungeon-Score:", String.valueOf(scoreCount.get("dungeon")))
+                        .addInlineField("Slayer-Score:", String.valueOf(scoreCount.get("slayer"))))
                 .respond();
     }
 
-    private void log(SlashCommandCreateEvent slashCommandCreateEvent)
+    private void log(SlashCommandCreateEvent slashCommandCreateEvent) throws InvalidOptionException
     {
         if (slashCommandCreateEvent.getSlashCommandInteraction().getServer().isEmpty()
                 || slashCommandCreateEvent.getSlashCommandInteraction().getChannel().isEmpty()
@@ -129,32 +212,13 @@ public class SlashCommandListener implements SlashCommandCreateListener
             return;
         }
 
-        Optional<SlashCommandInteractionOption> amountOfCarries = slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("amount");
+        Long amountOfCarries = ApplicationService.getInstance().getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), "amount");
 
-        if (amountOfCarries.isEmpty() || amountOfCarries.get().getLongValue().isEmpty())
+        String carryType = ApplicationService.getInstance().getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-type");
+
+        if (!ApplicationService.getInstance().isCarryType(carryType))
         {
-            slashCommandCreateEvent.getSlashCommandInteraction()
-                    .createImmediateResponder()
-                    .setFlags(MessageFlag.EPHEMERAL)
-                    .setContent("Incorrect usage: No amount of carries specified.")
-                    .respond()
-                    .join();
-            return;
-        }
-
-        Optional<SlashCommandInteractionOption> carryType = slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("carry-type");
-
-        if (carryType.isEmpty()
-                || carryType.get().getStringValue().isEmpty()
-                || !ApplicationService.getInstance().isCarryType(carryType.get().getStringValue().get()))
-        {
-            slashCommandCreateEvent.getSlashCommandInteraction()
-                    .createImmediateResponder()
-                    .setFlags(MessageFlag.EPHEMERAL)
-                    .setContent("Incorrect usage: No type of carry specified.")
-                    .respond()
-                    .join();
-            return;
+            throw new InvalidOptionException("carry-type", carryType + " is no valid carry-type.");
         }
 
         Message firstMessage = slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
@@ -180,8 +244,8 @@ public class SlashCommandListener implements SlashCommandCreateListener
                         .getEmbed(time)
                         .setTitle("Are you sure that you want to log this?")
                         .setColor(new Color(/* TODO green */ 165, 23, 112))
-                        .addInlineField("Number of carries", String.valueOf(amountOfCarries.get().getLongValue().get()))
-                        .addInlineField("Type of carry", carryType.get().getStringValue().get())
+                        .addInlineField("Number of carries", String.valueOf(amountOfCarries))
+                        .addInlineField("Type of carry", carryType)
                         .addInlineField("Player", carried.getMentionTag())
                         .addInlineField("Carrier", carrier.getMentionTag()))
                 .addComponents(ActionRow.of(Button.success("send_log", "Confirm"), Button.danger("discard", "Cancel")))
@@ -189,9 +253,9 @@ public class SlashCommandListener implements SlashCommandCreateListener
 
         CarryInformation carryInformation = new CarryInformation(
                 time,
-                amountOfCarries.get().getLongValue().get(),
+                amountOfCarries,
                 IdList.getCarryCategory(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().asCategorizable().get().getCategory().get().getId(), slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId()).getCarryType().name(),
-                carryType.get().getStringValue().get(),
+                carryType,
                 carried.getId(),
                 carrier.getId()
         );

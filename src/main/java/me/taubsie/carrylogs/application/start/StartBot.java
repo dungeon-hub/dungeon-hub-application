@@ -16,10 +16,7 @@ import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.entity.user.UserStatus;
-import org.javacord.api.interaction.SlashCommandBuilder;
-import org.javacord.api.interaction.SlashCommandOption;
-import org.javacord.api.interaction.SlashCommandOptionBuilder;
-import org.javacord.api.interaction.SlashCommandOptionType;
+import org.javacord.api.interaction.*;
 
 import java.util.*;
 
@@ -98,6 +95,7 @@ public class StartBot
                 .setName("amount")
                 .setDescription("The amount of carries you want.")
                 .setLongMaxValue(200)
+                .setLongMinValue(0)
                 .setRequired(true)
                 .build();
 
@@ -135,6 +133,7 @@ public class StartBot
                 .setName("amount")
                 .setDescription("The amount of carries you did.")
                 .setLongMaxValue(200)
+                .setLongMinValue(0L)
                 .setRequired(true)
                 .build();
 
@@ -180,6 +179,8 @@ public class StartBot
                 .setName("score-type")
                 .setDescription("The type of score to manage.")
                 .setRequired(true)
+                .addChoice("dungeons", "dungeons")
+                .addChoice("slayer", "slayer")
                 .build();
 
         SlashCommandOption amountOption = new SlashCommandOptionBuilder()
@@ -187,6 +188,7 @@ public class StartBot
                 .setName("amount")
                 .setDescription("The amount of score to add/remove.")
                 .setLongMaxValue(10000L)
+                .setLongMinValue(0L)
                 .setRequired(true)
                 .build();
 
@@ -219,6 +221,15 @@ public class StartBot
     }
 
     public boolean mayDiscardOthers(User user, Server server)
+    {
+        Set<PermissionType> allowedPermissions = server.getAllowedPermissions(user);
+
+        return allowedPermissions.contains(PermissionType.ADMINISTRATOR)
+                || allowedPermissions.contains(PermissionType.MANAGE_SERVER)
+                || allowedPermissions.contains(PermissionType.MANAGE_MESSAGES);
+    }
+
+    public boolean mayManageScore(User user, Server server)
     {
         Set<PermissionType> allowedPermissions = server.getAllowedPermissions(user);
 
