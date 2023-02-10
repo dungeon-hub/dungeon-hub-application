@@ -4,6 +4,7 @@ import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import me.taubsie.carrylogs.application.enums.IdList;
+import me.taubsie.carrylogs.application.service.ProfileModerationService;
 import me.taubsie.carrylogs.application.start.StartBot;
 import me.taubsie.carrylogs.CarryInformation;
 import org.javacord.api.entity.channel.ServerTextChannel;
@@ -19,9 +20,11 @@ import org.javacord.api.listener.interaction.SlashCommandCreateListener;
 
 import java.awt.*;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author Taubsie
@@ -32,6 +35,13 @@ public class SlashCommandListener implements SlashCommandCreateListener
     @Override
     public void onSlashCommandCreate(SlashCommandCreateEvent slashCommandCreateEvent)
     {
+        if (slashCommandCreateEvent.getSlashCommandInteraction().getServer().isEmpty()
+                || IdList.SERVER.getId(slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId()) != slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId())
+        {
+            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("You aren't allowed to use this here!").setFlags(MessageFlag.EPHEMERAL).respond();
+            return;
+        }
+
         try
         {
             switch (slashCommandCreateEvent.getSlashCommandInteraction().getCommandName().toLowerCase())
@@ -40,6 +50,8 @@ public class SlashCommandListener implements SlashCommandCreateListener
                 case "score" -> carryCount(slashCommandCreateEvent);
                 case "manage-score" -> manageScore(slashCommandCreateEvent);
                 case "score-help" -> showScoreHelp(slashCommandCreateEvent);
+                case "rolesync" -> roleSync(slashCommandCreateEvent);
+                case "userscan" -> userScan(slashCommandCreateEvent);
                 case "help" -> showHelp(slashCommandCreateEvent);
                 default -> slashCommandCreateEvent.getSlashCommandInteraction()
                         .createImmediateResponder()
@@ -55,10 +67,56 @@ public class SlashCommandListener implements SlashCommandCreateListener
                     .setFlags(MessageFlag.EPHEMERAL)
                     .addEmbed(ApplicationService.getInstance()
                             .getEmbed()
+                            .setTitle("Error")
                             .setDescription(invalidOptionException.getMessage())
                             .setColor(new Color(255, 0, 0 /*TODO color*/)))
                     .respond();
         }
+    }
+
+    private void userScan(SlashCommandCreateEvent slashCommandCreateEvent)
+    {
+        if (slashCommandCreateEvent.getSlashCommandInteraction().getServer().isEmpty())
+        {
+            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Please use this on a server").setFlags(MessageFlag.EPHEMERAL).respond();
+            return;
+        }
+
+        Server server = slashCommandCreateEvent.getSlashCommandInteraction().getServer().get();
+        Map<User, String> result = new HashMap<>();
+
+        for (User user : server.getMembers())
+        {
+            if (!user.isBot())
+            {
+                String checkResult = ProfileModerationService.getInstance().checkUserName(user.getName());
+                if (checkResult != null)
+                {
+                    result.put(user, checkResult);
+                }
+            }
+        }
+
+        slashCommandCreateEvent
+                .getSlashCommandInteraction()
+                .createImmediateResponder()
+                .addEmbed(ApplicationService.getInstance().getEmbed().setDescription(result.entrySet()
+                        .stream()
+                        .map(userStringEntry ->
+                                userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue())
+                        .collect(Collectors.joining("\n"))))
+                .respond();
+    }
+
+    private void roleSync(SlashCommandCreateEvent slashCommandCreateEvent)
+    {
+        if (!slashCommandCreateEvent.getSlashCommandInteraction().getUser().isBotOwnerOrTeamMember())
+        {
+            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Not allowed to use that!").setFlags(MessageFlag.EPHEMERAL).respond();
+            return;
+        }
+
+
     }
 
     private void manageScore(SlashCommandCreateEvent slashCommandCreateEvent) throws InvalidOptionException
@@ -90,9 +148,9 @@ public class SlashCommandListener implements SlashCommandCreateListener
         SlashCommandInteractionOption subCommand = addRemoveOption.get();
         boolean removed = subCommand.getName().equalsIgnoreCase("remove");
 
-        User user = ApplicationService.getInstance().getUserOption(slashCommandCreateEvent.getSlashCommandInteraction(), "user");
+        User user = ApplicationService.getInstance().getUserOption(subCommand, "user");
 
-        String scoreType = ApplicationService.getInstance().getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "score-type");
+        String scoreType = ApplicationService.getInstance().getStringOption(subCommand, "score-type");
 
         if (Arrays.stream(validTypes).noneMatch(s -> s.equalsIgnoreCase(scoreType)))
         {
@@ -111,7 +169,7 @@ public class SlashCommandListener implements SlashCommandCreateListener
                         .getEmbed()
                         .setColor(new Color(0, 255, 0 /*TODO*/))
                         .setTitle("Score-Management")
-                        .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + ", the user " + user.getMentionTag() + " now has " + updatedScore + " score.\nYou " + (removed ? "removed" : "added") + " " + amount + " of that score."))
+                        .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + ", the user " + user.getMentionTag() + " now has " + updatedScore + " " + scoreType + "-score.\nYou " + (removed ? "removed" : "added") + " " + amount + " of that score."))
                 .respond();
 
         Optional<ServerTextChannel> logs = server.get().getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getId(server.get().getId()));
@@ -122,7 +180,7 @@ public class SlashCommandListener implements SlashCommandCreateListener
                         .getEmbed()
                         .setColor(new Color(0, 255, 0 /*TODO*/))
                         .setTitle("Score-Management")
-                        .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + " edited the score of " + user.getMentionTag() + ".\nThey " + (removed ? "removed" : "added") + " " + amount + " score, the user now has " + updatedScore + " score.")));
+                        .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + " edited the " + scoreType + "-score of " + user.getMentionTag() + ".\nThey " + (removed ? "removed" : "added") + " " + amount + " score, the user now has " + updatedScore + " score.")));
     }
 
     private void showScoreHelp(SlashCommandCreateEvent slashCommandCreateEvent)
