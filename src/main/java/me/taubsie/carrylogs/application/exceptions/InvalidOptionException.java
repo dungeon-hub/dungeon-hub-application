@@ -3,7 +3,7 @@ package me.taubsie.carrylogs.application.exceptions;
 public class InvalidOptionException extends IllegalArgumentException
 {
     private final String name;
-    private String additionalMessage;
+    private final String additionalMessage;
 
     public InvalidOptionException(String name)
     {
@@ -13,11 +13,6 @@ public class InvalidOptionException extends IllegalArgumentException
     public InvalidOptionException(String name, String additionalMessage)
     {
         this.name = name;
-        this.additionalMessage = additionalMessage;
-    }
-
-    public void setAdditionalMessage(String additionalMessage)
-    {
         this.additionalMessage = additionalMessage;
     }
 

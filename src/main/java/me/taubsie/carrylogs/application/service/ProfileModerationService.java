@@ -20,7 +20,8 @@ public class ProfileModerationService
             "SkyKings",
             "SkyHelper",
             "MEE6",
-            "Dungeon Hub Bot"
+            "Dungeon Hub Bot",
+            "Wick"
     };
 
     public static ProfileModerationService getInstance()

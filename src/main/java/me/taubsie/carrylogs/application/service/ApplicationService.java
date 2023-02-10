@@ -55,7 +55,7 @@ public class ApplicationService
     {
         return new EmbedBuilder()
                 .setTimestamp(time)
-                .setFooter("discord.gg/dungeons > by Taubsie#0911");
+                .setFooter("discord.gg/dungeons • made by Taubsie#0911");
     }
 
     public boolean isCarryType(String carryType)
@@ -84,7 +84,7 @@ public class ApplicationService
      */
     public void refreshLeaderboard()
     {
-        if (lastRefresh.plusSeconds(60 * 5).isAfter(Instant.now()))
+        if (lastRefresh.plusSeconds(60 * 5 - 15).isAfter(Instant.now()))
         {
             return;
         }

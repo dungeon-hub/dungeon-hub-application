@@ -155,6 +155,19 @@ public class StartBot
 
         commands.add(getManageScoreCommand());
 
+        commands.add(new SlashCommandBuilder()
+                .setName("rolesync")
+                .setDescription("Test command for adding carriers to database.")
+                .setEnabledInDms(false));
+
+        commands.add(new SlashCommandBuilder()
+                .setName("userscan")
+                .setDescription("Scans for users with a bad username.")
+                .setEnabledInDms(false)
+                .setDefaultEnabledForPermissions(
+                        PermissionType.BAN_MEMBERS
+                ));
+
         return commands;
     }
 
@@ -162,6 +175,7 @@ public class StartBot
 
     /**
      * Command: manage-score
+     * Syntax: /manage-score add|remove <user> <type> <amount>
      *
      * @return Command: manage-score
      */
@@ -214,8 +228,6 @@ public class StartBot
                 .setEnabledInDms(false)
                 .setOptions(Arrays.asList(addCommand, removeCommand))
                 .setDefaultEnabledForPermissions(
-                        PermissionType.ADMINISTRATOR,
-                        PermissionType.MANAGE_SERVER,
                         PermissionType.MANAGE_MESSAGES
                 );
     }
