@@ -3,6 +3,7 @@ package me.taubsie.carrylogs.application.service;
 import lombok.Getter;
 import me.taubsie.carrylogs.CarryInformation;
 import me.taubsie.carrylogs.CarryLogService;
+import me.taubsie.carrylogs.CarryRole;
 import me.taubsie.carrylogs.config.ConfigProperty;
 import okhttp3.*;
 
@@ -557,5 +558,9 @@ public class ConnectionService
         }
 
         return 0L;
+    }
+
+    public void addRoles(long id, List<CarryRole> role) {
+
     }
 }
