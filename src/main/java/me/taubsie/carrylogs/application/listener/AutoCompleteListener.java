@@ -22,7 +22,7 @@ public class AutoCompleteListener implements AutocompleteCreateListener
                 || autocompleteCreateEvent.getAutocompleteInteraction().getChannel().get().asCategorizable().isEmpty()
                 || autocompleteCreateEvent.getAutocompleteInteraction().getChannel().get().asCategorizable().get().getCategory().isEmpty()
                 || autocompleteCreateEvent.getAutocompleteInteraction().getServer().isEmpty()
-                || autocompleteCreateEvent.getAutocompleteInteraction().getServer().get().getId() != IdList.SERVER.getId(autocompleteCreateEvent.getAutocompleteInteraction().getServer().get().getId()))
+                || autocompleteCreateEvent.getAutocompleteInteraction().getServer().get().getId() != IdList.SERVER.getLocalId(autocompleteCreateEvent.getAutocompleteInteraction().getServer().get().getId()))
         {
             autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(new ArrayList<>()).join();
             return;
@@ -33,7 +33,7 @@ public class AutoCompleteListener implements AutocompleteCreateListener
                 .asCategorizable().get()
                 .getCategory().get();
 
-        Optional<IdList> idList = Arrays.stream(IdList.values()).filter(id -> id.getCarryType() != null && id.getId(autocompleteCreateEvent.getAutocompleteInteraction().getServer().get().getId()) == category.getId()).findFirst();
+        Optional<IdList> idList = Arrays.stream(IdList.values()).filter(id -> id.getCarryType() != null && id.getLocalId(autocompleteCreateEvent.getAutocompleteInteraction().getServer().get().getId()) == category.getId()).findFirst();
 
         if (idList.isEmpty())
         {

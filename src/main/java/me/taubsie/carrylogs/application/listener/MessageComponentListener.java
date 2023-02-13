@@ -105,7 +105,7 @@ public class MessageComponentListener implements MessageComponentCreateListener
 
                     if (server.isPresent())
                     {
-                        Optional<ServerTextChannel> logChannel = server.get().getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getId(server.get().getId()));
+                        Optional<ServerTextChannel> logChannel = server.get().getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getLocalId(server.get().getId()));
 
                         if (logChannel.isPresent())
                         {
@@ -175,11 +175,11 @@ public class MessageComponentListener implements MessageComponentCreateListener
 
                         if (carryInformation.isDungeonCarry())
                         {
-                            logChannel = server.get().getTextChannelById(IdList.DUNGEON_LOGS_CHANNEL.getId(server.get().getId()));
+                            logChannel = server.get().getTextChannelById(IdList.DUNGEON_LOGS_CHANNEL.getLocalId(server.get().getId()));
                         }
                         else
                         {
-                            logChannel = server.get().getTextChannelById(IdList.SLAYER_LOGS_CHANNEL.getId(server.get().getId()));
+                            logChannel = server.get().getTextChannelById(IdList.SLAYER_LOGS_CHANNEL.getLocalId(server.get().getId()));
                         }
 
                         if (logChannel.isPresent())

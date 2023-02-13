@@ -91,12 +91,12 @@ public class ApplicationService
         this.lastRefresh = Instant.now();
         System.out.println("Leaderboard refresh started!");
 
-        for (Long serverId : new Long[]{IdList.SERVER.getID(), IdList.SERVER.getTEST_ID()})
+        for (Long serverId : new Long[]{IdList.SERVER.getId(), IdList.SERVER.getTestId()})
         {
-            Optional<ServerTextChannel> dungeonChannel = StartBot.getInstance().getBot().getServerTextChannelById(IdList.DUNGEON_LEADERBOARD_CHANNEL.getId(serverId));
+            Optional<ServerTextChannel> dungeonChannel = StartBot.getInstance().getBot().getServerTextChannelById(IdList.DUNGEON_LEADERBOARD_CHANNEL.getLocalId(serverId));
             dungeonChannel.ifPresent(channel -> refreshLeaderboardInChannel(channel, "Leaderboard | Dungeon-Carries", ConnectionService.getInstance().getDungeonLeaderboard()));
 
-            Optional<ServerTextChannel> slayerChannel = StartBot.getInstance().getBot().getServerTextChannelById(IdList.SLAYER_LEADERBOARD_CHANNEL.getId(serverId));
+            Optional<ServerTextChannel> slayerChannel = StartBot.getInstance().getBot().getServerTextChannelById(IdList.SLAYER_LEADERBOARD_CHANNEL.getLocalId(serverId));
             slayerChannel.ifPresent(channel -> refreshLeaderboardInChannel(channel, "Leaderboard | Slayer-Carries", ConnectionService.getInstance().getSlayerLeaderboard()));
         }
     }

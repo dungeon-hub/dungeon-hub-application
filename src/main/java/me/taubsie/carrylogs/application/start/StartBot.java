@@ -59,8 +59,8 @@ public class StartBot
 
         bot.bulkOverwriteGlobalApplicationCommands(getGlobalCommands());
 
-        bot.bulkOverwriteServerApplicationCommands(IdList.SERVER.getID(), getServerCommands());
-        bot.bulkOverwriteServerApplicationCommands(IdList.SERVER.getTEST_ID(), getServerCommands());
+        bot.bulkOverwriteServerApplicationCommands(IdList.SERVER.getId(), getServerCommands());
+        bot.bulkOverwriteServerApplicationCommands(IdList.SERVER.getTestId(), getServerCommands());
 
         bot.addListener(new SlashCommandListener());
         bot.addListener(new AutoCompleteListener());

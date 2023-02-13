@@ -45,14 +45,14 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
     {
         if (!messageEvent.isServerMessage()
                 || messageEvent.getServer().isEmpty()
-                || !(messageEvent.getServer().get().getId() == IdList.SERVER.getID()
-                || messageEvent.getServer().get().getId() == IdList.SERVER.getTEST_ID()))
+                || !(messageEvent.getServer().get().getId() == IdList.SERVER.getId()
+                || messageEvent.getServer().get().getId() == IdList.SERVER.getTestId()))
         {
             return;
         }
 
-        if ((messageEvent.getChannel().getId() == IdList.TRANSCRIPTS_CHANNEL.getId(messageEvent.getServer().get().getId())
-                || messageEvent.getChannel().getId() == IdList.TRANSCRIPTS_CHANNEL.getId(messageEvent.getServer().get().getId()))
+        if ((messageEvent.getChannel().getId() == IdList.TRANSCRIPTS_CHANNEL.getLocalId(messageEvent.getServer().get().getId())
+                || messageEvent.getChannel().getId() == IdList.TRANSCRIPTS_CHANNEL.getLocalId(messageEvent.getServer().get().getId()))
                 && messageEvent.getMessageContent().startsWith("carrylog;"))
         {
 
@@ -70,7 +70,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 return;
             }
 
-            long approvingChannelId = IdList.APPROVING_CHANNEL.getId(messageEvent.getServer().get().getId());
+            long approvingChannelId = IdList.APPROVING_CHANNEL.getLocalId(messageEvent.getServer().get().getId());
 
             //TODO fix
 
@@ -134,11 +134,11 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
                         if (carryInformation.isDungeonCarry())
                         {
-                            logChannel = server.get().getTextChannelById(IdList.DUNGEON_LOGS_CHANNEL.getId(server.get().getId()));
+                            logChannel = server.get().getTextChannelById(IdList.DUNGEON_LOGS_CHANNEL.getLocalId(server.get().getId()));
                         }
                         else
                         {
-                            logChannel = server.get().getTextChannelById(IdList.SLAYER_LOGS_CHANNEL.getId(server.get().getId()));
+                            logChannel = server.get().getTextChannelById(IdList.SLAYER_LOGS_CHANNEL.getLocalId(server.get().getId()));
                         }
 
                         if (logChannel.isPresent())
