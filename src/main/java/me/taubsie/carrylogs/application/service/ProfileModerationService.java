@@ -87,4 +87,8 @@ public class ProfileModerationService {
                         || role.getId() == IdList.ALT_VERIFIED_ROLE.getLocalId(server.getId())
                 );
     }
+
+    public boolean isExcluded(User user, Server server) {
+        return user.isBot() || user.isBotOwnerOrTeamMember() || isOverwritten(user.getId()) || isVerified(user, server);
+    }
 }
