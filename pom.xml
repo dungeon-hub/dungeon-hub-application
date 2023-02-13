@@ -11,7 +11,7 @@
     </developers>
 
     <groupId>me.taubsie</groupId>
-    <artifactId>carrylogs-application</artifactId>
+    <artifactId>dungeon-hub-application</artifactId>
     <version>1.0.0</version>
 
     <properties>
@@ -37,7 +37,7 @@
 
         <dependency>
             <groupId>me.taubsie</groupId>
-            <artifactId>carrylogs-common</artifactId>
+            <artifactId>dungeon-hub-common</artifactId>
             <version>1.0.0</version>
         </dependency>
 

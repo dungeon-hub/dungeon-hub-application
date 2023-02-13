@@ -7,20 +7,20 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="carrylogs-common" />
-        <module name="carrylogs-application" />
-        <module name="carrylogs-server" />
+        <module name="dungeon-hub-server" />
+        <module name="dungeon-hub-common" />
+        <module name="dungeon-hub-application" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="17">
-      <module name="carrylogs-application" target="17" />
-      <module name="carrylogs-common" target="11" />
-      <module name="carrylogs-server" target="17" />
+      <module name="dungeon-hub-application" target="17" />
+      <module name="dungeon-hub-common" target="11" />
+      <module name="dungeon-hub-server" target="17" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="carrylogs-server" options="-parameters" />
+      <module name="dungeon-hub-server" options="-parameters" />
     </option>
   </component>
 </project>

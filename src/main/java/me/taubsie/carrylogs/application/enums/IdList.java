@@ -24,6 +24,8 @@ public enum IdList
     BLAZE_T2_ROLE(CarryRole.BLAZE_T2, 793521667116367932L, 1061116379874476112L),
     BLAZE_T3_ROLE(CarryRole.BLAZE_T3, 1004510869662748802L, 1061116390632861827L),
     BLAZE_T4_ROLE(CarryRole.BLAZE_T4, 1004510847105765467L, 1061116398866268160L),
+    VERIFIED_ROLE(700494113614594179L, 1036373005720358972L),
+    ALT_VERIFIED_ROLE(792206452348682251L, 1036373005720358972L),
     F4_CATEGORY(CarryType.F4, 805834037108670464L, 1026291896336793631L),
     F5_CATEGORY(CarryType.F5, 805833843633815664L, 1026291912157696000L),
     F6_CATEGORY(CarryType.F6, 805833672678309908L, 1026291924216336395L),
@@ -33,48 +35,48 @@ public enum IdList
     BLAZE_CATEGORY(CarryType.BLAZE, 992922801075912764L, 1026291986090704968L);
 
     @Getter
-    private final long ID;
+    private final long id;
     @Getter
-    private final long TEST_ID;
+    private final long testId;
 
-    private CarryType CARRY_TYPE;
-    private CarryRole CARRY_ROLE;
+    private CarryType carryType;
+    private CarryRole carryRole;
 
     IdList(long id, long testId)
     {
-        this.ID = id;
-        this.TEST_ID = testId;
+        this.id = id;
+        this.testId = testId;
     }
 
     IdList(CarryType carryType, long id, long testId)
     {
         this(id, testId);
 
-        this.CARRY_TYPE = carryType;
+        this.carryType = carryType;
     }
 
     IdList(CarryRole carryRole, long id, long testId)
     {
         this(id, testId);
 
-        this.CARRY_ROLE = carryRole;
+        this.carryRole = carryRole;
     }
 
     public CarryType getCarryType()
     {
-        return CARRY_TYPE;
+        return carryType;
     }
 
     public CarryRole getCarryRole()
     {
-        return CARRY_ROLE;
+        return carryRole;
     }
 
     public static boolean isCarryCategory(long id, long serverId)
     {
         for (IdList idList : values())
         {
-            if (idList.CARRY_TYPE != null && idList.getId(serverId) == id)
+            if (idList.carryType != null && idList.getLocalId(serverId) == id)
             {
                 return true;
             }
@@ -87,7 +89,7 @@ public enum IdList
     {
         for (IdList idList : values())
         {
-            if (idList.CARRY_TYPE != null && idList.getId(serverId) == id)
+            if (idList.carryType != null && idList.getLocalId(serverId) == id)
             {
                 return idList;
             }
@@ -96,15 +98,15 @@ public enum IdList
         return null;
     }
 
-    public long getId(long serverId)
+    public long getLocalId(long serverId)
     {
-        if (SERVER.ID == serverId)
+        if (SERVER.id == serverId)
         {
-            return ID;
+            return id;
         }
         else
         {
-            return TEST_ID;
+            return testId;
         }
     }
 

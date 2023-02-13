@@ -15,10 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class ProfileModerationService
-{
-    private static ProfileModerationService instance;
-    private final Homoglyph homoglyph;
+public class ProfileModerationService {
     private static final String[] forbiddenUsernames = new String[]{
             "Captcha.bot",
             "Dyno",
@@ -30,61 +27,64 @@ public class ProfileModerationService
             "Dungeon Hub Bot",
             "Wick"
     };
+    private static ProfileModerationService instance;
+    private final Homoglyph homoglyph;
 
-    public static ProfileModerationService getInstance()
-    {
-        if (instance == null)
-        {
+    ProfileModerationService() {
+        try {
+            this.homoglyph = HomoglyphBuilder.build();
+        }
+        catch(IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ProfileModerationService getInstance() {
+        if(instance == null) {
             instance = new ProfileModerationService();
         }
 
         return instance;
     }
 
-    ProfileModerationService()
-    {
-        try
-        {
-            this.homoglyph = HomoglyphBuilder.build();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Nullable
-    public String checkUserName(String userName)
-    {
+    public String checkUserName(String userName) {
         List<Homoglyph.SearchResult> searchResults = homoglyph.search(userName, forbiddenUsernames);
 
-        if (searchResults.isEmpty())
-        {
+        if(searchResults.isEmpty()) {
             return null;
         }
 
         return searchResults.stream().map(searchResult -> searchResult.match).collect(Collectors.joining("; "));
     }
 
-    public void handleUserBan(Server server, User user, String reason)
-    {
-        try
-        {
-            user.openPrivateChannel().join().sendMessage("You got banned from Dungeon Hub because of a suspicious user profile.\nIf you think this might be a mistake, please use our unban-form: https://forms.gle/rfQAJueSoyQno1gD6");
+    public void handleUserBan(Server server, User user, String reason) {
+        try {
+            user.openPrivateChannel().join().sendMessage("You got banned from `" + server.getName() + "` because of a" +
+                    " suspicious user profile.\nIf you think this might be a mistake, please appeal at: " +
+                    "https://forms.gle/rfQAJueSoyQno1gD6");
         }
-        catch (Exception exception)
-        {
+        catch(Exception exception) {
             exception.printStackTrace();
         }
 
         server.banUser(user, Duration.of(6, ChronoUnit.DAYS), "Bad username: " + reason);
 
-        Optional<ServerTextChannel> logsChannel = server.getTextChannelById(IdList.MODERATION_LOGS_CHANNEL.getId(server.getId()));
-        logsChannel.ifPresent(serverTextChannel -> serverTextChannel.sendMessage("User " + user.getMentionTag() + " got banned because of a bad username:\n" + reason));
+        Optional<ServerTextChannel> logsChannel =
+                server.getTextChannelById(IdList.MODERATION_LOGS_CHANNEL.getLocalId(server.getId()));
+        logsChannel.ifPresent(serverTextChannel -> serverTextChannel.sendMessage("User " + user.getMentionTag() + " " +
+                "got banned because of a bad username:\n" + reason));
     }
 
-    public boolean isOverwritten(long userId)
-    {
+    public boolean isOverwritten(long userId) {
         return false;
+    }
+
+    public boolean isVerified(User user, Server server) {
+        return user.getRoles(server)
+                .stream()
+                .anyMatch(role -> role.getId() == IdList.VERIFIED_ROLE.getLocalId(server.getId())
+                        || role.getId() == IdList.ALT_VERIFIED_ROLE.getLocalId(server.getId())
+                );
     }
 }

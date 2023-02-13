@@ -36,7 +36,7 @@ public class SlashCommandListener implements SlashCommandCreateListener
     public void onSlashCommandCreate(SlashCommandCreateEvent slashCommandCreateEvent)
     {
         if (slashCommandCreateEvent.getSlashCommandInteraction().getServer().isEmpty()
-                || IdList.SERVER.getId(slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId()) != slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId())
+                || IdList.SERVER.getLocalId(slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId()) != slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId())
         {
             slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("You aren't allowed to use this here!").setFlags(MessageFlag.EPHEMERAL).respond();
             return;
@@ -172,7 +172,7 @@ public class SlashCommandListener implements SlashCommandCreateListener
                         .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + ", the user " + user.getMentionTag() + " now has " + updatedScore + " " + scoreType + "-score.\nYou " + (removed ? "removed" : "added") + " " + amount + " of that score."))
                 .respond();
 
-        Optional<ServerTextChannel> logs = server.get().getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getId(server.get().getId()));
+        Optional<ServerTextChannel> logs = server.get().getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getLocalId(server.get().getId()));
 
         logs.ifPresent(serverTextChannel ->
                 serverTextChannel.sendMessage(ApplicationService

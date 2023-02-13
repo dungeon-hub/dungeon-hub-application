@@ -1,4 +1,4 @@
-package me.taubsie.carrylogs.application;
+package me.taubsie.carrylogs.application.classes;
 
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import org.javacord.api.entity.user.User;
@@ -16,6 +16,10 @@ public class Carrier
 
     public static Carrier fromUser(User user)
     {
+        if(user == null) {
+            return null;
+        }
+
         return new Carrier(user.getId());
     }
 
