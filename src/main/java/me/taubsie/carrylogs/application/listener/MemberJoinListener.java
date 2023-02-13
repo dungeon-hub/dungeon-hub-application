@@ -7,9 +7,7 @@ import org.javacord.api.listener.server.member.ServerMemberJoinListener;
 public class MemberJoinListener implements ServerMemberJoinListener {
     @Override
     public void onServerMemberJoin(ServerMemberJoinEvent serverMemberJoinEvent) {
-        if(serverMemberJoinEvent.getUser().isBot()
-                || ProfileModerationService.getInstance().isOverwritten(serverMemberJoinEvent.getUser().getId())
-                || ProfileModerationService.getInstance().isVerified(serverMemberJoinEvent.getUser(),
+        if(ProfileModerationService.getInstance().isExcluded(serverMemberJoinEvent.getUser(),
                 serverMemberJoinEvent.getServer())) {
             return;
         }

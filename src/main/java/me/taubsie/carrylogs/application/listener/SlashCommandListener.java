@@ -19,33 +19,26 @@ import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.listener.interaction.SlashCommandCreateListener;
 
 import java.awt.*;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
  * @author Taubsie
  * @since 1.0.0
  */
-public class SlashCommandListener implements SlashCommandCreateListener
-{
+public class SlashCommandListener implements SlashCommandCreateListener {
     @Override
-    public void onSlashCommandCreate(SlashCommandCreateEvent slashCommandCreateEvent)
-    {
-        if (slashCommandCreateEvent.getSlashCommandInteraction().getServer().isEmpty()
-                || IdList.SERVER.getLocalId(slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId()) != slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId())
-        {
-            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("You aren't allowed to use this here!").setFlags(MessageFlag.EPHEMERAL).respond();
+    public void onSlashCommandCreate(SlashCommandCreateEvent slashCommandCreateEvent) {
+        if(slashCommandCreateEvent.getSlashCommandInteraction().getServer().isEmpty()
+                || IdList.SERVER.getLocalId(slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId()) != slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId()) {
+            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("You aren't " +
+                    "allowed to use this here!").setFlags(MessageFlag.EPHEMERAL).respond();
             return;
         }
 
-        try
-        {
-            switch (slashCommandCreateEvent.getSlashCommandInteraction().getCommandName().toLowerCase())
-            {
+        try {
+            switch(slashCommandCreateEvent.getSlashCommandInteraction().getCommandName().toLowerCase()) {
                 case "log" -> log(slashCommandCreateEvent);
                 case "score" -> carryCount(slashCommandCreateEvent);
                 case "manage-score" -> manageScore(slashCommandCreateEvent);
@@ -60,8 +53,7 @@ public class SlashCommandListener implements SlashCommandCreateListener
                         .respond();
             }
         }
-        catch (InvalidOptionException invalidOptionException)
-        {
+        catch(InvalidOptionException invalidOptionException) {
             slashCommandCreateEvent.getSlashCommandInteraction()
                     .createImmediateResponder()
                     .setFlags(MessageFlag.EPHEMERAL)
@@ -74,24 +66,23 @@ public class SlashCommandListener implements SlashCommandCreateListener
         }
     }
 
-    private void userScan(SlashCommandCreateEvent slashCommandCreateEvent)
-    {
-        if (slashCommandCreateEvent.getSlashCommandInteraction().getServer().isEmpty())
-        {
-            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Please use this on a server").setFlags(MessageFlag.EPHEMERAL).respond();
+    private void userScan(SlashCommandCreateEvent slashCommandCreateEvent) {
+        if(slashCommandCreateEvent.getSlashCommandInteraction().getServer().isEmpty()) {
+            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Please use " +
+                    "this on a server").setFlags(MessageFlag.EPHEMERAL).respond();
             return;
         }
 
         Server server = slashCommandCreateEvent.getSlashCommandInteraction().getServer().get();
         Map<User, String> result = new HashMap<>();
+        Map<User, String> excluded = new HashMap<>();
 
-        for (User user : server.getMembers())
-        {
-            if (!user.isBot())
-            {
-                String checkResult = ProfileModerationService.getInstance().checkUserName(user.getName());
-                if (checkResult != null)
-                {
+        for(User user : server.getMembers()) {
+            String checkResult = ProfileModerationService.getInstance().checkUserName(user.getName());
+            if(checkResult != null) {
+                if(ProfileModerationService.getInstance().isExcluded(user, server)) {
+                    excluded.put(user, checkResult);
+                } else {
                     result.put(user, checkResult);
                 }
             }
@@ -100,48 +91,51 @@ public class SlashCommandListener implements SlashCommandCreateListener
         slashCommandCreateEvent
                 .getSlashCommandInteraction()
                 .createImmediateResponder()
-                .addEmbed(ApplicationService.getInstance().getEmbed().setDescription(result.entrySet()
+                .addEmbed(ApplicationService.getInstance().getEmbed().setDescription("Flagged:\n" + result.entrySet()
                         .stream()
                         .map(userStringEntry ->
                                 userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue())
-                        .collect(Collectors.joining("\n"))))
+                        .collect(Collectors.joining("\n")) + "\n\nExcluded from ban:\n" +
+                        excluded.entrySet()
+                                .stream()
+                                .map(userStringEntry ->
+                                        userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue()).collect(Collectors.joining("\n"))))
                 .respond();
     }
 
-    private void roleSync(SlashCommandCreateEvent slashCommandCreateEvent)
-    {
-        if (!slashCommandCreateEvent.getSlashCommandInteraction().getUser().isBotOwnerOrTeamMember())
-        {
-            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Not allowed to use that!").setFlags(MessageFlag.EPHEMERAL).respond();
-            return;
+    private void roleSync(SlashCommandCreateEvent slashCommandCreateEvent) {
+        if(!slashCommandCreateEvent.getSlashCommandInteraction().getUser().isBotOwnerOrTeamMember()) {
+            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Not allowed " +
+                    "to use that!").setFlags(MessageFlag.EPHEMERAL).respond();
         }
 
 
     }
 
-    private void manageScore(SlashCommandCreateEvent slashCommandCreateEvent) throws InvalidOptionException
-    {
+    private void manageScore(SlashCommandCreateEvent slashCommandCreateEvent) throws InvalidOptionException {
         String[] validTypes = new String[]{"dungeons", "slayer"};
 
         Optional<Server> server = slashCommandCreateEvent.getSlashCommandInteraction().getServer();
 
-        if (server.isEmpty())
-        {
-            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Use this on a server please!").setFlags(MessageFlag.EPHEMERAL).respond();
+        if(server.isEmpty()) {
+            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Use this on a" +
+                    " server please!").setFlags(MessageFlag.EPHEMERAL).respond();
             return;
         }
 
-        if (!StartBot.getInstance().mayManageScore(slashCommandCreateEvent.getSlashCommandInteraction().getUser(), server.get()))
-        {
-            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("You aren't allowed to do that!").setFlags(MessageFlag.EPHEMERAL).respond();
+        if(!StartBot.getInstance().mayManageScore(slashCommandCreateEvent.getSlashCommandInteraction().getUser(),
+                server.get())) {
+            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("You aren't " +
+                    "allowed to do that!").setFlags(MessageFlag.EPHEMERAL).respond();
             return;
         }
 
-        Optional<SlashCommandInteractionOption> addRemoveOption = slashCommandCreateEvent.getSlashCommandInteraction().getOptionByIndex(0);
+        Optional<SlashCommandInteractionOption> addRemoveOption =
+                slashCommandCreateEvent.getSlashCommandInteraction().getOptionByIndex(0);
 
-        if (addRemoveOption.isEmpty())
-        {
-            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Please either add or remove score.").setFlags(MessageFlag.EPHEMERAL).respond();
+        if(addRemoveOption.isEmpty()) {
+            slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Please either" +
+                    " add or remove score.").setFlags(MessageFlag.EPHEMERAL).respond();
             return;
         }
 
@@ -152,14 +146,15 @@ public class SlashCommandListener implements SlashCommandCreateListener
 
         String scoreType = ApplicationService.getInstance().getStringOption(subCommand, "score-type");
 
-        if (Arrays.stream(validTypes).noneMatch(s -> s.equalsIgnoreCase(scoreType)))
-        {
-            throw new InvalidOptionException("score-type", "Please enter a valid score-type (" + String.join(", ", validTypes) + ")");
+        if(Arrays.stream(validTypes).noneMatch(s -> s.equalsIgnoreCase(scoreType))) {
+            throw new InvalidOptionException("score-type", "Please enter a valid score-type (" + String.join(", ",
+                    validTypes) + ")");
         }
 
         Long amount = ApplicationService.getInstance().getLongOption(subCommand, "amount");
 
-        long updatedScore = ConnectionService.getInstance().modifyScore(user.getId(), scoreType, removed ? -amount : amount);
+        long updatedScore = ConnectionService.getInstance().modifyScore(user.getId(), scoreType, removed ? -amount :
+                amount);
 
         slashCommandCreateEvent
                 .getSlashCommandInteraction()
@@ -172,7 +167,8 @@ public class SlashCommandListener implements SlashCommandCreateListener
                         .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + ", the user " + user.getMentionTag() + " now has " + updatedScore + " " + scoreType + "-score.\nYou " + (removed ? "removed" : "added") + " " + amount + " of that score."))
                 .respond();
 
-        Optional<ServerTextChannel> logs = server.get().getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getLocalId(server.get().getId()));
+        Optional<ServerTextChannel> logs =
+                server.get().getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getLocalId(server.get().getId()));
 
         logs.ifPresent(serverTextChannel ->
                 serverTextChannel.sendMessage(ApplicationService
@@ -183,8 +179,7 @@ public class SlashCommandListener implements SlashCommandCreateListener
                         .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + " edited the " + scoreType + "-score of " + user.getMentionTag() + ".\nThey " + (removed ? "removed" : "added") + " " + amount + " score, the user now has " + updatedScore + " score.")));
     }
 
-    private void showScoreHelp(SlashCommandCreateEvent slashCommandCreateEvent)
-    {
+    private void showScoreHelp(SlashCommandCreateEvent slashCommandCreateEvent) {
         slashCommandCreateEvent
                 .getSlashCommandInteraction()
                 .createImmediateResponder()
@@ -214,14 +209,13 @@ public class SlashCommandListener implements SlashCommandCreateListener
                 .respond();
     }
 
-    private void carryCount(SlashCommandCreateEvent slashCommandCreateEvent)
-    {
+    private void carryCount(SlashCommandCreateEvent slashCommandCreateEvent) {
         User userToCheck = slashCommandCreateEvent.getSlashCommandInteraction().getUser();
 
-        if (slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("user").isPresent()
-                && slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("user").get().getUserValue().isPresent())
-        {
-            userToCheck = slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("user").get().getUserValue().get();
+        if(slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("user").isPresent()
+                && slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("user").get().getUserValue().isPresent()) {
+            userToCheck =
+                    slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("user").get().getUserValue().get();
         }
 
         Map<String, Long> scoreCount = ConnectionService.getInstance().countScore(userToCheck.getId());
@@ -234,7 +228,8 @@ public class SlashCommandListener implements SlashCommandCreateListener
                         .getEmbed()
                         .setTitle((userToCheck.getId() != slashCommandCreateEvent.getSlashCommandInteraction().getUser().getId()
                                 && slashCommandCreateEvent.getSlashCommandInteraction().getServer().isPresent())
-                                ? userToCheck.getDisplayName(slashCommandCreateEvent.getSlashCommandInteraction().getServer().get()) + "'s score:"
+                                ?
+                                userToCheck.getDisplayName(slashCommandCreateEvent.getSlashCommandInteraction().getServer().get()) + "'s score:"
                                 : "Your score:")
                         .setColor(new Color(165, 23, 112 /*TODO color*/))
                         .addInlineField("Dungeon-Score:", String.valueOf(scoreCount.get("dungeon")))
@@ -242,14 +237,12 @@ public class SlashCommandListener implements SlashCommandCreateListener
                 .respond();
     }
 
-    private void log(SlashCommandCreateEvent slashCommandCreateEvent) throws InvalidOptionException
-    {
-        if (slashCommandCreateEvent.getSlashCommandInteraction().getServer().isEmpty()
+    private void log(SlashCommandCreateEvent slashCommandCreateEvent) throws InvalidOptionException {
+        if(slashCommandCreateEvent.getSlashCommandInteraction().getServer().isEmpty()
                 || slashCommandCreateEvent.getSlashCommandInteraction().getChannel().isEmpty()
                 || slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().asCategorizable().isEmpty()
                 || slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().asCategorizable().get().getCategory().isEmpty()
-                || !IdList.isCarryCategory(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().asCategorizable().get().getCategory().get().getId(), slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId()))
-        {
+                || !IdList.isCarryCategory(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().asCategorizable().get().getCategory().get().getId(), slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId())) {
             slashCommandCreateEvent.getSlashCommandInteraction()
                     .createImmediateResponder()
                     .setFlags(MessageFlag.EPHEMERAL)
@@ -259,8 +252,7 @@ public class SlashCommandListener implements SlashCommandCreateListener
             return;
         }
 
-        if (StartBot.getInstance().getCarryInformation().containsKey(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().getId()))
-        {
+        if(StartBot.getInstance().getCarryInformation().containsKey(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().getId())) {
             slashCommandCreateEvent.getSlashCommandInteraction()
                     .createImmediateResponder()
                     .setFlags(MessageFlag.EPHEMERAL)
@@ -270,19 +262,22 @@ public class SlashCommandListener implements SlashCommandCreateListener
             return;
         }
 
-        Long amountOfCarries = ApplicationService.getInstance().getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), "amount");
+        Long amountOfCarries =
+                ApplicationService.getInstance().getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(),
+                        "amount");
 
-        String carryType = ApplicationService.getInstance().getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-type");
+        String carryType =
+                ApplicationService.getInstance().getStringOption(slashCommandCreateEvent.getSlashCommandInteraction()
+                        , "carry-type");
 
-        if (!ApplicationService.getInstance().isCarryType(carryType))
-        {
+        if(!ApplicationService.getInstance().isCarryType(carryType)) {
             throw new InvalidOptionException("carry-type", carryType + " is no valid carry-type.");
         }
 
-        Message firstMessage = slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
+        Message firstMessage =
+                slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
 
-        if (firstMessage == null || firstMessage.getMentionedUsers().isEmpty())
-        {
+        if(firstMessage == null || firstMessage.getMentionedUsers().isEmpty()) {
             slashCommandCreateEvent.getSlashCommandInteraction()
                     .createImmediateResponder()
                     .setFlags(MessageFlag.EPHEMERAL)
@@ -321,8 +316,7 @@ public class SlashCommandListener implements SlashCommandCreateListener
         StartBot.getInstance().getCarryInformation().put(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().getId(), carryInformation);
     }
 
-    private void showHelp(SlashCommandCreateEvent slashCommandCreateEvent)
-    {
+    private void showHelp(SlashCommandCreateEvent slashCommandCreateEvent) {
         slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setFlags(MessageFlag.EPHEMERAL)
                 .addEmbed(ApplicationService.getInstance()
                         .getEmbed()
