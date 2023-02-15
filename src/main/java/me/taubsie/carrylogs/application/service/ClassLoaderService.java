@@ -1,18 +1,17 @@
 package me.taubsie.carrylogs.application.service;
 
+import com.google.common.reflect.ClassPath;
 import lombok.Getter;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import org.javacord.api.interaction.SlashCommandBuilder;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ClassLoaderService
 {
@@ -84,33 +83,19 @@ public class ClassLoaderService
         }
     }
 
+    @SuppressWarnings("UnstableApiUsage")
     private Set<Class<?>> getClassesInPackage(String packageName)
     {
         Set<Class<?>> classes = new HashSet<>();
 
-        try (InputStream inputStream = ClassLoader.getSystemClassLoader().getResourceAsStream(packageName.replaceAll("[.]", "/")))
+        try
         {
-            if (inputStream == null)
-            {
-                return classes;
-            }
-
-            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream)))
-            {
-                bufferedReader.lines().forEach(fileName ->
-                {
-                    if (fileName.endsWith(".class"))
-                    {
-                        getClass(fileName, packageName).ifPresent(classes::add);
-                        return;
-                    }
-
-                    if (!fileName.contains("."))
-                    {
-                        classes.addAll(getClassesInPackage(packageName + "." + fileName));
-                    }
-                });
-            }
+            return ClassPath.from(ClassLoader.getSystemClassLoader())
+                    .getAllClasses()
+                    .stream()
+                    .filter(classInfo -> classInfo.getPackageName().startsWith(packageName))
+                    .map(ClassPath.ClassInfo::load)
+                    .collect(Collectors.toSet());
         }
         catch (IOException ioException)
         {
@@ -118,19 +103,6 @@ public class ClassLoaderService
         }
 
         return classes;
-    }
-
-    private Optional<Class<?>> getClass(String className, String packageName)
-    {
-        try
-        {
-            return Optional.of(Class.forName(packageName + "." + className.substring(0, className.lastIndexOf("."))));
-        }
-        catch (ClassNotFoundException classNotFoundException)
-        {
-            classNotFoundException.printStackTrace();
-            return Optional.empty();
-        }
     }
 
     public Optional<CommandParameters> getCommandParameters(Class<?> clazz)
