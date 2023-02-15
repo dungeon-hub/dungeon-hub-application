@@ -1,6 +1,6 @@
 package me.taubsie.carrylogs.application.exceptions;
 
-public class InvalidOptionException extends IllegalArgumentException
+public class InvalidOptionException extends CommandExecutionException
 {
     private final String name;
     private final String additionalMessage;
@@ -16,6 +16,7 @@ public class InvalidOptionException extends IllegalArgumentException
         this.additionalMessage = additionalMessage;
     }
 
+    @Override
     public String getMessage()
     {
         if (additionalMessage == null)
