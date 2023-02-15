@@ -20,6 +20,7 @@ import org.javacord.api.entity.user.UserStatus;
 import org.javacord.api.interaction.*;
 
 import java.util.*;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
 /**
@@ -61,14 +62,14 @@ public class StartBot
         bot.updateActivity(ActivityType.WATCHING, "carriers on " + bot.getServers().size() + " servers");
         bot.updateStatus(UserStatus.ONLINE);
 
-        loadSlashCommands();
-
         bot.addListener(new SlashCommandListener());
         bot.addListener(new AutoCompleteListener());
         bot.addListener(new MessageListener());
         bot.addListener(new MessageComponentListener());
         bot.addListener(new MemberJoinListener());
         bot.addListener(new MemberProfileChangeListener());
+
+        loadSlashCommands();
     }
 
     private void loadSlashCommands()
@@ -108,14 +109,21 @@ public class StartBot
 
         for (Map.Entry<Long, Set<SlashCommandBuilder>> entry : serverCommandBuilders.entrySet())
         {
-            Set<ApplicationCommand> serverCommands = bot.bulkOverwriteServerApplicationCommands(entry.getKey(), entry.getValue()).join();
-            for (ApplicationCommand applicationCommand : serverCommands)
+            try
             {
-                if (applicationCommand instanceof SlashCommand slashCommand)
+                Set<ApplicationCommand> serverCommands = bot.bulkOverwriteServerApplicationCommands(entry.getKey(), entry.getValue()).join();
+                for (ApplicationCommand applicationCommand : serverCommands)
                 {
-                    Command command = ClassLoaderService.getInstance().getCommandMap().values().stream().filter(command1 -> command1.getCommandName().equalsIgnoreCase(applicationCommand.getName())).findFirst().orElse(null);
-                    slashCommandMap.put(slashCommand, command);
+                    if (applicationCommand instanceof SlashCommand slashCommand)
+                    {
+                        Command command = ClassLoaderService.getInstance().getCommandMap().values().stream().filter(command1 -> command1.getCommandName().equalsIgnoreCase(applicationCommand.getName())).findFirst().orElse(null);
+                        slashCommandMap.put(slashCommand, command);
+                    }
                 }
+            }
+            catch (CompletionException completionException)
+            {
+                completionException.printStackTrace();
             }
         }
     }
