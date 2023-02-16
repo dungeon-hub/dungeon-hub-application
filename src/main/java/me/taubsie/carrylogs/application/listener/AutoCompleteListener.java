@@ -13,6 +13,7 @@ import java.util.Optional;
  * @author Taubsie
  * @since 1.0.0
  */
+@Listener
 public class AutoCompleteListener implements AutocompleteCreateListener
 {
     @Override
