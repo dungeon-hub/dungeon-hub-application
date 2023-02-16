@@ -24,6 +24,7 @@ import java.util.Optional;
  * @author Taubsie
  * @since 1.0.0
  */
+@Listener
 public class MessageListener implements MessageCreateListener, MessageEditListener
 {
     private static final long APPROVE_AMOUNT_THRESHOLD = 5;

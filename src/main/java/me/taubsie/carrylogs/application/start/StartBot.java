@@ -18,6 +18,7 @@ import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.entity.user.UserStatus;
 import org.javacord.api.interaction.*;
+import org.javacord.api.listener.GloballyAttachableListener;
 
 import java.util.*;
 import java.util.concurrent.CompletionException;
@@ -62,17 +63,15 @@ public class StartBot
         bot.updateActivity(ActivityType.WATCHING, "carriers on " + bot.getServers().size() + " servers");
         bot.updateStatus(UserStatus.ONLINE);
 
-        bot.addListener(new SlashCommandListener());
-        bot.addListener(new AutoCompleteListener());
-        bot.addListener(new MessageListener());
-        bot.addListener(new MessageComponentListener());
-        bot.addListener(new MemberJoinListener());
-        bot.addListener(new MemberProfileChangeListener());
+        for(GloballyAttachableListener listener : ClassLoaderService.getInstance().getListeners()) {
+            bot.addListener(listener);
+        }
 
-        loadSlashCommands();
+        loadGlobalSlashCommands();
+        loadServerSlashCommands();
     }
 
-    private void loadSlashCommands()
+    private void loadGlobalSlashCommands()
     {
         Set<ApplicationCommand> globalCommands = bot.bulkOverwriteGlobalApplicationCommands(ClassLoaderService.getInstance().getCommandMap().entrySet().stream().filter(entry -> entry.getValue().isGlobal()).map(Map.Entry::getKey).collect(Collectors.toSet())).join();
 
@@ -84,7 +83,10 @@ public class StartBot
                 slashCommandMap.put(slashCommand, command);
             }
         }
+    }
 
+    private void loadServerSlashCommands()
+    {
         Map<Long, Set<SlashCommandBuilder>> serverCommandBuilders = new HashMap<>();
 
         ClassLoaderService.getInstance()

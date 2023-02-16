@@ -5,6 +5,7 @@ import me.taubsie.carrylogs.application.service.ProfileModerationService;
 import org.javacord.api.event.user.UserChangeNameEvent;
 import org.javacord.api.listener.user.UserChangeNameListener;
 
+@Listener
 public class MemberProfileChangeListener implements UserChangeNameListener
 {
     @Override

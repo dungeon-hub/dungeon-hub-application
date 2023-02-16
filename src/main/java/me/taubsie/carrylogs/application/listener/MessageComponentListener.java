@@ -20,6 +20,7 @@ import java.util.Optional;
  * @author Taubsie
  * @since 1.0.0
  */
+@Listener
 public class MessageComponentListener implements MessageComponentCreateListener
 {
     @Override

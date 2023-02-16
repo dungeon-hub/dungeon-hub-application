@@ -16,6 +16,7 @@ import java.util.*;
  * @author Taubsie
  * @since 1.0.0
  */
+@Listener
 public class SlashCommandListener implements SlashCommandCreateListener
 {
     @Override
