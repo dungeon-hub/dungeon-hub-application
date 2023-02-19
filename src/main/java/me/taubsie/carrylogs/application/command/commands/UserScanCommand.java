@@ -9,10 +9,13 @@ import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
+import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.SlashCommandOptionBuilder;
+import org.javacord.api.interaction.SlashCommandOptionType;
 
 import java.awt.*;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @CommandParameters(name = "userscan",
@@ -29,6 +32,8 @@ public class UserScanCommand extends Command
         {
             throw new MissingPermissionException();
         }
+
+        boolean ban = slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("ban").isPresent();
 
         Map<User, String> result = new HashMap<>();
         Map<User, String> excluded = new HashMap<>();
@@ -55,20 +60,41 @@ public class UserScanCommand extends Command
         slashCommandCreateEvent
                 .getSlashCommandInteraction()
                 .createImmediateResponder()
-                .addEmbed(ApplicationService.getInstance().getEmbed().setColor(new Color(255, 0, 0 /*TODO color*/)).setDescription("Banned:\n" + result.entrySet()
+                .addEmbed(ApplicationService.getInstance().getEmbed().setColor(new Color(255, 0, 0 /*TODO color*/)).setDescription((ban ? "Banned" : "Flagged") + ":\n" + result.entrySet()
                         .stream()
                         .map(userStringEntry ->
                                 userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue())
-                        .collect(Collectors.joining("\n")) + "\n\nExcluded from ban:\n" +
+                        .collect(Collectors.joining("\n")) + "\n\nExcluded:\n" +
                         excluded.entrySet()
                                 .stream()
                                 .map(userStringEntry ->
                                         userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue()).collect(Collectors.joining("\n"))))
                 .respond();
 
-        for (Map.Entry<User, String> entries : result.entrySet())
+        if (ban)
         {
-            ProfileModerationService.getInstance().handleUserBan(server, entries.getKey(), entries.getValue());
+            for (Map.Entry<User, String> entries : result.entrySet())
+            {
+                ProfileModerationService.getInstance().handleUserBan(server, entries.getKey(), entries.getValue());
+            }
         }
+    }
+
+    @Override
+    public List<SlashCommandOption> getSlashCommandOptions()
+    {
+        SlashCommandOption banCommand = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("ban")
+                .setDescription("Add this if flagged users should also be banned.")
+                .build();
+
+        SlashCommandOption scanCommand = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("scan")
+                .setDescription("Add this if flagged users shouldn't be banned.")
+                .build();
+
+        return Arrays.asList(banCommand, scanCommand);
     }
 }

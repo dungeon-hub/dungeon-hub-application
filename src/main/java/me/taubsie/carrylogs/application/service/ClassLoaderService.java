@@ -15,7 +15,8 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ClassLoaderService {
+public class ClassLoaderService
+{
     private static ClassLoaderService instance;
 
     @Getter
@@ -23,44 +24,55 @@ public class ClassLoaderService {
     @Getter
     private final List<GloballyAttachableListener> listeners = new ArrayList<>();
 
-    private ClassLoaderService() {
-        for(Class<?> clazz : getClassesInPackage(readPackage(getClass()))) {
-            if(clazz.isAnnotationPresent(CommandParameters.class)) {
+    private ClassLoaderService()
+    {
+        for (Class<?> clazz : getClassesInPackage(readPackage(getClass())))
+        {
+            if (clazz.isAnnotationPresent(CommandParameters.class))
+            {
                 Optional<CommandParameters> optionalCommandParameters = getCommandParameters(clazz);
 
                 optionalCommandParameters.ifPresent(commandParameters ->
                 {
-                    try {
+                    try
+                    {
                         Command command = (Command) clazz.getDeclaredConstructor().newInstance();
 
                         SlashCommandBuilder slashCommandBuilder = buildSlashCommand(command, commandParameters);
 
                         commandMap.put(slashCommandBuilder, command);
                     }
-                    catch(InstantiationException | IllegalAccessException | InvocationTargetException |
-                          NoSuchMethodException | ClassCastException exception) {
+                    catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                           NoSuchMethodException | ClassCastException exception)
+                    {
                         exception.printStackTrace();
                     }
                 });
             }
 
-            if(clazz.isAnnotationPresent(Listener.class)
-                    && clazz.isAssignableFrom(GloballyAttachableListener.class)) {
-                try {
-                    if(clazz.getDeclaredConstructor().newInstance() instanceof GloballyAttachableListener listener) {
+            if (clazz.isAnnotationPresent(Listener.class)
+                    && GloballyAttachableListener.class.isAssignableFrom(clazz))
+            {
+                try
+                {
+                    if (clazz.getDeclaredConstructor().newInstance() instanceof GloballyAttachableListener listener)
+                    {
                         listeners.add(listener);
                     }
                 }
-                catch(InstantiationException | IllegalAccessException | InvocationTargetException |
-                      NoSuchMethodException exception) {
+                catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                       NoSuchMethodException exception)
+                {
                     exception.printStackTrace();
                 }
             }
         }
     }
 
-    public static ClassLoaderService getInstance() {
-        if(instance == null) {
+    public static ClassLoaderService getInstance()
+    {
+        if (instance == null)
+        {
             instance = new ClassLoaderService();
         }
 
@@ -70,7 +82,8 @@ public class ClassLoaderService {
     /**
      * @return the first two entries seperated with a dot in the package name
      */
-    public @NotNull String readPackage(@NotNull Class<?> clazz) {
+    public @NotNull String readPackage(@NotNull Class<?> clazz)
+    {
         String fullName = clazz.getPackageName();
         String packageNameAfterFirstDot = fullName.substring(fullName.indexOf('.') + 1); //this is the string after
         // the first dot
@@ -78,17 +91,20 @@ public class ClassLoaderService {
                 packageNameAfterFirstDot.indexOf('.'));
     }
 
-    private SlashCommandBuilder buildSlashCommand(Command command, CommandParameters commandParameters) {
+    private SlashCommandBuilder buildSlashCommand(Command command, CommandParameters commandParameters)
+    {
         SlashCommandBuilder slashCommandBuilder = new SlashCommandBuilder()
                 .setName(commandParameters.name())
                 .setDescription(commandParameters.description())
                 .setEnabledInDms(commandParameters.enabledInDms());
 
-        if(commandParameters.enabledForPermissions().length != 0) {
+        if (commandParameters.enabledForPermissions().length != 0)
+        {
             slashCommandBuilder.setDefaultEnabledForPermissions(commandParameters.enabledForPermissions());
         }
 
-        if(!command.getSlashCommandOptions().isEmpty()) {
+        if (!command.getSlashCommandOptions().isEmpty())
+        {
             slashCommandBuilder.setOptions(command.getSlashCommandOptions());
         }
 
@@ -96,10 +112,12 @@ public class ClassLoaderService {
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    private Set<Class<?>> getClassesInPackage(String packageName) {
+    private Set<Class<?>> getClassesInPackage(String packageName)
+    {
         Set<Class<?>> classes = new HashSet<>();
 
-        try {
+        try
+        {
             return ClassPath.from(ClassLoader.getSystemClassLoader())
                     .getAllClasses()
                     .stream()
@@ -107,14 +125,16 @@ public class ClassLoaderService {
                     .map(ClassPath.ClassInfo::load)
                     .collect(Collectors.toSet());
         }
-        catch(IOException ioException) {
+        catch (IOException ioException)
+        {
             ioException.printStackTrace();
         }
 
         return classes;
     }
 
-    public Optional<CommandParameters> getCommandParameters(Class<?> clazz) {
+    public Optional<CommandParameters> getCommandParameters(Class<?> clazz)
+    {
         CommandParameters commandParameters = clazz.getAnnotation(CommandParameters.class);
 
         return (commandParameters != null

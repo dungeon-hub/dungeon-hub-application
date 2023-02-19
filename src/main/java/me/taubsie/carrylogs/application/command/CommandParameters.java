@@ -20,4 +20,6 @@ public @interface CommandParameters
     long[] enabledServers() default {};
 
     PermissionType[] enabledForPermissions() default {};
+
+    long[] enabledForUsers() default {};
 }
