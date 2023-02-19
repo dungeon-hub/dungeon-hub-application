@@ -1,6 +1,7 @@
 package me.taubsie.carrylogs.application.command;
 
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
+import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.exceptions.MustBeServerException;
 import me.taubsie.carrylogs.application.exceptions.NotAllowedThereException;
 import me.taubsie.carrylogs.application.service.ClassLoaderService;
@@ -27,6 +28,10 @@ public abstract class Command {
             throw new NotAllowedThereException();
         }
 
+        if(!isEnabledForUser(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getId())) {
+            throw new MissingPermissionException();
+        }
+
         executeCommand(slashCommandCreateEvent);
     }
 
@@ -42,6 +47,12 @@ public abstract class Command {
         Optional<CommandParameters> commandParameters = getCommandParameters();
 
         return commandParameters.isEmpty() || commandParameters.get().enabledServers().length == 0 || Arrays.stream(commandParameters.get().enabledServers()).anyMatch(value -> value == serverId);
+    }
+
+    public boolean isEnabledForUser(long userId) {
+        Optional<CommandParameters> commandParameters = getCommandParameters();
+
+        return commandParameters.isPresent() && (commandParameters.get().enabledForUsers().length == 0 || Arrays.stream(commandParameters.get().enabledForUsers()).anyMatch(value -> value == userId));
     }
 
     public boolean isGlobal() {
