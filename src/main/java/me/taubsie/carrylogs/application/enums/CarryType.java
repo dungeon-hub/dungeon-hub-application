@@ -31,13 +31,17 @@ public enum CarryType
             SlashCommandOptionChoice.create("Tier 4", "Tier 4"))),
     BLAZE(Arrays.asList(SlashCommandOptionChoice.create("Tier 2", "Tier 2"),
             SlashCommandOptionChoice.create("Tier 3", "Tier 3"),
-            SlashCommandOptionChoice.create("Tier 4", "Tier 4")));
+            SlashCommandOptionChoice.create("Tier 4", "Tier 4"))),
+    KUUDRA(Arrays.asList(SlashCommandOptionChoice.create("Basic", "Basic"),
+            SlashCommandOptionChoice.create("Hot", "Hot"),
+            SlashCommandOptionChoice.create("Burning", "Burning"),
+            SlashCommandOptionChoice.create("Fiery", "Fiery"),
+            SlashCommandOptionChoice.create("Infernal", "Infernal")));
 
     @Getter
     private final List<SlashCommandOptionChoice> choiceList;
 
-    CarryType(List<SlashCommandOptionChoice> choiceList)
-    {
+    CarryType(List<SlashCommandOptionChoice> choiceList) {
         this.choiceList = choiceList;
     }
 }

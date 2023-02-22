@@ -14,7 +14,7 @@
     </annotationProcessing>
     <bytecodeTargetLevel target="17">
       <module name="dungeon-hub-application" target="17" />
-      <module name="dungeon-hub-common" target="11" />
+      <module name="dungeon-hub-common" target="17" />
       <module name="dungeon-hub-server" target="17" />
     </bytecodeTargetLevel>
   </component>

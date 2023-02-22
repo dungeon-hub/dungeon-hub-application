@@ -55,25 +55,28 @@ public class ApplicationService
                 .setFooter("discord.gg/dungeons • made by Taubsie#0911");
     }
 
-    public boolean isCarryType(String carryType)
-    {
-        return switch (carryType)
-                {
-                    case "Completion",
-                            "S",
-                            "S+",
-                            "Floor 1",
-                            "Floor 2",
-                            "Floor 3",
-                            "Floor 4",
-                            "Floor 5",
-                            "Floor 6",
-                            "Floor 7",
-                            "Tier 2",
-                            "Tier 3",
-                            "Tier 4" -> true;
-                    default -> false;
-                };
+    public boolean isCarryType(String carryType) {
+        return switch(carryType) {
+            case "Completion",
+                    "S",
+                    "S+",
+                    "Floor 1",
+                    "Floor 2",
+                    "Floor 3",
+                    "Floor 4",
+                    "Floor 5",
+                    "Floor 6",
+                    "Floor 7",
+                    "Basic",
+                    "Hot",
+                    "Burning",
+                    "Fiery",
+                    "Infernal",
+                    "Tier 2",
+                    "Tier 3",
+                    "Tier 4" -> true;
+            default -> false;
+        };
     }
 
     /**
