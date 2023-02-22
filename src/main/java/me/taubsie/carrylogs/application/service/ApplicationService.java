@@ -1,8 +1,14 @@
 package me.taubsie.carrylogs.application.service;
 
+import me.taubsie.carrylogs.OnStart;
+import me.taubsie.carrylogs.ProgramOrigin;
+import me.taubsie.carrylogs.StartupListener;
 import me.taubsie.carrylogs.application.enums.IdList;
-import me.taubsie.carrylogs.application.start.StartBot;
+import me.taubsie.carrylogs.application.start.BotStarter;
+import me.taubsie.carrylogs.config.ConfigProperty;
+import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.user.User;
@@ -12,8 +18,8 @@ import java.sql.Time;
 import java.time.Instant;
 import java.util.*;
 
-public class ApplicationService
-{
+@OnStart
+public class ApplicationService implements StartupListener {
     private static ApplicationService instance;
     private Instant lastRefresh;
 
@@ -27,24 +33,7 @@ public class ApplicationService
         return instance;
     }
 
-    private ApplicationService()
-    {
-        this.lastRefresh = Instant.now().minusSeconds(60 * 5);
-
-        new Timer().scheduleAtFixedRate(new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                System.out.println("Leaderboard refresh suggested!");
-
-                refreshLeaderboard();
-            }
-        }, new Time(System.currentTimeMillis() + 15000), 1000 * 60 * 5);
-    }
-
-    public EmbedBuilder getEmbed()
-    {
+    public EmbedBuilder getEmbed() {
         return getEmbed(Instant.now());
     }
 
@@ -101,6 +90,13 @@ public class ApplicationService
         }
     }
 
+    public DiscordApiBuilder getApiBuilder() {
+        return new DiscordApiBuilder()
+                .setToken(ConfigProperty.DISCORD_BOT_TOKEN.getValue())
+                .setAllNonPrivilegedIntents()
+                .addIntents(Intent.MESSAGE_CONTENT, Intent.GUILD_MEMBERS);
+    }
+
     private void refreshLeaderboardInChannel(ServerTextChannel channel, String leaderboardTitle, Map<Long, Long> score)
     {
         int counter = 0;
@@ -136,5 +132,19 @@ public class ApplicationService
         {
             messageOptional.get().createUpdater().removeAllEmbeds().addEmbed(embed).applyChanges().join();
         }
+    }
+
+    @Override
+    public void onStart(ProgramOrigin programOrigin) {
+        this.lastRefresh = Instant.now().minusSeconds(60L * 5);
+
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("Leaderboard refresh suggested!");
+
+                refreshLeaderboard();
+            }
+        }, new Time(System.currentTimeMillis() + 15000), 1000L * 60 * 5);
     }
 }

@@ -6,7 +6,7 @@ import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.start.StartBot;
+import me.taubsie.carrylogs.application.start.BotStarter;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.ActionRow;
@@ -47,7 +47,7 @@ public class LogCommand extends Command
             return;
         }
 
-        if (StartBot.getInstance().getCarryInformation().containsKey(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().getId()))
+        if (BotStarter.getInstance().getCarryInformation().containsKey(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().getId()))
         {
             slashCommandCreateEvent.getSlashCommandInteraction()
                     .createImmediateResponder()
@@ -109,7 +109,7 @@ public class LogCommand extends Command
                 carrier.getId()
         );
 
-        StartBot.getInstance().getCarryInformation().put(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().getId(), carryInformation);
+        BotStarter.getInstance().getCarryInformation().put(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().getId(), carryInformation);
     }
 
     @Override

@@ -123,10 +123,13 @@ public enum IdList {
     }
 
     public IdList[] getCarryRoles() {
-        IdList[] result = new IdList[getDungeonCarryRoles().length + getSlayerCarryRoles().length];
+        IdList[] result =
+                new IdList[getDungeonCarryRoles().length + getSlayerCarryRoles().length + getKuudraCarryRoles().length];
 
         System.arraycopy(getDungeonCarryRoles(), 0, result, 0, getDungeonCarryRoles().length);
         System.arraycopy(getSlayerCarryRoles(), 0, result, getDungeonCarryRoles().length, getSlayerCarryRoles().length);
+        System.arraycopy(getKuudraCarryRoles(), 0, result,
+                getDungeonCarryRoles().length + getSlayerCarryRoles().length, getKuudraCarryRoles().length);
 
         return result;
     }
