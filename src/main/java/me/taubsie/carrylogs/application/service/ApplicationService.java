@@ -23,10 +23,8 @@ public class ApplicationService implements StartupListener {
     private static ApplicationService instance;
     private Instant lastRefresh;
 
-    public static ApplicationService getInstance()
-    {
-        if (instance == null)
-        {
+    public static ApplicationService getInstance() {
+        if(instance == null) {
             instance = new ApplicationService();
         }
 
@@ -37,8 +35,7 @@ public class ApplicationService implements StartupListener {
         return getEmbed(Instant.now());
     }
 
-    public EmbedBuilder getEmbed(Instant time)
-    {
+    public EmbedBuilder getEmbed(Instant time) {
         return new EmbedBuilder()
                 .setTimestamp(time)
                 .setFooter("discord.gg/dungeons • made by Taubsie#0911");
@@ -71,22 +68,23 @@ public class ApplicationService implements StartupListener {
     /**
      * Doesn't actually refresh the leaderboard, it just suggests that the leaderboard should be refreshed.
      */
-    public void refreshLeaderboard()
-    {
-        if (lastRefresh.plusSeconds(60 * 5 - 15).isAfter(Instant.now()))
-        {
+    public void refreshLeaderboard() {
+        if(lastRefresh.plusSeconds((60 * 5) - 15L).isAfter(Instant.now())) {
             return;
         }
         this.lastRefresh = Instant.now();
         System.out.println("Leaderboard refresh started!");
 
-        for (Long serverId : new Long[]{IdList.SERVER.getId(), IdList.SERVER.getTestId()})
-        {
-            Optional<ServerTextChannel> dungeonChannel = StartBot.getInstance().getBot().getServerTextChannelById(IdList.DUNGEON_LEADERBOARD_CHANNEL.getLocalId(serverId));
-            dungeonChannel.ifPresent(channel -> refreshLeaderboardInChannel(channel, "Leaderboard | Dungeon-Carries", ConnectionService.getInstance().getDungeonLeaderboard()));
+        for(Long serverId : new Long[]{IdList.SERVER.getId(), IdList.SERVER.getTestId()}) {
+            Optional<ServerTextChannel> dungeonChannel =
+                    BotStarter.getInstance().getBot().getServerTextChannelById(IdList.DUNGEON_LEADERBOARD_CHANNEL.getLocalId(serverId));
+            dungeonChannel.ifPresent(channel -> refreshLeaderboardInChannel(channel, "Leaderboard | Dungeon-Carries",
+                    ConnectionService.getInstance().getDungeonLeaderboard()));
 
-            Optional<ServerTextChannel> slayerChannel = StartBot.getInstance().getBot().getServerTextChannelById(IdList.SLAYER_LEADERBOARD_CHANNEL.getLocalId(serverId));
-            slayerChannel.ifPresent(channel -> refreshLeaderboardInChannel(channel, "Leaderboard | Slayer-Carries", ConnectionService.getInstance().getSlayerLeaderboard()));
+            Optional<ServerTextChannel> slayerChannel =
+                    BotStarter.getInstance().getBot().getServerTextChannelById(IdList.SLAYER_LEADERBOARD_CHANNEL.getLocalId(serverId));
+            slayerChannel.ifPresent(channel -> refreshLeaderboardInChannel(channel, "Leaderboard | Slayer-Carries",
+                    ConnectionService.getInstance().getSlayerLeaderboard()));
         }
     }
 
@@ -97,39 +95,33 @@ public class ApplicationService implements StartupListener {
                 .addIntents(Intent.MESSAGE_CONTENT, Intent.GUILD_MEMBERS);
     }
 
-    private void refreshLeaderboardInChannel(ServerTextChannel channel, String leaderboardTitle, Map<Long, Long> score)
-    {
+    private void refreshLeaderboardInChannel(ServerTextChannel channel, String leaderboardTitle,
+                                             Map<Long, Long> score) {
         int counter = 0;
         EmbedBuilder embed = getEmbed()
                 .setTitle(leaderboardTitle)
                 .setColor(new Color(255, 255, 255));
 
-        if (score.isEmpty())
-        {
+        if(score.isEmpty()) {
             embed.setDescription("No score has been gained yet!\n" +
                     "To see how score works, use /score-help");
-        }
-        else
-        {
+        } else {
             embed.setDescription("To see how score works, use /score-help");
         }
 
-        for (Map.Entry<Long, Long> entry : score.entrySet())
-        {
-            User carrier = StartBot.getInstance().getBot().getUserById(entry.getKey()).join();
+        for(Map.Entry<Long, Long> entry : score.entrySet()) {
+            User carrier = BotStarter.getInstance().getBot().getUserById(entry.getKey()).join();
             embed.addField(
                     "#" + ++counter + " Carrier",
                     carrier.getMentionTag() + " - " + entry.getValue() + " Score"
             );
         }
 
-        Optional<Message> messageOptional = channel.getMessagesAsStream().filter(message -> message.getAuthor().isYourself()).findFirst();
-        if (messageOptional.isEmpty())
-        {
+        Optional<Message> messageOptional =
+                channel.getMessagesAsStream().filter(message -> message.getAuthor().isYourself()).findFirst();
+        if(messageOptional.isEmpty()) {
             channel.sendMessage(embed);
-        }
-        else
-        {
+        } else {
             messageOptional.get().createUpdater().removeAllEmbeds().addEmbed(embed).applyChanges().join();
         }
     }

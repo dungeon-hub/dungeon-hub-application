@@ -78,32 +78,42 @@ public abstract class Command {
     }
 
     public String getStringOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
-        Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByName(name);
+        SlashCommandInteractionOption interactionOption = getOption(slashCommandCreateEvent, name);
 
-        if(interactionOption.isEmpty() || interactionOption.get().getStringValue().isEmpty()) {
+        if(interactionOption.getStringValue().isEmpty()) {
             throw new InvalidOptionException(name);
         }
 
-        return interactionOption.get().getStringValue().get();
+        return interactionOption.getStringValue().get();
     }
 
     public Long getLongOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
-        Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByName(name);
+        SlashCommandInteractionOption interactionOption = getOption(slashCommandCreateEvent, name);
 
-        if(interactionOption.isEmpty() || interactionOption.get().getLongValue().isEmpty()) {
+        if(interactionOption.getLongValue().isEmpty()) {
             throw new InvalidOptionException(name);
         }
 
-        return interactionOption.get().getLongValue().get();
+        return interactionOption.getLongValue().get();
     }
 
     public User getUserOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
-        Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByName(name);
+        SlashCommandInteractionOption interactionOption = getOption(slashCommandCreateEvent, name);
 
-        if(interactionOption.isEmpty() || interactionOption.get().getUserValue().isEmpty()) {
+        if(interactionOption.getUserValue().isEmpty()) {
             throw new InvalidOptionException(name);
         }
 
-        return interactionOption.get().getUserValue().get();
+        return interactionOption.getUserValue().get();
+    }
+
+    public SlashCommandInteractionOption getOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+        Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByName(name);
+
+        if(interactionOption.isEmpty()) {
+            throw new InvalidOptionException(name);
+        }
+
+        return interactionOption.get();
     }
 }

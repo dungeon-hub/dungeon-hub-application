@@ -16,8 +16,7 @@ import java.util.*;
  * @since 1.0.0
  */
 @Listener
-public class SlashCommandListener implements SlashCommandCreateListener
-{
+public class SlashCommandListener implements SlashCommandCreateListener {
     @Override
     public void onSlashCommandCreate(SlashCommandCreateEvent slashCommandCreateEvent) {
         Optional<Command> command = ApplicationClassLoaderService.getInstance().getCommand(
@@ -32,8 +31,7 @@ public class SlashCommandListener implements SlashCommandCreateListener
 
             command.get().execute(slashCommandCreateEvent);
         }
-        catch (CommandExecutionException commandExecutionException)
-        {
+        catch(CommandExecutionException commandExecutionException) {
             slashCommandCreateEvent.getSlashCommandInteraction()
                     .createImmediateResponder()
                     .setFlags(MessageFlag.EPHEMERAL)
