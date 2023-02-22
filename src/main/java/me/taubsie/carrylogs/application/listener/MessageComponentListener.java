@@ -3,7 +3,8 @@ package me.taubsie.carrylogs.application.listener;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import me.taubsie.carrylogs.application.enums.IdList;
-import me.taubsie.carrylogs.application.start.StartBot;
+import me.taubsie.carrylogs.application.service.PermissionService;
+import me.taubsie.carrylogs.application.start.BotStarter;
 import me.taubsie.carrylogs.CarryInformation;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
@@ -36,7 +37,7 @@ public class MessageComponentListener implements MessageComponentCreateListener
         {
             case "discard" ->
             {
-                if (!StartBot.getInstance().mayDiscardOthers(messageComponentCreateEvent.getMessageComponentInteraction().getUser(), messageComponentCreateEvent.getMessageComponentInteraction().getServer().get())
+                if (!PermissionService.getInstance().mayDiscardOthers(messageComponentCreateEvent.getMessageComponentInteraction().getUser(), messageComponentCreateEvent.getMessageComponentInteraction().getServer().get())
                         && (messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().isEmpty()
                         || messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().get(0).getFields().isEmpty()
                         || messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().get(0).getFields().stream().filter(embedField -> embedField.getName().equalsIgnoreCase("carrier")).findFirst().isEmpty()
@@ -50,7 +51,7 @@ public class MessageComponentListener implements MessageComponentCreateListener
 
                 if (messageComponentCreateEvent.getMessageComponentInteraction().getChannel().isPresent())
                 {
-                    StartBot.getInstance().getCarryInformation().remove(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId());
+                    BotStarter.getInstance().getCarryInformation().remove(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId());
                 }
 
                 messageComponentCreateEvent.getMessageComponentInteraction().getMessage().delete().join();
@@ -66,8 +67,8 @@ public class MessageComponentListener implements MessageComponentCreateListener
                     return;
                 }
 
-                ConnectionService.getInstance().addToLogQueue(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId(), StartBot.getInstance().getCarryInformation().get(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId()));
-                StartBot.getInstance().getCarryInformation().remove(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId());
+                ConnectionService.getInstance().addToLogQueue(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId(), BotStarter.getInstance().getCarryInformation().get(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId()));
+                BotStarter.getInstance().getCarryInformation().remove(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId());
 
                 messageComponentCreateEvent.getMessageComponentInteraction().createImmediateResponder().setContent("**Thank you for your service. Your carry will be sent to the staff team for review once the ticket is closed.**\n" +
                         "**You will be notified once it has been reviewed.**").setFlags(MessageFlag.EPHEMERAL).respond().join();

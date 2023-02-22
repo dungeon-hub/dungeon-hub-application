@@ -4,7 +4,7 @@ import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.exceptions.MustBeServerException;
 import me.taubsie.carrylogs.application.exceptions.NotAllowedThereException;
-import me.taubsie.carrylogs.application.service.ClassLoaderService;
+import me.taubsie.carrylogs.application.service.ApplicationClassLoaderService;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -40,7 +40,7 @@ public abstract class Command {
     }
 
     private Optional<CommandParameters> getCommandParameters() {
-        return ClassLoaderService.getInstance().getCommandParameters(getClass());
+        return ApplicationClassLoaderService.getInstance().getCommandParameters(getClass());
     }
 
     public boolean isEnabledInServer(long serverId) {

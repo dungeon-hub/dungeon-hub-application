@@ -7,7 +7,7 @@ import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
-import me.taubsie.carrylogs.application.start.StartBot;
+import me.taubsie.carrylogs.application.service.PermissionService;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.permission.PermissionType;
@@ -37,7 +37,7 @@ public class ManageScoreCommand extends Command
 
         Server server = getServer(slashCommandCreateEvent.getInteraction());
 
-        if (!StartBot.getInstance().mayManageScore(slashCommandCreateEvent.getSlashCommandInteraction().getUser(),
+        if (!PermissionService.getInstance().mayManageScore(slashCommandCreateEvent.getSlashCommandInteraction().getUser(),
                 server))
         {
             throw new MissingPermissionException();
