@@ -1,12 +1,13 @@
 package me.taubsie.carrylogs.application.listener;
 
 import me.taubsie.carrylogs.application.enums.IdList;
-import org.javacord.api.entity.channel.ChannelCategory;
+import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.AutocompleteCreateEvent;
 import org.javacord.api.listener.interaction.AutocompleteCreateListener;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /**
@@ -14,34 +15,32 @@ import java.util.Optional;
  * @since 1.0.0
  */
 @Listener
-public class AutoCompleteListener implements AutocompleteCreateListener
-{
+public class AutoCompleteListener implements AutocompleteCreateListener {
     @Override
-    public void onAutocompleteCreate(AutocompleteCreateEvent autocompleteCreateEvent)
-    {
-        if (autocompleteCreateEvent.getAutocompleteInteraction().getChannel().isEmpty()
-                || autocompleteCreateEvent.getAutocompleteInteraction().getChannel().get().asCategorizable().isEmpty()
-                || autocompleteCreateEvent.getAutocompleteInteraction().getChannel().get().asCategorizable().get().getCategory().isEmpty()
-                || autocompleteCreateEvent.getAutocompleteInteraction().getServer().isEmpty()
-                || autocompleteCreateEvent.getAutocompleteInteraction().getServer().get().getId() != IdList.SERVER.getLocalId(autocompleteCreateEvent.getAutocompleteInteraction().getServer().get().getId()))
-        {
-            autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(new ArrayList<>()).join();
-            return;
+    public void onAutocompleteCreate(AutocompleteCreateEvent autocompleteCreateEvent) {
+        try {
+            Server server = autocompleteCreateEvent.getAutocompleteInteraction().getServer().orElseThrow();
+
+            if(server.getId() != IdList.SERVER.getLocalId(server.getId())) {
+                autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(new ArrayList<>()).join();
+                return;
+            }
+
+            Optional<IdList> idList =
+                    Arrays.stream(IdList.values())
+                            .filter(id -> id.getCarryType() != null
+                                    && (id.getLocalId(server.getId()) == autocompleteCreateEvent.getAutocompleteInteraction().getChannel().orElseThrow().asCategorizable().orElseThrow().getCategory().orElseThrow().getId()))
+                            .findFirst();
+
+            if(idList.isEmpty()) {
+                autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(new ArrayList<>()).join();
+                return;
+            }
+
+            autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(idList.get().getCarryType().getChoiceList()).join();
         }
-        ChannelCategory category = autocompleteCreateEvent
-                .getAutocompleteInteraction()
-                .getChannel().get()
-                .asCategorizable().get()
-                .getCategory().get();
-
-        Optional<IdList> idList = Arrays.stream(IdList.values()).filter(id -> id.getCarryType() != null && id.getLocalId(autocompleteCreateEvent.getAutocompleteInteraction().getServer().get().getId()) == category.getId()).findFirst();
-
-        if (idList.isEmpty())
-        {
+        catch(NoSuchElementException noSuchElementException) {
             autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(new ArrayList<>()).join();
-            return;
         }
-
-        autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(idList.get().getCarryType().getChoiceList()).join();
     }
 }
