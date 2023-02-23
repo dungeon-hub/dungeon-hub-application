@@ -85,6 +85,11 @@ public class ApplicationService implements StartupListener {
                     BotStarter.getInstance().getBot().getServerTextChannelById(IdList.SLAYER_LEADERBOARD_CHANNEL.getLocalId(serverId));
             slayerChannel.ifPresent(channel -> refreshLeaderboardInChannel(channel, "Leaderboard | Slayer-Carries",
                     ConnectionService.getInstance().getSlayerLeaderboard()));
+
+            Optional<ServerTextChannel> kuudraChannel =
+                    BotStarter.getInstance().getBot().getServerTextChannelById(IdList.KUUDRA_LEADERBOARD_CHANNEL.getLocalId(serverId));
+            kuudraChannel.ifPresent(channel -> refreshLeaderboardInChannel(channel, "Leaderboard | Kuudra-Carries",
+                    ConnectionService.getInstance().getKuudraLeaderboard()));
         }
     }
 

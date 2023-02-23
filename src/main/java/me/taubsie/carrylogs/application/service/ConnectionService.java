@@ -513,6 +513,41 @@ public class ConnectionService
         return result;
     }
 
+    public Map<Long, Long> getKuudraLeaderboard()
+    {
+        MediaType mediaType = MediaType.get("multipart/form-data; boundary=---011000010111000001101001");
+
+        Request request = new Request.Builder()
+                .url(ConfigProperty.API_URL + "v1/leaderboard/kuudra")
+                .get()
+                .addHeader("Content-Type", mediaType.toString())
+                .addHeader("Authorization", "Bearer " + token)
+                .build();
+
+        Map<Long, Long> result = new HashMap<>();
+
+        try (Response response = httpClient.newCall(request).execute())
+        {
+            if (response.isSuccessful())
+            {
+                if (response.body() != null)
+                {
+                    result = CarryLogService.getInstance().getGson().fromJson(response.body().string(), CarryLogService.getInstance().getLongLongMapType());
+                }
+            }
+            else
+            {
+                System.out.println("Error when trying to get leaderboard.");
+            }
+        }
+        catch (IOException ioException)
+        {
+            ioException.printStackTrace();
+        }
+
+        return result;
+    }
+
     public long modifyDungeonScore(Long id, Long amount)
     {
         return modifyScore(id, "dungeons", amount);
