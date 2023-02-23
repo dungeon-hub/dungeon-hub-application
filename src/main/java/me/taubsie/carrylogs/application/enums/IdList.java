@@ -9,10 +9,10 @@ public enum IdList {
     APPROVING_CHANNEL(1062481082500522095L, 1036387847000825877L),
     DUNGEON_LOGS_CHANNEL(1021543535834583090L, 1043328648641523825L),
     SLAYER_LOGS_CHANNEL(1048235346422407168L, 1043328648641523825L),
-    KUUDRA_LOGS_CHANNEL(0L /*TODO*/, 0L /*TODO*/),
+    KUUDRA_LOGS_CHANNEL(0L /*TODO*/, 1067118963831615609L),
     DUNGEON_LEADERBOARD_CHANNEL(1063987051986440262L, 1063900837291774032L),
     SLAYER_LEADERBOARD_CHANNEL(1063987003806453781L, 1063900854974955590L),
-    KUUDRA_LEADERBOARD_CHANNEL(0L /*TODO*/, 0L /*TODO*/),
+    KUUDRA_LEADERBOARD_CHANNEL(0L /*TODO*/, 1078053187229065268L),
     SCORE_LOGS_CHANNEL(1068265390263767152L, 1067118963831615609L),
     MODERATION_LOGS_CHANNEL(996151183519514814L, 1067118963831615609L),
     F4_ROLE(CarryRole.F4, 793521662678794250L, 1061116185132933240L),
@@ -34,7 +34,7 @@ public enum IdList {
     MASTER_CATEGORY(CarryType.MASTER_MODE, 842840550704939053L, 1026291957594587167L),
     EMAN_CATEGORY(CarryType.EMAN, 992922867857641594L, 1026291971872018432L),
     BLAZE_CATEGORY(CarryType.BLAZE, 992922801075912764L, 1026291986090704968L),
-    KUUDRA_CATEGORY(CarryType.KUUDRA, 0L /*TODO*/, 0L /*TODO*/);
+    KUUDRA_CATEGORY(CarryType.KUUDRA, 0L /*TODO*/, 1078053050004033646L);
 
     @Getter
     private final long id;
@@ -62,8 +62,8 @@ public enum IdList {
     }
 
     public static boolean isCarryCategory(long id, long serverId) {
-        for(IdList idList : values()) {
-            if(idList.carryType != null && idList.getLocalId(serverId) == id) {
+        for (IdList idList : values()) {
+            if (idList.carryType != null && idList.getLocalId(serverId) == id) {
                 return true;
             }
         }
@@ -72,8 +72,8 @@ public enum IdList {
     }
 
     public static IdList getCarryCategory(long id, long serverId) {
-        for(IdList idList : values()) {
-            if(idList.carryType != null && idList.getLocalId(serverId) == id) {
+        for (IdList idList : values()) {
+            if (idList.carryType != null && idList.getLocalId(serverId) == id) {
                 return idList;
             }
         }
@@ -90,7 +90,7 @@ public enum IdList {
     }
 
     public long getLocalId(long serverId) {
-        if(SERVER.id == serverId) {
+        if (SERVER.id == serverId) {
             return id;
         } else {
             return testId;
