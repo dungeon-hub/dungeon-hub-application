@@ -6,6 +6,8 @@ import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.service.PermissionService;
 import me.taubsie.carrylogs.application.start.BotStarter;
 import me.taubsie.carrylogs.CarryInformation;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.MessageFlag;
@@ -24,6 +26,8 @@ import java.util.Optional;
 @Listener
 public class MessageComponentListener implements MessageComponentCreateListener
 {
+    private static final Logger logger = LogManager.getLogger(MessageListener.class);
+
     @Override
     public void onComponentCreate(MessageComponentCreateEvent messageComponentCreateEvent)
     {
@@ -111,7 +115,7 @@ public class MessageComponentListener implements MessageComponentCreateListener
 
                         if (logChannel.isPresent())
                         {
-                            System.out.println("Carry denied:" + carryInformation);
+                            logger.info("Carry denied:" + carryInformation);
 
                             logChannel.get().sendMessage(
                                     ApplicationService.getInstance()
@@ -186,7 +190,7 @@ public class MessageComponentListener implements MessageComponentCreateListener
 
                         if (logChannel.isPresent())
                         {
-                            System.out.println("Carry logged:" + carryInformation);
+                            logger.info("Carry logged:" + carryInformation);
 
                             logChannel.get().sendMessage(
                                     ApplicationService.getInstance()

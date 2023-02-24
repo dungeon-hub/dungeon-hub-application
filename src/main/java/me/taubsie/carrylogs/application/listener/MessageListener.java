@@ -4,6 +4,8 @@ import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.CarryInformation;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
@@ -27,6 +29,8 @@ import java.util.Optional;
 @Listener
 public class MessageListener implements MessageCreateListener, MessageEditListener
 {
+    private static final Logger logger = LogManager.getLogger(MessageListener.class);
+
     private static final long APPROVE_AMOUNT_THRESHOLD = 5;
     private static final long APPROVE_SCORE_THRESHOLD = 20;
 
@@ -144,7 +148,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
                         if (logChannel.isPresent())
                         {
-                            System.out.println("Carry logged:" + carryInformation);
+                            logger.info("Carry logged:" + carryInformation);
 
                             logChannel.get().sendMessage(
                                     ApplicationService.getInstance()
