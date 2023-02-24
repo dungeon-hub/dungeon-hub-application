@@ -5,7 +5,7 @@
             <PatternLayout
                     pattern="%style{%date{DEFAULT}}{yellow}
                     [%highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green}]
-                    %message"/>
+                    %message %n"/>
         </Console>
     </Appenders>
     <Loggers>

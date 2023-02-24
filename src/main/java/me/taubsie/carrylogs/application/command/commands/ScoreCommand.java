@@ -46,7 +46,8 @@ public class ScoreCommand extends Command {
                                 : "Your score:")
                         .setColor(new Color(165, 23, 112 /*TODO color*/))
                         .addInlineField("Dungeon-Score:", String.valueOf(scoreCount.get("dungeon")))
-                        .addInlineField("Slayer-Score:", String.valueOf(scoreCount.get("slayer"))))
+                        .addInlineField("Slayer-Score:", String.valueOf(scoreCount.get("slayer")))
+                        .addInlineField("Kuudra-Score:", String.valueOf(scoreCount.get("kuudra"))))
                 .respond();
     }
 

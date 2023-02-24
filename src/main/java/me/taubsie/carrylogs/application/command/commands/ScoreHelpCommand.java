@@ -9,13 +9,11 @@ import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import java.awt.*;
 
 @CommandParameters(name = "score-help",
-                   description = "Show an explanation about how score works.",
-                   enabledInDms = true)
-public class ScoreHelpCommand extends Command
-{
+        description = "Show an explanation about how score works.",
+        enabledInDms = true)
+public class ScoreHelpCommand extends Command {
     @Override
-    public void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent)
-    {
+    public void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         slashCommandCreateEvent
                 .getSlashCommandInteraction()
                 .createImmediateResponder()
@@ -41,6 +39,14 @@ public class ScoreHelpCommand extends Command
                                         T2 - 1
                                         T3 - 2
                                         T4 - 3"""
+                        ).addField(
+                                "Kuudra",
+                                """
+                                        Basic - 2
+                                        Hot - 3
+                                        Burning - 4
+                                        Fiery - 5
+                                        Infernal - 6"""
                         ))
                 .respond();
     }
