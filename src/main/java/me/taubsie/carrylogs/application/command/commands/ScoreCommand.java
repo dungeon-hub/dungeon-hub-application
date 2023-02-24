@@ -2,9 +2,11 @@ package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import org.javacord.api.entity.message.MessageFlag;
+import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -16,19 +18,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-@CommandParameters(name = "score", enabledInDms = true, description = "Use this to count your or another user's carries.")
-public class ScoreCommand extends Command
-{
+@CommandParameters(name = "score", enabledInDms = true, description = "Use this to count your or another user's " +
+        "carries.")
+public class ScoreCommand extends Command {
     @Override
-    protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent)
-    {
-        User userToCheck = slashCommandCreateEvent.getSlashCommandInteraction().getUser();
+    protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
+        Server server = slashCommandCreateEvent.getSlashCommandInteraction().getServer().orElse(null);
 
-        if (slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("user").isPresent()
-                && slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("user").get().getUserValue().isPresent())
-        {
-            userToCheck =
-                    slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName("user").get().getUserValue().get();
+        User userToCheck;
+        try {
+            userToCheck = getUserOption("user");
+        }
+        catch(InvalidOptionException invalidOptionException) {
+            userToCheck = getUser();
         }
 
         Map<String, Long> scoreCount = ConnectionService.getInstance().countScore(userToCheck.getId());
@@ -39,10 +41,8 @@ public class ScoreCommand extends Command
                 .setFlags(MessageFlag.EPHEMERAL)
                 .addEmbed(ApplicationService.getInstance()
                         .getEmbed()
-                        .setTitle((userToCheck.getId() != slashCommandCreateEvent.getSlashCommandInteraction().getUser().getId()
-                                && slashCommandCreateEvent.getSlashCommandInteraction().getServer().isPresent())
-                                ?
-                                userToCheck.getDisplayName(slashCommandCreateEvent.getSlashCommandInteraction().getServer().get()) + "'s score:"
+                        .setTitle((userToCheck.getId() != getUser().getId() && server != null)
+                                ? userToCheck.getDisplayName(getServer()) + "'s score:"
                                 : "Your score:")
                         .setColor(new Color(165, 23, 112 /*TODO color*/))
                         .addInlineField("Dungeon-Score:", String.valueOf(scoreCount.get("dungeon")))

@@ -5,6 +5,8 @@ import me.taubsie.carrylogs.*;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ApplicationClassLoaderService;
 import me.taubsie.carrylogs.config.ConfigType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.activity.ActivityType;
 import org.javacord.api.entity.user.UserStatus;
@@ -17,6 +19,8 @@ import java.util.*;
  */
 @OnStart
 public class BotStarter extends ProgramOrigin implements StartupListener {
+    private static final Logger logger = LogManager.getLogger(BotStarter.class);
+
     private static BotStarter instance;
     @Getter
     private final Map<Long, CarryInformation> carryInformation = new HashMap<>();
@@ -64,5 +68,25 @@ public class BotStarter extends ProgramOrigin implements StartupListener {
     @Override
     public ConfigType getConfigType() {
         return ConfigType.APPLICATION;
+    }
+
+    @Override
+    public void log(String message) {
+        logger.info(message);
+    }
+
+    @Override
+    public void warn(String message) {
+        logger.warn(message);
+    }
+
+    @Override
+    public void error(String message) {
+        logger.error(message);
+    }
+
+    @Override
+    public void error(String message, Throwable throwable) {
+        logger.error(message, throwable);
     }
 }

@@ -3,15 +3,21 @@ package me.taubsie.carrylogs.application.service;
 import me.taubsie.carrylogs.OnStart;
 import me.taubsie.carrylogs.ProgramOrigin;
 import me.taubsie.carrylogs.StartupListener;
+import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.enums.IdList;
+import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.carrylogs.application.start.BotStarter;
 import me.taubsie.carrylogs.config.ConfigProperty;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.entity.message.Message;
+import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.user.User;
+import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 
 import java.awt.*;
 import java.sql.Time;
@@ -20,6 +26,7 @@ import java.util.*;
 
 @OnStart
 public class ApplicationService implements StartupListener {
+    private static final Logger logger = LogManager.getLogger(ApplicationService.class);
     private static ApplicationService instance;
     private Instant lastRefresh;
 
@@ -73,7 +80,7 @@ public class ApplicationService implements StartupListener {
             return;
         }
         this.lastRefresh = Instant.now();
-        System.out.println("Leaderboard refresh started!");
+        logger.info("Leaderboard refresh started!");
 
         for(Long serverId : new Long[]{IdList.SERVER.getId(), IdList.SERVER.getTestId()}) {
             Optional<ServerTextChannel> dungeonChannel =
@@ -138,10 +145,30 @@ public class ApplicationService implements StartupListener {
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                System.out.println("Leaderboard refresh suggested!");
+                logger.info("Leaderboard refresh suggested!");
 
                 refreshLeaderboard();
             }
         }, new Time(System.currentTimeMillis() + 15000), 1000L * 60 * 5);
+    }
+
+    public void respondWithError(SlashCommandCreateEvent slashCommandCreateEvent,
+                                 CommandExecutionException commandExecutionException) {
+        slashCommandCreateEvent.getSlashCommandInteraction()
+                .createImmediateResponder()
+                .setFlags(MessageFlag.EPHEMERAL)
+                .addEmbed(ApplicationService.getInstance()
+                        .getEmbed()
+                        .setTitle("Error")
+                        .setDescription(commandExecutionException.getMessage())
+                        .setColor(new Color(255, 0, 0 /*TODO color*/)))
+                .respond();
+    }
+
+    public Optional<Command> getCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
+        return ApplicationClassLoaderService.getInstance().getCommand(
+                slashCommandCreateEvent.getSlashCommandInteraction().getCommandName(),
+                slashCommandCreateEvent.getSlashCommandInteraction().getServer().orElse(null)
+        );
     }
 }
