@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="start_bot" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="me.taubsie.carrylogs.application.start.BotStarter" />
+    <module name="dungeon-hub-application" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="me.taubsie.carrylogs.start.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="build_common" run_configuration_type="MavenRunConfiguration" />
+    </method>
+  </configuration>
+</component>
