@@ -29,6 +29,11 @@ public enum IdList {
     BLAZE_T2_ROLE(CarryRole.BLAZE_T2, 793521667116367932L, 1061116379874476112L),
     BLAZE_T3_ROLE(CarryRole.BLAZE_T3, 1004510869662748802L, 1061116390632861827L),
     BLAZE_T4_ROLE(CarryRole.BLAZE_T4, 1004510847105765467L, 1061116398866268160L),
+    KUUDRA_BASIC_ROLE(CarryRole.BASIC, 0L /*TODO*/, 1078612975675510794L),
+    KUUDRA_HOT_ROLE(CarryRole.HOT, 0L /*TODO*/, 1078612992851197972L),
+    KUUDRA_BURNING_ROLE(CarryRole.BURNING, 0L /*TODO*/, 1078613004679127044L),
+    KUUDRA_FIERY_ROLE(CarryRole.FIERY, 0L /*TODO*/, 1078613018713272340L),
+    KUUDRA_INFERNAL_ROLE(CarryRole.INFERNAL, 0L /*TODO*/, 1078613027689078806L),
     VERIFIED_ROLE(700494113614594179L, 1036373005720358972L),
     ALT_VERIFIED_ROLE(792206452348682251L, 1036373005720358972L),
     F4_CATEGORY(CarryType.F4, 805834037108670464L, 1026291896336793631L),
@@ -122,8 +127,13 @@ public enum IdList {
     }
 
     public static IdList[] getKuudraCarryRoles() {
-        //TODO add missing roles
-        return new IdList[]{};
+        return new IdList[]{
+                KUUDRA_BASIC_ROLE,
+                KUUDRA_HOT_ROLE,
+                KUUDRA_BURNING_ROLE,
+                KUUDRA_FIERY_ROLE,
+                KUUDRA_INFERNAL_ROLE
+        };
     }
 
     public static IdList[] getCarryRoles() {
@@ -141,8 +151,8 @@ public enum IdList {
     public static List<IdList> getCarryRoles(List<Role> roles, long serverId) {
         List<IdList> userRoles = new ArrayList<>();
 
-        for(IdList role : getCarryRoles()) {
-            if(role.getCarryRole() != null
+        for (IdList role : getCarryRoles()) {
+            if (role.getCarryRole() != null
                     && roles.stream().anyMatch(userRole -> userRole.getId() == role.getLocalId(serverId))) {
                 userRoles.add(role);
             }
