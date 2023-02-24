@@ -33,9 +33,9 @@ public class ManageScoreCommand extends Command
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent)
     {
-        String[] validTypes = new String[]{"dungeons", "slayer"};
+        String[] validTypes = new String[]{"dungeons", "slayer", "kuudra"};
 
-        Server server = getServer(slashCommandCreateEvent.getInteraction());
+        Server server = getServer();
 
         if (!PermissionService.getInstance().mayManageScore(slashCommandCreateEvent.getSlashCommandInteraction().getUser(),
                 server))
@@ -111,6 +111,7 @@ public class ManageScoreCommand extends Command
                 .setRequired(true)
                 .addChoice("dungeons", "dungeons")
                 .addChoice("slayer", "slayer")
+                .addChoice("kuudra", "kuudra")
                 .build();
 
         SlashCommandOption amountOption = new SlashCommandOptionBuilder()

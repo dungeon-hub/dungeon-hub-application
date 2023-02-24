@@ -1,25 +1,39 @@
 package me.taubsie.carrylogs.application.command.commands;
 
+import me.taubsie.carrylogs.CarryRole;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
+import me.taubsie.carrylogs.application.service.ConnectionService;
 import org.javacord.api.entity.permission.PermissionType;
+import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 
+import java.util.List;
+
 @CommandParameters(name = "rolesync",
-                   description = "Test command for adding carriers to database.",
-                   enabledForPermissions = {PermissionType.ADMINISTRATOR},
-                   enabledServers = {693263712626278553L, 1023684107877761196L})
-public class RoleSyncCommand extends Command
-{
+        description = "Test command for adding carriers to database.",
+        enabledForPermissions = {PermissionType.ADMINISTRATOR},
+        enabledServers = {693263712626278553L, 1023684107877761196L})
+public class RoleSyncCommand extends Command {
     @Override
-    protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent)
-    {
-        if (!slashCommandCreateEvent.getSlashCommandInteraction().getUser().isBotOwnerOrTeamMember())
-        {
+    protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
+        if(!slashCommandCreateEvent.getSlashCommandInteraction().getUser().isBotOwnerOrTeamMember()) {
             throw new MissingPermissionException();
         }
 
-        //TODO finish implementation
+        for(User user : getServer().getMembers()) {
+            if(user.isBot()) {
+                return;
+            }
+
+            List<CarryRole> roleList =
+                    IdList.getCarryRoles(user.getRoles(getServer()), getServer().getId()).stream().map(IdList::getCarryRole).toList();
+
+            if(!roleList.isEmpty()) {
+                ConnectionService.getInstance().addRoles(user.getId(), roleList);
+            }
+        }
     }
 }

@@ -31,7 +31,7 @@ public class LogCommand extends Command
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent)
     {
-        Server server = getServer(slashCommandCreateEvent.getInteraction());
+        Server server = getServer();
 
         if (slashCommandCreateEvent.getSlashCommandInteraction().getChannel().isEmpty()
                 || slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().asCategorizable().isEmpty()
@@ -120,7 +120,7 @@ public class LogCommand extends Command
                 .setName("amount")
                 .setDescription("The amount of carries you did.")
                 .setLongMaxValue(200)
-                .setLongMinValue(0L)
+                .setLongMinValue(1L)
                 .setRequired(true)
                 .build();
 

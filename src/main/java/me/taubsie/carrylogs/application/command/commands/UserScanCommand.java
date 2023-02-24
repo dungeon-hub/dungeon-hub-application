@@ -26,7 +26,7 @@ public class UserScanCommand extends Command
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent)
     {
-        Server server = getServer(slashCommandCreateEvent.getInteraction());
+        Server server = getServer();
 
         if (!server.hasPermission(slashCommandCreateEvent.getSlashCommandInteraction().getUser(), PermissionType.ADMINISTRATOR))
         {

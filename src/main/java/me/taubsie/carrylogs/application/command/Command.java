@@ -1,14 +1,15 @@
 package me.taubsie.carrylogs.application.command;
 
-import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
-import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
-import me.taubsie.carrylogs.application.exceptions.MustBeServerException;
-import me.taubsie.carrylogs.application.exceptions.NotAllowedThereException;
+import me.taubsie.carrylogs.application.exceptions.*;
 import me.taubsie.carrylogs.application.service.ApplicationClassLoaderService;
+import me.taubsie.carrylogs.application.service.ApplicationService;
+import org.javacord.api.entity.DiscordEntity;
+import org.javacord.api.entity.message.MessageFlag;
+import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
-import org.javacord.api.interaction.Interaction;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.interaction.SlashCommandInteractionOptionsProvider;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -19,20 +20,34 @@ import java.util.List;
 import java.util.Optional;
 
 public abstract class Command {
+    private SlashCommandCreateEvent slashCommandCreateEvent;
+
     protected abstract void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent);
 
     public void execute(SlashCommandCreateEvent slashCommandCreateEvent) {
-        if(isGlobal()
-                && slashCommandCreateEvent.getSlashCommandInteraction().getServer().isPresent()
-                && !isEnabledInServer(slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId())) {
+        this.slashCommandCreateEvent = slashCommandCreateEvent;
+
+        if(!isEnabledInServer(slashCommandCreateEvent.getSlashCommandInteraction().getServer().map(DiscordEntity::getId).orElse(0L))) {
             throw new NotAllowedThereException();
         }
 
-        if(!isEnabledForUser(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getId())) {
+        if(!hasPermissions(getUser()) || !isEnabledForUser(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getId())) {
             throw new MissingPermissionException();
         }
 
         executeCommand(slashCommandCreateEvent);
+    }
+
+    public EmbedBuilder getEmbed() {
+        return ApplicationService.getInstance().getEmbed();
+    }
+
+    public void respond(EmbedBuilder embedBuilder) {
+        slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().addEmbed(embedBuilder).respond();
+    }
+
+    public void respondEphemeral(EmbedBuilder embedBuilder) {
+        slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setFlags(MessageFlag.EPHEMERAL).addEmbed(embedBuilder).respond();
     }
 
     public List<SlashCommandOption> getSlashCommandOptions() {
@@ -43,16 +58,28 @@ public abstract class Command {
         return ApplicationClassLoaderService.getInstance().getCommandParameters(getClass());
     }
 
-    public boolean isEnabledInServer(long serverId) {
-        Optional<CommandParameters> commandParameters = getCommandParameters();
+    private boolean hasPermissions(User user) {
+        try {
+            PermissionType[] permissions = getCommandParameters()
+                    .map(CommandParameters::enabledForPermissions)
+                    .orElse(new PermissionType[]{});
+            return getServer().hasPermissions(user, permissions);
+        }
+        catch(MustBeServerException mustBeServerException) {
+            return isEnabledInDms();
+        }
+    }
 
-        return commandParameters.isEmpty() || commandParameters.get().enabledServers().length == 0 || Arrays.stream(commandParameters.get().enabledServers()).anyMatch(value -> value == serverId);
+    public boolean isEnabledInDms() {
+        return getCommandParameters().map(CommandParameters::enabledInDms).orElse(false);
+    }
+
+    public boolean isEnabledInServer(long serverId) {
+        return isGlobal() || Arrays.stream(getEnabledServers()).anyMatch(value -> value == serverId);
     }
 
     public boolean isEnabledForUser(long userId) {
-        Optional<CommandParameters> commandParameters = getCommandParameters();
-
-        return commandParameters.isPresent() && (commandParameters.get().enabledForUsers().length == 0 || Arrays.stream(commandParameters.get().enabledForUsers()).anyMatch(value -> value == userId));
+        return getEnabledUsers().length == 0 || Arrays.stream(getEnabledUsers()).anyMatch(value -> value == userId);
     }
 
     public boolean isGlobal() {
@@ -67,8 +94,12 @@ public abstract class Command {
         return getCommandParameters().map(CommandParameters::enabledServers).orElse(new long[]{});
     }
 
-    protected Server getServer(Interaction interaction) {
-        Optional<Server> server = interaction.getServer();
+    public long[] getEnabledUsers() {
+        return getCommandParameters().map(CommandParameters::enabledForUsers).orElse(new long[]{});
+    }
+
+    public Server getServer() {
+        Optional<Server> server = slashCommandCreateEvent.getSlashCommandInteraction().getServer();
 
         if(server.isEmpty()) {
             throw new MustBeServerException();
@@ -77,37 +108,54 @@ public abstract class Command {
         return server.get();
     }
 
-    public String getStringOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
-        SlashCommandInteractionOption interactionOption = getOption(slashCommandCreateEvent, name);
+    public User getUser() {
+        return slashCommandCreateEvent.getSlashCommandInteraction().getUser();
+    }
 
-        if(interactionOption.getStringValue().isEmpty()) {
+    public String getStringOption(String name) {
+        return getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
+    }
+
+    public String getStringOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+        Optional<String> stringValue = getOption(slashCommandCreateEvent, name).getStringValue();
+
+        if(stringValue.isEmpty()) {
             throw new InvalidOptionException(name);
         }
 
-        return interactionOption.getStringValue().get();
+        return stringValue.get();
+    }
+
+    public Long getLongOption(String name) {
+        return getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
     }
 
     public Long getLongOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
-        SlashCommandInteractionOption interactionOption = getOption(slashCommandCreateEvent, name);
+        Optional<Long> longValue = getOption(slashCommandCreateEvent, name).getLongValue();
 
-        if(interactionOption.getLongValue().isEmpty()) {
+        if(longValue.isEmpty()) {
             throw new InvalidOptionException(name);
         }
 
-        return interactionOption.getLongValue().get();
+        return longValue.get();
+    }
+
+    public User getUserOption(String name) {
+        return getUserOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
     }
 
     public User getUserOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
-        SlashCommandInteractionOption interactionOption = getOption(slashCommandCreateEvent, name);
+        Optional<User> userValue = getOption(slashCommandCreateEvent, name).getUserValue();
 
-        if(interactionOption.getUserValue().isEmpty()) {
+        if(userValue.isEmpty()) {
             throw new InvalidOptionException(name);
         }
 
-        return interactionOption.getUserValue().get();
+        return userValue.get();
     }
 
-    public SlashCommandInteractionOption getOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+    public SlashCommandInteractionOption getOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
+                                                   String name) {
         Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByName(name);
 
         if(interactionOption.isEmpty()) {
@@ -115,5 +163,9 @@ public abstract class Command {
         }
 
         return interactionOption.get();
+    }
+
+    public void respondWithError(CommandExecutionException commandExecutionException) {
+        ApplicationService.getInstance().respondWithError(slashCommandCreateEvent, commandExecutionException);
     }
 }

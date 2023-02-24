@@ -2,6 +2,10 @@ package me.taubsie.carrylogs.application.enums;
 
 import lombok.Getter;
 import me.taubsie.carrylogs.CarryRole;
+import org.javacord.api.entity.permission.Role;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public enum IdList {
     SERVER(693263712626278553L, 1023684107877761196L),
@@ -97,7 +101,7 @@ public enum IdList {
         }
     }
 
-    public IdList[] getSlayerCarryRoles() {
+    public static IdList[] getSlayerCarryRoles() {
         return new IdList[]{
                 EMAN_T3_ROLE,
                 EMAN_T4_ROLE,
@@ -107,7 +111,7 @@ public enum IdList {
         };
     }
 
-    public IdList[] getDungeonCarryRoles() {
+    public static IdList[] getDungeonCarryRoles() {
         return new IdList[]{
                 F4_ROLE,
                 F5_ROLE,
@@ -117,12 +121,12 @@ public enum IdList {
         };
     }
 
-    public IdList[] getKuudraCarryRoles() {
+    public static IdList[] getKuudraCarryRoles() {
         //TODO add missing roles
         return new IdList[]{};
     }
 
-    public IdList[] getCarryRoles() {
+    public static IdList[] getCarryRoles() {
         IdList[] result =
                 new IdList[getDungeonCarryRoles().length + getSlayerCarryRoles().length + getKuudraCarryRoles().length];
 
@@ -132,5 +136,18 @@ public enum IdList {
                 getDungeonCarryRoles().length + getSlayerCarryRoles().length, getKuudraCarryRoles().length);
 
         return result;
+    }
+
+    public static List<IdList> getCarryRoles(List<Role> roles, long serverId) {
+        List<IdList> userRoles = new ArrayList<>();
+
+        for(IdList role : getCarryRoles()) {
+            if(role.getCarryRole() != null
+                    && roles.stream().anyMatch(userRole -> userRole.getId() == role.getLocalId(serverId))) {
+                userRoles.add(role);
+            }
+        }
+
+        return userRoles;
     }
 }

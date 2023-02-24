@@ -3,12 +3,9 @@ package me.taubsie.carrylogs.application.listener;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.exceptions.*;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.service.ApplicationClassLoaderService;
-import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.listener.interaction.SlashCommandCreateListener;
 
-import java.awt.*;
 import java.util.*;
 
 /**
@@ -19,12 +16,9 @@ import java.util.*;
 public class SlashCommandListener implements SlashCommandCreateListener {
     @Override
     public void onSlashCommandCreate(SlashCommandCreateEvent slashCommandCreateEvent) {
-        Optional<Command> command = ApplicationClassLoaderService.getInstance().getCommand(
-                slashCommandCreateEvent.getSlashCommandInteraction().getCommandName(),
-                slashCommandCreateEvent.getSlashCommandInteraction().getServer().orElse(null)
-        );
-
         try {
+            Optional<Command> command = ApplicationService.getInstance().getCommand(slashCommandCreateEvent);
+
             if(command.isEmpty()) {
                 throw new UnknownCommandException();
             }
@@ -32,15 +26,7 @@ public class SlashCommandListener implements SlashCommandCreateListener {
             command.get().execute(slashCommandCreateEvent);
         }
         catch(CommandExecutionException commandExecutionException) {
-            slashCommandCreateEvent.getSlashCommandInteraction()
-                    .createImmediateResponder()
-                    .setFlags(MessageFlag.EPHEMERAL)
-                    .addEmbed(ApplicationService.getInstance()
-                            .getEmbed()
-                            .setTitle("Error")
-                            .setDescription(commandExecutionException.getMessage())
-                            .setColor(new Color(255, 0, 0 /*TODO color*/)))
-                    .respond();
+            ApplicationService.getInstance().respondWithError(slashCommandCreateEvent, commandExecutionException);
         }
     }
 }
