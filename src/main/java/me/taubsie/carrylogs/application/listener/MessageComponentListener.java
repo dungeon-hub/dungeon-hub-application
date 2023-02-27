@@ -3,6 +3,7 @@ package me.taubsie.carrylogs.application.listener;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import me.taubsie.carrylogs.application.enums.IdList;
+import me.taubsie.carrylogs.application.service.LeaderboardService;
 import me.taubsie.carrylogs.application.service.PermissionService;
 import me.taubsie.carrylogs.application.start.BotStarter;
 import me.taubsie.carrylogs.CarryInformation;
@@ -207,7 +208,7 @@ public class MessageComponentListener implements MessageComponentCreateListener
                     }
                 }
 
-                ApplicationService.getInstance().refreshLeaderboard();
+                LeaderboardService.getInstance().refreshLeaderboard();
 
                 ConnectionService.getInstance().removeFromApprovingQueue(messageId);
 
