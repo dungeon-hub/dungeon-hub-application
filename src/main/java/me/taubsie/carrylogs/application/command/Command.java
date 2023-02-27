@@ -24,7 +24,7 @@ public abstract class Command {
 
     protected abstract void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent);
 
-    public void execute(SlashCommandCreateEvent slashCommandCreateEvent) {
+    public final void execute(SlashCommandCreateEvent slashCommandCreateEvent) {
         this.slashCommandCreateEvent = slashCommandCreateEvent;
 
         if(!isEnabledInServer(slashCommandCreateEvent.getSlashCommandInteraction().getServer().map(DiscordEntity::getId).orElse(0L))) {
@@ -38,15 +38,15 @@ public abstract class Command {
         executeCommand(slashCommandCreateEvent);
     }
 
-    public EmbedBuilder getEmbed() {
+    public final EmbedBuilder getEmbed() {
         return ApplicationService.getInstance().getEmbed();
     }
 
-    public void respond(EmbedBuilder embedBuilder) {
+    public final void respond(EmbedBuilder embedBuilder) {
         slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().addEmbed(embedBuilder).respond();
     }
 
-    public void respondEphemeral(EmbedBuilder embedBuilder) {
+    public final void respondEphemeral(EmbedBuilder embedBuilder) {
         slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setFlags(MessageFlag.EPHEMERAL).addEmbed(embedBuilder).respond();
     }
 
@@ -70,35 +70,35 @@ public abstract class Command {
         }
     }
 
-    public boolean isEnabledInDms() {
+    public final boolean isEnabledInDms() {
         return getCommandParameters().map(CommandParameters::enabledInDms).orElse(false);
     }
 
-    public boolean isEnabledInServer(long serverId) {
+    public final boolean isEnabledInServer(long serverId) {
         return isGlobal() || Arrays.stream(getEnabledServers()).anyMatch(value -> value == serverId);
     }
 
-    public boolean isEnabledForUser(long userId) {
+    public final boolean isEnabledForUser(long userId) {
         return getEnabledUsers().length == 0 || Arrays.stream(getEnabledUsers()).anyMatch(value -> value == userId);
     }
 
-    public boolean isGlobal() {
+    public final boolean isGlobal() {
         return getEnabledServers().length == 0;
     }
 
-    public String getCommandName() {
+    public final String getCommandName() {
         return getCommandParameters().map(CommandParameters::name).orElse(null);
     }
 
-    public long[] getEnabledServers() {
+    public final long[] getEnabledServers() {
         return getCommandParameters().map(CommandParameters::enabledServers).orElse(new long[]{});
     }
 
-    public long[] getEnabledUsers() {
+    public final long[] getEnabledUsers() {
         return getCommandParameters().map(CommandParameters::enabledForUsers).orElse(new long[]{});
     }
 
-    public Server getServer() {
+    public final Server getServer() {
         Optional<Server> server = slashCommandCreateEvent.getSlashCommandInteraction().getServer();
 
         if(server.isEmpty()) {
@@ -108,15 +108,15 @@ public abstract class Command {
         return server.get();
     }
 
-    public User getUser() {
+    public final User getUser() {
         return slashCommandCreateEvent.getSlashCommandInteraction().getUser();
     }
 
-    public String getStringOption(String name) {
+    public final String getStringOption(String name) {
         return getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
     }
 
-    public String getStringOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+    public final String getStringOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         Optional<String> stringValue = getOption(slashCommandCreateEvent, name).getStringValue();
 
         if(stringValue.isEmpty()) {
@@ -126,11 +126,11 @@ public abstract class Command {
         return stringValue.get();
     }
 
-    public Long getLongOption(String name) {
+    public final Long getLongOption(String name) {
         return getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
     }
 
-    public Long getLongOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+    public final Long getLongOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         Optional<Long> longValue = getOption(slashCommandCreateEvent, name).getLongValue();
 
         if(longValue.isEmpty()) {
@@ -140,11 +140,11 @@ public abstract class Command {
         return longValue.get();
     }
 
-    public User getUserOption(String name) {
+    public final User getUserOption(String name) {
         return getUserOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
     }
 
-    public User getUserOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+    public final User getUserOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         Optional<User> userValue = getOption(slashCommandCreateEvent, name).getUserValue();
 
         if(userValue.isEmpty()) {
@@ -154,7 +154,7 @@ public abstract class Command {
         return userValue.get();
     }
 
-    public SlashCommandInteractionOption getOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
+    public final SlashCommandInteractionOption getOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
                                                    String name) {
         Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByName(name);
 
@@ -165,7 +165,7 @@ public abstract class Command {
         return interactionOption.get();
     }
 
-    public void respondWithError(CommandExecutionException commandExecutionException) {
+    public final void respondWithError(CommandExecutionException commandExecutionException) {
         ApplicationService.getInstance().respondWithError(slashCommandCreateEvent, commandExecutionException);
     }
 }
