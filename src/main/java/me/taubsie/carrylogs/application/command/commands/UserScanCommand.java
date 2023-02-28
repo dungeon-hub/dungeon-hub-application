@@ -2,6 +2,7 @@ package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ProfileModerationService;
@@ -19,17 +20,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @CommandParameters(name = "userscan",
-                   description = "Scans for users with a bad username.",
-                   enabledForPermissions = {PermissionType.BAN_MEMBERS})
-public class UserScanCommand extends Command
-{
+        description = "Scans for users with a bad username.",
+        enabledForPermissions = {PermissionType.BAN_MEMBERS})
+public class UserScanCommand extends Command {
     @Override
-    protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent)
-    {
+    protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         Server server = getServer();
 
-        if (!server.hasPermission(slashCommandCreateEvent.getSlashCommandInteraction().getUser(), PermissionType.ADMINISTRATOR))
-        {
+        if(!server.hasPermission(slashCommandCreateEvent.getSlashCommandInteraction().getUser(),
+                PermissionType.ADMINISTRATOR)) {
             throw new MissingPermissionException();
         }
 
@@ -38,29 +37,21 @@ public class UserScanCommand extends Command
         Map<User, String> result = new HashMap<>();
         Map<User, String> excluded = new HashMap<>();
 
-        for (User user : server.getMembers())
-        {
-            if (!user.isBot())
-            {
+        for(User user : server.getMembers()) {
+            if(!user.isBot()) {
                 String checkResult = ProfileModerationService.getInstance().checkUserName(user.getName());
-                if (checkResult != null)
-                {
-                    if (ProfileModerationService.getInstance().isExcluded(user, server))
-                    {
+                if(checkResult != null) {
+                    if(ProfileModerationService.getInstance().isExcluded(user, server)) {
                         excluded.put(user, checkResult);
-                    }
-                    else
-                    {
+                    } else {
                         result.put(user, checkResult);
                     }
                 }
             }
         }
 
-        slashCommandCreateEvent
-                .getSlashCommandInteraction()
-                .createImmediateResponder()
-                .addEmbed(ApplicationService.getInstance().getEmbed().setColor(new Color(255, 0, 0 /*TODO color*/)).setDescription((ban ? "Banned" : "Flagged") + ":\n" + result.entrySet()
+        slashCommandCreateEvent.getSlashCommandInteraction().respondLater()
+                .thenAccept(updater -> updater.addEmbed(ApplicationService.getInstance().getEmbed().setColor(EmbedColor.NEGATIVE.getColor()).setDescription((ban ? "Banned" : "Flagged") + ":\n" + result.entrySet()
                         .stream()
                         .map(userStringEntry ->
                                 userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue())
@@ -68,21 +59,17 @@ public class UserScanCommand extends Command
                         excluded.entrySet()
                                 .stream()
                                 .map(userStringEntry ->
-                                        userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue()).collect(Collectors.joining("\n"))))
-                .respond();
+                                        userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue()).collect(Collectors.joining("\n")))));
 
-        if (ban)
-        {
-            for (Map.Entry<User, String> entries : result.entrySet())
-            {
+        if(ban) {
+            for(Map.Entry<User, String> entries : result.entrySet()) {
                 ProfileModerationService.getInstance().handleUserBan(server, entries.getKey(), entries.getValue());
             }
         }
     }
 
     @Override
-    public List<SlashCommandOption> getSlashCommandOptions()
-    {
+    public List<SlashCommandOption> getSlashCommandOptions() {
         SlashCommandOption banCommand = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("ban")

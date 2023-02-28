@@ -3,6 +3,7 @@ package me.taubsie.carrylogs.application.service;
 import me.taubsie.carrylogs.OnStart;
 import me.taubsie.carrylogs.ProgramOrigin;
 import me.taubsie.carrylogs.StartupListener;
+import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.start.BotStarter;
 import org.apache.logging.log4j.LogManager;
@@ -12,7 +13,6 @@ import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.user.User;
 
-import java.awt.*;
 import java.sql.Time;
 import java.time.Instant;
 import java.util.Map;
@@ -57,7 +57,7 @@ public class LeaderboardService implements StartupListener {
         EmbedBuilder embed = ApplicationService.getInstance()
                 .getEmbed()
                 .setTitle(leaderboardTitle)
-                .setColor(new Color(255, 255, 255));
+                .setColor(EmbedColor.DEFAULT.getColor());
 
         if(score.isEmpty()) {
             embed.setDescription("No score has been gained yet!\n" +

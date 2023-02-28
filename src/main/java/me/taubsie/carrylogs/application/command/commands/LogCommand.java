@@ -3,10 +3,15 @@ package me.taubsie.carrylogs.application.command.commands;
 import me.taubsie.carrylogs.CarryInformation;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.start.BotStarter;
+import org.javacord.api.entity.channel.Categorizable;
+import org.javacord.api.entity.channel.Channel;
+import org.javacord.api.entity.channel.ChannelCategory;
+import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.ActionRow;
@@ -18,26 +23,27 @@ import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
 
-import java.awt.*;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @CommandParameters(name = "log",
-                   description = "Use this to log your carries.",
-                   enabledServers = {693263712626278553L, 1023684107877761196L})
-public class LogCommand extends Command
-{
+        description = "Use this to log your carries.",
+        enabledServers = {693263712626278553L, 1023684107877761196L})
+public class LogCommand extends Command {
     @Override
-    protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent)
-    {
+    protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         Server server = getServer();
 
-        if (slashCommandCreateEvent.getSlashCommandInteraction().getChannel().isEmpty()
-                || slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().asCategorizable().isEmpty()
-                || slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().asCategorizable().get().getCategory().isEmpty()
-                || !IdList.isCarryCategory(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().asCategorizable().get().getCategory().get().getId(), server.getId()))
-        {
+        Optional<TextChannel> channel = slashCommandCreateEvent.getSlashCommandInteraction().getChannel();
+
+        Optional<ChannelCategory> category = channel.flatMap(Channel::asCategorizable)
+                .flatMap(Categorizable::getCategory);
+
+        if(channel.isEmpty()
+                || category.isEmpty()
+                || !IdList.isCarryCategory(category.get().getId(), server.getId())) {
             slashCommandCreateEvent.getSlashCommandInteraction()
                     .createImmediateResponder()
                     .setFlags(MessageFlag.EPHEMERAL)
@@ -47,8 +53,7 @@ public class LogCommand extends Command
             return;
         }
 
-        if (BotStarter.getInstance().getCarryInformation().containsKey(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().getId()))
-        {
+        if(BotStarter.getInstance().getCarryInformation().containsKey(channel.get().getId())) {
             slashCommandCreateEvent.getSlashCommandInteraction()
                     .createImmediateResponder()
                     .setFlags(MessageFlag.EPHEMERAL)
@@ -64,16 +69,13 @@ public class LogCommand extends Command
         String carryType =
                 getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-type");
 
-        if (!ApplicationService.getInstance().isCarryType(carryType))
-        {
-            throw new InvalidOptionException("carry-type", carryType + " is no valid carry-type.");
+        if(!ApplicationService.getInstance().isCarryType(carryType)) {
+            throw new InvalidOptionException("carry-type", carryType + " is no valid type.");
         }
 
-        Message firstMessage =
-                slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
+        Message firstMessage = channel.get().getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
 
-        if (firstMessage == null || firstMessage.getMentionedUsers().isEmpty())
-        {
+        if(firstMessage == null || firstMessage.getMentionedUsers().isEmpty()) {
             slashCommandCreateEvent.getSlashCommandInteraction()
                     .createImmediateResponder()
                     .setFlags(MessageFlag.EPHEMERAL)
@@ -92,29 +94,31 @@ public class LogCommand extends Command
                 .addEmbed(ApplicationService.getInstance()
                         .getEmbed(time)
                         .setTitle("Are you sure that you want to log this?")
-                        .setColor(new Color(/* TODO green */ 165, 23, 112))
+                        .setColor(EmbedColor.INFORMATION.getColor())
                         .addInlineField("Number of carries", String.valueOf(amountOfCarries))
                         .addInlineField("Type of carry", carryType)
                         .addInlineField("Player", carried.getMentionTag())
                         .addInlineField("Carrier", carrier.getMentionTag()))
-                .addComponents(ActionRow.of(org.javacord.api.entity.message.component.Button.success("send_log", "Confirm"), Button.danger("discard", "Cancel")))
+                .addComponents(ActionRow.of(org.javacord.api.entity.message.component.Button.success("send_log",
+                        "Confirm"), Button.danger("discard", "Cancel")))
                 .respond().join();
+
+        IdList carryCategory = IdList.getCarryCategory(category.get().getId(), server.getId());
 
         CarryInformation carryInformation = new CarryInformation(
                 time,
                 amountOfCarries,
-                IdList.getCarryCategory(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().asCategorizable().get().getCategory().get().getId(), slashCommandCreateEvent.getSlashCommandInteraction().getServer().get().getId()).getCarryType().name(),
+                carryCategory != null ? carryCategory.getCarryType().name() : null,
                 carryType,
                 carried.getId(),
                 carrier.getId()
         );
 
-        BotStarter.getInstance().getCarryInformation().put(slashCommandCreateEvent.getSlashCommandInteraction().getChannel().get().getId(), carryInformation);
+        BotStarter.getInstance().getCarryInformation().put(channel.get().getId(), carryInformation);
     }
 
     @Override
-    public List<SlashCommandOption> getSlashCommandOptions()
-    {
+    public List<SlashCommandOption> getSlashCommandOptions() {
         SlashCommandOption carryAmountOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.LONG)
                 .setName("amount")

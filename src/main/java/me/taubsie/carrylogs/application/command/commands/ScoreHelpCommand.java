@@ -2,11 +2,10 @@ package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
-
-import java.awt.*;
 
 @CommandParameters(name = "score-help",
         description = "Show an explanation about how score works.",
@@ -23,7 +22,7 @@ public class ScoreHelpCommand extends Command {
                         .setTitle("Carry Score")
                         .setDescription("You gain score based on the carries that you do.\n" +
                                 "Different types of carries give you certain score:")
-                        .setColor(new Color(165, 23, 112 /*TODO color*/))
+                        .setColor(EmbedColor.INFORMATION.getColor())
                         .addField(
                                 "Dungeons",
                                 "Completion - 2\n" +

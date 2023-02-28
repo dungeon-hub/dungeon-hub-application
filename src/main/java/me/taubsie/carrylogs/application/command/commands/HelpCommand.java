@@ -2,9 +2,8 @@ package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.enums.EmbedColor;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
-
-import java.awt.*;
 
 @CommandParameters(name = "help",
         enabledInDms = true,
@@ -23,6 +22,6 @@ public class HelpCommand extends Command {
                          
                          To see the **score** you have gained, you can use `/score`
                          To learn more about **score**, use `/score-help`""")
-                .setColor(/*TODO*/ new Color(255, 255, 255)));
+                .setColor(EmbedColor.INFORMATION.getColor()));
     }
 }

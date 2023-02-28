@@ -2,13 +2,13 @@ package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.*;
 
-import java.awt.*;
 import java.util.List;
 
 @CommandParameters(name = "refresh",
@@ -26,14 +26,14 @@ public class RefreshCommand extends Command {
             case "leaderboard" -> {
                 if(!LeaderboardService.getInstance().refreshLeaderboard()) {
                     respondEphemeral(getEmbed()
-                            .setColor(new Color(255, 0, 0 /*TODO color*/))
+                            .setColor(EmbedColor.NEGATIVE.getColor())
                             .setDescription("Leaderboard refresh is on cooldown.\n" +
                                     "Please try again <t:" + LeaderboardService.getInstance().getNextPossibleRefresh() + ":R>."));
                     return;
                 }
 
                 respond(getEmbed()
-                        .setColor(new Color(255, 255, 255 /*TODO color*/))
+                        .setColor(EmbedColor.POSITIVE.getColor())
                         .setDescription("Leaderboard refresh started."));
             }
             //so that intellij doesn't make this into an if statement, can remove this

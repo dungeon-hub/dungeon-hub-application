@@ -21,8 +21,7 @@ public class PermissionService {
     {
         Set<PermissionType> allowedPermissions = server.getAllowedPermissions(user);
 
-        return allowedPermissions.contains(PermissionType.ADMINISTRATOR)
-                || allowedPermissions.contains(PermissionType.MANAGE_SERVER)
+        return allowedPermissions.contains(PermissionType.MANAGE_SERVER)
                 || allowedPermissions.contains(PermissionType.MANAGE_MESSAGES);
     }
 

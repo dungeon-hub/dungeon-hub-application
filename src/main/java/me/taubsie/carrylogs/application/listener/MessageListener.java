@@ -1,5 +1,6 @@
 package me.taubsie.carrylogs.application.listener;
 
+import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import me.taubsie.carrylogs.application.enums.IdList;
@@ -44,17 +45,20 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
         logTicket(messageEditEvent);
     }
 
+    //TODO reduce complexity
     private void logTicket(CertainMessageEvent messageEvent) {
+        Server server = messageEvent.getServer().orElse(null);
+
         if(!messageEvent.isServerMessage()
-                || messageEvent.getServer().isEmpty()
-                || !(messageEvent.getServer().get().getId() == IdList.SERVER.getId()
-                || messageEvent.getServer().get().getId() == IdList.SERVER.getTestId())) {
+                || server == null
+                || !(server.getId() == IdList.SERVER.getId()
+                || server.getId() == IdList.SERVER.getTestId())) {
             return;
         }
 
-        if((messageEvent.getChannel().getId() == IdList.TRANSCRIPTS_CHANNEL.getLocalId(messageEvent.getServer().get().getId())
-                || messageEvent.getChannel().getId() == IdList.TRANSCRIPTS_CHANNEL.getLocalId(messageEvent.getServer().get().getId()))
-                && messageEvent.getMessageContent().startsWith("carrylog;")) {
+        if(messageEvent.getChannel().getId() == IdList.TRANSCRIPTS_CHANNEL.getLocalId(server.getId())
+                && (messageEvent.getMessageContent().startsWith("carrylog;")
+                || messageEvent.getMessageContent().startsWith("carrylogs;"))) {
 
             String[] splitContent = messageEvent.getMessageContent().split(";");
             if(splitContent.length != 3) {
@@ -68,9 +72,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 return;
             }
 
-            long approvingChannelId = IdList.APPROVING_CHANNEL.getLocalId(messageEvent.getServer().get().getId());
-
-            //TODO fix
+            long approvingChannelId = IdList.APPROVING_CHANNEL.getLocalId(server.getId());
 
             for(CarryInformation carryInformation : ConnectionService.getInstance().getFromLogQueue(channelId)) {
                 carryInformation.setAttachmentLink(attachmentLink);
@@ -83,7 +85,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                             .sendMessage(ApplicationService.getInstance()
                                             .getEmbed(carryInformation.getTime())
                                             .setTitle("Accept carry-log?")
-                                            .setColor(new Color(/* TODO green */ 165, 23, 112))
+                                            .setColor(EmbedColor.DEFAULT.getColor())
                                             .addInlineField("Number of carries",
                                                     String.valueOf(carryInformation.getAmountOfCarries()))
                                             .addInlineField("Type of carry", carryInformation.getCarryDifficulty() +
@@ -118,7 +120,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                             ApplicationService.getInstance()
                                                     .getEmbed(carryInformation.getTime())
                                                     .setTitle("Information")
-                                                    .setColor(new Color(/* TODO green */ 165, 23, 112))
+                                                    .setColor(EmbedColor.DEFAULT.getColor())
                                                     .addInlineField("Number of carries",
                                                             String.valueOf(carryInformation.getAmountOfCarries()))
                                                     .addInlineField("Type of carry",
@@ -134,38 +136,34 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                         }
                     }
 
-                    Optional<Server> server = messageEvent.getServer();
+                    Optional<ServerTextChannel> logChannel;
 
-                    if(server.isPresent()) {
-                        Optional<ServerTextChannel> logChannel;
+                    if(carryInformation.isDungeonCarry()) {
+                        logChannel =
+                                server.getTextChannelById(IdList.DUNGEON_LOGS_CHANNEL.getLocalId(server.getId()));
+                    } else {
+                        logChannel =
+                                server.getTextChannelById(IdList.SLAYER_LOGS_CHANNEL.getLocalId(server.getId()));
+                    }
 
-                        if(carryInformation.isDungeonCarry()) {
-                            logChannel =
-                                    server.get().getTextChannelById(IdList.DUNGEON_LOGS_CHANNEL.getLocalId(server.get().getId()));
-                        } else {
-                            logChannel =
-                                    server.get().getTextChannelById(IdList.SLAYER_LOGS_CHANNEL.getLocalId(server.get().getId()));
-                        }
+                    if(logChannel.isPresent()) {
+                        logger.info("Carry logged: {}", carryInformation);
 
-                        if(logChannel.isPresent()) {
-                            logger.info("Carry logged:" + carryInformation);
-
-                            logChannel.get().sendMessage(
-                                    ApplicationService.getInstance()
-                                            .getEmbed(carryInformation.getTime())
-                                            .setTitle("Carry accepted.")
-                                            .setColor(new Color(0, 255, 0 /*TODO*/))
-                                            .addInlineField("Number of carries",
-                                                    String.valueOf(carryInformation.getAmountOfCarries()))
-                                            .addInlineField("Type of carry", carryInformation.getCarryDifficulty() +
-                                                    " - " + carryInformation.getCarryType())
-                                            .addInlineField("Player",
-                                                    messageEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
-                                            .addInlineField("Carrier",
-                                                    messageEvent.getApi().getUserById(carryInformation.getCarrier()).join().getMentionTag())
-                                            .addInlineField("Transcript-Link", "[Click to open](https://tickettool" +
-                                                    ".xyz/direct?url=" + carryInformation.getAttachmentLink() + ")"));
-                        }
+                        logChannel.get().sendMessage(
+                                ApplicationService.getInstance()
+                                        .getEmbed(carryInformation.getTime())
+                                        .setTitle("Carry accepted.")
+                                        .setColor(EmbedColor.POSITIVE.getColor())
+                                        .addInlineField("Number of carries",
+                                                String.valueOf(carryInformation.getAmountOfCarries()))
+                                        .addInlineField("Type of carry", carryInformation.getCarryDifficulty() +
+                                                " - " + carryInformation.getCarryType())
+                                        .addInlineField("Player",
+                                                messageEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
+                                        .addInlineField("Carrier",
+                                                messageEvent.getApi().getUserById(carryInformation.getCarrier()).join().getMentionTag())
+                                        .addInlineField("Transcript-Link", "[Click to open](https://tickettool" +
+                                                ".xyz/direct?url=" + carryInformation.getAttachmentLink() + ")"));
                     }
                 }
             }
