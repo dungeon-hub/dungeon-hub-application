@@ -1,6 +1,7 @@
 package me.taubsie.carrylogs.application.service;
 
 import me.taubsie.carrylogs.application.enums.IdList;
+import me.taubsie.carrylogs.application.exceptions.FailedToLoadException;
 import net.codebox.homoglyph.Homoglyph;
 import net.codebox.homoglyph.HomoglyphBuilder;
 import org.javacord.api.entity.channel.ServerTextChannel;
@@ -42,9 +43,9 @@ public class ProfileModerationService
         {
             this.homoglyph = HomoglyphBuilder.build();
         }
-        catch (IOException e)
+        catch (IOException ioException)
         {
-            throw new RuntimeException(e);
+            throw new FailedToLoadException(ioException);
         }
     }
 
