@@ -10,6 +10,7 @@ import me.taubsie.carrylogs.application.service.ConnectionService;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
+import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
 import java.awt.*;
 import java.util.List;
@@ -21,27 +22,31 @@ import java.util.List;
 public class RoleSyncCommand extends Command {
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
-        if (!slashCommandCreateEvent.getSlashCommandInteraction().getUser().isBotOwnerOrTeamMember()) {
+        if(!slashCommandCreateEvent.getSlashCommandInteraction().getUser().isBotOwnerOrTeamMember()) {
             throw new MissingPermissionException();
         }
 
+        InteractionOriginalResponseUpdater updater = slashCommandCreateEvent.getSlashCommandInteraction().respondLater().join();
+
         int count = 0;
-        for (User user : getServer().getMembers()) {
-            if (user.isBot()) {
+        for(User user : getServer().getMembers()) {
+            if(user.isBot()) {
                 continue;
             }
 
             List<CarryRole> roleList =
                     IdList.getCarryRoles(user.getRoles(getServer()), getServer().getId()).stream().map(IdList::getCarryRole).toList();
 
-            if (!roleList.isEmpty()) {
+            if(!roleList.isEmpty()) {
                 count++;
                 ConnectionService.getInstance().addRoles(user.getId(), roleList);
             }
         }
-        respondEphemeral(ApplicationService.getInstance().getEmbed()
-                .setColor(new Color(255, 255, 255 /*TODO change color*/))
-                .setTitle("Role-Sync")
-                .setDescription("Changed the internal roles of " + count + " users."));
+
+        updater.addEmbed(ApplicationService.getInstance().getEmbed()
+                        .setColor(new Color(255, 255, 255 /*TODO change color*/))
+                        .setTitle("Role-Sync")
+                        .setDescription("Changed the internal roles of " + count + " users."))
+                .update();
     }
 }
