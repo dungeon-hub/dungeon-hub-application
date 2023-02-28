@@ -89,4 +89,9 @@ public class BotStarter extends ProgramOrigin implements StartupListener {
     public void error(String message, Throwable throwable) {
         logger.error(message, throwable);
     }
+
+    @Override
+    public void debug(String message) {
+        logger.debug(message);
+    }
 }
