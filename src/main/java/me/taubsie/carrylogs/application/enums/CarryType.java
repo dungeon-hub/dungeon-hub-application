@@ -9,8 +9,7 @@ import java.util.List;
 public enum CarryType
 {
     F4(Arrays.asList(SlashCommandOptionChoice.create("Completion", "Completion"),
-            SlashCommandOptionChoice.create("S", "S"),
-            SlashCommandOptionChoice.create("S+", "S+"))),
+            SlashCommandOptionChoice.create("S", "S"))),
     F5(Arrays.asList(SlashCommandOptionChoice.create("Completion", "Completion"),
             SlashCommandOptionChoice.create("S", "S"),
             SlashCommandOptionChoice.create("S+", "S+"))),

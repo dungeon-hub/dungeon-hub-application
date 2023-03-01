@@ -1,8 +1,10 @@
 package me.taubsie.carrylogs.application.listener;
 
+import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.enums.IdList;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.AutocompleteCreateEvent;
+import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.listener.interaction.AutocompleteCreateListener;
 
 import java.util.ArrayList;
@@ -22,25 +24,42 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
             Server server = autocompleteCreateEvent.getAutocompleteInteraction().getServer().orElseThrow();
 
             if(server.getId() != IdList.SERVER.getLocalId(server.getId())) {
-                autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(new ArrayList<>()).join();
-                return;
+                throw new NoSuchElementException();
             }
 
-            Optional<IdList> idList =
-                    Arrays.stream(IdList.values())
-                            .filter(id -> id.getCarryType() != null
-                                    && (id.getLocalId(server.getId()) == autocompleteCreateEvent.getAutocompleteInteraction().getChannel().orElseThrow().asCategorizable().orElseThrow().getCategory().orElseThrow().getId()))
-                            .findFirst();
+            CarryType carryType = null;
 
-            if(idList.isEmpty()) {
-                autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(new ArrayList<>()).join();
-                return;
+            if(autocompleteCreateEvent.getAutocompleteInteraction().getCommandName().equalsIgnoreCase("calc-price")) {
+                Optional<SlashCommandInteractionOption> typeOption =
+                        autocompleteCreateEvent.getAutocompleteInteraction().getOptionByName("type");
+
+                if(typeOption.isPresent()) {
+                    carryType = getCarryTypeFromOption(typeOption.get());
+                }
             }
 
-            autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(idList.get().getCarryType().getChoiceList()).join();
+            if(carryType == null) {
+                carryType = Arrays.stream(IdList.values())
+                        .filter(id -> id.getCarryType() != null
+                                && (id.getLocalId(server.getId()) == autocompleteCreateEvent.getAutocompleteInteraction().getChannel().orElseThrow().asCategorizable().orElseThrow().getCategory().orElseThrow().getId()))
+                        .findFirst()
+                        .orElseThrow()
+                        .getCarryType();
+            }
+
+            autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(carryType.getChoiceList()).join();
         }
         catch(NoSuchElementException noSuchElementException) {
             autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(new ArrayList<>()).join();
+        }
+    }
+
+    private CarryType getCarryTypeFromOption(SlashCommandInteractionOption typeOption) {
+        try {
+            return CarryType.valueOf(typeOption.getStringValue().orElse(""));
+        }
+        catch(IllegalArgumentException illegalArgumentException) {
+            return null;
         }
     }
 }

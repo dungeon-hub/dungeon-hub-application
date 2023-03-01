@@ -1,6 +1,8 @@
 package me.taubsie.carrylogs.application.service;
 
+import me.taubsie.carrylogs.CarryInformation;
 import me.taubsie.carrylogs.application.command.Command;
+import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.carrylogs.config.ConfigProperty;
 import org.javacord.api.DiscordApiBuilder;
@@ -34,8 +36,41 @@ public class ApplicationService {
                 .setFooter("discord.gg/dungeons • made by Taubsie#0911");
     }
 
-    public boolean isCarryType(String carryType) {
+    public boolean isCarryTier(String carryTier, CarryType carryType) {
+        if(!isCarryTier(carryTier)) {
+            return false;
+        }
+
         return switch(carryType) {
+            case F4 -> switch(carryTier) {
+                case "Completion", "S" -> true;
+                default -> false;
+            };
+            case F5, F6, F7 -> switch(carryTier) {
+                case "Completion", "S", "S+" -> true;
+                default -> false;
+            };
+            case EMAN -> switch(carryTier) {
+                case "Tier 3", "Tier 4" -> true;
+                default -> false;
+            };
+            case BLAZE -> switch(carryTier) {
+                case "Tier 2", "Tier 3", "Tier 4" -> true;
+                default -> false;
+            };
+            case KUUDRA -> switch(carryTier) {
+                case "Basic", "Hot", "Burning", "Fiery", "Infernal" -> true;
+                default -> false;
+            };
+            case MASTER_MODE -> switch(carryTier) {
+                case "Floor 1", "Floor 2", "Floor 3", "Floor 4", "Floor 5", "Floor 6", "Floor 7" -> true;
+                default -> false;
+            };
+        };
+    }
+
+    public boolean isCarryTier(String carryTier) {
+        return switch(carryTier) {
             case "Completion",
                     "S",
                     "S+",

@@ -2,6 +2,7 @@ package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
@@ -20,7 +21,6 @@ import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
 
-import java.awt.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -78,7 +78,7 @@ public class ManageScoreCommand extends Command
                 .addEmbed(ApplicationService
                         .getInstance()
                         .getEmbed()
-                        .setColor(new Color(0, 255, 0 /*TODO*/))
+                        .setColor(EmbedColor.INFORMATION.getColor())
                         .setTitle("Score-Management")
                         .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + ", the user " + user.getMentionTag() + " now has " + updatedScore + " " + scoreType + "-score.\nYou " + (removed ? "removed" : "added") + " " + amount + " of that score."))
                 .respond();
@@ -90,7 +90,7 @@ public class ManageScoreCommand extends Command
                 serverTextChannel.sendMessage(ApplicationService
                         .getInstance()
                         .getEmbed()
-                        .setColor(new Color(0, 255, 0 /*TODO*/))
+                        .setColor(EmbedColor.INFORMATION.getColor())
                         .setTitle("Score-Management")
                         .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + " edited the " + scoreType + "-score of " + user.getMentionTag() + ".\nThey " + (removed ? "removed" : "added") + " " + amount + " score, the user now has " + updatedScore + " score.")));
 
