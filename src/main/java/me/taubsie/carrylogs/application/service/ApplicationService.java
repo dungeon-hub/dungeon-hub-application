@@ -1,6 +1,5 @@
 package me.taubsie.carrylogs.application.service;
 
-import me.taubsie.carrylogs.CarryInformation;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;

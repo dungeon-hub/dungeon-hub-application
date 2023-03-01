@@ -40,6 +40,11 @@ public class LeaderboardService implements StartupListener {
     }
 
     @Override
+    public void preStart(ProgramOrigin programOrigin) {
+
+    }
+
+    @Override
     public void onStart(ProgramOrigin programOrigin) {
         this.lastRefresh = Instant.now().minusSeconds(REFRESH_COOLDOWN + 10L);
 

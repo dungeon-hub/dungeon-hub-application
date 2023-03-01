@@ -41,6 +41,11 @@ public class BotStarter extends ProgramOrigin implements StartupListener {
     }
 
     @Override
+    public void preStart(ProgramOrigin programOrigin) {
+
+    }
+
+    @Override
     public void onStart(ProgramOrigin programOrigin) {
         bot = ApplicationService.getInstance().getApiBuilder().login().join();
 
