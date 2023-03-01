@@ -54,6 +54,10 @@ public abstract class Command {
         return Collections.emptyList();
     }
 
+    public long[] getEnabledServers() {
+        return new long[]{};
+    }
+
     private Optional<CommandParameters> getCommandParameters() {
         return ApplicationClassLoaderService.getInstance().getCommandParameters(getClass());
     }
@@ -88,10 +92,6 @@ public abstract class Command {
 
     public final String getCommandName() {
         return getCommandParameters().map(CommandParameters::name).orElse(null);
-    }
-
-    public final long[] getEnabledServers() {
-        return getCommandParameters().map(CommandParameters::enabledServers).orElse(new long[]{});
     }
 
     public final long[] getEnabledUsers() {

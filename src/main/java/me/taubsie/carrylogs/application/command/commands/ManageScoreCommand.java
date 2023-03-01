@@ -27,10 +27,14 @@ import java.util.Optional;
 
 @CommandParameters(name = "manage-score",
                    description = "Use this to manage the score of carriers.",
-                   enabledForPermissions = {PermissionType.MANAGE_MESSAGES},
-                   enabledServers = {693263712626278553L, 1023684107877761196L})
+                   enabledForPermissions = {PermissionType.MANAGE_MESSAGES})
 public class ManageScoreCommand extends Command
 {
+    @Override
+    public long[] getEnabledServers() {
+        return new long[]{693263712626278553L, 1023684107877761196L};
+    }
+
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent)
     {

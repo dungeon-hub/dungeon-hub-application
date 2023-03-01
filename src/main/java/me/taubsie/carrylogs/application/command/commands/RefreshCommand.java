@@ -12,11 +12,15 @@ import org.javacord.api.interaction.*;
 import java.util.List;
 
 @CommandParameters(name = "refresh",
-        enabledServers = {693263712626278553L, 1023684107877761196L},
         description = "Refreshes some data from the bot.",
         enabledForPermissions = {PermissionType.MANAGE_MESSAGES})
 public class RefreshCommand extends Command {
     private static final List<String> choices = List.of("leaderboard");
+
+    @Override
+    public long[] getEnabledServers() {
+        return new long[]{693263712626278553L, 1023684107877761196L};
+    }
 
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {

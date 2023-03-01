@@ -29,9 +29,13 @@ import java.util.List;
 import java.util.Optional;
 
 @CommandParameters(name = "log",
-        description = "Use this to log your carries.",
-        enabledServers = {693263712626278553L, 1023684107877761196L})
+        description = "Use this to log your carries.")
 public class LogCommand extends Command {
+    @Override
+    public long[] getEnabledServers() {
+        return new long[]{693263712626278553L, 1023684107877761196L};
+    }
+
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         Server server = getServer();
@@ -66,11 +70,11 @@ public class LogCommand extends Command {
         Long amountOfCarries =
                 getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), "amount");
 
-        String carryType =
-                getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-type");
+        String carryTier =
+                getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-tier");
 
-        if(!ApplicationService.getInstance().isCarryType(carryType)) {
-            throw new InvalidOptionException("carry-type", carryType + " is no valid type.");
+        if(!ApplicationService.getInstance().isCarryTier(carryTier)) {
+            throw new InvalidOptionException("carry-tier", carryTier + " is no valid type.");
         }
 
         Message firstMessage = channel.get().getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
@@ -96,7 +100,7 @@ public class LogCommand extends Command {
                         .setTitle("Are you sure that you want to log this?")
                         .setColor(EmbedColor.INFORMATION.getColor())
                         .addInlineField("Number of carries", String.valueOf(amountOfCarries))
-                        .addInlineField("Type of carry", carryType)
+                        .addInlineField("Type of carry", carryTier)
                         .addInlineField("Player", carried.getMentionTag())
                         .addInlineField("Carrier", carrier.getMentionTag()))
                 .addComponents(ActionRow.of(org.javacord.api.entity.message.component.Button.success("send_log",
@@ -109,7 +113,7 @@ public class LogCommand extends Command {
                 time,
                 amountOfCarries,
                 carryCategory != null ? carryCategory.getCarryType().name() : null,
-                carryType,
+                carryTier,
                 carried.getId(),
                 carrier.getId()
         );
@@ -130,7 +134,7 @@ public class LogCommand extends Command {
 
         SlashCommandOption carryTypeOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
-                .setName("carry-type")
+                .setName("carry-tier")
                 .setDescription("The type of the carry.")
                 .setRequired(true)
                 .setAutocompletable(true)

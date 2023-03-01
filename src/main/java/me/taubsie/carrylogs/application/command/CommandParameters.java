@@ -17,8 +17,6 @@ public @interface CommandParameters
 
     boolean enabledInDms() default false;
 
-    long[] enabledServers() default {};
-
     PermissionType[] enabledForPermissions() default {};
 
     long[] enabledForUsers() default {};
