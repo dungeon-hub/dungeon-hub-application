@@ -71,8 +71,8 @@ public class CalcPriceCommand extends Command {
                 .getEmbed()
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setTitle("Carry-Price")
-                .setDescription("The carry-price for `" + amount + " " + carryTier + "` carries is:\n\n" +
-                        price + " coins."));
+                .setDescription("The price for " + amount + " `" + carryTier + "` carries is\n" +
+                        ApplicationService.getInstance().makeNumberReadable(price) + " coins."));
 
         throw new UnknownCommandException();
     }
@@ -86,6 +86,15 @@ public class CalcPriceCommand extends Command {
                 .setLongMaxValue(200)
                 .setLongMinValue(1L)
                 .setRequired(true)
+                .build();
+
+        //Comp, S, S+, Tier 2-4, Kuudra Tiers
+        SlashCommandOption tierOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName("tier")
+                .setDescription("The tier of carry you want.")
+                .setRequired(true)
+                .setAutocompletable(true)
                 .build();
 
         //F4, F5, F6, F7, MM, Eman, Blaze, Kuudra
@@ -104,15 +113,6 @@ public class CalcPriceCommand extends Command {
                                         .build()
                         ));
 
-        //Comp, S, S+, Tier 2-4, Kuudra Tiers
-        SlashCommandOption tierOption = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.STRING)
-                .setName("tier")
-                .setDescription("The tier of carry you want.")
-                .setRequired(true)
-                .setAutocompletable(true)
-                .build();
-
-        return Arrays.asList(amountOption, typeOption.build(), tierOption);
+        return Arrays.asList(amountOption, tierOption, typeOption.build());
     }
 }

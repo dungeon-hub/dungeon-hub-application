@@ -8,6 +8,7 @@ import me.taubsie.carrylogs.application.service.LeaderboardService;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.*;
+import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
 import java.util.List;
 
@@ -28,17 +29,24 @@ public class RefreshCommand extends Command {
 
         switch(option.toLowerCase()) {
             case "leaderboard" -> {
+                InteractionOriginalResponseUpdater updater = slashCommandCreateEvent
+                        .getSlashCommandInteraction()
+                        .respondLater(true)
+                        .join();
+
                 if(!LeaderboardService.getInstance().refreshLeaderboard()) {
-                    respondEphemeral(getEmbed()
-                            .setColor(EmbedColor.NEGATIVE.getColor())
-                            .setDescription("Leaderboard refresh is on cooldown.\n" +
-                                    "Please try again <t:" + LeaderboardService.getInstance().getNextPossibleRefresh() + ":R>."));
+                    updater.addEmbed(getEmbed()
+                                    .setColor(EmbedColor.NEGATIVE.getColor())
+                                    .setDescription("Leaderboard refresh is on cooldown.\n" +
+                                            "Please try again <t:" + LeaderboardService.getInstance().getNextPossibleRefresh() + ":R>."))
+                            .update();
                     return;
                 }
 
-                respond(getEmbed()
-                        .setColor(EmbedColor.POSITIVE.getColor())
-                        .setDescription("Leaderboard refresh started."));
+                updater.addEmbed(getEmbed()
+                                .setColor(EmbedColor.POSITIVE.getColor())
+                                .setDescription("Leaderboard refresh started."))
+                        .update();
             }
             //so that intellij doesn't make this into an if statement, can remove this
             case "" -> {
@@ -52,12 +60,14 @@ public class RefreshCommand extends Command {
 
     @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
-        return choices.stream()
-                .map(s -> new SlashCommandOptionBuilder()
-                        .setType(SlashCommandOptionType.SUB_COMMAND)
-                        .setName(s)
-                        .setDescription("Refresh the " + s + ".")
-                        .build())
-                .toList();
+        SlashCommandOptionBuilder typeOptionBuilder = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName("type")
+                .setDescription("Select what to refresh.")
+                .setRequired(true);
+
+        choices.forEach(s -> typeOptionBuilder.addChoice(s, s));
+
+        return List.of(typeOptionBuilder.build());
     }
 }
