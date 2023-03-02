@@ -71,6 +71,7 @@ public class CalcPriceCommand extends Command {
                 .getEmbed()
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setTitle("Carry-Price")
+                .setThumbnail(ApplicationService.getInstance().getCarryTierUrl(carryType, carryTier))
                 .setDescription("The price for " + amount + " `" + carryTier + "` carries is\n" +
                         ApplicationService.getInstance().makeNumberReadable(price) + " coins."));
 

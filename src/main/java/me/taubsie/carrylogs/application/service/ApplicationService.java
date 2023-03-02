@@ -97,6 +97,26 @@ public class ApplicationService {
         return String.valueOf(number);
     }
 
+    public String getCarryTierUrl(CarryType carryType, String carryTier) {
+        return switch(carryType) {
+            case EMAN -> "https://cdn.discordapp.com/attachments/842827272733982730/992919618236719134/unknown.png";
+            case BLAZE -> "https://cdn.discordapp.com/attachments/842827272733982730/992919430369656852/unknown.png";
+            case KUUDRA ->
+                    "https://cdn.discordapp.com/attachments/842827272733982730/1080981866657615872/Minecraft_entities_magma_cube.png";
+            case F4 -> "https://cdn.discordapp.com/emojis/759298333608378388.png?v=1";
+            case F5 -> "https://cdn.discordapp.com/emojis/759298251068801044.png?v=1";
+            case F6 -> "https://cdn.discordapp.com/emojis/761951536829825035.png?v=1";
+            case F7 -> "https://cdn.discordapp.com/emojis/792055627248566312.webp?size=80&quality=lossless";
+            case MASTER_MODE -> switch(carryTier) {
+                case "Floor 1", "Floor 2", "Floor 3" -> null;
+                case "Floor 4" -> "https://cdn.discordapp.com/emojis/759298333608378388.png?v=1";
+                case "Floor 5" -> "https://cdn.discordapp.com/emojis/759298251068801044.png?v=1";
+                case "Floor 6" -> "https://cdn.discordapp.com/emojis/761951536829825035.png?v=1";
+                case "Floor 7" -> "https://cdn.discordapp.com/emojis/792055627248566312.webp?size=80&quality=lossless";
+            };
+        };
+    }
+
     public boolean isCarryTier(String carryTier) {
         return switch(carryTier) {
             case "Completion",
