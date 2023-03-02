@@ -70,28 +70,28 @@ public class ApplicationService {
         };
     }
 
-    public Locale getLocale() {
-        return Locale.US;
-    }
-
     public String makeDoubleReadable(double number) {
-        DecimalFormat df = new DecimalFormat("0", DecimalFormatSymbols.getInstance(getLocale()));
+        DecimalFormat df = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.US));
         df.setMaximumFractionDigits(340); //340 = DecimalFormat.DOUBLE_FRACTION_DIGITS
 
         return df.format(number);
     }
 
     public String makeNumberReadable(long number) {
-        if(number >= 1000000000){
-            return String.format(getLocale(), "%sb", makeDoubleReadable(number/ 1000000000.0));
+        if(number >= 1000000000000L) {
+            return makeDoubleReadable(number / 1000000000000.0) + "t";
         }
 
-        if(number >= 1000000){
-            return String.format(getLocale(), "%sm", makeDoubleReadable(number/ 1000000.0));
+        if(number >= 1000000000L) {
+            return makeDoubleReadable(number / 1000000000.0) + "b";
         }
 
-        if(number >= 1000){
-            return String.format(getLocale(), "%sk", makeDoubleReadable(number/ 1000.0));
+        if(number >= 1000000L) {
+            return makeDoubleReadable(number / 1000000.0) + "m";
+        }
+
+        if(number >= 1000L) {
+            return makeDoubleReadable(number / 1000.0) + "k";
         }
 
         return String.valueOf(number);
