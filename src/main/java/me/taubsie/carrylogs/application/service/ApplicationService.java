@@ -11,6 +11,8 @@ import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 
 import java.awt.*;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.util.*;
 
@@ -68,21 +70,28 @@ public class ApplicationService {
         };
     }
 
+    public Locale getLocale() {
+        return Locale.US;
+    }
+
+    public String makeDoubleReadable(double number) {
+        DecimalFormat df = new DecimalFormat("0", DecimalFormatSymbols.getInstance(getLocale()));
+        df.setMaximumFractionDigits(340); //340 = DecimalFormat.DOUBLE_FRACTION_DIGITS
+
+        return df.format(number);
+    }
+
     public String makeNumberReadable(long number) {
         if(number >= 1000000000){
-            return String.format("%.2fB", number/ 1000000000.0);
+            return String.format(getLocale(), "%sb", makeDoubleReadable(number/ 1000000000.0));
         }
 
         if(number >= 1000000){
-            return String.format("%.2fM", number/ 1000000.0);
-        }
-
-        if(number >= 100000){
-            return String.format("%.2fL", number/ 100000.0);
+            return String.format(getLocale(), "%sm", makeDoubleReadable(number/ 1000000.0));
         }
 
         if(number >= 1000){
-            return String.format("%.2fK", number/ 1000.0);
+            return String.format(getLocale(), "%sk", makeDoubleReadable(number/ 1000.0));
         }
 
         return String.valueOf(number);
