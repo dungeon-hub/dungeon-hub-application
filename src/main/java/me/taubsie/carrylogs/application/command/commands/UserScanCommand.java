@@ -51,15 +51,18 @@ public class UserScanCommand extends Command {
         }
 
         slashCommandCreateEvent.getSlashCommandInteraction().respondLater()
-                .thenAccept(updater -> updater.addEmbed(ApplicationService.getInstance().getEmbed().setColor(EmbedColor.NEGATIVE.getColor()).setDescription((ban ? "Banned" : "Flagged") + ":\n" + result.entrySet()
-                        .stream()
-                        .map(userStringEntry ->
-                                userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue())
-                        .collect(Collectors.joining("\n")) + "\n\nExcluded:\n" +
-                        excluded.entrySet()
+                .thenAccept(updater -> updater.addEmbed(ApplicationService.getInstance()
+                        .getEmbed()
+                        .setColor(EmbedColor.NEGATIVE.getColor())
+                        .setDescription((ban ? "Banned" : "Flagged") + ":\n" + result.entrySet()
                                 .stream()
                                 .map(userStringEntry ->
-                                        userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue()).collect(Collectors.joining("\n")))));
+                                        userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue())
+                                .collect(Collectors.joining("\n")) + "\n\nExcluded:\n" +
+                                excluded.entrySet()
+                                        .stream()
+                                        .map(userStringEntry ->
+                                                userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue()).collect(Collectors.joining("\n")))));
 
         if(ban) {
             for(Map.Entry<User, String> entries : result.entrySet()) {
