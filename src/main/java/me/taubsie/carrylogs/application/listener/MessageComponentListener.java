@@ -1,5 +1,6 @@
 package me.taubsie.carrylogs.application.listener;
 
+import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import me.taubsie.carrylogs.application.enums.IdList;
@@ -85,6 +86,8 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                     User carrier =
                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getCarrier()).join();
 
+                    CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty());
+
                     if(carrier != null && carrier.openPrivateChannel().join() != null) {
                         carrier.openPrivateChannel().join();
                         Optional<PrivateChannel> privateChannelOptional = carrier.getPrivateChannel();
@@ -100,14 +103,13 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                                     .addInlineField("Number of carries",
                                                             String.valueOf(carryInformation.getAmountOfCarries()))
                                                     .addInlineField("Type of carry",
-                                                            carryInformation.getCarryDifficulty() + " - " + carryInformation.getCarryType())
+                                                            (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
                                                     .addInlineField("Player",
                                                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                                     .addInlineField("Carrier", carrier.getMentionTag())
                                                     .addInlineField("Transcript-Link", "[Click to open]" +
                                                             "(https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")")).join());
-                        }
-                        catch(CompletionException completionException) {
+                        } catch(CompletionException completionException) {
                             completionException.printStackTrace();
                         }
                     }
@@ -128,8 +130,8 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                             .setColor(new Color(0, 255, 0 /*TODO*/))
                                             .addInlineField("Number of carries",
                                                     String.valueOf(carryInformation.getAmountOfCarries()))
-                                            .addInlineField("Type of carry", carryInformation.getCarryDifficulty() +
-                                                    " - " + carryInformation.getCarryType())
+                                            .addInlineField("Type of carry",
+                                                    (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
                                             .addInlineField("Player",
                                                     messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                             .addInlineField("Carrier",
@@ -159,6 +161,8 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                     User carrier =
                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getCarrier()).join();
 
+                    CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty());
+
                     if(carrier != null && carrier.openPrivateChannel().join() != null) {
                         carrier.openPrivateChannel().join();
                         Optional<PrivateChannel> privateChannelOptional = carrier.getPrivateChannel();
@@ -178,7 +182,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                                     .addInlineField("Number of carries",
                                                             String.valueOf(carryInformation.getAmountOfCarries()))
                                                     .addInlineField("Type of carry",
-                                                            carryInformation.getCarryDifficulty() + " - " + carryInformation.getCarryType())
+                                                            (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
                                                     .addInlineField("Player",
                                                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                                     .addInlineField("Carrier", carrier.getMentionTag())
@@ -186,8 +190,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getApprover()).join().getMentionTag())
                                                     .addInlineField("Transcript-Link", "[Click to open]" +
                                                             "(https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")")).join());
-                        }
-                        catch(CompletionException completionException) {
+                        } catch(CompletionException completionException) {
                             completionException.printStackTrace();
                         }
                     }
@@ -215,7 +218,8 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                             .setColor(new Color(0, 255, 0 /*TODO*/))
                                             .addInlineField("Number of carries",
                                                     String.valueOf(carryInformation.getAmountOfCarries()))
-                                            .addInlineField("Type of carry", carryInformation.getCarryDifficulty() +
+                                            .addInlineField("Type of carry",
+                                                    (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) +
                                                     " - " + carryInformation.getCarryType())
                                             .addInlineField("Player",
                                                     messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())

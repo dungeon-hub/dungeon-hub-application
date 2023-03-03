@@ -1,5 +1,6 @@
 package me.taubsie.carrylogs.application.listener;
 
+import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
@@ -20,7 +21,6 @@ import org.javacord.api.event.message.MessageEditEvent;
 import org.javacord.api.listener.message.MessageCreateListener;
 import org.javacord.api.listener.message.MessageEditListener;
 
-import java.awt.*;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
 
@@ -76,6 +76,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
             for(CarryInformation carryInformation : ConnectionService.getInstance().getFromLogQueue(channelId)) {
                 carryInformation.setAttachmentLink(attachmentLink);
+                CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty());
 
                 if(carryInformation.getAmountOfCarries() >= APPROVE_AMOUNT_THRESHOLD
                         || carryInformation.calculateScore() >= APPROVE_SCORE_THRESHOLD) {
@@ -88,7 +89,8 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                             .setColor(EmbedColor.DEFAULT.getColor())
                                             .addInlineField("Number of carries",
                                                     String.valueOf(carryInformation.getAmountOfCarries()))
-                                            .addInlineField("Type of carry", carryInformation.getCarryDifficulty() +
+                                            .addInlineField("Type of carry",
+                                                    (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) +
                                                     " - " + carryInformation.getCarryType())
                                             .addInlineField("Player",
                                                     messageEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
@@ -124,7 +126,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                                     .addInlineField("Number of carries",
                                                             String.valueOf(carryInformation.getAmountOfCarries()))
                                                     .addInlineField("Type of carry",
-                                                            carryInformation.getCarryDifficulty() + " - " + carryInformation.getCarryType())
+                                                            (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
                                                     .addInlineField("Player",
                                                             messageEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                                     .addInlineField("Carrier", carrier.getMentionTag())
@@ -156,7 +158,8 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                         .setColor(EmbedColor.POSITIVE.getColor())
                                         .addInlineField("Number of carries",
                                                 String.valueOf(carryInformation.getAmountOfCarries()))
-                                        .addInlineField("Type of carry", carryInformation.getCarryDifficulty() +
+                                        .addInlineField("Type of carry",
+                                                (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) +
                                                 " - " + carryInformation.getCarryType())
                                         .addInlineField("Player",
                                                 messageEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())

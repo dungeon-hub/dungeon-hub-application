@@ -113,6 +113,7 @@ public class ApplicationService {
                 case "Floor 5" -> "https://cdn.discordapp.com/emojis/759298251068801044.png?v=1";
                 case "Floor 6" -> "https://cdn.discordapp.com/emojis/761951536829825035.png?v=1";
                 case "Floor 7" -> "https://cdn.discordapp.com/emojis/792055627248566312.webp?size=80&quality=lossless";
+                default -> null;
             };
         };
     }

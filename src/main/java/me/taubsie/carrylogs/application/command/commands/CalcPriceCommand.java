@@ -72,8 +72,9 @@ public class CalcPriceCommand extends Command {
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setTitle("Carry-Price")
                 .setThumbnail(ApplicationService.getInstance().getCarryTierUrl(carryType, carryTier))
-                .setDescription("The price for " + amount + " `" + carryTier + "` carries is\n" +
-                        ApplicationService.getInstance().makeNumberReadable(price) + " coins."));
+                .addInlineField("Price", ApplicationService.getInstance().makeNumberReadable(price) + " coins")
+                .addInlineField("Type", carryType.getPrettyName() + ": " + carryTier)
+                .addInlineField("Amount", String.valueOf(amount)));
 
         throw new UnknownCommandException();
     }
@@ -93,7 +94,7 @@ public class CalcPriceCommand extends Command {
         SlashCommandOption tierOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
                 .setName("tier")
-                .setDescription("The tier of carry you want.")
+                .setDescription("The tier of carry you want. If nothing shows up here, please enter the type of carry first.")
                 .setRequired(true)
                 .setAutocompletable(true)
                 .build();
