@@ -10,7 +10,6 @@
     </extension>
     <method v="2">
       <option name="Make" enabled="true" />
-      <option name="RunConfigurationTask" enabled="true" run_configuration_name="build_common" run_configuration_type="MavenRunConfiguration" />
     </method>
   </configuration>
 </component>
