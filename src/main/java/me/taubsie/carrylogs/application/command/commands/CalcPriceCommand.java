@@ -72,39 +72,21 @@ public class CalcPriceCommand extends Command {
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setTitle("Carry-Price")
                 .setThumbnail(ApplicationService.getInstance().getCarryTierUrl(carryType, carryTier))
-                .addInlineField("Price", ApplicationService.getInstance().makeNumberReadable(price) + " coins")
-                .addInlineField("Type", carryType.getPrettyName() + ": " + carryTier)
-                .addInlineField("Amount", String.valueOf(amount)));
+                .addInlineField("Type", carryType.getPrettyName() + " " + carryTier)
+                .addInlineField("Amount", String.valueOf(amount))
+                .addInlineField("Price", ApplicationService.getInstance().makeNumberReadable(price) + " coins"));
 
         throw new UnknownCommandException();
     }
 
     @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
-        SlashCommandOption amountOption = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.LONG)
-                .setName("amount")
-                .setDescription("The amount of carries you want.")
-                .setLongMaxValue(200)
-                .setLongMinValue(1L)
-                .setRequired(true)
-                .build();
-
-        //Comp, S, S+, Tier 2-4, Kuudra Tiers
-        SlashCommandOption tierOption = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.STRING)
-                .setName("tier")
-                .setDescription("The tier of carry you want. If nothing shows up here, please enter the type of carry first.")
-                .setRequired(true)
-                .setAutocompletable(true)
-                .build();
-
         //F4, F5, F6, F7, MM, Eman, Blaze, Kuudra
         SlashCommandOptionBuilder typeOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
                 .setName("type")
                 .setDescription("The type of carry you want.")
-                .setRequired(false);
+                .setRequired(true);
 
         Arrays.stream(CarryType.values())
                 .forEach(carryType ->
@@ -115,6 +97,24 @@ public class CalcPriceCommand extends Command {
                                         .build()
                         ));
 
-        return Arrays.asList(amountOption, tierOption, typeOption.build());
+        //Comp, S, S+, Tier 2-4, Kuudra Tiers
+        SlashCommandOption tierOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName("tier")
+                .setDescription("The tier of carry you want. If nothing shows up here, please enter the type of carry first.")
+                .setRequired(true)
+                .setAutocompletable(true)
+                .build();
+
+        SlashCommandOption amountOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.LONG)
+                .setName("amount")
+                .setDescription("The amount of carries you want.")
+                .setLongMaxValue(200)
+                .setLongMinValue(1L)
+                .setRequired(true)
+                .build();
+
+        return Arrays.asList(typeOption.build(), tierOption, amountOption);
     }
 }

@@ -8,15 +8,15 @@ import java.util.List;
 
 public enum CarryType
 {
-    F4("Floor 4", Arrays.asList(SlashCommandOptionChoice.create("Completion", "Completion"),
+    F4("F4", Arrays.asList(SlashCommandOptionChoice.create("Completion", "Completion"),
             SlashCommandOptionChoice.create("S", "S"))),
-    F5("Floor 5", Arrays.asList(SlashCommandOptionChoice.create("Completion", "Completion"),
+    F5("F5", Arrays.asList(SlashCommandOptionChoice.create("Completion", "Completion"),
             SlashCommandOptionChoice.create("S", "S"),
             SlashCommandOptionChoice.create("S+", "S+"))),
-    F6("Floor 6", Arrays.asList(SlashCommandOptionChoice.create("Completion", "Completion"),
+    F6("F6", Arrays.asList(SlashCommandOptionChoice.create("Completion", "Completion"),
             SlashCommandOptionChoice.create("S", "S"),
             SlashCommandOptionChoice.create("S+", "S+"))),
-    F7("Floor 7", Arrays.asList(SlashCommandOptionChoice.create("Completion", "Completion"),
+    F7("F7", Arrays.asList(SlashCommandOptionChoice.create("Completion", "Completion"),
             SlashCommandOptionChoice.create("S", "S"),
             SlashCommandOptionChoice.create("S+", "S+"))),
     MASTER_MODE("MM", Arrays.asList(SlashCommandOptionChoice.create("Floor 1", "Floor 1"),

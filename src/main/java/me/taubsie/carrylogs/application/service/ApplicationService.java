@@ -108,7 +108,9 @@ public class ApplicationService {
             case F6 -> "https://cdn.discordapp.com/emojis/761951536829825035.png?v=1";
             case F7 -> "https://cdn.discordapp.com/emojis/792055627248566312.webp?size=80&quality=lossless";
             case MASTER_MODE -> switch(carryTier) {
-                case "Floor 1", "Floor 2", "Floor 3" -> null;
+                case "Floor 1" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302674244391023/SkyBlock_npcs_bonzo_undead.png";
+                case "Floor 2" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302768633000006/SkyBlock_entities_scarf.png";
+                case "Floor 3" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302836857557022/latest.png";
                 case "Floor 4" -> "https://cdn.discordapp.com/emojis/759298333608378388.png?v=1";
                 case "Floor 5" -> "https://cdn.discordapp.com/emojis/759298251068801044.png?v=1";
                 case "Floor 6" -> "https://cdn.discordapp.com/emojis/761951536829825035.png?v=1";
