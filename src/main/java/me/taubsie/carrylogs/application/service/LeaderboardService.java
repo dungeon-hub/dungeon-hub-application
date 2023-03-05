@@ -98,7 +98,7 @@ public class LeaderboardService implements StartupListener {
         }
 
         this.lastRefresh = Instant.now();
-        logger.info("Leaderboard refresh started!");
+        logger.debug("Leaderboard refresh started!");
 
         for(Long serverId : new Long[]{IdList.SERVER.getId(), IdList.SERVER.getTestId()}) {
             Optional<ServerTextChannel> dungeonChannel =
