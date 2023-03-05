@@ -9,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.activity.ActivityType;
+import org.javacord.api.entity.user.User;
 import org.javacord.api.entity.user.UserStatus;
 
 import java.util.*;
@@ -55,6 +56,17 @@ public class BotStarter extends ProgramOrigin implements StartupListener {
 
         ApplicationClassLoaderService.getInstance().loadGlobalSlashCommands(bot);
         ApplicationClassLoaderService.getInstance().loadServerSlashCommands(bot);
+
+        logger.info("--------------------");
+        logger.info("Im on servers:");
+        bot.getServers().forEach(server ->
+                logger.info(
+                        server.getName()
+                                + " by "
+                                + server.getOwner().map(User::getDiscriminatedName).orElse("no-name")
+                        + " (" + server.getOwnerId() + ")"
+                ));
+        logger.info("--------------------");
     }
 
     public void resetBotActivity() {
