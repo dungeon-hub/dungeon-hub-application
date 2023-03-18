@@ -61,7 +61,7 @@ public class UserScanCommand extends Command {
                                 excluded.entrySet()
                                         .stream()
                                         .map(userStringEntry ->
-                                                userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue()).collect(Collectors.joining("\n")))));
+                                                userStringEntry.getKey().getMentionTag() + " - " + userStringEntry.getValue()).collect(Collectors.joining("\n")))).update());
 
         if(ban) {
             for(Map.Entry<User, String> entries : result.entrySet()) {
