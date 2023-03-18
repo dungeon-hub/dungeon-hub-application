@@ -1,6 +1,6 @@
 package me.taubsie.carrylogs.application.service;
 
-import me.taubsie.carrylogs.ClassLoaderService;
+import me.taubsie.dungeonhub.common.ClassLoaderService;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.listener.Listener;

@@ -1,8 +1,8 @@
 package me.taubsie.carrylogs.application.service;
 
-import me.taubsie.carrylogs.OnStart;
-import me.taubsie.carrylogs.ProgramOrigin;
-import me.taubsie.carrylogs.StartupListener;
+import me.taubsie.dungeonhub.common.OnStart;
+import me.taubsie.dungeonhub.common.ProgramOrigin;
+import me.taubsie.dungeonhub.common.StartupListener;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.start.BotStarter;

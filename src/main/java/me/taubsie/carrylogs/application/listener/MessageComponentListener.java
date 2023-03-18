@@ -7,7 +7,7 @@ import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
 import me.taubsie.carrylogs.application.service.PermissionService;
 import me.taubsie.carrylogs.application.start.BotStarter;
-import me.taubsie.carrylogs.CarryInformation;
+import me.taubsie.dungeonhub.common.CarryInformation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.PrivateChannel;

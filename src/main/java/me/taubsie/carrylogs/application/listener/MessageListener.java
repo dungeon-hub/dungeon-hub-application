@@ -5,7 +5,7 @@ import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import me.taubsie.carrylogs.application.enums.IdList;
-import me.taubsie.carrylogs.CarryInformation;
+import me.taubsie.dungeonhub.common.CarryInformation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.PrivateChannel;

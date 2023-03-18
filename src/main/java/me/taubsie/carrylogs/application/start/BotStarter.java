@@ -1,10 +1,13 @@
 package me.taubsie.carrylogs.application.start;
 
 import lombok.Getter;
-import me.taubsie.carrylogs.*;
+import me.taubsie.dungeonhub.common.CarryInformation;
+import me.taubsie.dungeonhub.common.OnStart;
+import me.taubsie.dungeonhub.common.ProgramOrigin;
+import me.taubsie.dungeonhub.common.StartupListener;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ApplicationClassLoaderService;
-import me.taubsie.carrylogs.config.ConfigType;
+import me.taubsie.dungeonhub.common.config.ConfigType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.DiscordApi;
@@ -42,11 +45,6 @@ public class BotStarter extends ProgramOrigin implements StartupListener {
     }
 
     @Override
-    public void preStart(ProgramOrigin programOrigin) {
-
-    }
-
-    @Override
     public void onStart(ProgramOrigin programOrigin) {
         bot = ApplicationService.getInstance().getApiBuilder().login().join();
 
@@ -67,6 +65,10 @@ public class BotStarter extends ProgramOrigin implements StartupListener {
                         + " (" + server.getOwnerId() + ")"
                 ));
         logger.info("--------------------");
+
+        //TODO add logging for server joins/leavs
+        bot.addServerJoinListener(serverJoinEvent -> resetBotAppearance());
+        bot.addServerLeaveListener(serverLeaveEvent -> resetBotAppearance());
     }
 
     public void resetBotActivity() {

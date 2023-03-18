@@ -1,10 +1,10 @@
 package me.taubsie.carrylogs.application.service;
 
 import lombok.Getter;
-import me.taubsie.carrylogs.CarryInformation;
-import me.taubsie.carrylogs.CarryLogService;
-import me.taubsie.carrylogs.CarryRole;
-import me.taubsie.carrylogs.config.ConfigProperty;
+import me.taubsie.dungeonhub.common.CarryInformation;
+import me.taubsie.dungeonhub.common.CarryLogService;
+import me.taubsie.dungeonhub.common.CarryRole;
+import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import okhttp3.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -423,7 +423,7 @@ public class ConnectionService {
             }
 
             @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) {
                 if(response.isSuccessful()) {
                     logger.info("Roles for user {} added.", id);
                 } else {

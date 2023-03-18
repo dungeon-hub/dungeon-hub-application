@@ -1,7 +1,7 @@
 package me.taubsie.carrylogs.application.enums;
 
 import lombok.Getter;
-import me.taubsie.carrylogs.CarryRole;
+import me.taubsie.dungeonhub.common.CarryRole;
 import org.javacord.api.entity.permission.Role;
 
 import java.util.ArrayList;

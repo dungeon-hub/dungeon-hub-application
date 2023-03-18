@@ -3,7 +3,7 @@ package me.taubsie.carrylogs.application.service;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
-import me.taubsie.carrylogs.config.ConfigProperty;
+import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.entity.message.MessageFlag;
