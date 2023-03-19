@@ -67,9 +67,8 @@ public abstract class Command {
             PermissionType[] permissions = getCommandParameters()
                     .map(CommandParameters::enabledForPermissions)
                     .orElse(new PermissionType[]{});
-            return getServer().hasPermissions(user, permissions);
-        }
-        catch(MustBeServerException mustBeServerException) {
+            return getServer().hasPermissions(user, permissions) || getServer().isAdmin(user) || getServer().isOwner(user);
+        } catch(MustBeServerException mustBeServerException) {
             return isEnabledInDms();
         }
     }
@@ -155,7 +154,7 @@ public abstract class Command {
     }
 
     public final SlashCommandInteractionOption getOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
-                                                   String name) {
+                                                         String name) {
         Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByName(name);
 
         if(interactionOption.isEmpty()) {

@@ -26,33 +26,28 @@ import java.util.List;
 import java.util.Optional;
 
 @CommandParameters(name = "manage-score",
-                   description = "Use this to manage the score of carriers.",
-                   enabledForPermissions = {PermissionType.MANAGE_MESSAGES})
-public class ManageScoreCommand extends Command
-{
+        description = "Use this to manage the score of carriers.",
+        enabledForPermissions = {PermissionType.MANAGE_MESSAGES})
+public class ManageScoreCommand extends Command {
     @Override
     public long[] getEnabledServers() {
         return new long[]{693263712626278553L, 1023684107877761196L};
     }
 
     @Override
-    protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent)
-    {
+    protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         String[] validTypes = new String[]{"dungeons", "slayer", "kuudra"};
 
         Server server = getServer();
 
-        if (!PermissionService.getInstance().mayManageScore(slashCommandCreateEvent.getSlashCommandInteraction().getUser(),
-                server))
-        {
+        if(!PermissionService.getInstance().mayManageScore(slashCommandCreateEvent.getSlashCommandInteraction().getUser(), server)) {
             throw new MissingPermissionException();
         }
 
         Optional<SlashCommandInteractionOption> addRemoveOption =
                 slashCommandCreateEvent.getSlashCommandInteraction().getOptionByIndex(0);
 
-        if (addRemoveOption.isEmpty())
-        {
+        if(addRemoveOption.isEmpty()) {
             slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Please either" +
                     " add or remove score.").setFlags(MessageFlag.EPHEMERAL).respond();
             return;
@@ -65,8 +60,7 @@ public class ManageScoreCommand extends Command
 
         String scoreType = getStringOption(subCommand, "score-type");
 
-        if (Arrays.stream(validTypes).noneMatch(s -> s.equalsIgnoreCase(scoreType)))
-        {
+        if(Arrays.stream(validTypes).noneMatch(s -> s.equalsIgnoreCase(scoreType))) {
             throw new InvalidOptionException("score-type", "Please enter a valid score-type (" + String.join(", ",
                     validTypes) + ")");
         }
@@ -102,8 +96,7 @@ public class ManageScoreCommand extends Command
     }
 
     @Override
-    public List<SlashCommandOption> getSlashCommandOptions()
-    {
+    public List<SlashCommandOption> getSlashCommandOptions() {
         SlashCommandOption userOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.USER)
                 .setName("user")

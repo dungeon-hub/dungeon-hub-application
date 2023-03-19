@@ -7,12 +7,18 @@ import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
+import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.permission.PermissionType;
-import org.javacord.api.entity.user.User;
+import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
+import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
 import java.awt.*;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @CommandParameters(name = "rolesync",
         description = "Test command for adding carriers to database.",
@@ -29,27 +35,26 @@ public class RoleSyncCommand extends Command {
             throw new MissingPermissionException();
         }
 
-        slashCommandCreateEvent.getSlashCommandInteraction().respondLater().thenAccept(updater -> {
-            int count = 0;
-            for(User user : getServer().getMembers()) {
-                if(user.isBot()) {
-                    continue;
-                }
+        InteractionOriginalResponseUpdater responseUpdater = slashCommandCreateEvent.getSlashCommandInteraction().respondLater().join();
+        Server server = getServer();
 
-                List<CarryRole> roleList =
-                        IdList.getCarryRoles(user.getRoles(getServer()), getServer().getId()).stream().map(IdList::getCarryRole).toList();
+        Map<Long, List<CarryRole>> roleList = Arrays.stream(IdList.getCarryRoles())
+                .map(idList -> server.getRoleById(idList.getLocalId(server.getId())))
+                .flatMap(Optional::stream)
+                .flatMap(role -> role.getUsers().stream().filter(user -> !user.isBot()))
+                .distinct()
+                .collect(Collectors.toMap(
+                        DiscordEntity::getId,
+                        user -> IdList.getCarryRoles(user.getRoles(server), server.getId()).stream()
+                                .map(IdList::getCarryRole)
+                                .toList()));
 
-                if(!roleList.isEmpty()) {
-                    count++;
-                    ConnectionService.getInstance().addRoles(user.getId(), roleList);
-                }
-            }
+        ConnectionService.getInstance().addMultipleRoles(roleList);
 
-            updater.addEmbed(ApplicationService.getInstance().getEmbed()
-                            .setColor(new Color(255, 255, 255 /*TODO change color*/))
-                            .setTitle("Role-Sync")
-                            .setDescription("Changed the internal roles of " + count + " users."))
-                    .update();
-        });
+        responseUpdater.addEmbed(ApplicationService.getInstance().getEmbed()
+                        .setColor(new Color(255, 255, 255 /*TODO change color*/))
+                        .setTitle("Role-Sync")
+                        .setDescription("Changed the internal roles of " + roleList.size() + " users."))
+                .update();
     }
 }

@@ -400,13 +400,26 @@ public class ConnectionService {
         return 0L;
     }
 
-    public void addRoles(long id, List<CarryRole> roles) {
-        if(roles.isEmpty()) {
-            return;
+    public void addMultipleRoles(Map<Long, List<CarryRole>> roleList) {
+        RequestBody requestBody = new FormBody.Builder()
+                .add("roles", CarryLogService.getInstance().getGson().toJson(roleList))
+                .build();
+
+        Request request = getRequest("v1/roles")
+                .put(requestBody)
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(!response.isSuccessful()) {
+                logger.error("Error when trying to add roles.");
+            }
         }
+        catch(IOException ioException) {
+            ioException.printStackTrace();
+        }
+    }
 
-        //TODO finish implementation
-
+    public void addRoles(long id, List<CarryRole> roles) {
         RequestBody requestBody = new FormBody.Builder()
                 .add("id", String.valueOf(id))
                 .add("roles", CarryLogService.getInstance().getGson().toJson(roles))
