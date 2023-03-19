@@ -437,12 +437,31 @@ public class ConnectionService {
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) {
-                if(response.isSuccessful()) {
-                    logger.info("Roles for user {} added.", id);
-                } else {
+                if(!response.isSuccessful()) {
                     logger.error("Error when trying to add roles for user {}.", id);
                 }
             }
         });
+    }
+
+    public Map<Long, Long> getPurgeableUsers(long amount, String type) {
+        Request request = getRequest("v1/purge/" + type + "/" + amount)
+                .get()
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful()) {
+                if(response.body() != null) {
+                    return CarryLogService.getInstance().getGson().fromJson(response.body().string(), CarryLogService.getInstance().getLongLongMapType());
+                }
+            } else {
+                logger.error("Error when trying to load purgable users.");
+            }
+        }
+        catch(IOException ioException) {
+            ioException.printStackTrace();
+        }
+
+        return new HashMap<>();
     }
 }
