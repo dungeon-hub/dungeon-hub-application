@@ -49,7 +49,7 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
         return instance;
     }
 
-    public Optional<Command> getCommand(String commandName, Server server) {
+    public Optional<Map.Entry<SlashCommand, Command>> getCommandData(String commandName, Server server) {
         return slashCommandMap
                 .entrySet()
                 .parallelStream()
@@ -59,8 +59,15 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
                         && server != null
                         && entry.getKey().getServerId().isPresent()
                         && entry.getKey().getServerId().get() == server.getId()))
-                .map(Map.Entry::getValue)
                 .findAny();
+    }
+
+    public Optional<Command> getCommand(String commandName, Server server) {
+        return getCommandData(commandName, server).map(Map.Entry::getValue);
+    }
+
+    public Optional<SlashCommand> getSlashCommand(String commandName, Server server) {
+        return getCommandData(commandName, server).map(Map.Entry::getKey);
     }
 
     private SlashCommandBuilder buildSlashCommand(Command command, CommandParameters commandParameters) {
