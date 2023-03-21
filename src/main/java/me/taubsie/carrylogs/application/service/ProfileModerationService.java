@@ -21,6 +21,10 @@ public class ProfileModerationService
 {
     private static final String[] forbiddenUsernames = new String[]{
             "Captcha.bot",
+            "YAGPDB",
+            "Giveaway Bot",
+            "Giveaway Boat",
+            "Ticket Tool",
             "Dyno",
             "Carl-bot",
             "Xenon",
