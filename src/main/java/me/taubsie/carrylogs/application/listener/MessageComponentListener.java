@@ -8,8 +8,6 @@ import me.taubsie.carrylogs.application.service.LeaderboardService;
 import me.taubsie.carrylogs.application.service.PermissionService;
 import me.taubsie.carrylogs.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.CarryInformation;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.MessageFlag;
@@ -17,6 +15,8 @@ import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.MessageComponentCreateEvent;
 import org.javacord.api.listener.interaction.MessageComponentCreateListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.Color;
 import java.util.Optional;
@@ -28,7 +28,7 @@ import java.util.concurrent.CompletionException;
  */
 @Listener
 public class MessageComponentListener implements MessageComponentCreateListener {
-    private static final Logger logger = LogManager.getLogger(MessageListener.class);
+    private static final Logger logger = LoggerFactory.getLogger(MessageComponentListener.class);
 
     @Override
     public void onComponentCreate(MessageComponentCreateEvent messageComponentCreateEvent) {

@@ -6,12 +6,12 @@ import me.taubsie.dungeonhub.common.StartupListener;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.start.BotStarter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.user.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Time;
 import java.time.Instant;
@@ -22,7 +22,7 @@ import java.util.TimerTask;
 
 @OnStart
 public class LeaderboardService implements StartupListener {
-    private static final Logger logger = LogManager.getLogger(LeaderboardService.class);
+    private static final Logger logger = LoggerFactory.getLogger(LeaderboardService.class);
     private static final long REFRESH_COOLDOWN = 15L;
     private static LeaderboardService instance;
     private Instant lastRefresh;

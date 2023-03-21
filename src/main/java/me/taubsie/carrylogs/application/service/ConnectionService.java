@@ -6,16 +6,16 @@ import me.taubsie.dungeonhub.common.CarryLogService;
 import me.taubsie.dungeonhub.common.CarryRole;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import okhttp3.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.Time;
 import java.util.*;
 
 public class ConnectionService {
-    private static final Logger logger = LogManager.getLogger(ConnectionService.class);
+    private static final Logger logger = LoggerFactory.getLogger(ConnectionService.class);
 
     private static final String DUNGEON = "dungeon";
     private static final String SLAYER = "slayer";

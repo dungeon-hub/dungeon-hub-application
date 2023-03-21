@@ -8,8 +8,6 @@ import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.ServerUpdater;
@@ -19,6 +17,8 @@ import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -27,7 +27,7 @@ import java.util.*;
         enabledForPermissions = {PermissionType.ADMINISTRATOR})
 public class PurgeCommand extends Command {
     private static final List<String> choices = List.of("dungeons", "slayer");
-    private static final Logger logger = LogManager.getLogger(PurgeCommand.class);
+    private static final Logger logger = LoggerFactory.getLogger(PurgeCommand.class);
 
     @Override
     public long[] getEnabledServers() {

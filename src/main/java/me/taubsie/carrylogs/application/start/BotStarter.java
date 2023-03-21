@@ -8,12 +8,12 @@ import me.taubsie.dungeonhub.common.StartupListener;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ApplicationClassLoaderService;
 import me.taubsie.dungeonhub.common.config.ConfigType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.activity.ActivityType;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.entity.user.UserStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -23,7 +23,7 @@ import java.util.*;
  */
 @OnStart
 public class BotStarter extends ProgramOrigin implements StartupListener {
-    private static final Logger logger = LogManager.getLogger(BotStarter.class);
+    private static final Logger logger = LoggerFactory.getLogger(BotStarter.class);
 
     private static BotStarter instance;
     @Getter
@@ -58,11 +58,10 @@ public class BotStarter extends ProgramOrigin implements StartupListener {
         logger.info("--------------------");
         logger.info("Im on servers:");
         bot.getServers().forEach(server ->
-                logger.info(
-                        server.getName()
-                                + " by "
-                                + server.getOwner().map(User::getDiscriminatedName).orElse("no-name")
-                        + " (" + server.getOwnerId() + ")"
+                logger.info("{} by {} ({})",
+                        server.getName(),
+                        server.getOwner().map(User::getDiscriminatedName).orElse("no-name"),
+                        server.getOwnerId()
                 ));
         logger.info("--------------------");
 

@@ -1,16 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
     <Appenders>
-        <Console name="ConsoleAppender" target="SYSTEM_OUT">
-            <PatternLayout
-                    pattern="%style{%date{DEFAULT}}{yellow}
-                    [%highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green}]
-                    %message %n"/>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout charset="UTF-8">
+                <pattern>[%d{dd.MM.yyyy HH:mm:ss}] %-5level> %msg%n</pattern>
+            </PatternLayout>
         </Console>
+
+        <Routing name="Routing">
+            <Routes pattern="$${sys:user.home}">
+                <Route>
+                    <File name="File" fileName="${sys:user.home}/carrylogs/logs/${date:yyyy_MM_dd-HH_mm_ss}.txt"
+                          immediateFlush="false" append="false">
+                        <PatternLayout charset="UTF-8">
+                            <pattern>[%d{dd.MM.yyyy HH:mm:ss}] %-5level> %msg%n</pattern>
+                        </PatternLayout>
+                    </File>
+                </Route>
+            </Routes>
+        </Routing>
     </Appenders>
+
     <Loggers>
-        <Root level="INFO">
-            <AppenderRef ref="ConsoleAppender"/>
+        <Root level="debug">
+            <AppenderRef ref="Console" level="info"/>
+            <AppenderRef ref="Routing" level="debug"/>
         </Root>
     </Loggers>
 </Configuration>

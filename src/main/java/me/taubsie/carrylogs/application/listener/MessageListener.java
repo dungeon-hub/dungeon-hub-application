@@ -6,8 +6,6 @@ import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.dungeonhub.common.CarryInformation;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
@@ -20,6 +18,8 @@ import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.event.message.MessageEditEvent;
 import org.javacord.api.listener.message.MessageCreateListener;
 import org.javacord.api.listener.message.MessageEditListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
@@ -30,7 +30,7 @@ import java.util.concurrent.CompletionException;
  */
 @Listener
 public class MessageListener implements MessageCreateListener, MessageEditListener {
-    private static final Logger logger = LogManager.getLogger(MessageListener.class);
+    private static final Logger logger = LoggerFactory.getLogger(MessageListener.class);
 
     private static final long APPROVE_AMOUNT_THRESHOLD = 5;
     private static final long APPROVE_SCORE_THRESHOLD = 20;
