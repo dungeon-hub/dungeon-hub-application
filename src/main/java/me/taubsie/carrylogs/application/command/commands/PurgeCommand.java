@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletionException;
 
 @CommandParameters(name = "purge",
         description = "Allows you to purge inactive carriers.",
@@ -51,8 +52,8 @@ public class PurgeCommand extends Command {
                 purgeData.putAll(ConnectionService.getInstance().getPurgeableUsers(threshold, "slayer"));
                 rolesToRemove.addAll(List.of(IdList.getSlayerCarryRoles()));
             }
-            default ->
-                    throw new InvalidOptionException("purge-type", "Please enter a valid purge-type (" + String.join(", ", choices + ")"));
+            default -> throw new InvalidOptionException("purge-type", "Please enter a valid purge-type (" + String.join(
+                    ", ", choices + ")"));
         }
 
         if(purgeData.isEmpty()) {
@@ -63,22 +64,25 @@ public class PurgeCommand extends Command {
             return;
         }
 
-        InteractionOriginalResponseUpdater updater = slashCommandCreateEvent.getSlashCommandInteraction().respondLater().join();
+        InteractionOriginalResponseUpdater updater =
+                slashCommandCreateEvent.getSlashCommandInteraction().respondLater().join();
         ServerUpdater serverUpdater = getServer().createUpdater();
 
         int amount = 0;
         List<String> purgeDisplay = new ArrayList<>();
 
         for(Map.Entry<Long, Long> entry : purgeData.entrySet()) {
-            User carrier = slashCommandCreateEvent.getSlashCommandInteraction().getApi().getUserById(entry.getKey()).join();
+            User carrier =
+                    slashCommandCreateEvent.getSlashCommandInteraction().getApi().getUserById(entry.getKey()).join();
 
             purgeDisplay.add(carrier.getMentionTag() + " - " + entry.getValue() + " score");
 
             for(IdList carryRole : rolesToRemove) {
                 Optional<Role> role = getServer().getRoleById(carryRole.getLocalId(getServer().getId()));
+                String roleName = carryRole.getCarryRole().name();
 
                 if(role.isEmpty()) {
-                    logger.error("Role " + carryRole.name() + " not found on server " + getServer().getId());
+                    logger.error("Role {} not found on server {}.", roleName, getServer().getId());
                     return;
                 }
 
@@ -93,6 +97,20 @@ public class PurgeCommand extends Command {
             }
 
             amount++;
+
+            try {
+                carrier.openPrivateChannel()
+                        .thenAccept(privateChannel -> privateChannel.sendMessage(ApplicationService.getInstance()
+                                .getEmbed()
+                                .setColor(EmbedColor.NEGATIVE.getColor())
+                                .setDescription("Your carry roles on `" + getServer().getName() + "` were removed " +
+                                        "since you" +
+                                        " only reached " + entry.getValue() + " score.")
+                                .setTitle("Purge")));
+            }
+            catch(CompletionException completionException) {
+                completionException.printStackTrace();
+            }
         }
 
         serverUpdater.setAuditLogReason("Purge of type \"" + purgeType + "\" with threshold " + threshold + ".")
