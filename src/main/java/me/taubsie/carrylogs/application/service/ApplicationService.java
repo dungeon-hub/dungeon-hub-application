@@ -1,5 +1,7 @@
 package me.taubsie.carrylogs.application.service;
 
+import me.taubsie.carrylogs.application.enums.EmbedColor;
+import me.taubsie.dungeonhub.common.CarryInformation;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
@@ -10,7 +12,6 @@ import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 
-import java.awt.*;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
@@ -101,16 +102,19 @@ public class ApplicationService {
         return switch(carryType) {
             case EMAN -> "https://cdn.discordapp.com/attachments/842827272733982730/992919618236719134/unknown.png";
             case BLAZE -> "https://cdn.discordapp.com/attachments/842827272733982730/992919430369656852/unknown.png";
-            case KUUDRA ->
-                    "https://cdn.discordapp.com/attachments/842827272733982730/1080981866657615872/Minecraft_entities_magma_cube.png";
+            case KUUDRA -> "https://cdn.discordapp.com/attachments/842827272733982730/1080981866657615872" +
+                    "/Minecraft_entities_magma_cube.png";
             case F4 -> "https://cdn.discordapp.com/emojis/759298333608378388.png?v=1";
             case F5 -> "https://cdn.discordapp.com/emojis/759298251068801044.png?v=1";
             case F6 -> "https://cdn.discordapp.com/emojis/761951536829825035.png?v=1";
             case F7 -> "https://cdn.discordapp.com/emojis/792055627248566312.webp?size=80&quality=lossless";
             case MASTER_MODE -> switch(carryTier) {
-                case "Floor 1" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302674244391023/SkyBlock_npcs_bonzo_undead.png";
-                case "Floor 2" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302768633000006/SkyBlock_entities_scarf.png";
-                case "Floor 3" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302836857557022/latest.png";
+                case "Floor 1" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302674244391023" +
+                        "/SkyBlock_npcs_bonzo_undead.png";
+                case "Floor 2" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302768633000006" +
+                        "/SkyBlock_entities_scarf.png";
+                case "Floor 3" ->
+                        "https://cdn.discordapp.com/attachments/842827272733982730/1081302836857557022/latest.png";
                 case "Floor 4" -> "https://cdn.discordapp.com/emojis/759298333608378388.png?v=1";
                 case "Floor 5" -> "https://cdn.discordapp.com/emojis/759298251068801044.png?v=1";
                 case "Floor 6" -> "https://cdn.discordapp.com/emojis/761951536829825035.png?v=1";
@@ -160,7 +164,7 @@ public class ApplicationService {
                         .getEmbed()
                         .setTitle("Error")
                         .setDescription(commandExecutionException.getMessage())
-                        .setColor(new Color(255, 0, 0 /*TODO color*/)))
+                        .setColor(EmbedColor.NEGATIVE.getColor()))
                 .respond();
     }
 
@@ -169,5 +173,33 @@ public class ApplicationService {
                 slashCommandCreateEvent.getSlashCommandInteraction().getCommandName(),
                 slashCommandCreateEvent.getSlashCommandInteraction().getServer().orElse(null)
         );
+    }
+
+    public EmbedBuilder loadEmbedFromCarryInformation(CarryInformation carryInformation, EmbedBuilder embedBuilder) {
+        CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty());
+
+        embedBuilder.setColor(EmbedColor.INFORMATION.getColor())
+                .addInlineField("Number of carries",
+                        String.valueOf(carryInformation.getAmountOfCarries()))
+                .addInlineField("Type of carry",
+                        (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty())
+                                + " - " + carryInformation.getCarryType())
+                .addInlineField("Player", "<@" + carryInformation.getPlayer() + ">")
+                .addInlineField("Carrier", "<@" + carryInformation.getCarrier() + ">");
+
+        if(carryInformation.getApprover() != null) {
+            embedBuilder.addInlineField("Approved by", "<@" + carryInformation.getApprover() + ">");
+        }
+
+        if(carryInformation.getAttachmentLink() != null) {
+            embedBuilder.addInlineField("Transcript-Link", "[Click to open]" +
+                    "(https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")");
+        }
+
+        return embedBuilder;
+    }
+
+    public EmbedBuilder loadEmbedFromCarryInformation(CarryInformation carryInformation) {
+        return loadEmbedFromCarryInformation(carryInformation, getEmbed(carryInformation.getTime()));
     }
 }
