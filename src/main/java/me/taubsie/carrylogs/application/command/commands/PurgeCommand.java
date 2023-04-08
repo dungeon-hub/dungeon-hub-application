@@ -41,16 +41,16 @@ public class PurgeCommand extends Command {
         String purgeType = getStringOption("purge-type");
 
         Map<Long, Long> purgeData = new HashMap<>();
-        List<IdList> rolesToRemove = new ArrayList<>();
+        List<RoleConversion> rolesToRemove = new ArrayList<>();
 
         switch(purgeType) {
             case "dungeons" -> {
                 purgeData.putAll(ConnectionService.getInstance().getPurgeableUsers(threshold, "dungeons"));
-                rolesToRemove.addAll(List.of(IdList.getDungeonCarryRoles()));
+                rolesToRemove.addAll(List.of(RoleConversion.getDungeonCarryRoles()));
             }
             case "slayer" -> {
                 purgeData.putAll(ConnectionService.getInstance().getPurgeableUsers(threshold, "slayer"));
-                rolesToRemove.addAll(List.of(IdList.getSlayerCarryRoles()));
+                rolesToRemove.addAll(List.of(RoleConversion.getSlayerCarryRoles()));
             }
             default -> throw new InvalidOptionException("purge-type", "Please enter a valid purge-type (" + String.join(
                     ", ", choices + ")"));
@@ -77,8 +77,8 @@ public class PurgeCommand extends Command {
             purgeDisplay.add(carrier.getMentionTag() + " - " + entry.getValue() + " score");
             List<String> rolesRemoved = new ArrayList<>();
 
-            for(IdList carryRole : rolesToRemove) {
-                Optional<Role> role = getServer().getRoleById(carryRole.getLocalId(getServer().getId()));
+            for(RoleConversion carryRole : rolesToRemove) {
+                Optional<Role> role = getServer().getRoleById(ServerService.getInstance().getServerProperty(getServer().getId(), carryRole.getServerProperty()));
                 String roleName = carryRole.getCarryRole().name();
 
                 if(role.isEmpty()) {
@@ -98,11 +98,8 @@ public class PurgeCommand extends Command {
             }
 
             List<CarryRole> roleList =
-                    IdList.getCarryRoles(carrier.getRoles(getServer()), getServer().getId()).stream().map(IdList::getCarryRole).toList();
-
-            if(!roleList.isEmpty()) {
-                ConnectionService.getInstance().addRoles(carrier.getId(), roleList);
-            }
+                    RoleConversion.getCarryRoles(carrier.getRoles(getServer()), getServer().getId()).stream().map(RoleConversion::getCarryRole).toList();
+            ConnectionService.getInstance().addRoles(carrier.getId(), roleList);
 
             amount++;
 

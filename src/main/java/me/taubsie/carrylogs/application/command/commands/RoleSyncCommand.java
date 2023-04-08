@@ -1,9 +1,10 @@
 package me.taubsie.carrylogs.application.command.commands;
 
+import me.taubsie.carrylogs.application.enums.RoleConversion;
+import me.taubsie.carrylogs.application.service.ServerService;
 import me.taubsie.dungeonhub.common.CarryRole;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
-import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
@@ -38,15 +39,15 @@ public class RoleSyncCommand extends Command {
         InteractionOriginalResponseUpdater responseUpdater = slashCommandCreateEvent.getSlashCommandInteraction().respondLater().join();
         Server server = getServer();
 
-        Map<Long, List<CarryRole>> roleList = Arrays.stream(IdList.getCarryRoles())
-                .map(idList -> server.getRoleById(idList.getLocalId(server.getId())))
+        Map<Long, List<CarryRole>> roleList = Arrays.stream(RoleConversion.getCarryRoles())
+                .map(role -> server.getRoleById(ServerService.getInstance().getServerProperty(getServer().getId(), role.getServerProperty())))
                 .flatMap(Optional::stream)
                 .flatMap(role -> role.getUsers().stream().filter(user -> !user.isBot()))
                 .distinct()
                 .collect(Collectors.toMap(
                         DiscordEntity::getId,
-                        user -> IdList.getCarryRoles(user.getRoles(server), server.getId()).stream()
-                                .map(IdList::getCarryRole)
+                        user -> RoleConversion.getCarryRoles(user.getRoles(server), server.getId()).stream()
+                                .map(RoleConversion::getCarryRole)
                                 .toList()));
 
         ConnectionService.getInstance().addMultipleRoles(roleList);
