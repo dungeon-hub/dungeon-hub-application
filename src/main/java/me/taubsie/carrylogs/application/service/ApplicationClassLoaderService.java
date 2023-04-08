@@ -34,9 +34,8 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
 
                 commandMap.put(slashCommandBuilder, command);
             }
-        }
-        catch(InstantiationException | IllegalAccessException | InvocationTargetException |
-              NoSuchMethodException | ClassCastException exception) {
+        } catch(InstantiationException | IllegalAccessException | InvocationTargetException |
+                NoSuchMethodException | ClassCastException exception) {
             exception.printStackTrace();
         }
     }
@@ -105,9 +104,8 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
                         Listener.class).keySet()) {
             try {
                 bot.addListener(listenerClass.getDeclaredConstructor().newInstance());
-            }
-            catch(InvocationTargetException | InstantiationException | IllegalAccessException |
-                  NoSuchMethodException exception) {
+            } catch(InvocationTargetException | InstantiationException | IllegalAccessException |
+                    NoSuchMethodException exception) {
                 exception.printStackTrace();
             }
         }
