@@ -67,7 +67,13 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                     return;
                 }
 
-                ConnectionService.getInstance().addToLogQueue(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId(), BotStarter.getInstance().getCarryInformation().get(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId()));
+                CarryInformation carryInformation = BotStarter.getInstance().getCarryInformation().get(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId());
+
+                if(carryInformation == null) {
+                    return;
+                }
+
+                ConnectionService.getInstance().addToLogQueue(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId(), carryInformation);
                 BotStarter.getInstance().getCarryInformation().remove(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId());
 
                 messageComponentCreateEvent.getMessageComponentInteraction().createImmediateResponder().setContent(
@@ -121,7 +127,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                 server.get().getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getLocalId(server.get().getId()));
 
                         if(logChannel.isPresent()) {
-                            logger.info("Carry denied:" + carryInformation);
+                            logger.debug("Carry denied:" + carryInformation);
 
                             logChannel.get().sendMessage(
                                     ApplicationService.getInstance()
@@ -209,7 +215,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                         }
 
                         if(logChannel.isPresent()) {
-                            logger.info("Carry logged:" + carryInformation);
+                            logger.debug("Carry logged:" + carryInformation);
 
                             logChannel.get().sendMessage(
                                     ApplicationService.getInstance()
@@ -220,7 +226,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                                     String.valueOf(carryInformation.getAmountOfCarries()))
                                             .addInlineField("Type of carry",
                                                     (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) +
-                                                    " - " + carryInformation.getCarryType())
+                                                            " - " + carryInformation.getCarryType())
                                             .addInlineField("Player",
                                                     messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                             .addInlineField("Carrier",

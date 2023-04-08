@@ -21,7 +21,7 @@ import java.util.*;
  * @author Taubsie
  * @since 1.0.0
  */
-@OnStart
+@OnStart(priority = 1)
 public class BotStarter extends ProgramOrigin implements StartupListener {
     private static final Logger logger = LoggerFactory.getLogger(BotStarter.class);
 
@@ -55,22 +55,30 @@ public class BotStarter extends ProgramOrigin implements StartupListener {
         ApplicationClassLoaderService.getInstance().loadGlobalSlashCommands(bot);
         ApplicationClassLoaderService.getInstance().loadServerSlashCommands(bot);
 
-        logger.info("--------------------");
-        logger.info("Im on servers:");
-        bot.getServers().forEach(server ->
-                logger.info("{} by {} ({})",
-                        server.getName(),
-                        server.getOwner().map(User::getDiscriminatedName).orElse("no-name"),
-                        server.getOwnerId()
-                ));
-        logger.info("--------------------");
-
-        //TODO add logging for server joins/leavs
-        bot.addServerJoinListener(serverJoinEvent -> resetBotAppearance());
-        bot.addServerLeaveListener(serverLeaveEvent -> resetBotAppearance());
+        logger.info(getLine());
+        getServerListMessage().forEach(logger::info);
+        logger.info(getLine());
     }
 
-    public void resetBotActivity() {
+    public List<String> getServerListMessage() {
+        List<String> message = new ArrayList<>();
+
+        message.add("Im on servers:");
+        message.addAll(bot.getServers().stream()
+                .map(server -> String.format("%s by %s (%d)",
+                                server.getName(),
+                                server.getOwner().map(User::getDiscriminatedName).orElse("no-name"),
+                                server.getOwnerId()))
+                .toList());
+
+        return message;
+    }
+
+    public String getLine() {
+        return "--------------------";
+    }
+
+    private void resetBotActivity() {
         bot.updateActivity(ActivityType.WATCHING, "carriers on " + bot.getServers().size() + " servers");
     }
 
@@ -78,7 +86,7 @@ public class BotStarter extends ProgramOrigin implements StartupListener {
         bot.updateStatus(UserStatus.ONLINE);
     }
 
-    private void resetBotAppearance() {
+    public void resetBotAppearance() {
         resetBotActivity();
         resetBotStatus();
     }

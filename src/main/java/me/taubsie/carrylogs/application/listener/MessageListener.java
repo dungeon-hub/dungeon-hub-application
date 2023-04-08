@@ -149,7 +149,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                     }
 
                     if(logChannel.isPresent()) {
-                        logger.info("Carry logged: {}", carryInformation);
+                        logger.debug("Carry logged: {}", carryInformation);
 
                         logChannel.get().sendMessage(
                                 ApplicationService.getInstance()

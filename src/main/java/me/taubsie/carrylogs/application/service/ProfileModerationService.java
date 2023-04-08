@@ -17,8 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class ProfileModerationService
-{
+public class ProfileModerationService {
     private static final String[] forbiddenUsernames = new String[]{
             "Captcha.bot",
             "YAGPDB",
@@ -31,32 +30,29 @@ public class ProfileModerationService
             "SkyKings",
             "SkyHelper",
             "MEE6",
-            "Dungeon Hub Bot",
-            "Wick"
+            "Dungeon Hub",
+            "Wick",
+            "Lunar Client",
+            "Badlion"
     };
     private static final Long[] excludedIds = new Long[]{
             727320030462869515L,
-            703035551330205716L
+            703035551330205716L,
+            599475365471059978L
     };
     private static ProfileModerationService instance;
     private final Homoglyph homoglyph;
 
-    ProfileModerationService()
-    {
-        try
-        {
+    ProfileModerationService() {
+        try {
             this.homoglyph = HomoglyphBuilder.build();
-        }
-        catch (IOException ioException)
-        {
+        } catch(IOException ioException) {
             throw new FailedToLoadException(ioException);
         }
     }
 
-    public static ProfileModerationService getInstance()
-    {
-        if (instance == null)
-        {
+    public static ProfileModerationService getInstance() {
+        if(instance == null) {
             instance = new ProfileModerationService();
         }
 
@@ -64,12 +60,10 @@ public class ProfileModerationService
     }
 
     @Nullable
-    public String checkUserName(String userName)
-    {
+    public String checkUserName(String userName) {
         List<Homoglyph.SearchResult> searchResults = homoglyph.search(userName, forbiddenUsernames);
 
-        if (searchResults.isEmpty())
-        {
+        if(searchResults.isEmpty()) {
             return null;
         }
 
@@ -97,13 +91,11 @@ public class ProfileModerationService
                 "got banned because of a bad username:\n" + reason));
     }
 
-    public boolean isOverwritten(long userId)
-    {
+    public boolean isOverwritten(long userId) {
         return Arrays.stream(excludedIds).anyMatch(id -> id == userId);
     }
 
-    public boolean isVerified(User user, Server server)
-    {
+    public boolean isVerified(User user, Server server) {
         return user.getRoles(server)
                 .stream()
                 .anyMatch(role -> role.getId() == IdList.VERIFIED_ROLE.getLocalId(server.getId())
@@ -111,13 +103,11 @@ public class ProfileModerationService
                 );
     }
 
-    public boolean isExcluded(User user, Server server)
-    {
+    public boolean isExcluded(User user, Server server) {
         return user.isBot() || user.isBotOwnerOrTeamMember() || isOverwritten(user.getId()) || isVerified(user, server);
     }
 
-    public boolean isExcluded(User user)
-    {
+    public boolean isExcluded(User user) {
         return user.isBot() || user.isBotOwnerOrTeamMember() || isOverwritten(user.getId());
     }
 }
