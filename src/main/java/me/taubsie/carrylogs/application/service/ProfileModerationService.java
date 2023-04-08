@@ -1,10 +1,13 @@
 package me.taubsie.carrylogs.application.service;
 
+import me.taubsie.carrylogs.application.classes.ServerProperty;
 import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.exceptions.FailedToLoadException;
 import net.codebox.homoglyph.Homoglyph;
 import net.codebox.homoglyph.HomoglyphBuilder;
 import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.message.component.ActionRow;
+import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.jetbrains.annotations.Nullable;
@@ -70,23 +73,29 @@ public class ProfileModerationService {
         return searchResults.stream().map(searchResult -> searchResult.match).collect(Collectors.joining("; "));
     }
 
-    public void handleUserBan(Server server, User user, String reason)
-    {
-        try
-        {
-            user.openPrivateChannel().join().sendMessage("You got banned from `" + server.getName() + "` because of a" +
-                    " suspicious user profile.\nIf you think this might be a mistake, please appeal at: " +
-                    "https://forms.gle/rfQAJueSoyQno1gD6");
-        }
-        catch (Exception exception)
-        {
+    public void handleUserBan(Server server, User user, String reason) {
+        String unbanForm = ServerService.getInstance().getServerProperty(server.getId(), ServerProperty.UNBAN_FORM);
+
+        try {
+            String message = ServerService.getInstance()
+                    .getServerProperty(server.getId(), ServerProperty.PROFILE_MODERATION_BAN_MESSAGE)
+                    .replace("%server%", server.getName())
+                    .replace("%form%", unbanForm);
+
+            user.openPrivateChannel().join()
+                    .sendMessage(message, ActionRow.of(Button.link(unbanForm, "Appeal"))).join();
+        } catch(Exception exception) {
             exception.printStackTrace();
         }
 
         server.banUser(user, Duration.of(6, ChronoUnit.DAYS), "Bad username: " + reason);
 
-        Optional<ServerTextChannel> logsChannel =
-                server.getTextChannelById(IdList.MODERATION_LOGS_CHANNEL.getLocalId(server.getId()));
+        Optional<ServerTextChannel> logsChannel = server.getTextChannelById(ServerService.getInstance().getServerProperty(server.getId(), ServerProperty.MODERATION_LOGS_CHANNEL));
+
+        if(server.getId() == 975802519450157096L) {
+            logsChannel = server.getTextChannelById(990067160644739072L);
+        }
+
         logsChannel.ifPresent(serverTextChannel -> serverTextChannel.sendMessage("User " + user.getMentionTag() + " " +
                 "got banned because of a bad username:\n" + reason));
     }

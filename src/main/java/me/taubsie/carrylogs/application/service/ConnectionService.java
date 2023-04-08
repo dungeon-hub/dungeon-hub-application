@@ -1,5 +1,7 @@
 package me.taubsie.carrylogs.application.service;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.Getter;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import me.taubsie.dungeonhub.common.CarryLogService;
@@ -27,7 +29,7 @@ public class ConnectionService {
     private final OkHttpClient httpClient;
 
     @Getter
-    private String token;
+    private String apiToken;
 
     private ConnectionService() {
         httpClient = new OkHttpClient();
@@ -70,20 +72,66 @@ public class ConnectionService {
                 return;
             }
 
-            token = response.body().string();
-        }
-        catch(IOException ioException) {
+            apiToken = response.body().string();
+        } catch(IOException ioException) {
             ioException.printStackTrace();
         }
     }
 
-    private Request.Builder getRequest(String uri) {
+    public String[] isFlagged(String user, boolean discord) {
+        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "v1/user")
+                .newBuilder()
+                .addQueryParameter("user", user)
+                .addQueryParameter("type", discord ? "discord" : "uuid")
+                .build();
+
+        Request request = new Request.Builder()
+                .url(httpUrl)
+                .addHeader("Authorization", ConfigProperty.SAFETY_API_KEY.getValue())
+                .get()
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            ResponseBody responseBody = response.body();
+            if(!response.isSuccessful() || responseBody == null) {
+                return null;
+            }
+
+            String body = responseBody.string();
+            JsonObject responseObject = JsonParser.parseString(body).getAsJsonObject();
+            responseObject = responseObject.getAsJsonObject("data");
+
+            if(responseObject.has("scammer")) {
+                return new String[]{
+                        "Scammer",
+                        responseObject
+                                .getAsJsonObject("scammer")
+                                .getAsJsonPrimitive("reason")
+                                .getAsString()
+                };
+            } else if(responseObject.has("ratter")) {
+                return new String[]{
+                        "Ratter",
+                        responseObject
+                                .getAsJsonObject("ratter")
+                                .getAsJsonPrimitive("reason")
+                                .getAsString()
+                };
+            }
+        } catch(IOException ioException) {
+            ioException.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private Request.Builder getApiRequest(String uri) {
         MediaType mediaType = MediaType.get("multipart/form-data; boundary=---011000010111000001101001");
 
         return new Request.Builder()
                 .url(ConfigProperty.API_URL + uri)
                 .addHeader("Content-Type", mediaType.toString())
-                .addHeader("Authorization", "Bearer " + token);
+                .addHeader("Authorization", "Bearer " + apiToken);
     }
 
     private RequestBody getRequestBody(Long id) {
@@ -106,81 +154,77 @@ public class ConnectionService {
     }
 
     public void addToLogQueue(Long id, CarryInformation carryInformation) {
-        Request request = getRequest("v1/log-queue")
+        Request request = getApiRequest("v1/log-queue")
                 .post(getRequestBody(id, carryInformation))
                 .build();
 
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.isSuccessful()) {
-                logger.info("Added new carry to log-queue.");
+                logger.debug("Added new carry to log-queue.");
             } else {
                 logger.error("Adding new carry to log-queue wasn't successful");
             }
-        }
-        catch(IOException ioException) {
+        } catch(IOException ioException) {
             ioException.printStackTrace();
         }
     }
 
     public void addToApprovingQueue(Long id, CarryInformation carryInformation) {
-        Request request = getRequest("v1/approving-queue")
+        Request request = getApiRequest("v1/approving-queue")
                 .post(getRequestBody(id, carryInformation))
                 .build();
 
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.isSuccessful()) {
-                logger.info("Added new carry to approving-queue.");
+                logger.debug("Added new carry to approving-queue.");
             } else {
                 logger.error("Adding new carry to approving-queue wasn't successful.");
             }
-        }
-        catch(IOException ioException) {
+        } catch(IOException ioException) {
             ioException.printStackTrace();
         }
     }
 
     public void removeFromApprovingQueue(Long id) {
-        Request request = getRequest("v1/approving-queue")
+        Request request = getApiRequest("v1/approving-queue")
                 .delete(getRequestBody(id))
                 .build();
 
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.isSuccessful()) {
-                logger.info("Removed a carry from approving-queue.");
+                logger.debug("Removed a carry from approving-queue.");
             } else {
                 logger.error("Removing a carry from approving-queue wasn't successful.");
             }
-        }
-        catch(IOException ioException) {
+        } catch(IOException ioException) {
             ioException.printStackTrace();
         }
     }
 
     public void removeFromLogQueue(Long id) {
-        Request request = getRequest("v1/log-queue")
+        Request request = getApiRequest("v1/log-queue")
                 .delete(getRequestBody(id))
                 .build();
 
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.isSuccessful()) {
-                logger.info("Removed a carry from log-queue.");
+                logger.debug("Removed a carry from log-queue.");
             } else {
                 logger.error("Removing a carry from log-queue wasn't successful.");
             }
-        }
-        catch(IOException ioException) {
+        } catch(IOException ioException) {
             ioException.printStackTrace();
         }
     }
 
     public Set<CarryInformation> getFromLogApprovingQueue(Long id) {
-        Request request = getRequest("v1/approving-queue/" + id)
+        Request request = getApiRequest("v1/approving-queue/" + id)
                 .get()
                 .build();
 
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.isSuccessful()) {
-                logger.info("Loaded carries from approving-queue.");
+                logger.debug("Loaded carries from approving-queue.");
 
                 if(response.body() == null) {
                     return new HashSet<>();
@@ -193,21 +237,20 @@ public class ConnectionService {
                         response.body() != null ? response.body().string() : response.code());
             }
             return new HashSet<>();
-        }
-        catch(IOException ioException) {
+        } catch(IOException ioException) {
             ioException.printStackTrace();
             return new HashSet<>();
         }
     }
 
     public Set<CarryInformation> getFromLogQueue(Long id) {
-        Request request = getRequest("v1/log-queue/" + id)
+        Request request = getApiRequest("v1/log-queue/" + id)
                 .get()
                 .build();
 
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.isSuccessful()) {
-                logger.info("Loaded carries from log-queue.");
+                logger.debug("Loaded carries from log-queue.");
 
                 if(response.body() == null) {
                     return new HashSet<>();
@@ -220,34 +263,31 @@ public class ConnectionService {
                         response.body() != null ? response.body().string() : response.code());
             }
             return new HashSet<>();
-        }
-        catch(IOException ioException) {
+        } catch(IOException ioException) {
             ioException.printStackTrace();
             return new HashSet<>();
         }
     }
 
     public long logCarry(CarryInformation carryInformation) {
-        Request request = getRequest("v1/log")
+        Request request = getApiRequest("v1/log")
                 .post(getRequestBody(carryInformation))
                 .build();
 
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.isSuccessful()) {
-                logger.info("Logged carry successfully.");
+                logger.debug("Logged carry successfully.");
                 if(response.body() != null) {
                     try {
                         return Long.parseLong(response.body().string());
-                    }
-                    catch(NumberFormatException numberFormatException) {
+                    } catch(NumberFormatException numberFormatException) {
                         numberFormatException.printStackTrace();
                     }
                 }
             } else {
                 logger.error("Error when trying to log carry.");
             }
-        }
-        catch(IOException ioException) {
+        } catch(IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -267,7 +307,7 @@ public class ConnectionService {
     }
 
     public Map<String, Long> countScore(Long id) {
-        Request request = getRequest("v1/carry-score/" + id)
+        Request request = getApiRequest("v1/carry-score/" + id)
                 .get()
                 .build();
 
@@ -280,8 +320,7 @@ public class ConnectionService {
             } else {
                 logger.error("Error when trying to count carries.");
             }
-        }
-        catch(IOException ioException) {
+        } catch(IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -295,7 +334,7 @@ public class ConnectionService {
     }
 
     public long getScore(Long id, String type) {
-        Request request = getRequest("v1/carry-score/" + id + "/" + type)
+        Request request = getApiRequest("v1/carry-score/" + id + "/" + type)
                 .get()
                 .build();
 
@@ -307,8 +346,7 @@ public class ConnectionService {
             } else {
                 logger.error("Error when trying to get score.");
             }
-        }
-        catch(IOException ioException) {
+        } catch(IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -328,7 +366,7 @@ public class ConnectionService {
     }
 
     public Map<Long, Long> getLeaderboard(@NotNull String type) {
-        Request request = getRequest("v1/leaderboard/" + type)
+        Request request = getApiRequest("v1/leaderboard/" + type)
                 .get()
                 .build();
 
@@ -343,8 +381,7 @@ public class ConnectionService {
             } else {
                 logger.error("Error when trying to get leaderboard.");
             }
-        }
-        catch(IOException ioException) {
+        } catch(IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -380,7 +417,7 @@ public class ConnectionService {
                 .add("amount", String.valueOf(amount))
                 .build();
 
-        Request request = getRequest("v1/carry-score/" + id + "/" + type)
+        Request request = getApiRequest("v1/carry-score/" + id + "/" + type)
                 .put(requestBody)
                 .build();
 
@@ -392,8 +429,7 @@ public class ConnectionService {
             } else {
                 logger.error("Error when trying to update score.");
             }
-        }
-        catch(IOException ioException) {
+        } catch(IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -405,7 +441,7 @@ public class ConnectionService {
                 .add("roles", CarryLogService.getInstance().getGson().toJson(roleList))
                 .build();
 
-        Request request = getRequest("v1/roles")
+        Request request = getApiRequest("v1/roles")
                 .put(requestBody)
                 .build();
 
@@ -413,8 +449,7 @@ public class ConnectionService {
             if(!response.isSuccessful()) {
                 logger.error("Error when trying to add roles.");
             }
-        }
-        catch(IOException ioException) {
+        } catch(IOException ioException) {
             ioException.printStackTrace();
         }
     }
@@ -425,7 +460,7 @@ public class ConnectionService {
                 .add("roles", CarryLogService.getInstance().getGson().toJson(roles))
                 .build();
 
-        Request request = getRequest("v1/role")
+        Request request = getApiRequest("v1/role")
                 .put(requestBody)
                 .build();
 
@@ -445,7 +480,7 @@ public class ConnectionService {
     }
 
     public Map<Long, Long> getPurgeableUsers(long amount, String type) {
-        Request request = getRequest("v1/purge/" + type + "/" + amount)
+        Request request = getApiRequest("v1/purge/" + type + "/" + amount)
                 .get()
                 .build();
 
@@ -457,8 +492,7 @@ public class ConnectionService {
             } else {
                 logger.error("Error when trying to load purgable users.");
             }
-        }
-        catch(IOException ioException) {
+        } catch(IOException ioException) {
             ioException.printStackTrace();
         }
 
