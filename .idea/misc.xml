@@ -6,6 +6,7 @@
       <item index="1" class="java.lang.String" itemvalue="me.taubsie.carrylogs.application.listener.Listener" />
     </list>
   </component>
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="FrameworkDetectionExcludesConfiguration">
     <file type="web" url="file://$PROJECT_DIR$/../carrylogs-server" />
   </component>
