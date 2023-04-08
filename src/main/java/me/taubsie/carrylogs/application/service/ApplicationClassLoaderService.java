@@ -133,17 +133,20 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
 
         for(Map.Entry<Long, Set<SlashCommandBuilder>> entry : serverCommandBuilders.entrySet()) {
             try {
-                Set<ApplicationCommand> serverCommands = bot.bulkOverwriteServerApplicationCommands(entry.getKey(),
-                        entry.getValue()).join();
-                for(ApplicationCommand applicationCommand : serverCommands) {
-                    if(applicationCommand instanceof SlashCommand slashCommand) {
-                        Command command =
-                                commandMap.values().stream().filter(command1 -> command1.getCommandName().equalsIgnoreCase(applicationCommand.getName())).findFirst().orElse(null);
-                        slashCommandMap.put(slashCommand, command);
+                Optional<Server> server = bot.getServerById(entry.getKey());
+
+                if(server.isPresent()) {
+                    Set<ApplicationCommand> serverCommands = bot.bulkOverwriteServerApplicationCommands(server.get(),
+                            entry.getValue()).join();
+                    for(ApplicationCommand applicationCommand : serverCommands) {
+                        if(applicationCommand instanceof SlashCommand slashCommand) {
+                            Command command =
+                                    commandMap.values().stream().filter(command1 -> command1.getCommandName().equalsIgnoreCase(applicationCommand.getName())).findFirst().orElse(null);
+                            slashCommandMap.put(slashCommand, command);
+                        }
                     }
                 }
-            }
-            catch(CompletionException completionException) {
+            } catch(CompletionException completionException) {
                 completionException.printStackTrace();
             }
         }
