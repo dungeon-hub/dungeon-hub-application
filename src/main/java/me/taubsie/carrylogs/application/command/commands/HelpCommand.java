@@ -18,9 +18,10 @@ public class HelpCommand extends Command {
                                                 
                         **Usage:**\s
                         `/log amount:NUMBER carry-type:Completion/S/S+/Tier 2/Tier 3/Tier 4` - Run this inside the ticket you are logging to log your carries and earn score.
-                        %score% - Displays your current score.
-                        %score-help% - Displays more information about the score system.
-                        `/calc-price type:TYPE tier:TIER amount:AMOUNT` - Calculates the price of carries.""")
+                        `/score` - Displays your current score.
+                        `/score-help` - Displays more information about the score system.
+                        `/calc-price type:TYPE tier:TIER amount:AMOUNT` - Calculates the price of carries.
+                        `/leaderboard leaderboard:TYPE` - Shows a leaderboard containing either the current or the all-time score.""")
                 .setColor(EmbedColor.INFORMATION.getColor()));
     }
 }
