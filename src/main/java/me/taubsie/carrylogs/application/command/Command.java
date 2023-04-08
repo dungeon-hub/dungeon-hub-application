@@ -4,9 +4,11 @@ import me.taubsie.carrylogs.application.exceptions.*;
 import me.taubsie.carrylogs.application.service.ApplicationClassLoaderService;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import org.javacord.api.entity.DiscordEntity;
+import org.javacord.api.entity.channel.ServerChannel;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.permission.PermissionType;
+import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -123,6 +125,26 @@ public abstract class Command {
         }
 
         return stringValue.get();
+    }
+
+    public final ServerChannel getChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+        Optional<ServerChannel> channelValue = getOption(slashCommandCreateEvent, name).getChannelValue();
+
+        if(channelValue.isEmpty()) {
+            throw new InvalidOptionException(name);
+        }
+
+        return channelValue.get();
+    }
+
+    public final Role getRoleOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+        Optional<Role> roleValue = getOption(slashCommandCreateEvent, name).getRoleValue();
+
+        if(roleValue.isEmpty()) {
+            throw new InvalidOptionException(name);
+        }
+
+        return roleValue.get();
     }
 
     public final Long getLongOption(String name) {

@@ -12,11 +12,7 @@
         <module name="dungeon-hub-application" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel target="17">
-      <module name="dungeon-hub-application" target="17" />
-      <module name="dungeon-hub-common" target="17" />
-      <module name="dungeon-hub-server" target="17" />
-    </bytecodeTargetLevel>
+    <bytecodeTargetLevel target="17" />
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
