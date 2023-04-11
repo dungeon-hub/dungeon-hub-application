@@ -22,6 +22,8 @@ public class ConnectionService {
     private static final String DUNGEON = "dungeon";
     private static final String SLAYER = "slayer";
     private static final String KUUDRA = "kuudra";
+    
+    private static final int[] requiredXp = {50, 125, 235, 395, 625, 955, 1425, 2095, 3045, 4385, 6275, 8940, 12700, 17960, 25340, 35640, 50040, 70040, 97640, 135640, 188140, 259640, 356640, 488640, 668640, 911640, 1239640, 1684640, 2284640, 3084640, 4149640, 5559640, 7459640, 9959640, 13259640, 17559640, 23159640, 30359640, 39559640, 51559640, 66559640, 85559640, 109559640, 139559640, 177559640, 225559640, 285559640, 360559640, 453559640, 569809640};
 
     private static final long REFRESH_TIME = 1000L * 60 * 55;
     private static ConnectionService instance;
@@ -497,5 +499,83 @@ public class ConnectionService {
         }
 
         return new HashMap<>();
+    }
+    
+    
+    
+    //As this requests data from the Mojang API (aka slow), it is recommended to use UUIDs instead of names
+    public String getUUIDByName(String name) {
+        Request request = new Request.Builder()
+                .url("https://api.mojang.com/users/profiles/minecraft/" + name)
+                .get()
+                .build();
+
+        try (Response response = httpClient.newCall(request).execute()) {
+            if(!response.isSuccessful() || response.body() == null) {
+                logger.error("Unsuccessful uuid request for name " + name);
+                return null;
+            }
+
+            return JsonParser.parseString(response.body().string()).getAsJsonObject().get("id").getAsString();
+        } catch(IOException | NullPointerException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+    
+    //This is a request on the Hypixel API, and therefore unneccessary calls should be avoided
+    public int getCataLevelByUUID(String uuid) {
+        JsonArray profiles = getProfiles(uuid);
+        if(profiles == null) return 0;
+
+        //Highest cata xp of all profiles
+        double highestXP = 0;
+
+        for(int i = 0; i < profiles.size(); i++) {
+            try {
+                double thisXP = profiles.get(i).getAsJsonObject()
+                        .getAsJsonObject("members")
+                        .get(uuid.replaceAll("-",""))
+                        .getAsJsonObject()
+                        .getAsJsonObject("dungeons")
+                        .getAsJsonObject("dungeon_types")
+                        .getAsJsonObject("catacombs")
+                        .get("experience")
+                        .getAsDouble();
+                highestXP = Math.max(highestXP, thisXP);
+            // null if profile hasn't entered dungeons
+            } catch (NullPointerException ignored) {}
+        }
+
+        return cataXPToLevel(highestXP);
+    }
+    
+    public JsonArray getProfiles(String uuid) {
+        Request request = new Request.Builder()
+                .url("https://api.hypixel.net/skyblock/profiles?key=" + ConfigProperty.HYPIXEL_API_KEY.getValue() + "&uuid=" + uuid)
+                .get()
+                .build();
+        try (Response response = httpClient.newCall(request).execute()) {
+            if(!response.isSuccessful() || response.body() == null) {
+                logger.error("Unsuccessful profile request for UUID " + uuid);
+                return null;
+            }
+
+            return JsonParser.parseString(response.body().string()).getAsJsonObject().getAsJsonArray("profiles");
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+    
+    private int cataXPToLevel(double xp) {
+        for(int i = 0; i < requiredXp.length; i++) {
+            if(requiredXp[i] > xp) return i;
+        }
+
+        // 50 and everything higher is returned as 50
+        return 50;
     }
 }
