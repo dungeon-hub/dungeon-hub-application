@@ -1,6 +1,7 @@
 package me.taubsie.carrylogs.application.service;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import lombok.Getter;
 import me.taubsie.dungeonhub.common.CarryInformation;
