@@ -76,7 +76,8 @@ public class ConfigCommand extends Command {
                         }
 
                         return getStringOption(option, "value");
-                    });
+                    })
+                    .map(s -> s.replace("\\n", "\n"));
 
             if(value.isEmpty()) {
                 throw new InvalidOptionException("value", "Please enter something.");

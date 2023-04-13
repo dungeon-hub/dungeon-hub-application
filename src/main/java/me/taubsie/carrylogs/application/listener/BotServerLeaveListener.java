@@ -1,5 +1,6 @@
 package me.taubsie.carrylogs.application.listener;
 
+import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ServerService;
 import me.taubsie.carrylogs.application.start.BotStarter;
 import org.javacord.api.entity.Nameable;
@@ -20,6 +21,17 @@ public class BotServerLeaveListener implements ServerLeaveListener {
                 serverLeaveEvent.getServer().getName(),
                 serverLeaveEvent.getServer().getOwner().map(Nameable::getName).orElse("no-name"),
                 serverLeaveEvent.getServer().getOwnerId());
+
+        ApplicationService.getInstance()
+                .getBotOwner(serverLeaveEvent.getApi())
+                .openPrivateChannel().join()
+                .sendMessage("I just left server '"
+                        + serverLeaveEvent.getServer().getName()
+                        + "' by '"
+                        + serverLeaveEvent.getServer().getOwner().map(Nameable::getName).orElse("no-name")
+                        + "' ("
+                        + serverLeaveEvent.getServer().getOwnerId()
+                        + ").");
 
         ServerService.getInstance().unloadServerData(serverLeaveEvent.getServer().getId());
     }

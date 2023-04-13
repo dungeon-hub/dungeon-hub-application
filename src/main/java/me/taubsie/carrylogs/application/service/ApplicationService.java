@@ -6,10 +6,12 @@ import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
+import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 
 import java.text.DecimalFormat;
@@ -36,6 +38,11 @@ public class ApplicationService {
         return new EmbedBuilder()
                 .setTimestamp(time)
                 .setFooter("discord.gg/dungeons • made by Taubsie#0911");
+    }
+
+    //TODO pretty cheesy, you can do better
+    public User getBotOwner(DiscordApi api) {
+        return api.getOwner().orElse(api.getCachedTeam().get().requestOwner()).join();
     }
 
     public boolean isCarryTier(String carryTier, CarryType carryType) {

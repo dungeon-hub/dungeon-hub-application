@@ -92,10 +92,6 @@ public class ProfileModerationService {
 
         Optional<ServerTextChannel> logsChannel = server.getTextChannelById(ServerService.getInstance().getServerProperty(server.getId(), ServerProperty.MODERATION_LOGS_CHANNEL));
 
-        if(server.getId() == 975802519450157096L) {
-            logsChannel = server.getTextChannelById(990067160644739072L);
-        }
-
         logsChannel.ifPresent(serverTextChannel -> serverTextChannel.sendMessage("User " + user.getMentionTag() + " " +
                 "got banned because of a bad username:\n" + reason));
     }
