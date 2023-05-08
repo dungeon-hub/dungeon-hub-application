@@ -23,6 +23,8 @@ public class ConnectionService {
     private static final String DUNGEON = "dungeon";
     private static final String SLAYER = "slayer";
     private static final String KUUDRA = "kuudra";
+
+    private static final String API_PREFIX = "api/v1/";
     
     private static final int[] requiredXp = {50, 125, 235, 395, 625, 955, 1425, 2095, 3045, 4385, 6275, 8940, 12700, 17960, 25340, 35640, 50040, 70040, 97640, 135640, 188140, 259640, 356640, 488640, 668640, 911640, 1239640, 1684640, 2284640, 3084640, 4149640, 5559640, 7459640, 9959640, 13259640, 17559640, 23159640, 30359640, 39559640, 51559640, 66559640, 85559640, 109559640, 139559640, 177559640, 225559640, 285559640, 360559640, 453559640, 569809640};
 
@@ -63,7 +65,7 @@ public class ConnectionService {
         String password = ConfigProperty.API_PASSWORD.getValue();
 
         Request request = new Request.Builder()
-                .url(ConfigProperty.API_URL + "token")
+                .url(ConfigProperty.API_URL + "api/token")
                 .get()
                 .addHeader("Authorization",
                         "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes()))
@@ -82,7 +84,7 @@ public class ConnectionService {
     }
 
     public String[] isFlagged(String user, boolean discord) {
-        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "v1/user")
+        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + API_PREFIX + "user")
                 .newBuilder()
                 .addQueryParameter("user", user)
                 .addQueryParameter("type", discord ? "discord" : "uuid")
@@ -97,6 +99,7 @@ public class ConnectionService {
         try(Response response = httpClient.newCall(request).execute()) {
             ResponseBody responseBody = response.body();
             if(!response.isSuccessful() || responseBody == null) {
+                //TODO replace with empty array instead of null
                 return null;
             }
 
@@ -125,6 +128,7 @@ public class ConnectionService {
             ioException.printStackTrace();
         }
 
+        //TODO replace with empty array instead of null
         return null;
     }
 
@@ -132,7 +136,7 @@ public class ConnectionService {
         MediaType mediaType = MediaType.get("multipart/form-data; boundary=---011000010111000001101001");
 
         return new Request.Builder()
-                .url(ConfigProperty.API_URL + uri)
+                .url(ConfigProperty.API_URL + API_PREFIX + uri)
                 .addHeader("Content-Type", mediaType.toString())
                 .addHeader("Authorization", "Bearer " + apiToken);
     }
@@ -157,7 +161,7 @@ public class ConnectionService {
     }
 
     public void addToLogQueue(Long id, CarryInformation carryInformation) {
-        Request request = getApiRequest("v1/log-queue")
+        Request request = getApiRequest("log-queue")
                 .post(getRequestBody(id, carryInformation))
                 .build();
 
@@ -173,7 +177,7 @@ public class ConnectionService {
     }
 
     public void addToApprovingQueue(Long id, CarryInformation carryInformation) {
-        Request request = getApiRequest("v1/approving-queue")
+        Request request = getApiRequest("approving-queue")
                 .post(getRequestBody(id, carryInformation))
                 .build();
 
@@ -189,7 +193,7 @@ public class ConnectionService {
     }
 
     public void removeFromApprovingQueue(Long id) {
-        Request request = getApiRequest("v1/approving-queue")
+        Request request = getApiRequest("approving-queue")
                 .delete(getRequestBody(id))
                 .build();
 
@@ -205,7 +209,7 @@ public class ConnectionService {
     }
 
     public void removeFromLogQueue(Long id) {
-        Request request = getApiRequest("v1/log-queue")
+        Request request = getApiRequest("log-queue")
                 .delete(getRequestBody(id))
                 .build();
 
@@ -221,7 +225,7 @@ public class ConnectionService {
     }
 
     public Set<CarryInformation> getFromLogApprovingQueue(Long id) {
-        Request request = getApiRequest("v1/approving-queue/" + id)
+        Request request = getApiRequest("approving-queue/" + id)
                 .get()
                 .build();
 
@@ -247,7 +251,7 @@ public class ConnectionService {
     }
 
     public Set<CarryInformation> getFromLogQueue(Long id) {
-        Request request = getApiRequest("v1/log-queue/" + id)
+        Request request = getApiRequest("log-queue/" + id)
                 .get()
                 .build();
 
@@ -273,7 +277,7 @@ public class ConnectionService {
     }
 
     public long logCarry(CarryInformation carryInformation) {
-        Request request = getApiRequest("v1/log")
+        Request request = getApiRequest("log")
                 .post(getRequestBody(carryInformation))
                 .build();
 
@@ -281,6 +285,7 @@ public class ConnectionService {
             if(response.isSuccessful()) {
                 logger.debug("Logged carry successfully.");
                 if(response.body() != null) {
+                    //TODO nested try-block -> refactor or put into extra method
                     try {
                         return Long.parseLong(response.body().string());
                     } catch(NumberFormatException numberFormatException) {
@@ -310,7 +315,7 @@ public class ConnectionService {
     }
 
     public Map<String, Long> countScore(Long id) {
-        Request request = getApiRequest("v1/carry-score/" + id)
+        Request request = getApiRequest("carry-score/" + id)
                 .get()
                 .build();
 
@@ -337,7 +342,7 @@ public class ConnectionService {
     }
 
     public long getScore(Long id, String type) {
-        Request request = getApiRequest("v1/carry-score/" + id + "/" + type)
+        Request request = getApiRequest("carry-score/" + id + "/" + type)
                 .get()
                 .build();
 
@@ -369,7 +374,7 @@ public class ConnectionService {
     }
 
     public Map<Long, Long> getLeaderboard(@NotNull String type) {
-        Request request = getApiRequest("v1/leaderboard/" + type)
+        Request request = getApiRequest("leaderboard/" + type)
                 .get()
                 .build();
 
@@ -420,7 +425,7 @@ public class ConnectionService {
                 .add("amount", String.valueOf(amount))
                 .build();
 
-        Request request = getApiRequest("v1/carry-score/" + id + "/" + type)
+        Request request = getApiRequest("carry-score/" + id + "/" + type)
                 .put(requestBody)
                 .build();
 
@@ -444,7 +449,7 @@ public class ConnectionService {
                 .add("roles", CarryLogService.getInstance().getGson().toJson(roleList))
                 .build();
 
-        Request request = getApiRequest("v1/roles")
+        Request request = getApiRequest("roles")
                 .put(requestBody)
                 .build();
 
@@ -463,7 +468,7 @@ public class ConnectionService {
                 .add("roles", CarryLogService.getInstance().getGson().toJson(roles))
                 .build();
 
-        Request request = getApiRequest("v1/role")
+        Request request = getApiRequest("role")
                 .put(requestBody)
                 .build();
 
@@ -483,7 +488,7 @@ public class ConnectionService {
     }
 
     public Map<Long, Long> getPurgeableUsers(long amount, String type) {
-        Request request = getApiRequest("v1/purge/" + type + "/" + amount)
+        Request request = getApiRequest("purge/" + type + "/" + amount)
                 .get()
                 .build();
 
@@ -513,7 +518,7 @@ public class ConnectionService {
 
         try (Response response = httpClient.newCall(request).execute()) {
             if(!response.isSuccessful() || response.body() == null) {
-                logger.error("Unsuccessful uuid request for name " + name);
+                logger.error("Unsuccessful uuid request for name {}.", name);
                 return null;
             }
 
@@ -537,7 +542,7 @@ public class ConnectionService {
             try {
                 double thisXP = profiles.get(i).getAsJsonObject()
                         .getAsJsonObject("members")
-                        .get(uuid.replaceAll("-",""))
+                        .get(uuid.replace("-",""))
                         .getAsJsonObject()
                         .getAsJsonObject("dungeons")
                         .getAsJsonObject("dungeon_types")
@@ -546,7 +551,9 @@ public class ConnectionService {
                         .getAsDouble();
                 highestXP = Math.max(highestXP, thisXP);
             // null if profile hasn't entered dungeons
-            } catch (NullPointerException ignored) {}
+            } catch (NullPointerException ignored) {
+                //TODO this happens if the profile hasn't entered dungeons. Custom exception?
+            }
         }
 
         return cataXPToLevel(highestXP);
@@ -559,7 +566,7 @@ public class ConnectionService {
                 .build();
         try (Response response = httpClient.newCall(request).execute()) {
             if(!response.isSuccessful() || response.body() == null) {
-                logger.error("Unsuccessful profile request for UUID " + uuid);
+                logger.error("Unsuccessful profile request for UUID {}", uuid);
                 return null;
             }
 
