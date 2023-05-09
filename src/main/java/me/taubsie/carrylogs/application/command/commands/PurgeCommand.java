@@ -1,8 +1,8 @@
 package me.taubsie.carrylogs.application.command.commands;
 
+import me.taubsie.carrylogs.application.classes.PurgeData;
 import me.taubsie.carrylogs.application.enums.RoleConversion;
-import me.taubsie.carrylogs.application.service.ServerService;
-import me.taubsie.dungeonhub.common.CarryRole;
+import me.taubsie.carrylogs.application.service.PurgingService;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
@@ -10,7 +10,6 @@ import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import org.javacord.api.entity.permission.PermissionType;
-import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -21,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.CompletionException;
 
 @CommandParameters(name = "purge",
         description = "Allows you to purge inactive carriers.",
@@ -74,50 +72,13 @@ public class PurgeCommand extends Command {
             User carrier =
                     slashCommandCreateEvent.getSlashCommandInteraction().getApi().getUserById(entry.getKey()).join();
 
+            PurgeData userPurgeData = new PurgeData(getServer().getId(), carrier.getId(), rolesToRemove, entry.getValue(), purgeType, threshold);
+
+            PurgingService.getInstance().addPurgeData(userPurgeData);
+
             purgeDisplay.add(carrier.getMentionTag() + " - " + entry.getValue() + " score");
-            List<String> rolesRemoved = new ArrayList<>();
-
-            for(RoleConversion carryRole : rolesToRemove) {
-                Optional<Role> role = getServer().getRoleById(ServerService.getInstance().getServerProperty(getServer().getId(), carryRole.getServerProperty()));
-                String roleName = carryRole.getCarryRole().name();
-
-                if(role.isEmpty()) {
-                    logger.error("Role {} not found on server {}.", roleName, getServer().getId());
-                    return;
-                }
-
-                if(role.get().hasUser(carrier)) {
-                    if(rolesRemoved.isEmpty()) {
-                        role.get().removeUser(carrier, "Purge of type \"" + purgeType + "\" with threshold " + threshold + ".");
-                    } else {
-                        role.get().removeUser(carrier);
-                    }
-
-                    rolesRemoved.add(role.get().getName());
-                }
-            }
-
-            List<CarryRole> roleList =
-                    RoleConversion.getCarryRoles(carrier.getRoles(getServer()), getServer().getId()).stream().map(RoleConversion::getCarryRole).toList();
-            ConnectionService.getInstance().addRoles(carrier.getId(), roleList);
 
             amount++;
-
-            if(!rolesRemoved.isEmpty()) {
-                try {
-                    carrier.openPrivateChannel()
-                            .thenAccept(privateChannel -> privateChannel.sendMessage(ApplicationService.getInstance()
-                                    .getEmbed()
-                                    .setColor(EmbedColor.NEGATIVE.getColor())
-                                    .setDescription("Your " + purgeType + "-carry roles on `" + getServer().getName()
-                                            + "` were removed since you only reached " + entry.getValue() + "/"
-                                            + threshold + " score.")
-                                    .addField("Roles removed", String.join(System.lineSeparator(), rolesRemoved))
-                                    .setTitle("Inactivity Purge")));
-                } catch(CompletionException completionException) {
-                    logger.error("Unable to DM carrier about purge.", completionException);
-                }
-            }
         }
 
         String purgedList = String.join("\n", purgeDisplay);
@@ -125,7 +86,7 @@ public class PurgeCommand extends Command {
         updater.addEmbed(ApplicationService.getInstance()
                         .getEmbed()
                         .setColor(EmbedColor.DEFAULT.getColor())
-                        .setTitle("Removed the roles of " + amount + " carriers.")
+                        .setTitle("Added the roles of " + amount + " carriers to removal-list.")
                         .setDescription((purgedList.length() >= 4090)
                                 ? "The list of carriers purged would be too long.\nThe full list has been logged, " +
                                 "contact administrators for more information."
