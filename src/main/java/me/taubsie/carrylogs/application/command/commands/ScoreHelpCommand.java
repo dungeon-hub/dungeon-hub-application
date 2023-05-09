@@ -30,7 +30,7 @@ public class ScoreHelpCommand extends Command {
                         )
                         .addField(
                                 "Master Mode Dungeons",
-                                "Any - 3"
+                                "Any - 5"
                         )
                         .addField(
                                 "Slayer",
