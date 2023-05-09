@@ -32,8 +32,8 @@ import java.util.concurrent.CompletionException;
 public class MessageListener implements MessageCreateListener, MessageEditListener {
     private static final Logger logger = LoggerFactory.getLogger(MessageListener.class);
 
-    private static final long APPROVE_AMOUNT_THRESHOLD = 5;
-    private static final long APPROVE_SCORE_THRESHOLD = 20;
+    private static final long APPROVE_AMOUNT_THRESHOLD = 8;
+    private static final long APPROVE_SCORE_THRESHOLD = 30;
 
     @Override
     public void onMessageCreate(MessageCreateEvent messageCreateEvent) {
