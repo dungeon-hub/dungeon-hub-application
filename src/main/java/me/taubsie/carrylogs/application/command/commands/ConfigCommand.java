@@ -118,6 +118,7 @@ public class ConfigCommand extends Command {
                 .setRequired(true)
                 .build();
 
+        //TODO make autocompletable and maybe add options? idk
         SlashCommandOption propertyOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
                 .setName("property")

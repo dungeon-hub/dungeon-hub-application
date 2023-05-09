@@ -10,6 +10,7 @@ import me.taubsie.dungeonhub.common.StrikeData;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
+import org.javacord.api.entity.Nameable;
 import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -218,6 +219,11 @@ public class ApplicationService {
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setTitle("Strikes of user " + user.getDiscriminatedName());
 
+        if(strikeData.isEmpty()) {
+            embedBuilder.setDescription("User has no strikes!");
+            return embedBuilder;
+        }
+
         int count = 0;
         for(StrikeData strike : strikeData) {
             String striker = Optional.ofNullable(strike.getStriker())
@@ -238,7 +244,22 @@ public class ApplicationService {
     }
 
     public EmbedBuilder formatStrike(StrikeData strikeData) {
-        //TODO implement
-        return getEmbed();
+        EmbedBuilder embedBuilder = getEmbed(strikeData.getStrikeTime())
+                .setColor(EmbedColor.INFORMATION.getColor())
+                .setTitle("Strike " +
+                        (strikeData.getId() != null
+                                ? "#" + strikeData.getId()
+                                : "for " + BotStarter.getInstance().getBot().getUserById(strikeData.getUser()).join()
+                                .getDiscriminatedName())
+                        + " on server `"
+                        + BotStarter.getInstance().getBot().getServerById(strikeData.getServer())
+                        .map(Nameable::getName).orElse("unknown")
+                        + "`");
+
+        embedBuilder.addField("User", "<@" + strikeData.getUser() + ">");
+        embedBuilder.addField("Striker", strikeData.getStriker() != null ? "<@" + strikeData.getStriker() + ">" : "CONSOLE");
+        embedBuilder.addField("Reason", strikeData.getReason() != null ? strikeData.getReason() : "No reason provided.");
+
+        return embedBuilder;
     }
 }

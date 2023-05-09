@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import lombok.Getter;
+import me.taubsie.carrylogs.application.exceptions.NotFoundException;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import me.taubsie.dungeonhub.common.CarryLogService;
 import me.taubsie.dungeonhub.common.CarryRole;
@@ -79,7 +80,8 @@ public class ConnectionService {
             }
 
             apiToken = response.body().string();
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
         }
     }
@@ -125,7 +127,8 @@ public class ConnectionService {
                                 .getAsString()
                 };
             }
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -172,7 +175,8 @@ public class ConnectionService {
             } else {
                 logger.error("Adding new carry to log-queue wasn't successful");
             }
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
         }
     }
@@ -188,7 +192,8 @@ public class ConnectionService {
             } else {
                 logger.error("Adding new carry to approving-queue wasn't successful.");
             }
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
         }
     }
@@ -204,7 +209,8 @@ public class ConnectionService {
             } else {
                 logger.error("Removing a carry from approving-queue wasn't successful.");
             }
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
         }
     }
@@ -220,7 +226,8 @@ public class ConnectionService {
             } else {
                 logger.error("Removing a carry from log-queue wasn't successful.");
             }
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
         }
     }
@@ -245,7 +252,8 @@ public class ConnectionService {
                         response.body() != null ? response.body().string() : response.code());
             }
             return new HashSet<>();
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
             return new HashSet<>();
         }
@@ -271,7 +279,8 @@ public class ConnectionService {
                         response.body() != null ? response.body().string() : response.code());
             }
             return new HashSet<>();
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
             return new HashSet<>();
         }
@@ -289,14 +298,16 @@ public class ConnectionService {
                     //TODO nested try-block -> refactor or put into extra method
                     try {
                         return Long.parseLong(response.body().string());
-                    } catch(NumberFormatException numberFormatException) {
+                    }
+                    catch(NumberFormatException numberFormatException) {
                         numberFormatException.printStackTrace();
                     }
                 }
             } else {
                 logger.error("Error when trying to log carry.");
             }
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -329,7 +340,8 @@ public class ConnectionService {
             } else {
                 logger.error("Error when trying to count carries.");
             }
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -355,7 +367,8 @@ public class ConnectionService {
             } else {
                 logger.error("Error when trying to get score.");
             }
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -390,7 +403,8 @@ public class ConnectionService {
             } else {
                 logger.error("Error when trying to get leaderboard.");
             }
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -438,7 +452,8 @@ public class ConnectionService {
             } else {
                 logger.error("Error when trying to update score.");
             }
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -458,7 +473,8 @@ public class ConnectionService {
             if(!response.isSuccessful()) {
                 logger.error("Error when trying to add roles.");
             }
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
         }
     }
@@ -501,15 +517,15 @@ public class ConnectionService {
             } else {
                 logger.error("Error when trying to load purgable users.");
             }
-        } catch(IOException ioException) {
+        }
+        catch(IOException ioException) {
             ioException.printStackTrace();
         }
 
         return new HashMap<>();
     }
-    
-    
-    
+
+
     //As this requests data from the Mojang API (aka slow), it is recommended to use UUIDs instead of names
     public String getUUIDByName(String name) {
         Request request = new Request.Builder()
@@ -517,20 +533,21 @@ public class ConnectionService {
                 .get()
                 .build();
 
-        try (Response response = httpClient.newCall(request).execute()) {
+        try(Response response = httpClient.newCall(request).execute()) {
             if(!response.isSuccessful() || response.body() == null) {
                 logger.error("Unsuccessful uuid request for name {}.", name);
                 return null;
             }
 
             return JsonParser.parseString(response.body().string()).getAsJsonObject().get("id").getAsString();
-        } catch(IOException | NullPointerException e) {
+        }
+        catch(IOException | NullPointerException e) {
             e.printStackTrace();
         }
 
         return null;
     }
-    
+
     //This is a request on the Hypixel API, and therefore unneccessary calls should be avoided
     public int getCataLevelByUUID(String uuid) {
         JsonArray profiles = getProfiles(uuid);
@@ -543,7 +560,7 @@ public class ConnectionService {
             try {
                 double thisXP = profiles.get(i).getAsJsonObject()
                         .getAsJsonObject("members")
-                        .get(uuid.replace("-",""))
+                        .get(uuid.replace("-", ""))
                         .getAsJsonObject()
                         .getAsJsonObject("dungeons")
                         .getAsJsonObject("dungeon_types")
@@ -551,34 +568,36 @@ public class ConnectionService {
                         .get("experience")
                         .getAsDouble();
                 highestXP = Math.max(highestXP, thisXP);
-            // null if profile hasn't entered dungeons
-            } catch (NullPointerException ignored) {
+                // null if profile hasn't entered dungeons
+            }
+            catch(NullPointerException ignored) {
                 //TODO this happens if the profile hasn't entered dungeons. Custom exception?
             }
         }
 
         return cataXPToLevel(highestXP);
     }
-    
+
     public JsonArray getProfiles(String uuid) {
         Request request = new Request.Builder()
                 .url("https://api.hypixel.net/skyblock/profiles?key=" + ConfigProperty.HYPIXEL_API_KEY.getValue() + "&uuid=" + uuid)
                 .get()
                 .build();
-        try (Response response = httpClient.newCall(request).execute()) {
+        try(Response response = httpClient.newCall(request).execute()) {
             if(!response.isSuccessful() || response.body() == null) {
                 logger.error("Unsuccessful profile request for UUID {}", uuid);
                 return null;
             }
 
             return JsonParser.parseString(response.body().string()).getAsJsonObject().getAsJsonArray("profiles");
-        } catch(IOException e) {
+        }
+        catch(IOException e) {
             e.printStackTrace();
         }
 
         return null;
     }
-    
+
     private int cataXPToLevel(double xp) {
         for(int i = 0; i < requiredXp.length; i++) {
             if(requiredXp[i] > xp) return i;
@@ -586,6 +605,29 @@ public class ConnectionService {
 
         // 50 and everything higher is returned as 50
         return 50;
+    }
+
+    public StrikeData loadStrikeDataFromId(long serverId, long id) throws NotFoundException {
+        Request request = getApiRequest("strike/" + serverId + "/" + id)
+                .get()
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.code() == 404) {
+                throw new NotFoundException();
+            } else if(response.isSuccessful()) {
+                if(response.body() != null) {
+                    return CarryLogService.getInstance().getGson().fromJson(response.body().string(), StrikeData.class);
+                }
+            } else {
+                logger.error("Error when trying to load strike by id.");
+            }
+        }
+        catch(IOException ioException) {
+            ioException.printStackTrace();
+        }
+
+        throw new NotFoundException();
     }
 
     public List<StrikeData> loadValidStrikeData(long serverId, long userId) {
@@ -599,7 +641,31 @@ public class ConnectionService {
     }
 
     public StrikeData insertStrikeData(StrikeData strikeData) {
-        //TODO implement
+        RequestBody requestBody = new FormBody.Builder()
+                .add("strikeData", CarryLogService.getInstance().getGson().toJson(strikeData))
+                .build();
+
+        Request request = getApiRequest("strike")
+                .post(requestBody)
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful()) {
+                if(response.body() != null) {
+                    return CarryLogService.getInstance().getGson().fromJson(response.body().string(), StrikeData.class);
+                }
+            } else {
+                logger.error("Error when trying to insert strike.");
+            }
+        }
+        catch(IOException ioException) {
+            ioException.printStackTrace();
+        }
+
         return strikeData;
+    }
+
+    public void removeStrike(long serverId, long id) {
+        //TODO implement
     }
 }

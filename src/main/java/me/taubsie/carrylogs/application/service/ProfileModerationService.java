@@ -41,7 +41,8 @@ public class ProfileModerationService {
     private static final Long[] excludedIds = new Long[]{
             727320030462869515L,
             703035551330205716L,
-            599475365471059978L
+            599475365471059978L,
+            678580255384141824L
     };
     private static ProfileModerationService instance;
     private final Homoglyph homoglyph;

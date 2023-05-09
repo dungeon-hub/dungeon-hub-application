@@ -24,6 +24,7 @@ import java.util.Optional;
 public class ManageStrikesCommand extends Command {
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
+        //TODO LIMIT STRIKE COMMAND TO STRIKES THAT WERE ISSUED ON THE SAME SERVER
         Optional<SlashCommandInteractionOption> option =
                 slashCommandCreateEvent.getSlashCommandInteraction().getOptionByIndex(0);
 
@@ -105,23 +106,43 @@ public class ManageStrikesCommand extends Command {
                 .setMaxLength(200)
                 .build();
 
+        SlashCommandOption idOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.LONG)
+                .setName("id")
+                .setDescription("The id of the strike.")
+                .setRequired(true)
+                .build();
+
         SlashCommandOption listOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("list-all")
                 .setDescription("List all strikes of a user.")
-                .setRequired(true)
                 .addOption(userOption)
+                .build();
+
+        SlashCommandOption infoOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("info")
+                .setDescription("Display more information about a strike. <NOT IMPLEMENTED YET>")
+                .addOption(idOption)
                 .build();
 
         SlashCommandOption addOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("add")
                 .setDescription("Add a strike to the given user.")
-                .setRequired(true)
                 .addOption(userOption)
                 .addOption(reasonOption)
                 .build();
 
-        return List.of(listOption, addOption);
+        SlashCommandOption removeOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("remove")
+                .setDescription("Remove a strike from the given user. <NOT IMPLEMENTED YET>")
+                .addOption(userOption)
+                .addOption(idOption)
+                .build();
+
+        return List.of(listOption, infoOption, addOption, removeOption);
     }
 }

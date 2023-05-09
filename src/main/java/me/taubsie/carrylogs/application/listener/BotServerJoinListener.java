@@ -29,9 +29,9 @@ public class BotServerJoinListener implements ServerJoinListener {
                         + serverJoinEvent.getServer().getName()
                         + "' by '"
                         + serverJoinEvent.getServer().getOwner().map(Nameable::getName).orElse("no-name")
-                        + "' ("
+                        + "' (<@"
                         + serverJoinEvent.getServer().getOwnerId()
-                        + ").");
+                        + ">).");
 
         ServerService.getInstance().loadServerData(serverJoinEvent.getServer().getId());
     }
