@@ -1,10 +1,12 @@
 package me.taubsie.carrylogs.application.service;
 
 import me.taubsie.carrylogs.application.enums.EmbedColor;
+import me.taubsie.carrylogs.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
+import me.taubsie.dungeonhub.common.StrikeData;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
@@ -18,6 +20,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 public class ApplicationService {
     private static ApplicationService instance;
@@ -208,5 +211,34 @@ public class ApplicationService {
 
     public EmbedBuilder loadEmbedFromCarryInformation(CarryInformation carryInformation) {
         return loadEmbedFromCarryInformation(carryInformation, getEmbed(carryInformation.getTime()));
+    }
+
+    public EmbedBuilder formatStrikes(List<StrikeData> strikeData, User user) {
+        EmbedBuilder embedBuilder = getEmbed()
+                .setColor(EmbedColor.INFORMATION.getColor())
+                .setTitle("Strikes of user " + user.getDiscriminatedName());
+
+        int count = 0;
+        for(StrikeData strike : strikeData) {
+            String striker = Optional.ofNullable(strike.getStriker())
+                    .map(strikerId -> BotStarter.getInstance().getBot().getUserById(strikerId))
+                    .map(CompletableFuture::join)
+                    .map(User::getDiscriminatedName)
+                    .orElse("CONSOLE");
+
+            String reason = Optional.ofNullable(strike.getReason())
+                    .map(s -> " because of \"" + s + "\"")
+                    .orElse("");
+
+            embedBuilder.addField("Strike #" + ++count,
+                    "By " + striker + " at <t:" + strike.getStrikeTime().toEpochMilli() + ">" + reason);
+        }
+
+        return embedBuilder;
+    }
+
+    public EmbedBuilder formatStrike(StrikeData strikeData) {
+        //TODO implement
+        return getEmbed();
     }
 }

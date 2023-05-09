@@ -7,10 +7,12 @@ import java.util.Optional;
 
 public enum ServerProperty implements Nameable {
     PROFILE_MODERATION_BAN_MESSAGE("profile_moderation_message", "You got banned from `%server%` because of a" +
-            " suspicious user profile.\nIf you think this might be a mistake, please click the button or appeal at: %form%"),
+            " suspicious user profile.\nIf you think this might be a mistake, please click the button or appeal at: " +
+            "%form%"),
     UNBAN_FORM("unban_form", "https://dyno.gg/form/ee627bf6"),
 
     MODERATION_LOGS_CHANNEL("id_moderation_logs_channel", ServerPropertyType.CHANNEL, "996151183519514814"),
+    STRIKES_LOGS_CHANNEL("id_strikes_logs_channel", ServerPropertyType.CHANNEL, ""),
 
     F4_ROLE("id_f4_role", ServerPropertyType.ROLE, "793521662678794250"),
     F5_ROLE("id_f5_role", ServerPropertyType.ROLE, "793521664737935361"),
@@ -42,6 +44,12 @@ public enum ServerProperty implements Nameable {
         this.defaultValue = defaultValue;
     }
 
+    public static Optional<ServerProperty> getPropertyByName(String name) {
+        return Arrays.stream(ServerProperty.values())
+                .filter(serverProperty -> serverProperty.getName().equalsIgnoreCase(name))
+                .findAny();
+    }
+
     @Override
     public String getName() {
         return name;
@@ -53,11 +61,5 @@ public enum ServerProperty implements Nameable {
 
     public String getDefaultValue() {
         return defaultValue;
-    }
-
-    public static Optional<ServerProperty> getPropertyByName(String name) {
-        return Arrays.stream(ServerProperty.values())
-                .filter(serverProperty -> serverProperty.getName().equalsIgnoreCase(name))
-                .findAny();
     }
 }

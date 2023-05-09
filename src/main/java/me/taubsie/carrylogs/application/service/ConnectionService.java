@@ -7,6 +7,7 @@ import lombok.Getter;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import me.taubsie.dungeonhub.common.CarryLogService;
 import me.taubsie.dungeonhub.common.CarryRole;
+import me.taubsie.dungeonhub.common.StrikeData;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
@@ -585,5 +586,20 @@ public class ConnectionService {
 
         // 50 and everything higher is returned as 50
         return 50;
+    }
+
+    public List<StrikeData> loadValidStrikeData(long serverId, long userId) {
+        //TODO implement
+        return new ArrayList<>();
+    }
+
+    public List<StrikeData> loadAllStrikeData(long serverId, long userId) {
+        //TODO implement
+        return new ArrayList<>();
+    }
+
+    public StrikeData insertStrikeData(StrikeData strikeData) {
+        //TODO implement
+        return strikeData;
     }
 }
