@@ -32,6 +32,9 @@ public class PurgingService implements StartupListener {
         return instance;
     }
 
+    //TODO probably increase time to prevent it getting stuck and to have too many open threads.
+    //TODO also try limiting the amount of requests of the same purge type and maybe also to the same user
+
     @Override
     public void onStart(ProgramOrigin programOrigin) {
         new Timer().scheduleAtFixedRate(new TimerTask() {

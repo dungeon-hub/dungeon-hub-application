@@ -1,7 +1,9 @@
 package me.taubsie.carrylogs.application.classes;
 
 public enum ServerPropertyType {
+    //TODO finish implementing boolean
     STRING,
+    BOOLEAN,
     CHANNEL,
     ROLE;
 

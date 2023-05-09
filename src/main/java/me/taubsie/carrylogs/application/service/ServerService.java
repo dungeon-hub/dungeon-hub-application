@@ -10,6 +10,7 @@ import me.taubsie.dungeonhub.common.StartupListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
@@ -97,6 +98,17 @@ public class ServerService implements StartupListener {
         return getServerData(id)
                 .map(data -> data.getConfig(serverProperty))
                 .filter(s -> !s.isBlank());
+    }
+
+    public boolean canUse(long id, @Nullable ServerProperty serverProperty) {
+        //TODO finish implementation (if needed here)
+        if(serverProperty == null) {
+            return false;
+        }
+
+        return getServerData(id)
+                .map(serverData1 -> serverData1.isEnabled(serverProperty))
+                .orElse(false);
     }
 
     @Override

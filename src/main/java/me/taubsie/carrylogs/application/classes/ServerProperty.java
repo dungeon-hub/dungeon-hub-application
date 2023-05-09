@@ -11,6 +11,8 @@ public enum ServerProperty implements Nameable {
             "%form%"),
     UNBAN_FORM("unban_form", "https://dyno.gg/form/ee627bf6"),
 
+    SCORE_ENABLED("score_enabled", ServerPropertyType.BOOLEAN, "false"),
+
     MODERATION_LOGS_CHANNEL("id_moderation_logs_channel", ServerPropertyType.CHANNEL, "996151183519514814"),
     STRIKES_LOGS_CHANNEL("id_strikes_logs_channel", ServerPropertyType.CHANNEL, ""),
 
@@ -33,15 +35,21 @@ public enum ServerProperty implements Nameable {
     private final String name;
     private final ServerPropertyType propertyType;
     private final String defaultValue;
+    private final boolean enabled;
 
     ServerProperty(String name, String defaultValue) {
         this(name, ServerPropertyType.STRING, defaultValue);
     }
 
     ServerProperty(String name, ServerPropertyType propertyType, String defaultValue) {
+        this(name, propertyType, defaultValue, true);
+    }
+
+    ServerProperty(String name, ServerPropertyType propertyType, String defaultValue, boolean enabled) {
         this.name = name;
         this.propertyType = propertyType;
         this.defaultValue = defaultValue;
+        this.enabled = enabled;
     }
 
     public static Optional<ServerProperty> getPropertyByName(String name) {
@@ -61,5 +69,10 @@ public enum ServerProperty implements Nameable {
 
     public String getDefaultValue() {
         return defaultValue;
+    }
+
+    //TODO maybe implement logic here too
+    public boolean isEnabled() {
+        return enabled;
     }
 }

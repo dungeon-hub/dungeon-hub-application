@@ -23,7 +23,14 @@ public class ServerData extends ConfigFile<ServerProperty> {
 
     @Override
     protected Set<ServerProperty> getPossibleProperties() {
-        return Arrays.stream(ServerProperty.values()).collect(Collectors.toSet());
+        return Arrays.stream(ServerProperty.values())
+                .filter(ServerProperty::isEnabled)
+                .collect(Collectors.toSet());
+    }
+
+    public boolean isEnabled(ServerProperty serverProperty) {
+        //TODO implement logic
+        return true;
     }
 
     public String getConfigFolder() {
