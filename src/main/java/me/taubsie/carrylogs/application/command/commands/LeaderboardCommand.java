@@ -17,7 +17,7 @@ import java.util.Map;
 
 @CommandParameters(name = "leaderboard", description = "Shows you a certain leaderboard.", enabledInDms = true)
 public class LeaderboardCommand extends Command {
-    private static final List<String> choices = List.of("dungeons", "slayer", "kuudra", "alltime-dungeons", "alltime-slayer", "alltime-kuudra");
+    private static final List<String> choices = List.of("dungeons", "slayer", "kuudra", "alltime-dungeons", "alltime-slayer", "alltime-kuudra", "event-dungeons", "event-slayer");
 
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
@@ -32,6 +32,8 @@ public class LeaderboardCommand extends Command {
             case "alltime-dungeons" -> "Leaderboard | Dungeon-Carries (all-time)";
             case "alltime-slayer" -> "Leaderboard | Slayer-Carries (all-time)";
             case "alltime-kuudra" -> "Leaderboard | Kuudra-Carries (all-time)";
+            case "event-slayer" -> "Leaderboard | Slayer-Carries (event)";
+            case "event-dungeons" -> "Leaderboard | Dungeon-Carries (event)";
             default -> "Leaderboard | Unknown [Please report]";
         };
 

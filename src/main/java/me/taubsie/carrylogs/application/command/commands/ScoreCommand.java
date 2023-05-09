@@ -47,7 +47,12 @@ public class ScoreCommand extends Command {
                         .setColor(new Color(165, 23, 112 /*TODO color*/))
                         .addInlineField("Dungeon-Score:", String.valueOf(scoreCount.get("dungeon")))
                         .addInlineField("Slayer-Score:", String.valueOf(scoreCount.get("slayer")))
-                        .addInlineField("Kuudra-Score:", String.valueOf(scoreCount.get("kuudra"))))
+                        .addInlineField("Kuudra-Score:", String.valueOf(scoreCount.get("kuudra")))
+                        .addInlineField("Alltime-Dungeon-Score:", String.valueOf(scoreCount.get("alltime-dungeon")))
+                        .addInlineField("Alltime-Slayer-Score:", String.valueOf(scoreCount.get("alltime-slayer")))
+                        .addInlineField("Alltime-Kuudra-Score:", String.valueOf(scoreCount.get("alltime-kuudra")))
+                        .addInlineField("Event-Dungeon-Score:", String.valueOf(scoreCount.get("event-dungeon")))
+                        .addInlineField("Event-Slayer-Score:", String.valueOf(scoreCount.get("event-slayer"))))
                 .respond();
     }
 

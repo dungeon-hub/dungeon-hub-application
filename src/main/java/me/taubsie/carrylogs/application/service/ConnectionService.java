@@ -25,9 +25,14 @@ public class ConnectionService {
     private static final String DUNGEON = "dungeon";
     private static final String SLAYER = "slayer";
     private static final String KUUDRA = "kuudra";
+    private static final String ALLTIME_DUNGEON = "alltime-dungeon";
+    private static final String ALLTIME_SLAYER = "alltime-slayer";
+    private static final String ALLTIME_KUUDRA = "alltime-kuudra";
+    private static final String EVENT_DUNGEON = "event-dungeon";
+    private static final String EVENT_SLAYER = "event-slayer";
 
     private static final String API_PREFIX = "api/v1/";
-    
+
     private static final int[] requiredXp = {50, 125, 235, 395, 625, 955, 1425, 2095, 3045, 4385, 6275, 8940, 12700, 17960, 25340, 35640, 50040, 70040, 97640, 135640, 188140, 259640, 356640, 488640, 668640, 911640, 1239640, 1684640, 2284640, 3084640, 4149640, 5559640, 7459640, 9959640, 13259640, 17559640, 23159640, 30359640, 39559640, 51559640, 66559640, 85559640, 109559640, 139559640, 177559640, 225559640, 285559640, 360559640, 453559640, 569809640};
 
     private static final long REFRESH_TIME = 1000L * 60 * 55;
@@ -350,6 +355,11 @@ public class ConnectionService {
         defaultMap.put(DUNGEON, 0L);
         defaultMap.put(SLAYER, 0L);
         defaultMap.put(KUUDRA, 0L);
+        defaultMap.put(ALLTIME_DUNGEON, 0L);
+        defaultMap.put(ALLTIME_SLAYER, 0L);
+        defaultMap.put(ALLTIME_KUUDRA, 0L);
+        defaultMap.put(EVENT_DUNGEON, 0L);
+        defaultMap.put(EVENT_SLAYER, 0L);
 
         return defaultMap;
     }
@@ -415,12 +425,32 @@ public class ConnectionService {
         return getLeaderboard(DUNGEON);
     }
 
+    public Map<Long, Long> getAlltimeDungeonLeaderboard() {
+        return getLeaderboard(ALLTIME_DUNGEON);
+    }
+
+    public Map<Long, Long> getEventDungeonLeaderboard() {
+        return getLeaderboard(EVENT_DUNGEON);
+    }
+
     public Map<Long, Long> getSlayerLeaderboard() {
         return getLeaderboard(SLAYER);
     }
 
+    public Map<Long, Long> getAlltimeSlayerLeaderboard() {
+        return getLeaderboard(ALLTIME_SLAYER);
+    }
+
+    public Map<Long, Long> getEventSlayerLeaderboard() {
+        return getLeaderboard(EVENT_SLAYER);
+    }
+
     public Map<Long, Long> getKuudraLeaderboard() {
         return getLeaderboard(KUUDRA);
+    }
+
+    public Map<Long, Long> getAlltimeKuudraLeaderboard() {
+        return getLeaderboard(ALLTIME_KUUDRA);
     }
 
     public long modifyDungeonScore(Long id, Long amount) {
