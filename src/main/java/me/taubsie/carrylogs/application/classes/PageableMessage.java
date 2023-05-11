@@ -65,6 +65,7 @@ public abstract class PageableMessage {
             currentPage = newPage;
 
             updatePage(componentInteractionOriginalMessageUpdater, newPage);
+            //TODO removeafter isn't enough since it doesn't remove components, also it creates new threads. custom solution needed
         }).removeAfter(5, TimeUnit.MINUTES);
     }
 
