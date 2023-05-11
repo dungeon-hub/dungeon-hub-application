@@ -73,7 +73,7 @@ public class LogCommand extends Command {
         String carryTier =
                 getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-tier");
 
-        if(!ApplicationService.getInstance().isCarryTier(carryTier)) {
+        if(ApplicationService.getInstance().isInvalidCarryTier(carryTier)) {
             throw new InvalidOptionException("carry-tier", carryTier + " is no valid type.");
         }
 

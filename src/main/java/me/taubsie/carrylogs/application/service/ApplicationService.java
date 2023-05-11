@@ -50,7 +50,7 @@ public class ApplicationService {
     }
 
     public boolean isCarryTier(String carryTier, CarryType carryType) {
-        if(!isCarryTier(carryTier)) {
+        if(isInvalidCarryTier(carryTier)) {
             return false;
         }
 
@@ -135,7 +135,7 @@ public class ApplicationService {
         };
     }
 
-    public boolean isCarryTier(String carryTier) {
+    public boolean isInvalidCarryTier(String carryTier) {
         return switch(carryTier) {
             case "Completion",
                     "S",
@@ -154,8 +154,8 @@ public class ApplicationService {
                     "Infernal",
                     "Tier 2",
                     "Tier 3",
-                    "Tier 4" -> true;
-            default -> false;
+                    "Tier 4" -> false;
+            default -> true;
         };
     }
 
