@@ -740,7 +740,26 @@ public class ConnectionService {
     }
 
     public int getMaxLeaderboardPage(String type) {
-        //TODO implement
+        Request request = getApiRequest("leaderboard/" + type + "/pages")
+                .get()
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful()) {
+                if(response.body() != null) {
+                    return Integer.parseInt(response.body().string());
+                }
+            } else {
+                logger.error("Error when trying to load the max leaderboard page.");
+            }
+        }
+        catch(NumberFormatException numberFormatException) {
+            logger.error("Couldn't parse number from return value (max leaderboard page).", numberFormatException);
+        }
+        catch(IOException ioException) {
+            ioException.printStackTrace();
+        }
+
         return 1;
     }
 }

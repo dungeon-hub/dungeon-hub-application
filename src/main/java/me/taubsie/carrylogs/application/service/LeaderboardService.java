@@ -1,6 +1,7 @@
 package me.taubsie.carrylogs.application.service;
 
 import me.taubsie.carrylogs.application.classes.Leaderboard;
+import me.taubsie.carrylogs.application.classes.LeaderboardMessage;
 import me.taubsie.dungeonhub.common.OnStart;
 import me.taubsie.dungeonhub.common.ProgramOrigin;
 import me.taubsie.dungeonhub.common.StartupListener;
@@ -30,6 +31,10 @@ public class LeaderboardService implements StartupListener {
         }
 
         return instance;
+    }
+
+    public void registerPageListener(Message message, String type) {
+        new LeaderboardMessage(1, message.getChannel().getId(), message.getId(), type);
     }
 
     public Set<String> getAvailableTypes() {

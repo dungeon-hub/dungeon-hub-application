@@ -1,9 +1,11 @@
 package me.taubsie.carrylogs.application.command.commands;
 
+import me.taubsie.carrylogs.application.classes.PageableMessage;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
+import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -26,12 +28,18 @@ public class LeaderboardCommand extends Command {
                 .thenAccept(responseUpdater -> {
                     Map<Long, Long> score = ConnectionService.getInstance().getLeaderboardData(type.toLowerCase(), 1);
 
-                    EmbedBuilder embed = LeaderboardService.getInstance().getLeaderboardEmbed(leaderboardTitle, score,
-                            1, ConnectionService.getInstance().getMaxLeaderboardPage(type));
+                    int maxPage = ConnectionService.getInstance().getMaxLeaderboardPage(type);
 
-                    responseUpdater
+                    EmbedBuilder embed = LeaderboardService.getInstance().getLeaderboardEmbed(leaderboardTitle, score,
+                            1, maxPage);
+
+                    Message message = responseUpdater
                             .addEmbed(embed)
-                            .update();
+                            .addComponents(PageableMessage.getComponents(true, maxPage == 1))
+                            .update()
+                            .join();
+
+                    LeaderboardService.getInstance().registerPageListener(message, type);
                 });
     }
 

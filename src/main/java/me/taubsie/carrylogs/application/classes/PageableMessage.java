@@ -16,7 +16,7 @@ public abstract class PageableMessage {
     private static final String FORWARD = "forward";
     private static final String LAST = "last";
 
-    private final int currentPage;
+    private int currentPage = 1;
     @Getter
     private final long channel;
     @Getter
@@ -27,7 +27,7 @@ public abstract class PageableMessage {
         this.channel = channel;
         this.messageId = messageId;
 
-        getMessage().ifPresent(msg -> applyListener());
+        getMessage().ifPresent(this::applyListener);
     }
 
     public abstract int getMaxPage();
@@ -42,8 +42,8 @@ public abstract class PageableMessage {
                 .map(CompletableFuture::join);
     }
 
-    private void applyListener() {
-        getMessage().ifPresent(msg -> msg.addMessageComponentCreateListener(event -> {
+    private void applyListener(Message message) {
+        message.addMessageComponentCreateListener(event -> {
             String customId = event.getMessageComponentInteraction().getCustomId();
 
             int maxPage = getMaxPage();
@@ -62,11 +62,13 @@ public abstract class PageableMessage {
                     .removeAllComponents()
                     .addComponents(getComponents(newPage == 1, newPage == maxPage));
 
+            currentPage = newPage;
+
             updatePage(componentInteractionOriginalMessageUpdater, newPage);
-        }).removeAfter(5, TimeUnit.MINUTES));
+        }).removeAfter(5, TimeUnit.MINUTES);
     }
 
-    public HighLevelComponent[] getComponents(boolean firstPage, boolean lastPage) {
+    public static HighLevelComponent[] getComponents(boolean firstPage, boolean lastPage) {
         Button startButton = new ButtonBuilder()
                 .setCustomId(FIRST)
                 .setStyle(ButtonStyle.SUCCESS)
