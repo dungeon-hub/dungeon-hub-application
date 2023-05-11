@@ -10,7 +10,6 @@ import me.taubsie.carrylogs.application.start.BotStarter;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
-import org.javacord.api.entity.user.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +32,65 @@ public class LeaderboardService implements StartupListener {
         return instance;
     }
 
+    public Set<String> getAvailableTypes() {
+        return getLeaderboards().keySet();
+    }
+
+    public String getLeaderboardTitle(String type) {
+        return getLeaderboards()
+                .entrySet().stream()
+                .filter(entry -> entry.getKey().equalsIgnoreCase(type))
+                .map(Map.Entry::getValue)
+                .findAny()
+                .orElse(getUnknownLeaderboardTitle());
+    }
+
+    public EmbedBuilder getLeaderboardEmbed(String title, Map<Long, Long> score) {
+        String description = score.isEmpty() ? "No score has been gained yet!\n " : "";
+        description += "To see how score works, use /score-help";
+
+        EmbedBuilder embed = ApplicationService.getInstance()
+                .getEmbed()
+                .setTitle(title)
+                .setDescription(description)
+                .setColor(EmbedColor.DEFAULT.getColor());
+
+        int counter = 0;
+
+        for(Map.Entry<Long, Long> entry : score.entrySet()) {
+            embed.addField(
+                    "#" + ++counter + " Carrier",
+                    "<@" + entry.getKey() + "> - " + entry.getValue() + " Score"
+            );
+        }
+
+        return embed;
+    }
+
+    public EmbedBuilder getLeaderboardEmbed(String title, Map<Long, Long> score, int page, int maxPage) {
+        return getLeaderboardEmbed(title, score)
+                .setFooter("Page " + page + "/" + maxPage);
+    }
+
+    public String getUnknownLeaderboardTitle() {
+        return "Leaderboard | Unknown [Please report]";
+    }
+
+    private Map<String, String> getLeaderboards() {
+        Map<String, String> leaderboards = new HashMap<>();
+
+        leaderboards.put("dungeons", "Leaderboard | Dungeon-Carries");
+        leaderboards.put("slayer", "Leaderboard | Slayer-Carries");
+        leaderboards.put("kuudra", "Leaderboard | Kuudra-Carries");
+        leaderboards.put("alltime-dungeons", "Leaderboard | Dungeon-Carries (all-time)");
+        leaderboards.put("alltime-slayer", "Leaderboard | Slayer-Carries (all-time)");
+        leaderboards.put("alltime-kuudra", "Leaderboard | Kuudra-Carries (all-time)");
+        leaderboards.put("event-slayer", "Leaderboard | Slayer-Carries (event)");
+        leaderboards.put("event-dungeons", "Leaderboard | Dungeon-Carries (event)");
+
+        return leaderboards;
+    }
+
     public long getNextPossibleRefresh() {
         return lastRefresh.plusSeconds(REFRESH_COOLDOWN).getEpochSecond();
     }
@@ -53,30 +111,8 @@ public class LeaderboardService implements StartupListener {
         List<EmbedBuilder> embeds = new ArrayList<>();
 
         for(Leaderboard leaderboard : leaderboards) {
-            int counter = 0;
-            EmbedBuilder embed = ApplicationService.getInstance()
-                    .getEmbed()
-                    .setTitle(leaderboard.getLeaderboardTitle())
-                    .setColor(EmbedColor.DEFAULT.getColor());
-
-            if(leaderboard.getScoreData().isEmpty()) {
-                embed.setDescription("No score has been gained yet!\n" +
-                        "To see how score works, use /score-help");
-            } else {
-                embed.setDescription("To see how score works, use /score-help");
-            }
-
-            for(Map.Entry<Long, Long> entry : leaderboard.getScoreData().entrySet()) {
-                User carrier = BotStarter.getInstance().getBot().getUserById(entry.getKey()).join();
-                embed.addField(
-                        "#" + ++counter + " Carrier",
-                        carrier.getMentionTag() + " - " + entry.getValue() + " Score"
-                );
-            }
-
-            embeds.add(embed);
+            embeds.add(leaderboard.getEmbed());
         }
-
 
         Optional<Message> messageOptional =
                 channel.getMessagesAsStream().filter(message -> message.getAuthor().isYourself()).findFirst();

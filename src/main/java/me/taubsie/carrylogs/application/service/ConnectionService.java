@@ -33,7 +33,11 @@ public class ConnectionService {
 
     private static final String API_PREFIX = "api/v1/";
 
-    private static final int[] requiredXp = {50, 125, 235, 395, 625, 955, 1425, 2095, 3045, 4385, 6275, 8940, 12700, 17960, 25340, 35640, 50040, 70040, 97640, 135640, 188140, 259640, 356640, 488640, 668640, 911640, 1239640, 1684640, 2284640, 3084640, 4149640, 5559640, 7459640, 9959640, 13259640, 17559640, 23159640, 30359640, 39559640, 51559640, 66559640, 85559640, 109559640, 139559640, 177559640, 225559640, 285559640, 360559640, 453559640, 569809640};
+    private static final int[] requiredXp = {50, 125, 235, 395, 625, 955, 1425, 2095, 3045, 4385, 6275, 8940, 12700,
+            17960, 25340, 35640, 50040, 70040, 97640, 135640, 188140, 259640, 356640, 488640, 668640, 911640, 1239640
+            , 1684640, 2284640, 3084640, 4149640, 5559640, 7459640, 9959640, 13259640, 17559640, 23159640, 30359640,
+            39559640, 51559640, 66559640, 85559640, 109559640, 139559640, 177559640, 225559640, 285559640, 360559640,
+            453559640, 569809640};
 
     private static final long REFRESH_TIME = 1000L * 60 * 55;
     private static ConnectionService instance;
@@ -397,7 +401,8 @@ public class ConnectionService {
         return getScore(id, SLAYER);
     }
 
-    public Map<Long, Long> getLeaderboard(@NotNull String type) {
+    //TODO add page to request (parameter)
+    public Map<Long, Long> getLeaderboardData(@NotNull String type, int page) {
         Request request = getApiRequest("leaderboard/" + type)
                 .get()
                 .build();
@@ -422,35 +427,67 @@ public class ConnectionService {
     }
 
     public Map<Long, Long> getDungeonLeaderboard() {
-        return getLeaderboard(DUNGEON);
+        return getLeaderboardData(DUNGEON, 1);
+    }
+
+    public Map<Long, Long> getDungeonLeaderboard(int page) {
+        return getLeaderboardData(DUNGEON, page);
     }
 
     public Map<Long, Long> getAlltimeDungeonLeaderboard() {
-        return getLeaderboard(ALLTIME_DUNGEON);
+        return getLeaderboardData(ALLTIME_DUNGEON, 1);
+    }
+
+    public Map<Long, Long> getAlltimeDungeonLeaderboard(int page) {
+        return getLeaderboardData(ALLTIME_DUNGEON, page);
     }
 
     public Map<Long, Long> getEventDungeonLeaderboard() {
-        return getLeaderboard(EVENT_DUNGEON);
+        return getLeaderboardData(EVENT_DUNGEON, 1);
+    }
+
+    public Map<Long, Long> getEventDungeonLeaderboard(int page) {
+        return getLeaderboardData(EVENT_DUNGEON, page);
     }
 
     public Map<Long, Long> getSlayerLeaderboard() {
-        return getLeaderboard(SLAYER);
+        return getLeaderboardData(SLAYER, 1);
+    }
+
+    public Map<Long, Long> getSlayerLeaderboard(int page) {
+        return getLeaderboardData(SLAYER, page);
     }
 
     public Map<Long, Long> getAlltimeSlayerLeaderboard() {
-        return getLeaderboard(ALLTIME_SLAYER);
+        return getLeaderboardData(ALLTIME_SLAYER, 1);
+    }
+
+    public Map<Long, Long> getAlltimeSlayerLeaderboard(int page) {
+        return getLeaderboardData(ALLTIME_SLAYER, page);
     }
 
     public Map<Long, Long> getEventSlayerLeaderboard() {
-        return getLeaderboard(EVENT_SLAYER);
+        return getLeaderboardData(EVENT_SLAYER, 1);
+    }
+
+    public Map<Long, Long> getEventSlayerLeaderboard(int page) {
+        return getLeaderboardData(EVENT_SLAYER, page);
     }
 
     public Map<Long, Long> getKuudraLeaderboard() {
-        return getLeaderboard(KUUDRA);
+        return getLeaderboardData(KUUDRA, 1);
+    }
+
+    public Map<Long, Long> getKuudraLeaderboard(int page) {
+        return getLeaderboardData(KUUDRA, page);
     }
 
     public Map<Long, Long> getAlltimeKuudraLeaderboard() {
-        return getLeaderboard(ALLTIME_KUUDRA);
+        return getLeaderboardData(ALLTIME_KUUDRA, 1);
+    }
+
+    public Map<Long, Long> getAlltimeKuudraLeaderboard(int page) {
+        return getLeaderboardData(ALLTIME_KUUDRA, page);
     }
 
     public long modifyDungeonScore(Long id, Long amount) {
@@ -542,7 +579,8 @@ public class ConnectionService {
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.isSuccessful()) {
                 if(response.body() != null) {
-                    return CarryLogService.getInstance().getGson().fromJson(response.body().string(), CarryLogService.getInstance().getLongLongMapType());
+                    return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
+                            CarryLogService.getInstance().getLongLongMapType());
                 }
             } else {
                 logger.error("Error when trying to load purgable users.");
@@ -610,7 +648,8 @@ public class ConnectionService {
 
     public JsonArray getProfiles(String uuid) {
         Request request = new Request.Builder()
-                .url("https://api.hypixel.net/skyblock/profiles?key=" + ConfigProperty.HYPIXEL_API_KEY.getValue() + "&uuid=" + uuid)
+                .url("https://api.hypixel.net/skyblock/profiles?key=" + ConfigProperty.HYPIXEL_API_KEY.getValue() +
+                        "&uuid=" + uuid)
                 .get()
                 .build();
         try(Response response = httpClient.newCall(request).execute()) {
@@ -697,5 +736,10 @@ public class ConnectionService {
 
     public void removeStrike(long serverId, long id) {
         //TODO implement
+    }
+
+    public int getMaxLeaderboardPage(String type) {
+        //TODO implement
+        return 1;
     }
 }
