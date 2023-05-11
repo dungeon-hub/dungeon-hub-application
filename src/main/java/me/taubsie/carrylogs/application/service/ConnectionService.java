@@ -676,6 +676,7 @@ public class ConnectionService {
         return 50;
     }
 
+    //TODO rework with new uri (uses parameters)
     public StrikeData loadStrikeDataFromId(long serverId, long id) throws NotFoundException {
         Request request = getApiRequest("strike/" + serverId + "/" + id)
                 .get()
