@@ -15,12 +15,11 @@ public abstract class PageableMessage {
     private static final String BACK = "back";
     private static final String FORWARD = "forward";
     private static final String LAST = "last";
-
-    private int currentPage = 1;
     @Getter
     private final long channel;
     @Getter
     private final long messageId;
+    private int currentPage;
 
     protected PageableMessage(int currentPage, long channel, long messageId) {
         this.currentPage = currentPage;
@@ -28,6 +27,38 @@ public abstract class PageableMessage {
         this.messageId = messageId;
 
         getMessage().ifPresent(this::applyListener);
+    }
+
+    public static HighLevelComponent[] getComponents(boolean firstPage, boolean lastPage) {
+        Button startButton = new ButtonBuilder()
+                .setCustomId(FIRST)
+                .setStyle(ButtonStyle.SUCCESS)
+                .setEmoji("⏪")
+                .setDisabled(firstPage)
+                .build();
+
+        Button backButton = new ButtonBuilder()
+                .setCustomId(BACK)
+                .setStyle(ButtonStyle.SUCCESS)
+                .setEmoji("◀")
+                .setDisabled(firstPage)
+                .build();
+
+        Button forwardButton = new ButtonBuilder()
+                .setCustomId(FORWARD)
+                .setStyle(ButtonStyle.SUCCESS)
+                .setEmoji("▶")
+                .setDisabled(lastPage)
+                .build();
+
+        Button endButton = new ButtonBuilder()
+                .setCustomId(LAST)
+                .setStyle(ButtonStyle.SUCCESS)
+                .setEmoji("⏩")
+                .setDisabled(lastPage)
+                .build();
+
+        return new HighLevelComponent[]{ActionRow.of(startButton, backButton, forwardButton, endButton)};
     }
 
     public abstract int getMaxPage();
@@ -65,39 +96,6 @@ public abstract class PageableMessage {
             currentPage = newPage;
 
             updatePage(componentInteractionOriginalMessageUpdater, newPage);
-            //TODO removeafter isn't enough since it doesn't remove components, also it creates new threads. custom solution needed
-        }).removeAfter(5, TimeUnit.MINUTES);
-    }
-
-    public static HighLevelComponent[] getComponents(boolean firstPage, boolean lastPage) {
-        Button startButton = new ButtonBuilder()
-                .setCustomId(FIRST)
-                .setStyle(ButtonStyle.SUCCESS)
-                .setEmoji("⏪")
-                .setDisabled(firstPage)
-                .build();
-
-        Button backButton = new ButtonBuilder()
-                .setCustomId(BACK)
-                .setStyle(ButtonStyle.SUCCESS)
-                .setEmoji("◀")
-                .setDisabled(firstPage)
-                .build();
-
-        Button forwardButton = new ButtonBuilder()
-                .setCustomId(FORWARD)
-                .setStyle(ButtonStyle.SUCCESS)
-                .setEmoji("▶")
-                .setDisabled(lastPage)
-                .build();
-
-        Button endButton = new ButtonBuilder()
-                .setCustomId(LAST)
-                .setStyle(ButtonStyle.SUCCESS)
-                .setEmoji("⏩")
-                .setDisabled(lastPage)
-                .build();
-
-        return new HighLevelComponent[]{ActionRow.of(startButton, backButton, forwardButton, endButton)};
+        }).removeAfter(5, TimeUnit.MINUTES).addRemoveHandler(() -> message.createUpdater().removeAllComponents().applyChanges());
     }
 }

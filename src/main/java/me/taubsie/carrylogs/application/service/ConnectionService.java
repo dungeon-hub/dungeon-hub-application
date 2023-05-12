@@ -146,12 +146,22 @@ public class ConnectionService {
     }
 
     private Request.Builder getApiRequest(String uri) {
+        //TODO test
+        return getApiRequest(getApiUrl(uri).build());
+    }
+
+    private Request.Builder getApiRequest(HttpUrl httpUrl) {
         MediaType mediaType = MediaType.get("multipart/form-data; boundary=---011000010111000001101001");
 
         return new Request.Builder()
-                .url(ConfigProperty.API_URL + API_PREFIX + uri)
+                .url(httpUrl)
                 .addHeader("Content-Type", mediaType.toString())
                 .addHeader("Authorization", "Bearer " + apiToken);
+    }
+
+    private HttpUrl.Builder getApiUrl(String uri) {
+        return HttpUrl.get(ConfigProperty.API_URL + API_PREFIX + uri)
+                .newBuilder();
     }
 
     private RequestBody getRequestBody(Long id) {
@@ -678,9 +688,9 @@ public class ConnectionService {
 
     //TODO rework with new uri (uses parameters)
     public StrikeData loadStrikeDataFromId(long serverId, long id) throws NotFoundException {
-        Request request = getApiRequest("strike/" + serverId + "/" + id)
-                .get()
-                .build();
+        Request request = getApiRequest(getApiUrl("strike/" + serverId)
+                .addQueryParameter("id", String.valueOf(id)).build())
+                .get().build();
 
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.code() == 404) {
