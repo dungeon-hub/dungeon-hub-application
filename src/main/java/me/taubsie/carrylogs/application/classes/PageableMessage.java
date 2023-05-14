@@ -74,6 +74,10 @@ public abstract class PageableMessage {
     }
 
     private void applyListener(Message message) {
+        if(getMaxPage() != 1) {
+            return;
+        }
+
         message.addMessageComponentCreateListener(event -> {
             String customId = event.getMessageComponentInteraction().getCustomId();
 

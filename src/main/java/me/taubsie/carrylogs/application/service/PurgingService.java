@@ -8,6 +8,7 @@ import me.taubsie.dungeonhub.common.CarryRole;
 import me.taubsie.dungeonhub.common.OnStart;
 import me.taubsie.dungeonhub.common.ProgramOrigin;
 import me.taubsie.dungeonhub.common.StartupListener;
+import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -42,7 +43,7 @@ public class PurgingService implements StartupListener {
             public void run() {
                 purgeWave();
             }
-        }, new Time(System.currentTimeMillis() + 500L), 1000L);
+        }, new Time(System.currentTimeMillis() + 500L), 3000L);
     }
 
     /**
@@ -64,7 +65,11 @@ public class PurgingService implements StartupListener {
             List<String> rolesRemoved = new ArrayList<>();
 
             for(RoleConversion carryRole : purgeData.rolesToRemove()) {
-                Optional<Role> role = server.get().getRoleById(ServerService.getInstance().getServerProperty(server.get().getId(), carryRole.getServerProperty()));
+                Optional<Role> role = server
+                        .map(DiscordEntity::getId)
+                        .flatMap(serverId -> carryRole.getServerProperty().getValue(serverId))
+                        .flatMap(s -> server.get().getRoleById(s));
+
                 String roleName = carryRole.getCarryRole().name();
 
                 if(role.isEmpty()) {
@@ -98,7 +103,8 @@ public class PurgingService implements StartupListener {
                                             + purgeData.purgeThreshold() + " score.")
                                     .addField("Roles removed", String.join(System.lineSeparator(), rolesRemoved))
                                     .setTitle("Inactivity Purge")));
-                } catch(CompletionException completionException) {
+                }
+                catch(CompletionException completionException) {
                     logger.error("Unable to DM carrier about purge.", completionException);
                 }
             }

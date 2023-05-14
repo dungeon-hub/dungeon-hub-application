@@ -1,7 +1,6 @@
 package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.enums.RoleConversion;
-import me.taubsie.carrylogs.application.service.ServerService;
 import me.taubsie.dungeonhub.common.CarryRole;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
@@ -40,7 +39,10 @@ public class RoleSyncCommand extends Command {
         Server server = getServer();
 
         Map<Long, List<CarryRole>> roleList = Arrays.stream(RoleConversion.getCarryRoles())
-                .map(role -> server.getRoleById(ServerService.getInstance().getServerProperty(getServer().getId(), role.getServerProperty())))
+                .map(RoleConversion::getServerProperty)
+                .map(serverProperty -> serverProperty.getValue(server.getId()))
+                .flatMap(Optional::stream)
+                .map(server::getRoleById)
                 .flatMap(Optional::stream)
                 .flatMap(role -> role.getUsers().stream().filter(user -> !user.isBot()))
                 .distinct()

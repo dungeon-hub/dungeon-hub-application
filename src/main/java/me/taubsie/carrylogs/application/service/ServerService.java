@@ -87,6 +87,10 @@ public class ServerService implements StartupListener {
                 .findAny();
     }
 
+    // Deprecated since default values will be removed.
+    // I might use this in a quick and dirty scenario until I ported all IdList to the new system.
+    // Until then this method should be kept, after it's bye bye.
+    @Deprecated(forRemoval = true)
     public String getServerProperty(long id, ServerProperty serverProperty) {
         return getServerData(id)
                 .map(data -> data.getConfig(serverProperty))

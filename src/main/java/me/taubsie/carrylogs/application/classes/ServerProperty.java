@@ -1,10 +1,12 @@
 package me.taubsie.carrylogs.application.classes;
 
+import me.taubsie.carrylogs.application.service.ServerService;
 import me.taubsie.dungeonhub.common.config.Nameable;
 
 import java.util.Arrays;
 import java.util.Optional;
 
+//TODO remove default value and make return optional or something idk
 public enum ServerProperty implements Nameable {
     PROFILE_MODERATION_BAN_MESSAGE("profile_moderation_message", "You got banned from `%server%` because of a" +
             " suspicious user profile.\nIf you think this might be a mistake, please click the button or appeal at: " +
@@ -41,6 +43,10 @@ public enum ServerProperty implements Nameable {
         this(name, ServerPropertyType.STRING, defaultValue);
     }
 
+    ServerProperty(String name, String defaultValue, boolean enabled) {
+        this(name, ServerPropertyType.STRING, defaultValue, enabled);
+    }
+
     ServerProperty(String name, ServerPropertyType propertyType, String defaultValue) {
         this(name, propertyType, defaultValue, true);
     }
@@ -69,6 +75,10 @@ public enum ServerProperty implements Nameable {
 
     public String getDefaultValue() {
         return defaultValue;
+    }
+
+    public Optional<String> getValue(long serverId) {
+        return ServerService.getInstance().getActualServerProperty(serverId, this);
     }
 
     //TODO maybe implement logic here too

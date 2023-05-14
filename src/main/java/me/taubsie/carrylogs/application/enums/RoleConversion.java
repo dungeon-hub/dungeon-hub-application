@@ -1,12 +1,12 @@
 package me.taubsie.carrylogs.application.enums;
 
 import me.taubsie.carrylogs.application.classes.ServerProperty;
-import me.taubsie.carrylogs.application.service.ServerService;
 import me.taubsie.dungeonhub.common.CarryRole;
 import org.javacord.api.entity.permission.Role;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public enum RoleConversion {
     F4_ROLE(CarryRole.F4, ServerProperty.F4_ROLE),
@@ -87,9 +87,13 @@ public enum RoleConversion {
         List<RoleConversion> userRoles = new ArrayList<>();
 
         for(RoleConversion role : getCarryRoles()) {
-            if(role.getCarryRole() != null
-                    && roles.stream().anyMatch(userRole -> String.valueOf(userRole.getId()).equalsIgnoreCase(ServerService.getInstance().getServerProperty(serverId, role.getServerProperty())))) {
-                userRoles.add(role);
+            if(role.getCarryRole() != null) {
+                Optional<String> serverProperty = role.getServerProperty().getValue(serverId);
+
+                if(serverProperty.isPresent()
+                        && roles.stream().anyMatch(userRole -> String.valueOf(userRole.getId()).equalsIgnoreCase(serverProperty.get()))) {
+                    userRoles.add(role);
+                }
             }
         }
 
