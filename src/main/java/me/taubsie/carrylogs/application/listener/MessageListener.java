@@ -8,6 +8,7 @@ import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
@@ -21,6 +22,8 @@ import org.javacord.api.listener.message.MessageEditListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
 
@@ -38,11 +41,72 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
     @Override
     public void onMessageCreate(MessageCreateEvent messageCreateEvent) {
         logTicket(messageCreateEvent);
+
+        loadSkycryptFromTicket(messageCreateEvent);
     }
 
     @Override
     public void onMessageEdit(MessageEditEvent messageEditEvent) {
         logTicket(messageEditEvent);
+    }
+
+    private void loadSkycryptFromTicket(MessageCreateEvent messageCreateEvent) {
+        Server server = messageCreateEvent.getServer().orElse(null);
+
+        if(!messageCreateEvent.isServerMessage()
+                || server == null
+                || !(server.getId() == IdList.SERVER.getId()
+                || server.getId() == IdList.SERVER.getTestId())) {
+            return;
+        }
+
+        TextChannel channel = messageCreateEvent.getMessage().getChannel();
+
+        if(channel.getMessages(5).join().size() != 1) {
+            return;
+        }
+
+        Message firstMessage = channel.getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
+
+        if(firstMessage == null) {
+            return;
+        }
+
+        List<User> mentionedUsers = firstMessage.getMentionedUsers();
+
+        if(mentionedUsers.size() != 1) {
+            return;
+        }
+
+        User user = mentionedUsers.get(0);
+
+        String[] lines = firstMessage.getContent().split("\n");
+
+        if(lines.length < 2) {
+            return;
+        }
+
+        String ignOptional = Arrays.stream(lines)
+                .filter(s -> s.startsWith("IGN: "))
+                .findFirst()
+                .orElse(user.getNickname(server).orElse(null));
+
+        if(ignOptional == null) {
+            return;
+        }
+
+        String ign = ignOptional
+                .replace("IGN: ", "")
+                .replaceAll("❮(\\d+|\\?)❯", "")
+                .strip();
+
+        messageCreateEvent.getChannel()
+                .sendMessage(ApplicationService.getInstance()
+                        .getEmbed()
+                        .setColor(EmbedColor.INFORMATION.getColor())
+                        .addField("IGN", ign)
+                        .addField("SkyCrypt", "[Click here](https://sky.shiiyu.moe/stats/" + ign + ")")
+                        .setUrl("https://sky.shiiyu.moe/stats/" + ign));
     }
 
     //TODO reduce complexity
@@ -91,7 +155,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                                     String.valueOf(carryInformation.getAmountOfCarries()))
                                             .addInlineField("Type of carry",
                                                     (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) +
-                                                    " - " + carryInformation.getCarryType())
+                                                            " - " + carryInformation.getCarryType())
                                             .addInlineField("Player",
                                                     messageEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                             .addInlineField("Carrier",
@@ -160,7 +224,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                                 String.valueOf(carryInformation.getAmountOfCarries()))
                                         .addInlineField("Type of carry",
                                                 (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) +
-                                                " - " + carryInformation.getCarryType())
+                                                        " - " + carryInformation.getCarryType())
                                         .addInlineField("Player",
                                                 messageEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                         .addInlineField("Carrier",
