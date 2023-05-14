@@ -23,6 +23,6 @@ public class Leaderboard {
     }
 
     public EmbedBuilder getEmbed() {
-        return LeaderboardService.getInstance().getLeaderboardEmbed(title, scoreData);
+        return LeaderboardService.getInstance().getLeaderboardEmbed(title, scoreData, 1);
     }
 }

@@ -2,6 +2,7 @@ package me.taubsie.carrylogs.application.service;
 
 import me.taubsie.carrylogs.application.classes.Leaderboard;
 import me.taubsie.carrylogs.application.classes.LeaderboardMessage;
+import me.taubsie.dungeonhub.common.CarryLogService;
 import me.taubsie.dungeonhub.common.OnStart;
 import me.taubsie.dungeonhub.common.ProgramOrigin;
 import me.taubsie.dungeonhub.common.StartupListener;
@@ -50,7 +51,7 @@ public class LeaderboardService implements StartupListener {
                 .orElse(getUnknownLeaderboardTitle());
     }
 
-    public EmbedBuilder getLeaderboardEmbed(String title, Map<Long, Long> score) {
+    public EmbedBuilder getLeaderboardEmbed(String title, Map<Long, Long> score, int page) {
         String description = score.isEmpty() ? "No score has been gained yet!\n " : "";
         description += "To see how score works, use /score-help";
 
@@ -60,7 +61,7 @@ public class LeaderboardService implements StartupListener {
                 .setDescription(description)
                 .setColor(EmbedColor.DEFAULT.getColor());
 
-        int counter = 0;
+        int counter = CarryLogService.getInstance().getOffsetFromPageNumber(page);
 
         for(Map.Entry<Long, Long> entry : score.entrySet()) {
             embed.addField(
@@ -73,7 +74,7 @@ public class LeaderboardService implements StartupListener {
     }
 
     public EmbedBuilder getLeaderboardEmbed(String title, Map<Long, Long> score, int page, int maxPage) {
-        return getLeaderboardEmbed(title, score)
+        return getLeaderboardEmbed(title, score, page)
                 .setFooter("Page " + page + "/" + maxPage);
     }
 

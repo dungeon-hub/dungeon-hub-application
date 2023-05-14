@@ -411,9 +411,10 @@ public class ConnectionService {
         return getScore(id, SLAYER);
     }
 
-    //TODO add page to request (parameter)
     public Map<Long, Long> getLeaderboardData(@NotNull String type, int page) {
-        Request request = getApiRequest("leaderboard/" + type)
+        Request request = getApiRequest(getApiUrl("leaderboard/" + type)
+                .addQueryParameter("page", String.valueOf(page))
+                .build())
                 .get()
                 .build();
 
