@@ -10,6 +10,7 @@ import me.taubsie.carrylogs.application.service.ApplicationClassLoaderService;
 import me.taubsie.dungeonhub.common.config.ConfigType;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.activity.ActivityType;
+import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.entity.user.UserStatus;
 import org.slf4j.Logger;
@@ -66,9 +67,9 @@ public class BotStarter extends ProgramOrigin implements StartupListener {
         message.add("Im on servers:");
         message.addAll(bot.getServers().stream()
                 .map(server -> String.format("%s by %s (%d)",
-                                server.getName(),
-                                server.getOwner().map(User::getDiscriminatedName).orElse("no-name"),
-                                server.getOwnerId()))
+                        server.getName(),
+                        server.getOwner().map(User::getDiscriminatedName).orElse("no-name"),
+                        server.getOwnerId()))
                 .toList());
 
         return message;
@@ -79,7 +80,8 @@ public class BotStarter extends ProgramOrigin implements StartupListener {
     }
 
     private void resetBotActivity() {
-        bot.updateActivity(ActivityType.WATCHING, "carriers on " + bot.getServers().size() + " servers");
+        bot.updateActivity(ActivityType.WATCHING,
+                bot.getServers().stream().mapToInt(Server::getMemberCount).sum() + " carriers on " + bot.getServers().size() + " servers");
     }
 
     private void resetBotStatus() {
@@ -94,30 +96,5 @@ public class BotStarter extends ProgramOrigin implements StartupListener {
     @Override
     public ConfigType getConfigType() {
         return ConfigType.APPLICATION;
-    }
-
-    @Override
-    public void log(String message) {
-        logger.info(message);
-    }
-
-    @Override
-    public void warn(String message) {
-        logger.warn(message);
-    }
-
-    @Override
-    public void error(String message) {
-        logger.error(message);
-    }
-
-    @Override
-    public void error(String message, Throwable throwable) {
-        logger.error(message, throwable);
-    }
-
-    @Override
-    public void debug(String message) {
-        logger.debug(message);
     }
 }
