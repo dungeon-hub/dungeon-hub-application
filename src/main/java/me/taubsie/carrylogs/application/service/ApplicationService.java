@@ -44,9 +44,11 @@ public class ApplicationService {
                 .setFooter("discord.gg/dungeons • made by Taubsie#0911");
     }
 
-    //TODO pretty cheesy, you can do better
     public User getBotOwner(DiscordApi api) {
-        return api.getOwner().orElse(api.getCachedTeam().get().requestOwner()).join();
+        return Objects.requireNonNull(api.getCachedTeam()
+                .map(team -> team.requestOwner().join())
+                .orElse(api.getOwner().map(CompletableFuture::join)
+                        .orElse(null)));
     }
 
     public boolean isCarryTier(String carryTier, CarryType carryType) {
