@@ -5,9 +5,14 @@ public enum ServerPropertyType {
     STRING,
     BOOLEAN,
     CHANNEL,
+    CATEGORY,
     ROLE;
 
     public String applyPropertyType(String value) {
+        if(this == ServerPropertyType.CATEGORY) {
+            return "<#" + value + ">";
+        }
+
         if(this == ServerPropertyType.CHANNEL) {
             return "<#" + value + ">";
         }
@@ -17,5 +22,10 @@ public enum ServerPropertyType {
         }
 
         return value;
+    }
+
+    public boolean canAccept(String value) {
+        //TODO implement
+        return true;
     }
 }
