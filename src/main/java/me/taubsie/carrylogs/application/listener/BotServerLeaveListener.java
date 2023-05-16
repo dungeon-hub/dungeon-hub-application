@@ -17,9 +17,10 @@ public class BotServerLeaveListener implements ServerLeaveListener {
     public void onServerLeave(ServerLeaveEvent serverLeaveEvent) {
         BotStarter.getInstance().resetBotAppearance();
 
+        String ownerName = serverLeaveEvent.getServer().getOwner().map(Nameable::getName).orElse("no-name");
         logger.info("I just left server '{}' by '{}' ({}).",
                 serverLeaveEvent.getServer().getName(),
-                serverLeaveEvent.getServer().getOwner().map(Nameable::getName).orElse("no-name"),
+                ownerName,
                 serverLeaveEvent.getServer().getOwnerId());
 
         ApplicationService.getInstance()

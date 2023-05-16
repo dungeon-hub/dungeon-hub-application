@@ -20,7 +20,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@CommandParameters(name = "config", description = "Edits the config for the server.", enabledForPermissions = {PermissionType.ADMINISTRATOR})
+@CommandParameters(name = "config", description = "Edits the config for the server.", enabledForPermissions =
+        {PermissionType.ADMINISTRATOR})
 public class ConfigCommand extends Command {
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
@@ -41,27 +42,11 @@ public class ConfigCommand extends Command {
         }
 
         if(get) {
-            Optional<String> value = ServerService.getInstance().getActualServerProperty(getServer().getId(), property.get());
-
-            if(value.isEmpty()) {
-                respondEphemeral(ApplicationService.getInstance()
-                        .getEmbed()
-                        .setColor(EmbedColor.NEGATIVE.getColor())
-                        .setDescription("No value for `" + property.get().getName() + "` is set."));
-                return;
-            }
-
-            respond(ApplicationService.getInstance()
-                    .getEmbed()
-                    .setColor(EmbedColor.INFORMATION.getColor())
-                    .setDescription("Loaded the value of `" + property.get().getName() + "`.")
-                    .addInlineField("Current value", property.get().getPropertyType().applyPropertyType(value.get())));
+            getConfig(property.get());
         } else {
-            Optional<String> previousValue = ServerService.getInstance().getActualServerProperty(getServer().getId(), property.get());
-
-            String oldValue = previousValue.isPresent()
-                    ? property.get().getPropertyType().applyPropertyType(previousValue.get())
-                    : "None was set.";
+            if(!property.get().isEnabled(getServer().getId())) {
+                throw new InvalidOptionException("property", "Property is disabled on this server.");
+            }
 
             Optional<String> value = slashCommandCreateEvent
                     .getSlashCommandInteraction()
@@ -80,29 +65,60 @@ public class ConfigCommand extends Command {
                     .map(s -> s.replace("\\n", "\n"));
 
             if(value.isEmpty()) {
-                throw new InvalidOptionException("value", "Please enter something.");
+                throw new InvalidOptionException("value", "Please enter a new value.");
             }
 
-            Optional<ServerData> serverData = ServerService.getInstance().getServerData(getServer().getId());
-
-            if(serverData.isEmpty()) {
-                throw new CommandExecutionException() {
-                    @Override
-                    public String getMessage() {
-                        return "Couldn't load the server data from storage.";
-                    }
-                };
-            }
-
-            serverData.get().setConfig(property.get(), value.get());
-
-            respond(ApplicationService.getInstance()
-                    .getEmbed()
-                    .setColor(EmbedColor.POSITIVE.getColor())
-                    .setDescription("Changed the value of `" + property.get().getName() + "`.")
-                    .addInlineField("Old value", oldValue)
-                    .addInlineField("New value", property.get().getPropertyType().applyPropertyType(value.get())));
+            setConfig(property.get(), value.get());
         }
+    }
+
+    private void setConfig(ServerProperty property, String value) {
+        Optional<String> previousValue = ServerService.getInstance().getActualServerProperty(getServer().getId(),
+                property);
+
+        String oldValue = previousValue.isPresent()
+                ? property.getPropertyType().applyPropertyType(previousValue.get())
+                : "None was set.";
+
+        Optional<ServerData> serverData = ServerService.getInstance().getServerData(getServer().getId());
+
+        if(serverData.isEmpty()) {
+            throw new CommandExecutionException() {
+                @Override
+                public String getMessage() {
+                    return "Couldn't load the server data from storage.";
+                }
+            };
+        }
+
+        serverData.get().setConfig(property, value);
+
+        respond(ApplicationService.getInstance()
+                .getEmbed()
+                .setColor(EmbedColor.POSITIVE.getColor())
+                .setDescription("Changed the value of `" + property.getName() + "`.")
+                .addInlineField("Old value", oldValue)
+                .addInlineField("New value", property.getPropertyType().applyPropertyType(value)));
+    }
+
+    private void getConfig(ServerProperty property) {
+        Optional<String> value = ServerService.getInstance().getActualServerProperty(getServer().getId(), property);
+
+        if(value.isEmpty()) {
+            respondEphemeral(ApplicationService.getInstance()
+                    .getEmbed()
+                    .setColor(EmbedColor.NEGATIVE.getColor())
+                    .setDescription("No value for `" + property.getName() + "` is set.")
+                    .addInlineField("Option enabled", String.valueOf(property.isEnabled(getServer().getId()))));
+            return;
+        }
+
+        respond(ApplicationService.getInstance()
+                .getEmbed()
+                .setColor(EmbedColor.INFORMATION.getColor())
+                .setDescription("Loaded the value of `" + property.getName() + "`.")
+                .addInlineField("Current value", property.getPropertyType().applyPropertyType(value.get()))
+                .addInlineField("Option enabled", String.valueOf(property.isEnabled(getServer().getId()))));
     }
 
     @Override

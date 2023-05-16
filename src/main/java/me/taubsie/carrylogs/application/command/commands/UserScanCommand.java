@@ -15,7 +15,6 @@ import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
 
 import java.util.*;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @CommandParameters(name = "userscan",

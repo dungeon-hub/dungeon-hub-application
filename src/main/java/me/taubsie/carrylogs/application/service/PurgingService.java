@@ -21,9 +21,9 @@ import java.util.concurrent.CompletionException;
 
 @OnStart
 public class PurgingService implements StartupListener {
+    private static final Logger logger = LoggerFactory.getLogger(PurgingService.class);
     private static PurgingService instance;
     private final List<PurgeData> purgeDataList = new ArrayList<>();
-    private static final Logger logger = LoggerFactory.getLogger(PurgingService.class);
 
     public static PurgingService getInstance() {
         if(instance == null) {
@@ -48,7 +48,8 @@ public class PurgingService implements StartupListener {
 
     /**
      * This method is private to prevent it from being run from outside this service.
-     * That is done so that the amount of threads created is limited, to prevent the server this is currently hosted on from reaching the vm's thread limit.
+     * That is done so that the amount of threads created is limited, to prevent the server this is currently hosted
+     * on from reaching the vm's thread limit.
      */
     private void purgeWave() {
         List<PurgeData> currentWave = purgeDataList.stream().limit(5).toList();
@@ -62,34 +63,10 @@ public class PurgingService implements StartupListener {
                 return;
             }
 
-            List<String> rolesRemoved = new ArrayList<>();
+            List<String> rolesRemoved = removeRoles(purgeData.rolesToRemove(), server.get(), user,
+                    purgeData.purgeType(), purgeData.purgeThreshold());
 
-            for(RoleConversion carryRole : purgeData.rolesToRemove()) {
-                Optional<Role> role = server
-                        .map(DiscordEntity::getId)
-                        .flatMap(serverId -> carryRole.getServerProperty().getValue(serverId))
-                        .flatMap(s -> server.get().getRoleById(s));
-
-                String roleName = carryRole.getCarryRole().name();
-
-                if(role.isEmpty()) {
-                    logger.error("Role {} not found on server {}.", roleName, server.get().getId());
-                    return;
-                }
-
-                if(role.get().hasUser(user)) {
-                    if(rolesRemoved.isEmpty()) {
-                        role.get().removeUser(user, "Purge of type \"" + purgeData.purgeType() + "\" with threshold " + purgeData.purgeThreshold() + ".");
-                    } else {
-                        role.get().removeUser(user);
-                    }
-
-                    rolesRemoved.add(role.get().getName());
-                }
-            }
-
-            List<CarryRole> roleList =
-                    RoleConversion.getCarryRoles(user.getRoles(server.get()), server.get().getId()).stream().map(RoleConversion::getCarryRole).toList();
+            List<CarryRole> roleList = getUserRoles(user, server.get());
             ConnectionService.getInstance().addRoles(user.getId(), roleList);
 
             if(!rolesRemoved.isEmpty()) {
@@ -111,6 +88,42 @@ public class PurgingService implements StartupListener {
         });
 
         purgeDataList.removeAll(currentWave);
+    }
+
+    private List<String> removeRoles(List<RoleConversion> rolesToRemove, Server server, User user, String purgeType,
+                                     long purgeThreshold) {
+        List<String> rolesRemoved = new ArrayList<>();
+
+        for(RoleConversion carryRole : rolesToRemove) {
+            Optional<Role> role = Optional.ofNullable(server)
+                    .map(DiscordEntity::getId)
+                    .flatMap(serverId -> carryRole.getServerProperty().getValue(serverId))
+                    .flatMap(server::getRoleById);
+
+            String roleName = carryRole.getCarryRole().name();
+
+            if(role.isEmpty()) {
+                logger.error("Role {} not found on server {}.", roleName, server != null ? server.getId() : "null");
+                continue;
+            }
+
+            if(role.get().hasUser(user)) {
+                if(rolesRemoved.isEmpty()) {
+                    role.get().removeUser(user,
+                            "Purge of type \"" + purgeType + "\" with threshold " + purgeThreshold + ".");
+                } else {
+                    role.get().removeUser(user);
+                }
+
+                rolesRemoved.add(role.get().getName());
+            }
+        }
+
+        return rolesRemoved;
+    }
+
+    private List<CarryRole> getUserRoles(User user, Server server) {
+        return RoleConversion.getCarryRoles(user.getRoles(server), server.getId()).stream().map(RoleConversion::getCarryRole).toList();
     }
 
     public void addPurgeData(PurgeData purgeData) {

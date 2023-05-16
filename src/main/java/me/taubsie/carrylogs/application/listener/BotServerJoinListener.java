@@ -17,9 +17,10 @@ public class BotServerJoinListener implements ServerJoinListener {
     public void onServerJoin(ServerJoinEvent serverJoinEvent) {
         BotStarter.getInstance().resetBotAppearance();
 
+        String ownerName = serverJoinEvent.getServer().getOwner().map(Nameable::getName).orElse("no-name");
         logger.info("I just joined server '{}' by '{}' ({}).",
                 serverJoinEvent.getServer().getName(),
-                serverJoinEvent.getServer().getOwner().map(Nameable::getName).orElse("no-name"),
+                ownerName,
                 serverJoinEvent.getServer().getOwnerId());
 
         ApplicationService.getInstance()
