@@ -23,7 +23,7 @@ import java.util.*;
  * @since 1.0.0
  */
 @OnStart(priority = 1)
-public class BotStarter extends ProgramOrigin implements StartupListener {
+public class BotStarter implements StartupListener, ProgramOrigin {
     private static final Logger logger = LoggerFactory.getLogger(BotStarter.class);
 
     private static BotStarter instance;
