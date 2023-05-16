@@ -14,6 +14,7 @@ import org.javacord.api.entity.Nameable;
 import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 
@@ -259,9 +260,27 @@ public class ApplicationService {
                         + "`");
 
         embedBuilder.addField("User", "<@" + strikeData.getUser() + ">");
-        embedBuilder.addField("Striker", strikeData.getStriker() != null ? "<@" + strikeData.getStriker() + ">" : "CONSOLE");
-        embedBuilder.addField("Reason", strikeData.getReason() != null ? strikeData.getReason() : "No reason provided.");
+        embedBuilder.addField("Striker", strikeData.getStriker() != null ? "<@" + strikeData.getStriker() + ">" :
+                "CONSOLE");
+        embedBuilder.addField("Reason", strikeData.getReason() != null ? strikeData.getReason() : "No reason provided" +
+                ".");
 
         return embedBuilder;
+    }
+
+    public EmbedBuilder getScoreCountMessage(User userToCheck, User user, Server server, Map<String, Long> scoreCount) {
+        return getEmbed()
+                .setTitle((userToCheck.getId() != user.getId() && server != null)
+                        ? userToCheck.getDisplayName(server) + "'s score:"
+                        : "Your score:")
+                .setColor(EmbedColor.DEFAULT.getColor())
+                .addInlineField("Dungeon-Score:", String.valueOf(scoreCount.get("dungeon")))
+                .addInlineField("Slayer-Score:", String.valueOf(scoreCount.get("slayer")))
+                .addInlineField("Kuudra-Score:", String.valueOf(scoreCount.get("kuudra")))
+                .addInlineField("Alltime-Dungeon-Score:", String.valueOf(scoreCount.get("alltime-dungeon")))
+                .addInlineField("Alltime-Slayer-Score:", String.valueOf(scoreCount.get("alltime-slayer")))
+                .addInlineField("Alltime-Kuudra-Score:", String.valueOf(scoreCount.get("alltime-kuudra")))
+                .addInlineField("Event-Dungeon-Score:", String.valueOf(scoreCount.get("event-dungeon")))
+                .addInlineField("Event-Slayer-Score:", String.valueOf(scoreCount.get("event-slayer")));
     }
 }
