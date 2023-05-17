@@ -111,8 +111,7 @@ public class ConnectionService {
         try(Response response = httpClient.newCall(request).execute()) {
             ResponseBody responseBody = response.body();
             if(!response.isSuccessful() || responseBody == null) {
-                //TODO replace with empty array instead of null
-                return null;
+                return new String[0];
             }
 
             String body = responseBody.string();
@@ -141,12 +140,10 @@ public class ConnectionService {
             ioException.printStackTrace();
         }
 
-        //TODO replace with empty array instead of null
-        return null;
+        return new String[0];
     }
 
     private Request.Builder getApiRequest(String uri) {
-        //TODO test
         return getApiRequest(getApiUrl(uri).build());
     }
 
@@ -438,7 +435,7 @@ public class ConnectionService {
     }
 
     public Map<Long, Long> getDungeonLeaderboard() {
-        return getLeaderboardData(DUNGEON, 1);
+        return getDungeonLeaderboard(1);
     }
 
     public Map<Long, Long> getDungeonLeaderboard(int page) {
@@ -446,7 +443,7 @@ public class ConnectionService {
     }
 
     public Map<Long, Long> getAlltimeDungeonLeaderboard() {
-        return getLeaderboardData(ALLTIME_DUNGEON, 1);
+        return getAlltimeDungeonLeaderboard(1);
     }
 
     public Map<Long, Long> getAlltimeDungeonLeaderboard(int page) {
@@ -454,7 +451,7 @@ public class ConnectionService {
     }
 
     public Map<Long, Long> getEventDungeonLeaderboard() {
-        return getLeaderboardData(EVENT_DUNGEON, 1);
+        return getEventDungeonLeaderboard(1);
     }
 
     public Map<Long, Long> getEventDungeonLeaderboard(int page) {
@@ -462,7 +459,7 @@ public class ConnectionService {
     }
 
     public Map<Long, Long> getSlayerLeaderboard() {
-        return getLeaderboardData(SLAYER, 1);
+        return getSlayerLeaderboard(1);
     }
 
     public Map<Long, Long> getSlayerLeaderboard(int page) {
@@ -470,7 +467,7 @@ public class ConnectionService {
     }
 
     public Map<Long, Long> getAlltimeSlayerLeaderboard() {
-        return getLeaderboardData(ALLTIME_SLAYER, 1);
+        return getAlltimeSlayerLeaderboard(1);
     }
 
     public Map<Long, Long> getAlltimeSlayerLeaderboard(int page) {
@@ -478,7 +475,7 @@ public class ConnectionService {
     }
 
     public Map<Long, Long> getEventSlayerLeaderboard() {
-        return getLeaderboardData(EVENT_SLAYER, 1);
+        return getEventSlayerLeaderboard(1);
     }
 
     public Map<Long, Long> getEventSlayerLeaderboard(int page) {
@@ -486,7 +483,7 @@ public class ConnectionService {
     }
 
     public Map<Long, Long> getKuudraLeaderboard() {
-        return getLeaderboardData(KUUDRA, 1);
+        return getKuudraLeaderboard(1);
     }
 
     public Map<Long, Long> getKuudraLeaderboard(int page) {
@@ -494,7 +491,7 @@ public class ConnectionService {
     }
 
     public Map<Long, Long> getAlltimeKuudraLeaderboard() {
-        return getLeaderboardData(ALLTIME_KUUDRA, 1);
+        return getAlltimeKuudraLeaderboard(1);
     }
 
     public Map<Long, Long> getAlltimeKuudraLeaderboard(int page) {

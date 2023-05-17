@@ -10,7 +10,6 @@ import org.javacord.api.listener.interaction.AutocompleteCreateListener;
 import java.util.*;
 import java.util.stream.Stream;
 
-//TODO test edited code
 /**
  * @author Taubsie
  * @since 1.0.0
