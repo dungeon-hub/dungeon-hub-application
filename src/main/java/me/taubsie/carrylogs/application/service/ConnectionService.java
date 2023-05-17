@@ -249,7 +249,9 @@ public class ConnectionService {
     }
 
     public Set<CarryInformation> getFromLogApprovingQueue(Long id) {
-        Request request = getApiRequest("approving-queue/" + id)
+        Request request = getApiRequest(getApiUrl("approving-queue")
+                .addQueryParameter("id", String.valueOf(id))
+                .build())
                 .get()
                 .build();
 
@@ -276,7 +278,9 @@ public class ConnectionService {
     }
 
     public Set<CarryInformation> getFromLogQueue(Long id) {
-        Request request = getApiRequest("log-queue/" + id)
+        Request request = getApiRequest(getApiUrl("log-queue")
+                .addQueryParameter("id", String.valueOf(id))
+                .build())
                 .get()
                 .build();
 
