@@ -4,6 +4,7 @@ import lombok.Getter;
 import me.taubsie.carrylogs.application.start.BotStarter;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.component.*;
+import org.javacord.api.entity.server.Server;
 import org.javacord.api.interaction.callback.ComponentInteractionOriginalMessageUpdater;
 
 import java.util.Optional;
@@ -27,6 +28,10 @@ public abstract class PageableMessage {
         this.messageId = messageId;
 
         getMessage().ifPresent(this::applyListener);
+    }
+
+    public Optional<Server> getServer() {
+        return getMessage().flatMap(Message::getServer);
     }
 
     public static HighLevelComponent[] getComponents(boolean firstPage, boolean lastPage) {
@@ -74,7 +79,7 @@ public abstract class PageableMessage {
     }
 
     private void applyListener(Message message) {
-        if(getMaxPage() != 1) {
+        if(getMaxPage() > 1) {
             return;
         }
 

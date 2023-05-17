@@ -6,6 +6,7 @@ import me.taubsie.dungeonhub.common.CarryInformation;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
+import me.taubsie.dungeonhub.common.CarryLogService;
 import me.taubsie.dungeonhub.common.StrikeData;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import org.javacord.api.DiscordApi;
@@ -23,6 +24,7 @@ import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ApplicationService {
     private static ApplicationService instance;
@@ -217,7 +219,9 @@ public class ApplicationService {
         return loadEmbedFromCarryInformation(carryInformation, getEmbed(carryInformation.getTime()));
     }
 
-    public EmbedBuilder formatStrikes(List<StrikeData> strikeData, User user) {
+    public EmbedBuilder formatStrikes(List<StrikeData> strikeData, User user, int page) {
+        int offset = CarryLogService.getInstance().getOffsetFromPageNumber(page);
+
         EmbedBuilder embedBuilder = getEmbed()
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setTitle("Strikes of user " + user.getDiscriminatedName());
@@ -227,8 +231,9 @@ public class ApplicationService {
             return embedBuilder;
         }
 
-        int count = 0;
-        for(StrikeData strike : strikeData) {
+        AtomicInteger count = new AtomicInteger(offset);
+
+        strikeData.stream().skip(offset).limit(10).forEach(strike -> {
             String striker = Optional.ofNullable(strike.getStriker())
                     .map(strikerId -> BotStarter.getInstance().getBot().getUserById(strikerId))
                     .map(CompletableFuture::join)
@@ -239,9 +244,9 @@ public class ApplicationService {
                     .map(s -> " because of \"" + s + "\"")
                     .orElse("");
 
-            embedBuilder.addField("Strike #" + ++count,
+            embedBuilder.addField("Strike #" + count.incrementAndGet(),
                     "By " + striker + " at <t:" + strike.getStrikeTime().toEpochMilli() + ">" + reason);
-        }
+        });
 
         return embedBuilder;
     }

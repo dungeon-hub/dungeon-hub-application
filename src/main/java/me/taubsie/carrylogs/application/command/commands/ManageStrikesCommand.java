@@ -1,5 +1,7 @@
 package me.taubsie.carrylogs.application.command.commands;
 
+import me.taubsie.carrylogs.application.classes.AllStrikesMessage;
+import me.taubsie.carrylogs.application.classes.PageableMessage;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
@@ -7,6 +9,8 @@ import me.taubsie.carrylogs.application.exceptions.InvalidSubCommandException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;
 import me.taubsie.dungeonhub.common.StrikeData;
+import org.javacord.api.entity.message.Message;
+import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -33,7 +37,7 @@ public class ManageStrikesCommand extends Command {
         }
 
         switch(option.get().getName().toLowerCase()) {
-            case "list-all" -> strikeList(option.get());
+            case "list-all" -> strikeList(slashCommandCreateEvent, option.get());
             case "add" -> strikeAdd(slashCommandCreateEvent, option.get());
             case "remove" -> strikeRemove(slashCommandCreateEvent, option.get());
             case "info" -> strikeInfo(slashCommandCreateEvent, option.get());
@@ -41,13 +45,28 @@ public class ManageStrikesCommand extends Command {
         }
     }
 
-    public void strikeList(SlashCommandInteractionOption slashCommandInteractionOption) {
-        User user = getUserOption(slashCommandInteractionOption, "user");
+    public void strikeList(SlashCommandCreateEvent slashCommandCreateEvent,
+                           SlashCommandInteractionOption slashCommandInteractionOption) {
+        slashCommandCreateEvent.getSlashCommandInteraction()
+                .respondLater(true)
+                .thenAccept(responseUpdater -> {
+                    User user = getUserOption(slashCommandInteractionOption, "user");
 
-        List<StrikeData> strikeData = ConnectionService.getInstance().loadAllStrikeData(getServer().getId(),
-                user.getId());
+                    List<StrikeData> strikeData = ConnectionService.getInstance().loadAllStrikeData(getServer().getId(),
+                            user.getId());
 
-        respondEphemeral(ApplicationService.getInstance().formatStrikes(strikeData, user));
+                    EmbedBuilder embed = ApplicationService.getInstance().formatStrikes(strikeData, user, 1);
+
+                    int maxPage = ConnectionService.getInstance().getMaxAllStrikePage(getServer().getId(), user.getId());
+
+                    Message message = responseUpdater
+                            .addEmbed(embed)
+                            .addComponents(PageableMessage.getComponents(true, maxPage == 1))
+                            .update()
+                            .join();
+
+                    new AllStrikesMessage(1, message.getChannel().getId(), message.getId(), user.getId());
+                });
     }
 
     public void strikeAdd(SlashCommandCreateEvent slashCommandCreateEvent,

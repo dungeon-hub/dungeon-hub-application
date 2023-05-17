@@ -773,4 +773,22 @@ public class ConnectionService {
 
         return 1;
     }
+
+    //TODO maybe extra endpoint with count() in database
+    public int getMaxAllStrikePage(long serverId, long userId) {
+        int entries = ConnectionService.getInstance()
+                .loadAllStrikeData(serverId, userId)
+                .size();
+
+        return (int) Math.ceil(entries / 10.0);
+    }
+
+    //TODO maybe extra endpoint with count() in database
+    public int getMaxValidStrikePage(long serverId, long userId) {
+        int entries = ConnectionService.getInstance()
+                .loadValidStrikeData(serverId, userId)
+                .size();
+
+        return (int) Math.ceil(entries / 10.0);
+    }
 }
