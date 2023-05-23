@@ -5,6 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import lombok.Getter;
 import me.taubsie.carrylogs.application.exceptions.NotFoundException;
+import me.taubsie.carrylogs.application.exceptions.PlayerNotFoundException;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import me.taubsie.dungeonhub.common.CarryLogService;
 import me.taubsie.dungeonhub.common.CarryRole;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.sql.Time;
 import java.util.*;
 
+//TODO maybe split up in different services for each api (internal, hypixel, ...)
 public class ConnectionService {
     private static final Logger logger = LoggerFactory.getLogger(ConnectionService.class);
 
@@ -34,8 +36,8 @@ public class ConnectionService {
     private static final String API_PREFIX = "api/v1/";
 
     private static final int[] requiredXp = {50, 125, 235, 395, 625, 955, 1425, 2095, 3045, 4385, 6275, 8940, 12700,
-            17960, 25340, 35640, 50040, 70040, 97640, 135640, 188140, 259640, 356640, 488640, 668640, 911640, 1239640
-            , 1684640, 2284640, 3084640, 4149640, 5559640, 7459640, 9959640, 13259640, 17559640, 23159640, 30359640,
+            17960, 25340, 35640, 50040, 70040, 97640, 135640, 188140, 259640, 356640, 488640, 668640, 911640, 1239640,
+            1684640, 2284640, 3084640, 4149640, 5559640, 7459640, 9959640, 13259640, 17559640, 23159640, 30359640,
             39559640, 51559640, 66559640, 85559640, 109559640, 139559640, 177559640, 225559640, 285559640, 360559640,
             453559640, 569809640};
 
@@ -607,29 +609,26 @@ public class ConnectionService {
 
 
     //As this requests data from the Mojang API (aka slow), it is recommended to use UUIDs instead of names
-    public String getUUIDByName(String name) {
+    public UUID getUUIDByName(String name) throws PlayerNotFoundException {
         Request request = new Request.Builder()
                 .url("https://api.mojang.com/users/profiles/minecraft/" + name)
                 .get()
                 .build();
 
         try(Response response = httpClient.newCall(request).execute()) {
-            if(!response.isSuccessful() || response.body() == null) {
-                logger.error("Unsuccessful uuid request for name {}.", name);
-                return null;
+            if(response.isSuccessful() && response.body() != null) {
+                return UUID.fromString(JsonParser.parseString(response.body().string()).getAsJsonObject().get("id").getAsString());
             }
-
-            return JsonParser.parseString(response.body().string()).getAsJsonObject().get("id").getAsString();
         }
-        catch(IOException | NullPointerException e) {
-            e.printStackTrace();
+        catch(IOException | NullPointerException exception) {
+            exception.printStackTrace();
         }
 
-        return null;
+        throw new PlayerNotFoundException(name);
     }
 
     //This is a request on the Hypixel API, and therefore unneccessary calls should be avoided
-    public int getCataLevelByUUID(String uuid) {
+    public int getCataLevelByUUID(UUID uuid) {
         JsonArray profiles = getProfiles(uuid);
         if(profiles == null) return 0;
 
@@ -640,7 +639,7 @@ public class ConnectionService {
             try {
                 double thisXP = profiles.get(i).getAsJsonObject()
                         .getAsJsonObject("members")
-                        .get(uuid.replace("-", ""))
+                        .get(uuid.toString().replace("-", ""))
                         .getAsJsonObject()
                         .getAsJsonObject("dungeons")
                         .getAsJsonObject("dungeon_types")
@@ -658,7 +657,7 @@ public class ConnectionService {
         return cataXPToLevel(highestXP);
     }
 
-    public JsonArray getProfiles(String uuid) {
+    public JsonArray getProfiles(UUID uuid) {
         Request request = new Request.Builder()
                 .url("https://api.hypixel.net/skyblock/profiles?key=" + ConfigProperty.HYPIXEL_API_KEY.getValue() +
                         "&uuid=" + uuid)
@@ -791,5 +790,10 @@ public class ConnectionService {
                 .size();
 
         return (int) Math.ceil(entries / 10.0);
+    }
+
+    public String getHypixelLinkedDiscord(UUID uuid) {
+        //TODO implement
+        return "Taubsie#0911";
     }
 }
