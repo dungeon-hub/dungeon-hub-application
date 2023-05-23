@@ -1,6 +1,6 @@
 package me.taubsie.carrylogs.application.command.commands;
 
-import me.taubsie.carrylogs.application.classes.PageableMessage;
+import me.taubsie.carrylogs.application.messages.PageableMessage;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.service.ConnectionService;

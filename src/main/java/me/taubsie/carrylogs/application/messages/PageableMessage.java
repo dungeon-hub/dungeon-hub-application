@@ -1,4 +1,4 @@
-package me.taubsie.carrylogs.application.classes;
+package me.taubsie.carrylogs.application.messages;
 
 import lombok.Getter;
 import me.taubsie.carrylogs.application.start.BotStarter;

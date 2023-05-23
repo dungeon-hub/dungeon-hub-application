@@ -1,4 +1,4 @@
-package me.taubsie.carrylogs.application.classes;
+package me.taubsie.carrylogs.application.messages;
 
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.ConnectionService;

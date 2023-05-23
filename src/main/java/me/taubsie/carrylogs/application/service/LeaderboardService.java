@@ -1,7 +1,7 @@
 package me.taubsie.carrylogs.application.service;
 
 import me.taubsie.carrylogs.application.classes.Leaderboard;
-import me.taubsie.carrylogs.application.classes.LeaderboardMessage;
+import me.taubsie.carrylogs.application.messages.LeaderboardMessage;
 import me.taubsie.dungeonhub.common.CarryLogService;
 import me.taubsie.dungeonhub.common.OnStart;
 import me.taubsie.dungeonhub.common.ProgramOrigin;
