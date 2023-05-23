@@ -18,6 +18,9 @@ import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
+import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.SlashCommandOptionBuilder;
+import org.javacord.api.interaction.SlashCommandOptionType;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -287,5 +290,15 @@ public class ApplicationService {
                 .addInlineField("Alltime-Kuudra-Score:", String.valueOf(scoreCount.get("alltime-kuudra")))
                 .addInlineField("Event-Dungeon-Score:", String.valueOf(scoreCount.get("event-dungeon")))
                 .addInlineField("Event-Slayer-Score:", String.valueOf(scoreCount.get("event-slayer")));
+    }
+
+    public SlashCommandOption getIngamenameOption() {
+        return new SlashCommandOptionBuilder()
+                .setName("ign")
+                .setDescription("The users ingame-name")
+                .setType(SlashCommandOptionType.STRING)
+                .setMinLength(2)
+                .setRequired(true)
+                .build();
     }
 }
