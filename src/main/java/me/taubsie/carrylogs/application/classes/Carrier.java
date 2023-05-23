@@ -5,6 +5,13 @@ import org.javacord.api.entity.user.User;
 
 import java.util.Map;
 
+/**
+ * WIP
+ * <p>
+ * This class was supposed to be used as an interface above discord users to allow cleaner access to any api.
+ * This hasn't been implemented in any parts of the bot yet.
+ * TODO implement
+ */
 public class Carrier
 {
     private final long id;

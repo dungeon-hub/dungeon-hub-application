@@ -9,6 +9,15 @@ import java.util.Optional;
 //TODO remove default value and make return optional or something idk
 //TODO implement related properties
 //TODO does it make sense to make relatedProperty object instead of array?
+
+/**
+ * This enum acts as a list of all properties that can be set on each server individually.
+ * It is still left to be expanded as there are a few properties missing (mostly from
+ * {@link me.taubsie.carrylogs.application.enums.IdList}).
+ * <p>
+ * Please try to use this instead of hardcoding values, as the bot should be able to be used on any server it is
+ * added to.
+ */
 public enum ServerProperty implements Nameable {
     PROFILE_MODERATION_BAN_MESSAGE("profile_moderation_message"),
     UNBAN_FORM("unban_form"),

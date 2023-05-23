@@ -21,6 +21,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * This class is used to allow easier implementation of commands, as a class scanner looks for classes that extends
+ * from this class and that have the {@link CommandParameters} annotation.
+ * They are then automatically loaded on bot start and registered on discord.
+ * It also contains QOL methods to easier get command options or the user that executed the command.
+ */
 public abstract class Command {
     private SlashCommandCreateEvent slashCommandCreateEvent;
 
@@ -70,7 +76,8 @@ public abstract class Command {
                     .map(CommandParameters::enabledForPermissions)
                     .orElse(new PermissionType[]{});
             return getServer().hasPermissions(user, permissions) || getServer().isAdmin(user) || getServer().isOwner(user);
-        } catch(MustBeServerException mustBeServerException) {
+        }
+        catch(MustBeServerException mustBeServerException) {
             return isEnabledInDms();
         }
     }
@@ -127,7 +134,8 @@ public abstract class Command {
         return stringValue.get();
     }
 
-    public final ServerChannel getChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+    public final ServerChannel getChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
+                                                String name) {
         Optional<ServerChannel> channelValue = getOption(slashCommandCreateEvent, name).getChannelValue();
 
         if(channelValue.isEmpty()) {

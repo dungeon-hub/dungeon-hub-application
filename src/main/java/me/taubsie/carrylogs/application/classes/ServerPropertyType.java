@@ -1,5 +1,12 @@
 package me.taubsie.carrylogs.application.classes;
 
+/**
+ * This represents the type of server property.
+ * The default is {@link #STRING}, as the properties are saved as a string.
+ * This has effects on the way that values are displayed and on how they are set.
+ * <p>
+ * Still WIP
+ */
 public enum ServerPropertyType {
     //TODO finish implementing boolean
     STRING,

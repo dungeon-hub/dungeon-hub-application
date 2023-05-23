@@ -19,6 +19,10 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
+ * This is the main-class for the application.
+ * It automatically loads all listeners and commands and initiates the bot-instance.
+ * Even if it doesn't make much of a difference, it is advised to not use {@link #getBot()} too much.
+ *
  * @author Taubsie
  * @since 1.0.0
  */
@@ -32,11 +36,21 @@ public class BotStarter implements StartupListener, ProgramOrigin {
     @Getter
     private DiscordApi bot;
 
+    /**
+     * The main-method that is executed by the JVM.
+     *
+     * @param args The command-line parameters passed by the JVM.
+     */
     public static void main(String[] args) {
         ApplicationClassLoaderService.getInstance().loadStartupListeners();
         ApplicationClassLoaderService.getInstance().executeStartup(BotStarter.getInstance());
     }
 
+    /**
+     * Returns the current instance of this class.
+     *
+     * @return the current instance of this class.
+     */
     public static BotStarter getInstance() {
         if(instance == null) {
             instance = new BotStarter();
@@ -45,6 +59,12 @@ public class BotStarter implements StartupListener, ProgramOrigin {
         return instance;
     }
 
+    /**
+     * Method by the {@link StartupListener} interface, this is automatically executed on program launch.
+     * This implementation starts the discord-bot.
+     *
+     * @param programOrigin The origin from which the program was executed, this is needed for {@link #getConfigType()}.
+     */
     @Override
     public void onStart(ProgramOrigin programOrigin) {
         bot = ApplicationService.getInstance().getApiBuilder().login().join();
@@ -61,6 +81,11 @@ public class BotStarter implements StartupListener, ProgramOrigin {
         logger.info(getLine());
     }
 
+    /**
+     * Returns the formatted message to list all servers the bot is on.
+     *
+     * @return the formatted message to list all servers the bot is on.
+     */
     public List<String> getServerListMessage() {
         List<String> message = new ArrayList<>();
 
@@ -75,24 +100,46 @@ public class BotStarter implements StartupListener, ProgramOrigin {
         return message;
     }
 
+    /**
+     * Returns a line for command-line output.
+     *
+     * @return a line for command-line output.
+     */
     public String getLine() {
         return "--------------------";
     }
 
+    /**
+     * This resets the activity shown on the bot back to the default.
+     */
     private void resetBotActivity() {
         bot.updateActivity(ActivityType.WATCHING,
                 bot.getServers().stream().mapToInt(Server::getMemberCount).sum() + " carriers on " + bot.getServers().size() + " servers");
     }
 
+    /**
+     * This resets the status of the bot back to the default.
+     */
     private void resetBotStatus() {
         bot.updateStatus(UserStatus.ONLINE);
     }
 
+    /**
+     * This resets the bot's appearance.
+     *
+     * @see #resetBotActivity()
+     * @see #resetBotStatus()
+     */
     public void resetBotAppearance() {
         resetBotActivity();
         resetBotStatus();
     }
 
+    /**
+     * Returns the config-type of this program origin.
+     *
+     * @return the config-type of this program origin.
+     */
     @Override
     public ConfigType getConfigType() {
         return ConfigType.APPLICATION;

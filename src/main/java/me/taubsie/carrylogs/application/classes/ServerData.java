@@ -8,6 +8,14 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * This class holds all config properties for a server.
+ * While this is an important class, it is only really used by
+ * {@link me.taubsie.carrylogs.application.service.ServerService} and {@link ServerProperty}, as they offer a cleaner
+ * API.
+ * @see me.taubsie.carrylogs.application.service.ServerService
+ * @see ServerProperty
+ */
 public class ServerData extends ConfigFile<ServerProperty> {
     private final long id;
 

@@ -5,6 +5,10 @@ import org.javacord.api.entity.message.embed.EmbedBuilder;
 
 import java.util.Map;
 
+/**
+ * This class holds the data for a simple leaderboard without pages.
+ * It contains the title of the leaderboard and the score data, to allow easy querying and building.
+ */
 public class Leaderboard {
     private final String title;
     private final Map<Long, Long> scoreData;
