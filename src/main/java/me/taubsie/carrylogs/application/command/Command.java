@@ -5,6 +5,7 @@ import me.taubsie.carrylogs.application.service.ApplicationClassLoaderService;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.channel.ServerChannel;
+import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.permission.PermissionType;
@@ -114,6 +115,16 @@ public abstract class Command {
         }
 
         return server.get();
+    }
+
+    public final TextChannel getChannel() {
+        Optional<TextChannel> channel = slashCommandCreateEvent.getSlashCommandInteraction().getChannel();
+
+        if(channel.isEmpty()) {
+            throw new ChannelNotFoundException();
+        }
+
+        return channel.get();
     }
 
     public final User getUser() {

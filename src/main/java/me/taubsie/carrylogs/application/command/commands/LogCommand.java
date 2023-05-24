@@ -1,5 +1,6 @@
 package me.taubsie.carrylogs.application.command.commands;
 
+import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
@@ -9,11 +10,9 @@ import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.start.BotStarter;
 import org.javacord.api.entity.channel.Categorizable;
-import org.javacord.api.entity.channel.Channel;
 import org.javacord.api.entity.channel.ChannelCategory;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
-import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.entity.server.Server;
@@ -39,58 +38,49 @@ public class LogCommand extends Command {
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         Server server = getServer();
+        TextChannel channel = getChannel();
 
-        Optional<TextChannel> channel = slashCommandCreateEvent.getSlashCommandInteraction().getChannel();
+        Optional<ChannelCategory> category = channel.asCategorizable().flatMap(Categorizable::getCategory);
 
-        Optional<ChannelCategory> category = channel.flatMap(Channel::asCategorizable)
-                .flatMap(Categorizable::getCategory);
-
-        if(channel.isEmpty()
-                || category.isEmpty()
-                || !IdList.isCarryCategory(category.get().getId(), server.getId())) {
-            slashCommandCreateEvent.getSlashCommandInteraction()
-                    .createImmediateResponder()
-                    .setFlags(MessageFlag.EPHEMERAL)
-                    .setContent("Please use this in a carry-ticket.")
-                    .respond()
-                    .join();
-            return;
+        if(category.isEmpty() || !IdList.isCarryCategory(category.get().getId(), server.getId())) {
+            throw new CommandExecutionException() {
+                @Override
+                public String getMessage() {
+                    return "Please use this in a carry-ticket.";
+                }
+            };
         }
 
-        if(BotStarter.getInstance().getCarryInformation().containsKey(channel.get().getId())) {
-            slashCommandCreateEvent.getSlashCommandInteraction()
-                    .createImmediateResponder()
-                    .setFlags(MessageFlag.EPHEMERAL)
-                    .setContent("Someone is already logging this carry.")
-                    .respond()
-                    .join();
-            return;
+        if(BotStarter.getInstance().getCarryInformation().containsKey(channel.getId())) {
+            throw new CommandExecutionException() {
+                @Override
+                public String getMessage() {
+                    return "Someone is already logging this carry, please wait a bit.";
+                }
+            };
         }
 
-        Long amountOfCarries =
-                getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), "amount");
+        Long amountOfCarries = getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), "amount");
 
-        String carryTier =
-                getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-tier");
+        String carryTier = getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-tier");
 
         if(ApplicationService.getInstance().isInvalidCarryTier(carryTier)) {
             throw new InvalidOptionException("carry-tier", carryTier + " is no valid type.");
         }
 
-        Message firstMessage = channel.get().getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
+        Optional<Message> firstMessage = channel.getMessagesAsStream().reduce((message, message2) -> message2);
 
-        if(firstMessage == null || firstMessage.getMentionedUsers().isEmpty()) {
-            slashCommandCreateEvent.getSlashCommandInteraction()
-                    .createImmediateResponder()
-                    .setFlags(MessageFlag.EPHEMERAL)
-                    .setContent("Couldn't retrieve bot message. Please report this.")
-                    .respond()
-                    .join();
-            return;
+        if(firstMessage.isEmpty() || firstMessage.get().getMentionedUsers().isEmpty()) {
+            throw new CommandExecutionException() {
+                @Override
+                public String getMessage() {
+                    return "Couldn't retrieve bot message, so this ticket can't be logged. Please report this.";
+                }
+            };
         }
 
         Instant time = Instant.now();
-        User carried = firstMessage.getMentionedUsers().get(0);
+        User carried = firstMessage.get().getMentionedUsers().get(0);
         User carrier = slashCommandCreateEvent.getSlashCommandInteraction().getUser();
 
         slashCommandCreateEvent.getSlashCommandInteraction()
@@ -118,7 +108,7 @@ public class LogCommand extends Command {
                 carrier.getId()
         );
 
-        BotStarter.getInstance().getCarryInformation().put(channel.get().getId(), carryInformation);
+        BotStarter.getInstance().getCarryInformation().put(channel.getId(), carryInformation);
     }
 
     @Override
