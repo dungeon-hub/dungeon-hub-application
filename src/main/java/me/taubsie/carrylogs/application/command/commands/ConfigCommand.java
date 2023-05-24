@@ -44,6 +44,7 @@ public class ConfigCommand extends Command {
         if(get) {
             getConfig(property.get());
         } else {
+            //TODO maybe enable if user is bot owner
             if(!property.get().isEnabled(getServer().getId())) {
                 throw new InvalidOptionException("property", "Property is disabled on this server.");
             }
@@ -58,6 +59,10 @@ public class ConfigCommand extends Command {
 
                         if(property.get().getPropertyType() == ServerPropertyType.CHANNEL) {
                             return getChannelOption(option, "value").getIdAsString();
+                        }
+
+                        if(property.get().getPropertyType() == ServerPropertyType.NUMBER) {
+                            return String.valueOf(getNumberOption(option, "value"));
                         }
 
                         return getStringOption(option, "value");

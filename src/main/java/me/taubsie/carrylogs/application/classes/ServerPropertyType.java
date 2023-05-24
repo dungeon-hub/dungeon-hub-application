@@ -10,6 +10,7 @@ package me.taubsie.carrylogs.application.classes;
 public enum ServerPropertyType {
     //TODO finish implementing boolean
     STRING,
+    NUMBER,
     BOOLEAN,
     CHANNEL,
     CATEGORY,

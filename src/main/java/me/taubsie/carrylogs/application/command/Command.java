@@ -134,6 +134,16 @@ public abstract class Command {
         return stringValue.get();
     }
 
+    public final Long getNumberOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+        Optional<Long> longValue = getOption(slashCommandCreateEvent, name).getLongValue();
+
+        if(longValue.isEmpty()) {
+            throw new InvalidOptionException(name);
+        }
+
+        return longValue.get();
+    }
+
     public final ServerChannel getChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
                                                 String name) {
         Optional<ServerChannel> channelValue = getOption(slashCommandCreateEvent, name).getChannelValue();
