@@ -3,6 +3,7 @@ package me.taubsie.carrylogs.application.command;
 import me.taubsie.carrylogs.application.exceptions.*;
 import me.taubsie.carrylogs.application.service.ApplicationClassLoaderService;
 import me.taubsie.carrylogs.application.service.ApplicationService;
+import me.taubsie.dungeonhub.common.config.Nameable;
 import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.channel.ServerChannel;
 import org.javacord.api.entity.channel.TextChannel;
@@ -16,11 +17,13 @@ import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.interaction.SlashCommandInteractionOptionsProvider;
 import org.javacord.api.interaction.SlashCommandOption;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * This class is used to allow easier implementation of commands, as a class scanner looks for classes that extends
@@ -135,6 +138,23 @@ public abstract class Command {
         return getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
     }
 
+    public final <T extends Enum<T> & Nameable> T getEnumOption(@NotNull String name, @NotNull Class<T> enumClass) {
+        try {
+            return T.valueOf(enumClass, name);
+        }
+        catch(IllegalArgumentException illegalArgumentException) {
+            String message = String.format(
+                    "Please enter a valid %s (%s)",
+                    name,
+                    Arrays.stream(enumClass.getEnumConstants())
+                            .map(Nameable::getDisplayName)
+                            .collect(Collectors.joining(", "))
+            );
+
+            throw new InvalidOptionException(name, message);
+        }
+    }
+
     public final String getStringOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         Optional<String> stringValue = getOption(slashCommandCreateEvent, name).getStringValue();
 
@@ -143,16 +163,6 @@ public abstract class Command {
         }
 
         return stringValue.get();
-    }
-
-    public final Long getNumberOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
-        Optional<Long> longValue = getOption(slashCommandCreateEvent, name).getLongValue();
-
-        if(longValue.isEmpty()) {
-            throw new InvalidOptionException(name);
-        }
-
-        return longValue.get();
     }
 
     public final ServerChannel getChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,

@@ -62,7 +62,7 @@ public class ConfigCommand extends Command {
                         }
 
                         if(property.get().getPropertyType() == ServerPropertyType.NUMBER) {
-                            return String.valueOf(getNumberOption(option, "value"));
+                            return String.valueOf(getLongOption(option, "value"));
                         }
 
                         return getStringOption(option, "value");
