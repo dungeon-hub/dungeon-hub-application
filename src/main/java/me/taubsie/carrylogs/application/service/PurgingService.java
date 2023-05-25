@@ -1,6 +1,7 @@
 package me.taubsie.carrylogs.application.service;
 
 import me.taubsie.carrylogs.application.classes.PurgeData;
+import me.taubsie.carrylogs.application.classes.PurgeType;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.enums.RoleConversion;
 import me.taubsie.carrylogs.application.start.BotStarter;
@@ -75,7 +76,7 @@ public class PurgingService implements StartupListener {
                             .thenAccept(privateChannel -> privateChannel.sendMessage(ApplicationService.getInstance()
                                     .getEmbed()
                                     .setColor(EmbedColor.NEGATIVE.getColor())
-                                    .setDescription("Your " + purgeData.purgeType() + "-carry roles on `" + server.get().getName()
+                                    .setDescription("Your " + purgeData.purgeType().getDisplayName() + "-carry roles on `" + server.get().getName()
                                             + "` were removed since you only reached " + purgeData.score() + "/"
                                             + purgeData.purgeThreshold() + " score.")
                                     .addField("Roles removed", String.join(System.lineSeparator(), rolesRemoved))
@@ -90,7 +91,7 @@ public class PurgingService implements StartupListener {
         purgeDataList.removeAll(currentWave);
     }
 
-    private List<String> removeRoles(List<RoleConversion> rolesToRemove, Server server, User user, String purgeType,
+    private List<String> removeRoles(List<RoleConversion> rolesToRemove, Server server, User user, PurgeType purgeType,
                                      long purgeThreshold) {
         List<String> rolesRemoved = new ArrayList<>();
 
@@ -110,7 +111,7 @@ public class PurgingService implements StartupListener {
             if(role.get().hasUser(user)) {
                 if(rolesRemoved.isEmpty()) {
                     role.get().removeUser(user,
-                            "Purge of type \"" + purgeType + "\" with threshold " + purgeThreshold + ".");
+                            "Purge of type \"" + purgeType.getDisplayName() + "\" with threshold " + purgeThreshold + ".");
                 } else {
                     role.get().removeUser(user);
                 }

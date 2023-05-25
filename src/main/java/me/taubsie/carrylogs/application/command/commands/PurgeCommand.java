@@ -1,14 +1,13 @@
 package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.classes.PurgeData;
+import me.taubsie.carrylogs.application.classes.PurgeType;
 import me.taubsie.carrylogs.application.enums.RoleConversion;
 import me.taubsie.carrylogs.application.service.PurgingService;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
-import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.service.ConnectionService;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -25,7 +24,6 @@ import java.util.*;
         description = "Allows you to purge inactive carriers.",
         enabledForPermissions = {PermissionType.ADMINISTRATOR})
 public class PurgeCommand extends Command {
-    private static final List<String> choices = List.of("dungeons", "slayer");
     private static final Logger logger = LoggerFactory.getLogger(PurgeCommand.class);
 
     @Override
@@ -36,23 +34,12 @@ public class PurgeCommand extends Command {
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         long threshold = getLongOption("threshold");
-        String purgeType = getStringOption("purge-type");
 
-        Map<Long, Long> purgeData = new HashMap<>();
-        List<RoleConversion> rolesToRemove = new ArrayList<>();
+        //TODO test enum loading and loading of purge data etc
+        PurgeType purgeType = getEnumOption("purge-type", PurgeType.class);
 
-        switch(purgeType) {
-            case "dungeons" -> {
-                purgeData.putAll(ConnectionService.getInstance().getPurgeableUsers(threshold, "dungeons"));
-                rolesToRemove.addAll(List.of(RoleConversion.getDungeonCarryRoles()));
-            }
-            case "slayer" -> {
-                purgeData.putAll(ConnectionService.getInstance().getPurgeableUsers(threshold, "slayer"));
-                rolesToRemove.addAll(List.of(RoleConversion.getSlayerCarryRoles()));
-            }
-            default -> throw new InvalidOptionException("purge-type", "Please enter a valid purge-type (" + String.join(
-                    ", ", choices + ")"));
-        }
+        Map<Long, Long> purgeData = purgeType.getPurgeData(threshold);
+        List<RoleConversion> rolesToRemove = purgeType.getRolesToRemove();
 
         if(purgeData.isEmpty()) {
             respondEphemeral(ApplicationService.getInstance()
@@ -114,7 +101,7 @@ public class PurgeCommand extends Command {
                 .setDescription("The type of purge.")
                 .setRequired(true);
 
-        choices.forEach(s -> carryTypeOption.addChoice(s, s));
+        Arrays.stream(PurgeType.values()).forEach(purgeType -> carryTypeOption.addChoice(purgeType.getDisplayName(), purgeType.name()));
 
         return Arrays.asList(carryAmountOption, carryTypeOption.build());
     }

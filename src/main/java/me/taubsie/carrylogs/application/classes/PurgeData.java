@@ -14,5 +14,5 @@ import java.util.List;
  * @param purgeType The type of purge.
  * @param purgeThreshold The threshold which the purge had.
  */
-public record PurgeData(long serverId, long userId, List<RoleConversion> rolesToRemove, Long score, String purgeType, long purgeThreshold) {
+public record PurgeData(long serverId, long userId, List<RoleConversion> rolesToRemove, Long score, PurgeType purgeType, long purgeThreshold) {
 }
