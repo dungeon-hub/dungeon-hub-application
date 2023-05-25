@@ -97,7 +97,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
         String ign = ignOptional
                 .replace("IGN: ", "")
-                .replaceAll("❮(\\d+|\\?)❯", "")
+                .replaceAll("❮(\\S*)❯", "")
                 .strip();
 
         messageCreateEvent.getChannel()
