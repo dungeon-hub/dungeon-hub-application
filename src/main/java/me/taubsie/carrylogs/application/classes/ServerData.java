@@ -41,7 +41,7 @@ public class ServerData extends ConfigFile<ServerProperty> {
         return true;
     }
 
-    public String getConfigFolder() {
+    public static String getConfigFolder() {
         return CarryLogService.getInstance().getMainFolder() + File.separator + "servers";
     }
 

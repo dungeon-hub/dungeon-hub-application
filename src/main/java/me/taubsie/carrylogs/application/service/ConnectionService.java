@@ -35,6 +35,8 @@ public class ConnectionService {
 
     private static final String API_PREFIX = "api/v1/";
 
+    private static final String AUTHORIZATION = "Authorization";
+
     private static final int[] requiredXp = {50, 125, 235, 395, 625, 955, 1425, 2095, 3045, 4385, 6275, 8940, 12700,
             17960, 25340, 35640, 50040, 70040, 97640, 135640, 188140, 259640, 356640, 488640, 668640, 911640, 1239640,
             1684640, 2284640, 3084640, 4149640, 5559640, 7459640, 9959640, 13259640, 17559640, 23159640, 30359640,
@@ -80,7 +82,7 @@ public class ConnectionService {
         Request request = new Request.Builder()
                 .url(ConfigProperty.API_URL + "api/token")
                 .get()
-                .addHeader("Authorization",
+                .addHeader(AUTHORIZATION,
                         "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes()))
                 .build();
 
@@ -106,7 +108,7 @@ public class ConnectionService {
 
         Request request = new Request.Builder()
                 .url(httpUrl)
-                .addHeader("Authorization", ConfigProperty.SAFETY_API_KEY.getValue())
+                .addHeader(AUTHORIZATION, ConfigProperty.SAFETY_API_KEY.getValue())
                 .get()
                 .build();
 
@@ -155,7 +157,7 @@ public class ConnectionService {
         return new Request.Builder()
                 .url(httpUrl)
                 .addHeader("Content-Type", mediaType.toString())
-                .addHeader("Authorization", "Bearer " + apiToken);
+                .addHeader(AUTHORIZATION, "Bearer " + apiToken);
     }
 
     private HttpUrl.Builder getApiUrl(String uri) {
@@ -671,8 +673,8 @@ public class ConnectionService {
 
             return JsonParser.parseString(response.body().string()).getAsJsonObject().getAsJsonArray("profiles");
         }
-        catch(IOException e) {
-            e.printStackTrace();
+        catch(IOException ioException) {
+            logger.error("Profile request for UUID threw an error.", ioException);
         }
 
         return null;
@@ -705,7 +707,7 @@ public class ConnectionService {
             }
         }
         catch(IOException ioException) {
-            ioException.printStackTrace();
+            logger.error("Error when trying to load strike by id.", ioException);
         }
 
         throw new NotFoundException();
@@ -740,7 +742,7 @@ public class ConnectionService {
             }
         }
         catch(IOException ioException) {
-            ioException.printStackTrace();
+            logger.error("Error when trying to insert strike.", ioException);
         }
 
         return strikeData;
@@ -761,14 +763,22 @@ public class ConnectionService {
                     return Integer.parseInt(response.body().string());
                 }
             } else {
-                logger.error("Error when trying to load the max leaderboard page.");
+                String result = "Error when trying to load the max leaderboard page of type {}";
+                if(response.body() != null) {
+                    result += ":\n{}";
+                    String exception = response.body().string();
+                    logger.error(result, type, exception);
+                } else {
+                    result += ".";
+                    logger.error(result, type);
+                }
             }
         }
         catch(NumberFormatException numberFormatException) {
             logger.error("Couldn't parse number from return value (max leaderboard page).", numberFormatException);
         }
         catch(IOException ioException) {
-            ioException.printStackTrace();
+            logger.error("Error when loading the max leaderboard page for type {}.", type, ioException);
         }
 
         return 1;
