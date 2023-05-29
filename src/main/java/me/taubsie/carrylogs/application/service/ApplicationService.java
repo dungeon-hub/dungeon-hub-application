@@ -231,8 +231,6 @@ public class ApplicationService {
     }
 
     public EmbedBuilder formatStrikes(List<StrikeData> strikeData, User user, int page) {
-        int offset = CarryLogService.getInstance().getOffsetFromPageNumber(page);
-
         EmbedBuilder embedBuilder = getEmbed()
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setTitle("Strikes of user " + user.getDiscriminatedName());
@@ -242,22 +240,40 @@ public class ApplicationService {
             return embedBuilder;
         }
 
-        AtomicInteger count = new AtomicInteger(offset);
+        strikeData.stream()
+                .skip(CarryLogService.getInstance().getOffsetFromPageNumber(page))
+                .limit(10)
+                .forEach(strike -> {
+                    String striker = Optional.ofNullable(strike.getStriker())
+                            .map(strikerId -> BotStarter.getInstance().getBot().getUserById(strikerId))
+                            .map(CompletableFuture::join)
+                            .map(User::getDiscriminatedName)
+                            .orElse("CONSOLE");
 
-        strikeData.stream().skip(offset).limit(10).forEach(strike -> {
-            String striker = Optional.ofNullable(strike.getStriker())
-                    .map(strikerId -> BotStarter.getInstance().getBot().getUserById(strikerId))
-                    .map(CompletableFuture::join)
-                    .map(User::getDiscriminatedName)
-                    .orElse("CONSOLE");
+                    String reason = Optional.ofNullable(strike.getReason())
+                            .map(s -> " because of \"" + s + "\"")
+                            .orElse("");
 
-            String reason = Optional.ofNullable(strike.getReason())
-                    .map(s -> " because of \"" + s + "\"")
-                    .orElse("");
+                    embedBuilder.addField("Strike #" + strike.getId(),
+                            "By " + striker + " at <t:" + strike.getStrikeTime().toEpochMilli() + ">" + reason);
+                });
 
-            embedBuilder.addField("Strike #" + count.incrementAndGet(),
-                    "By " + striker + " at <t:" + strike.getStrikeTime().toEpochMilli() + ">" + reason);
-        });
+        return embedBuilder;
+    }
+
+    public EmbedBuilder formatStrikeDM(StrikeData strikeData) {
+        EmbedBuilder embedBuilder = getEmbed(strikeData.getStrikeTime())
+                .setColor(EmbedColor.INFORMATION.getColor())
+                .setTitle("You were striked on server `"
+                        + BotStarter.getInstance().getBot().getServerById(strikeData.getServer())
+                        .map(Nameable::getName).orElse("unknown")
+                        + "`");
+
+        embedBuilder.addField("You", "<@" + strikeData.getUser() + ">");
+        embedBuilder.addField("Striker", strikeData.getStriker() != null ? "<@" + strikeData.getStriker() + ">" :
+                "CONSOLE");
+        embedBuilder.addField("Reason", strikeData.getReason() != null ? strikeData.getReason() : "No reason provided" +
+                ".");
 
         return embedBuilder;
     }
