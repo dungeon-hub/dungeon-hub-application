@@ -1,9 +1,12 @@
 package me.taubsie.carrylogs.application.enums;
 
+import me.taubsie.dungeonhub.common.config.Nameable;
+
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
-public enum CarryPrice {
+public enum CarryPrice implements Nameable {
     F4_COMP(CarryType.F4, CarryTier.COMPLETION, 500000L),
     F4_S(CarryType.F4, CarryTier.S, 700000L),
     F5_COMP(CarryType.F5, CarryTier.COMPLETION, 400000L),
@@ -27,11 +30,11 @@ public enum CarryPrice {
     BLAZE_T2(CarryType.BLAZE, CarryTier.TIER_2, 1000000L, 850000L, 10),
     BLAZE_T3(CarryType.BLAZE, CarryTier.TIER_3, 2000000L, 1500000L, 10),
     BLAZE_T4(CarryType.BLAZE, CarryTier.TIER_4, 5000000L, 4000000L, 10),
-    KUUDRA_BASIC(CarryType.KUUDRA, CarryTier.BASIC, 0L /*TODO check price*/),
-    KUUDRA_HOT(CarryType.KUUDRA, CarryTier.HOT, 0L /*TODO check price*/),
-    KUUDRA_BURNING(CarryType.KUUDRA, CarryTier.BURNING, 0L /*TODO check price*/),
-    KUUDRA_FIERY(CarryType.KUUDRA, CarryTier.FIERY, 0L /*TODO check price*/),
-    KUUDRA_INFERNAL(CarryType.KUUDRA, CarryTier.INFERNAL, 0L /*TODO check price*/);
+    KUUDRA_BASIC(CarryType.KUUDRA, CarryTier.BASIC, 7000000L),
+    KUUDRA_HOT(CarryType.KUUDRA, CarryTier.HOT, 11000000L),
+    KUUDRA_BURNING(CarryType.KUUDRA, CarryTier.BURNING, 18000000L),
+    KUUDRA_FIERY(CarryType.KUUDRA, CarryTier.FIERY, 23000000L),
+    KUUDRA_INFERNAL(CarryType.KUUDRA, CarryTier.INFERNAL, 50000000L);
 
     private final CarryType carryType;
     private final CarryTier carryTier;
@@ -73,6 +76,11 @@ public enum CarryPrice {
         return carryPrice.get().getPrice() * amount;
     }
 
+    @Override
+    public String getName() {
+        return name();
+    }
+
     public long getBulkPrice() {
         return bulkPrice;
     }
@@ -91,5 +99,35 @@ public enum CarryPrice {
 
     public CarryTier getCarryTier() {
         return carryTier;
+    }
+
+    public static List<CarryPrice> getDungeonPrices() {
+        CarryType[] dungeonTypes = new CarryType[] {CarryType.F4, CarryType.F5, CarryType.F6, CarryType.F7, CarryType.MASTER_MODE};
+
+        return Arrays.stream(CarryPrice.values()).filter(carryPrice -> Arrays.stream(dungeonTypes).anyMatch(type -> type.equals(carryPrice.getCarryType()))).toList();
+    }
+
+    public static List<CarryPrice> getSlayerPrices() {
+        CarryType[] slayerTypes = new CarryType[] {CarryType.EMAN, CarryType.BLAZE};
+
+        return Arrays.stream(CarryPrice.values()).filter(carryPrice -> Arrays.stream(slayerTypes).anyMatch(type -> type.equals(carryPrice.getCarryType()))).toList();
+    }
+
+    public static List<CarryPrice> getEndermanPrices() {
+        CarryType[] slayerTypes = new CarryType[] {CarryType.EMAN};
+
+        return Arrays.stream(CarryPrice.values()).filter(carryPrice -> Arrays.stream(slayerTypes).anyMatch(type -> type.equals(carryPrice.getCarryType()))).toList();
+    }
+
+    public static List<CarryPrice> getBlazePrices() {
+        CarryType[] slayerTypes = new CarryType[] {CarryType.BLAZE};
+
+        return Arrays.stream(CarryPrice.values()).filter(carryPrice -> Arrays.stream(slayerTypes).anyMatch(type -> type.equals(carryPrice.getCarryType()))).toList();
+    }
+
+    public static List<CarryPrice> getKuudraPrices() {
+        CarryType[] kuudraTypes = new CarryType[] {CarryType.KUUDRA};
+
+        return Arrays.stream(CarryPrice.values()).filter(carryPrice -> Arrays.stream(kuudraTypes).anyMatch(type -> type.equals(carryPrice.getCarryType()))).toList();
     }
 }
