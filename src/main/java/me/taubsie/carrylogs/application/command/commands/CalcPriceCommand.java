@@ -4,7 +4,6 @@ import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.enums.*;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
-import me.taubsie.carrylogs.application.exceptions.UnknownCommandException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.*;
@@ -75,8 +74,6 @@ public class CalcPriceCommand extends Command {
                 .addInlineField("Type", carryType.getPrettyName() + " " + carryTier)
                 .addInlineField("Amount", String.valueOf(amount))
                 .addInlineField("Price", ApplicationService.getInstance().makeNumberReadable(price) + " coins"));
-
-        throw new UnknownCommandException();
     }
 
     @Override

@@ -325,4 +325,41 @@ public class ApplicationService {
                 .setRequired(true)
                 .build();
     }
+
+    //TODO maybe make it possible to update the embed in 2 intervals, since the mojang+safety+jerry api takes long, as well as the skycrypt api takes long too
+    //probably first load skycrypt, then the rest?
+    public EmbedBuilder getPlayerDataEmbed(String ign) {
+        Map<String, String> skycryptData = ConnectionService.getInstance().getSkyCryptData(ign);
+
+        String url = "https://sky.shiiyu.moe/stats/" + ign;
+        String description = skycryptData.getOrDefault("description", "Couldn't load SkyCrypt data.");
+
+        EmbedBuilder embed = ApplicationService.getInstance()
+                .getEmbed()
+                .setColor(EmbedColor.INFORMATION.getColor())
+                .setDescription(description)
+                .setTitle(skycryptData.getOrDefault("title", ign))
+                .setUrl(url)
+                .setThumbnail(skycryptData.getOrDefault("icon", null))
+                .addInlineField("SkyCrypt", "[Click here](" + url + ")");
+
+        /*String uuid = ConnectionService.getInstance()
+                .getUUIDByName(ign);
+
+        if(uuid != null) {
+            String[] flagged = ConnectionService.getInstance()
+                    .isFlagged(uuid, false);
+
+            if(flagged.length == 0) {
+                embed.addInlineField("Flagged", "User is not flagged.");
+            } else {
+                embed.addInlineField("Flagged", "User is flagged, this means it is not safe to interact with them.\n"
+                        + String.join(": ", flagged));
+            }
+        }*/
+
+        embed.addInlineField("Flagged", "Please remember to run `/lookup`.");
+
+        return embed;
+    }
 }
