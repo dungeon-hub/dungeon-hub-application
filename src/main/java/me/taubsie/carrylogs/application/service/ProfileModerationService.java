@@ -10,6 +10,8 @@ import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -17,9 +19,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
 public class ProfileModerationService {
+    private static final Logger logger = LoggerFactory.getLogger(ProfileModerationService.class);
+
     private static final String[] forbiddenUsernames = new String[]{
             "Captcha.bot",
             "YAGPDB",
@@ -34,14 +39,24 @@ public class ProfileModerationService {
             "MEE6",
             "Dungeon Hub",
             "Wick",
-            "Lunar Client",
-            "Badlion"
+            "Lunar",
+            "Badlion",
+            "Hypixel",
+            "Syntax",
+            "Sеcurity",
+            "Bouncr"
     };
     private static final Long[] excludedIds = new Long[]{
             727320030462869515L,
             703035551330205716L,
             599475365471059978L,
-            678580255384141824L
+            678580255384141824L,
+            633350165574451200L,
+            577147388255272970L,
+            1097692461452767272L,
+            928744398571831359L,
+            542229014681747456L,
+            1059959722549190728L
     };
     private static ProfileModerationService instance;
     private final Homoglyph homoglyph;
@@ -86,15 +101,24 @@ public class ProfileModerationService {
             if(unbanForm.isPresent()) {
                 message = message.replace("%form%", unbanForm.get());
 
-                user.openPrivateChannel().join()
-                        .sendMessage(message, ActionRow.of(Button.link(unbanForm.get(), "Appeal"))).join();
+                try {
+                    user.openPrivateChannel().join()
+                            .sendMessage(message, ActionRow.of(Button.link(unbanForm.get(), "Appeal"))).join();
+                }
+                catch(CompletionException completionException) {
+                    //ignored
+                }
             } else {
-                user.openPrivateChannel().join()
-                        .sendMessage(message).join();
+                try {
+                    user.openPrivateChannel().join().sendMessage(message).join();
+                }
+                catch(CompletionException completionException) {
+                    //ignored
+                }
             }
         }
         catch(Exception exception) {
-            exception.printStackTrace();
+            logger.error("Error when trying to handle user ban.", exception);
         }
 
         server.banUser(user, Duration.of(6, ChronoUnit.DAYS), "Bad username: " + reason);
