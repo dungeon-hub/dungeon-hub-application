@@ -18,12 +18,14 @@ import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.interaction.SlashCommandInteractionOptionsProvider;
 import org.javacord.api.interaction.SlashCommandOption;
 import org.jetbrains.annotations.NotNull;
+import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * This class is used to allow easier implementation of commands, as a class scanner looks for classes that extends
@@ -55,11 +57,34 @@ public abstract class Command {
     }
 
     public final void respond(EmbedBuilder embedBuilder) {
-        slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().addEmbed(embedBuilder).respond();
+        slashCommandCreateEvent.getSlashCommandInteraction()
+                .createImmediateResponder()
+                .addEmbed(embedBuilder)
+                .respond();
+    }
+
+    public final void respondLater(CompletableFuture<EmbedBuilder> embedBuilderFuture) {
+        InteractionOriginalResponseUpdater updater = slashCommandCreateEvent.getSlashCommandInteraction()
+                .respondLater()
+                .join();
+
+        embedBuilderFuture.thenAccept(embedBuilder -> updater.addEmbed(embedBuilder).update());
     }
 
     public final void respondEphemeral(EmbedBuilder embedBuilder) {
-        slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setFlags(MessageFlag.EPHEMERAL).addEmbed(embedBuilder).respond();
+        slashCommandCreateEvent.getSlashCommandInteraction()
+                .createImmediateResponder()
+                .setFlags(MessageFlag.EPHEMERAL)
+                .addEmbed(embedBuilder)
+                .respond();
+    }
+
+    public final void respondLaterEphemeral(CompletableFuture<EmbedBuilder> embedBuilderFuture) {
+        InteractionOriginalResponseUpdater updater = slashCommandCreateEvent.getSlashCommandInteraction()
+                .respondLater(true)
+                .join();
+
+        embedBuilderFuture.thenAccept(embedBuilder -> updater.addEmbed(embedBuilder).update());
     }
 
     public List<SlashCommandOption> getSlashCommandOptions() {
@@ -165,8 +190,17 @@ public abstract class Command {
         return stringValue.get();
     }
 
-    public final ServerChannel getChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
-                                                String name) {
+    public final Boolean getBooleanOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+        Optional<Boolean> booleanValue = getOption(slashCommandCreateEvent, name).getBooleanValue();
+
+        if(booleanValue.isEmpty()) {
+            throw new InvalidOptionException(name);
+        }
+
+        return booleanValue.get();
+    }
+
+    public final ServerChannel getChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         Optional<ServerChannel> channelValue = getOption(slashCommandCreateEvent, name).getChannelValue();
 
         if(channelValue.isEmpty()) {

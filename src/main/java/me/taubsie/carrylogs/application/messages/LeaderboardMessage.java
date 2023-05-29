@@ -9,7 +9,6 @@ public class LeaderboardMessage extends PageableMessage {
 
     public LeaderboardMessage(int currentPage, long channel, long message, String type) {
         super(currentPage, channel, message);
-
         this.type = type;
     }
 
