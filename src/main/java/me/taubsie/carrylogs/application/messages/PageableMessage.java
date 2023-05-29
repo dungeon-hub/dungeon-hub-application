@@ -79,18 +79,14 @@ public abstract class PageableMessage {
     }
 
     private void applyListener(Message message) {
-        if(getMaxPage() > 1) {
-            return;
-        }
-
         message.addMessageComponentCreateListener(event -> {
             String customId = event.getMessageComponentInteraction().getCustomId();
 
-            int maxPage = getMaxPage();
+            int currentMaxPage = getMaxPage();
 
             int newPage = switch(customId.toLowerCase()) {
                 case BACK -> Math.max(1, (currentPage - 1));
-                case FORWARD -> Math.min(maxPage, (currentPage + 1));
+                case FORWARD -> Math.min(currentMaxPage, (currentPage + 1));
                 case LAST -> getMaxPage();
                 default -> 1;
             };
@@ -100,7 +96,7 @@ public abstract class PageableMessage {
 
             componentInteractionOriginalMessageUpdater
                     .removeAllComponents()
-                    .addComponents(getComponents(newPage == 1, newPage == maxPage));
+                    .addComponents(getComponents(newPage == 1, newPage == currentMaxPage));
 
             currentPage = newPage;
 

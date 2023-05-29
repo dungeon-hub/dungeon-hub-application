@@ -89,7 +89,8 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
         String ignOptional = Arrays.stream(lines)
                 .filter(s -> s.startsWith("IGN: "))
                 .findFirst()
-                .orElse(user.getNickname(server).orElse(null));
+                .orElse(user.getNickname(server)
+                        .orElse(null));
 
         if(ignOptional == null) {
             return;
@@ -98,15 +99,15 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
         String ign = ignOptional
                 .replace("IGN: ", "")
                 .replaceAll("❮(\\S*)❯", "")
+                .replace("★", "")
+                .replace("✦", "")
+                .replace("✶", "")
+                .replace("✽", "")
+                .replace("❊", "")
                 .strip();
 
         messageCreateEvent.getChannel()
-                .sendMessage(ApplicationService.getInstance()
-                        .getEmbed()
-                        .setColor(EmbedColor.INFORMATION.getColor())
-                        .addField("IGN", ign)
-                        .addField("SkyCrypt", "[Click here](https://sky.shiiyu.moe/stats/" + ign + ")")
-                        .setUrl("https://sky.shiiyu.moe/stats/" + ign));
+                .sendMessage(ApplicationService.getInstance().getPlayerDataEmbed(ign));
     }
 
     //TODO reduce complexity
@@ -207,6 +208,8 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                     if(carryInformation.isDungeonCarry()) {
                         logChannel =
                                 server.getTextChannelById(IdList.DUNGEON_LOGS_CHANNEL.getLocalId(server.getId()));
+                    } else if(carryInformation.isKuudraCarry()) {
+                        logChannel = server.getTextChannelById(IdList.KUUDRA_LOGS_CHANNEL.getLocalId(server.getId()));
                     } else {
                         logChannel =
                                 server.getTextChannelById(IdList.SLAYER_LOGS_CHANNEL.getLocalId(server.getId()));
