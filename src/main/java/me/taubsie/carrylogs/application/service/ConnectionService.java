@@ -13,11 +13,18 @@ import me.taubsie.dungeonhub.common.StrikeData;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.sql.Time;
+import java.time.Duration;
 import java.util.*;
 
 //TODO maybe split up in different services for each api (internal, hypixel, ...)
@@ -100,7 +107,7 @@ public class ConnectionService {
     }
 
     public String[] isFlagged(String user, boolean discord) {
-        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + API_PREFIX + "user")
+        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "user")
                 .newBuilder()
                 .addQueryParameter("user", user)
                 .addQueryParameter("type", discord ? "discord" : "uuid")
@@ -609,6 +616,12 @@ public class ConnectionService {
         return new HashMap<>();
     }
 
+    public UUID fromString(String uuid) {
+        //TODO fix?
+        //TODO check for uuid format
+        return UUID.fromString(String.format("%s-%s-%s-%s-%s", uuid.substring(0, 7), uuid.substring(7, 11), uuid.substring(11, 15), uuid.substring(15, 20), uuid.substring(20, 32)));
+    }
+
 
     //As this requests data from the Mojang API (aka slow), it is recommended to use UUIDs instead of names
     public UUID getUUIDByName(String name) throws PlayerNotFoundException {
@@ -619,7 +632,7 @@ public class ConnectionService {
 
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.isSuccessful() && response.body() != null) {
-                return UUID.fromString(JsonParser.parseString(response.body().string()).getAsJsonObject().get("id").getAsString());
+                return fromString(JsonParser.parseString(response.body().string()).getAsJsonObject().get("id").getAsString());
             }
         }
         catch(IOException | NullPointerException exception) {
@@ -714,12 +727,44 @@ public class ConnectionService {
     }
 
     public List<StrikeData> loadValidStrikeData(long serverId, long userId) {
-        //TODO implement
+        Request request = getApiRequest(getApiUrl("strike/" + serverId)
+                .addQueryParameter("user", String.valueOf(userId)).build())
+                .get().build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful()) {
+                if(response.body() != null) {
+                    return CarryLogService.getInstance().getGson().fromJson(response.body().string(), CarryLogService.getInstance().getStrikeDataListType());
+                }
+            } else {
+                logger.error("Error when trying to load valid strikes.");
+            }
+        }
+        catch(IOException ioException) {
+            ioException.printStackTrace();
+        }
+
         return new ArrayList<>();
     }
 
     public List<StrikeData> loadAllStrikeData(long serverId, long userId) {
-        //TODO implement
+        Request request = getApiRequest(getApiUrl("strike/" + serverId + "/all")
+                .addQueryParameter("user", String.valueOf(userId)).build())
+                .get().build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful()) {
+                if(response.body() != null) {
+                    return CarryLogService.getInstance().getGson().fromJson(response.body().string(), CarryLogService.getInstance().getStrikeDataListType());
+                }
+            } else {
+                logger.error("Error when trying to load all strike data of user.");
+            }
+        }
+        catch(IOException ioException) {
+            ioException.printStackTrace();
+        }
+
         return new ArrayList<>();
     }
 
@@ -805,5 +850,63 @@ public class ConnectionService {
     public String getHypixelLinkedDiscord(UUID uuid) {
         //TODO implement
         return "Taubsie#0911";
+    }
+
+    public Map<String, String> getSkyCryptData(String ign) {
+        Map<String, String> result = new HashMap<>();
+        String url = "https://sky.shiiyu.moe/stats/" + ign;
+
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+
+        OkHttpClient client = httpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(30))
+                .readTimeout(Duration.ofSeconds(30))
+                .callTimeout(Duration.ofSeconds(30))
+                .build();
+
+        try(Response response = client.newCall(request).execute()) {
+            if(response.body() == null) {
+                return new HashMap<>();
+            }
+
+            try(InputStream inputStream = response.body().byteStream();
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
+                StringBuilder content = new StringBuilder();
+                String line;
+
+                while((line = bufferedReader.readLine()) != null) {
+                    content.append(line);
+                    content.append(System.lineSeparator());
+
+                    if(line.equalsIgnoreCase("</head>") || line.contains("</head>")) {
+                        break;
+                    }
+                }
+
+                Document document = Jsoup.parse(content.toString());
+
+                Element head = document.head();
+
+                for(Element meta : head.getElementsByTag("meta")) {
+                    switch(meta.attr("property").toLowerCase()) {
+                        case "og:title" -> result.put("title", meta.attr("content"));
+                        case "og:image" -> result.put("icon", meta.attr("content"));
+                        case "og:description" -> result.put("description", meta.attr("content"));
+                    }
+                }
+            }
+        }
+        catch(IOException ioException) {
+            logger.error("Error when trying to load Skycrypt data for user {}.", ign, ioException);
+        }
+
+        if(result.getOrDefault("title", "SkyBlock Stats").equalsIgnoreCase("SkyBlock Stats")) {
+            return new HashMap<>();
+        }
+
+        return result;
     }
 }

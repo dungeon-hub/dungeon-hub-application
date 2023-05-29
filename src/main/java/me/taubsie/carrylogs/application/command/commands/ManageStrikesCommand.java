@@ -21,6 +21,7 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletionException;
 
 @CommandParameters(name = "manage-strikes",
         description = "Manage the strikes of a carrier.",
@@ -69,6 +70,7 @@ public class ManageStrikesCommand extends Command {
                 });
     }
 
+    //TODO dm person getting striked
     public void strikeAdd(SlashCommandCreateEvent slashCommandCreateEvent,
                           SlashCommandInteractionOption slashCommandInteractionOption) {
         User userToStrike = getUserOption(slashCommandInteractionOption, "user");
@@ -88,6 +90,12 @@ public class ManageStrikesCommand extends Command {
         StrikeData sentStrike = ConnectionService.getInstance().insertStrikeData(strike);
 
         respond(ApplicationService.getInstance().formatStrike(sentStrike));
+
+        try {
+            userToStrike.sendMessage(ApplicationService.getInstance().formatStrikeDM(sentStrike));
+        } catch(CompletionException completionException) {
+            //ignored
+        }
     }
 
     public void strikeInfo(SlashCommandCreateEvent slashCommandCreateEvent,
@@ -130,6 +138,7 @@ public class ManageStrikesCommand extends Command {
                 .setName("id")
                 .setDescription("The id of the strike.")
                 .setRequired(true)
+                .setLongMinValue(1)
                 .build();
 
         SlashCommandOption listOption = new SlashCommandOptionBuilder()
