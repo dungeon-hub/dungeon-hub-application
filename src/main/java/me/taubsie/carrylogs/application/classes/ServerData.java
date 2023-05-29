@@ -37,8 +37,7 @@ public class ServerData extends ConfigFile<ServerProperty> {
     }
 
     public boolean isEnabled(ServerProperty serverProperty) {
-        //TODO implement logic
-        return true;
+        return serverProperty.isEnabled(id);
     }
 
     public static String getConfigFolder() {

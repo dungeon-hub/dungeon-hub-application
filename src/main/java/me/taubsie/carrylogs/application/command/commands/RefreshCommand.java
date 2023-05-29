@@ -5,6 +5,7 @@ import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
+import me.taubsie.carrylogs.application.service.MessagesService;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.*;
@@ -16,7 +17,7 @@ import java.util.List;
         description = "Refreshes some data from the bot.",
         enabledForPermissions = {PermissionType.MANAGE_MESSAGES})
 public class RefreshCommand extends Command {
-    private static final List<String> choices = List.of("leaderboard");
+    private static final List<String> choices = List.of("leaderboard", "price-message");
 
     @Override
     public long[] getEnabledServers() {
@@ -46,6 +47,21 @@ public class RefreshCommand extends Command {
                 updater.addEmbed(getEmbed()
                                 .setColor(EmbedColor.POSITIVE.getColor())
                                 .setDescription("Leaderboard refresh started."))
+                        .update();
+            }
+            case "price-message" -> {
+                InteractionOriginalResponseUpdater updater = slashCommandCreateEvent
+                        .getSlashCommandInteraction()
+                        .respondLater(true)
+                        .join();
+
+                slashCommandCreateEvent.getSlashCommandInteraction()
+                        .getServer()
+                        .ifPresent(server -> MessagesService.getInstance().refreshPriceMessagesInServer(server));
+
+                updater.addEmbed(getEmbed()
+                                .setColor(EmbedColor.POSITIVE.getColor())
+                                .setDescription("Prices refreshed!"))
                         .update();
             }
             //so that intellij doesn't make this into an if statement, can remove this
