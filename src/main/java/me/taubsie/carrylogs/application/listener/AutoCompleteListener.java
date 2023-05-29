@@ -25,25 +25,28 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
                 throw new NoSuchElementException();
             }
 
-            Stream<CarryType> carryType = Stream.empty();
+            CarryType carryType = null;
 
             if(autocompleteCreateEvent.getAutocompleteInteraction().getCommandName().equalsIgnoreCase("calc-price")) {
                 Optional<SlashCommandInteractionOption> typeOption =
                         autocompleteCreateEvent.getAutocompleteInteraction().getOptionByName("type");
 
                 if(typeOption.isPresent()) {
-                    carryType = Stream.ofNullable(getCarryTypeFromOption(typeOption.get()));
+                    carryType = getCarryTypeFromOption(typeOption.get());
                 }
             }
 
             autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(
-                    Stream.concat(
-                                    Arrays.stream(IdList.values())
-                                            .filter(id -> id.getCarryType() != null
-                                                    && (id.getLocalId(server.getId()) == autocompleteCreateEvent.getAutocompleteInteraction().getChannel().orElseThrow().asCategorizable().orElseThrow().getCategory().orElseThrow().getId()))
-                                            .map(IdList::getCarryType),
-                                    carryType
-                            )
+                    ((carryType != null)
+                            ? Stream.ofNullable(carryType)
+                            : Arrays.stream(IdList.values())
+                            .filter(id -> id.getCarryType() != null
+                                    && (id.getLocalId(server.getId()) == autocompleteCreateEvent.getAutocompleteInteraction()
+                                    .getChannel().orElseThrow()
+                                    .asCategorizable().orElseThrow()
+                                    .getCategory().orElseThrow()
+                                    .getId()))
+                            .map(IdList::getCarryType))
                             .map(CarryType::getChoiceList)
                             .flatMap(Collection::stream)
                             .distinct()
