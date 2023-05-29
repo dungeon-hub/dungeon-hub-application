@@ -117,7 +117,7 @@ public class ApplicationService {
         return String.valueOf(number);
     }
 
-    public String getCarryTierUrl(CarryType carryType, String carryTier) {
+    public String getCarryTierUrl(CarryType carryType) {
         return switch(carryType) {
             case EMAN -> "https://cdn.discordapp.com/attachments/842827272733982730/992919618236719134/unknown.png";
             case BLAZE -> "https://cdn.discordapp.com/attachments/842827272733982730/992919430369656852/unknown.png";
@@ -127,7 +127,13 @@ public class ApplicationService {
             case F5 -> "https://cdn.discordapp.com/emojis/759298251068801044.png?v=1";
             case F6 -> "https://cdn.discordapp.com/emojis/761951536829825035.png?v=1";
             case F7 -> "https://cdn.discordapp.com/emojis/792055627248566312.webp?size=80&quality=lossless";
-            case MASTER_MODE -> switch(carryTier) {
+            default -> "https://cdn.discordapp.com/emojis/739232979771195454.gif?v=1";
+        };
+    }
+
+    public String getCarryTierUrl(CarryType carryType, String carryTier) {
+        if(carryType == CarryType.MASTER_MODE) {
+            return switch(carryTier) {
                 case "Floor 1" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302674244391023" +
                         "/SkyBlock_npcs_bonzo_undead.png";
                 case "Floor 2" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302768633000006" +
@@ -138,9 +144,11 @@ public class ApplicationService {
                 case "Floor 5" -> "https://cdn.discordapp.com/emojis/759298251068801044.png?v=1";
                 case "Floor 6" -> "https://cdn.discordapp.com/emojis/761951536829825035.png?v=1";
                 case "Floor 7" -> "https://cdn.discordapp.com/emojis/792055627248566312.webp?size=80&quality=lossless";
-                default -> null;
+                default -> "https://cdn.discordapp.com/emojis/739232979771195454.gif?v=1";
             };
-        };
+        }
+
+        return getCarryTierUrl(carryType);
     }
 
     public boolean isInvalidCarryTier(String carryTier) {
