@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration xmlns:xi="http://www.w3.org/2001/XInclude" packages="me.taubsie.carrylogs.application" status="WARN">
+<Configuration status="WARN">
     <Appenders>
-        <MapAppender name="ExceptionAppender" />
+        <ExceptionAppender name="ExceptionAppender" />
 
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout charset="UTF-8">
@@ -27,7 +27,7 @@
         <Root level="debug">
             <AppenderRef ref="Console" level="info"/>
             <AppenderRef ref="Routing" level="debug"/>
-            <AppenderRef ref="ExceptionAppender" level="debug">
+            <AppenderRef ref="ExceptionAppender" level="error"/>
         </Root>
     </Loggers>
 </Configuration>

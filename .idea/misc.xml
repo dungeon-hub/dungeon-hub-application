@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="EntryPointsManager">
-    <list size="3">
+    <list size="4">
       <item index="0" class="java.lang.String" itemvalue="me.taubsie.carrylogs.application.command.CommandParameters" />
       <item index="1" class="java.lang.String" itemvalue="me.taubsie.carrylogs.application.listener.Listener" />
       <item index="2" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.common.OnStart" />
+      <item index="3" class="java.lang.String" itemvalue="org.apache.logging.log4j.core.config.plugins.Plugin" />
     </list>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
@@ -24,8 +25,7 @@
     </option>
   </component>
   <component name="ProjectResources">
-    <resource url="http://maven.apache.org/ASSEMBLY/2.1.1" location="$PROJECT_DIR$/src/main/resources/assembly/distribution.xml" />
-    <resource url="https://maven.apache.org/xsd/assembly-2.1.1.xsd" location="$PROJECT_DIR$/src/main/resources/assembly/distribution.xml" />
+    <resource url="https://maven.apache.org/ASSEMBLY/2.2.0" location="$PROJECT_DIR$/src/main/resources/assembly/distribution.xml" />
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_17" project-jdk-name="openjdk-17" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
