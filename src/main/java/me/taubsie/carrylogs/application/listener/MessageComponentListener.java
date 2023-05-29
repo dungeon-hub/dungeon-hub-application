@@ -209,6 +209,8 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                         if(carryInformation.isDungeonCarry()) {
                             logChannel =
                                     server.get().getTextChannelById(IdList.DUNGEON_LOGS_CHANNEL.getLocalId(server.get().getId()));
+                        } else if(carryInformation.isKuudraCarry()) {
+                            logChannel = server.get().getTextChannelById(IdList.KUUDRA_LOGS_CHANNEL.getLocalId(server.get().getId()));
                         } else {
                             logChannel =
                                     server.get().getTextChannelById(IdList.SLAYER_LOGS_CHANNEL.getLocalId(server.get().getId()));
