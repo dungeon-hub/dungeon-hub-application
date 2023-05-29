@@ -190,6 +190,10 @@ public abstract class Command {
         return stringValue.get();
     }
 
+    public final Boolean getBooleanOption(String name) {
+        return getBooleanOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
+    }
+
     public final Boolean getBooleanOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         Optional<Boolean> booleanValue = getOption(slashCommandCreateEvent, name).getBooleanValue();
 

@@ -1,5 +1,6 @@
 package me.taubsie.carrylogs.application.service;
 
+import com.google.gson.JsonObject;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.CarryInformation;
@@ -27,7 +28,6 @@ import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ApplicationService {
     private static ApplicationService instance;
@@ -361,5 +361,28 @@ public class ApplicationService {
         embed.addInlineField("Flagged", "Please remember to run `/lookup`.");
 
         return embed;
+    }
+
+    //TODO remove json object, maybe only work on strings if possible -> connection service as an api only
+    public EmbedBuilder loadAuctionsMessage(List<JsonObject> auctionData, int page) {
+        if(auctionData.isEmpty()) {
+            return ApplicationService.getInstance()
+                    .getEmbed()
+                    .setColor(EmbedColor.NEGATIVE.getColor())
+                    .setTitle("No auctions found! Try again later.");
+        }
+
+        return ApplicationService.getInstance()
+                .getEmbed()
+                .setColor(EmbedColor.POSITIVE.getColor())
+                .setTitle("Auctions:")
+                .setDescription(String.join("\n", auctionData.stream()
+                        .skip(CarryLogService.getInstance().getOffsetFromPageNumber(page))
+                        .limit(10)
+                        .map(jsonObject -> "`/viewauction "
+                                + jsonObject.getAsJsonPrimitive("uuid").getAsString()
+                                + "` - "
+                                + jsonObject.getAsJsonPrimitive("item_name").getAsString())
+                        .toList()));
     }
 }

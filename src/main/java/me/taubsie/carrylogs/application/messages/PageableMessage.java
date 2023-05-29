@@ -73,8 +73,7 @@ public abstract class PageableMessage {
     public Optional<Message> getMessage() {
         return BotStarter.getInstance().getBot()
                 .getTextChannelById(channel)
-                .map(textChannel -> BotStarter.getInstance().getBot()
-                        .getMessageById(messageId, textChannel))
+                .map(textChannel -> textChannel.getMessageById(messageId))
                 .map(CompletableFuture::join);
     }
 

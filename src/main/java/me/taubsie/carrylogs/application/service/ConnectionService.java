@@ -1,9 +1,9 @@
 package me.taubsie.carrylogs.application.service;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import lombok.Getter;
+import me.nullicorn.nedit.NBTReader;
+import me.nullicorn.nedit.type.NBTCompound;
 import me.taubsie.carrylogs.application.exceptions.NotFoundException;
 import me.taubsie.carrylogs.application.exceptions.PlayerNotFoundException;
 import me.taubsie.dungeonhub.common.CarryInformation;
@@ -19,13 +19,12 @@ import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.sql.Time;
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 
 //TODO maybe split up in different services for each api (internal, hypixel, ...)
 public class ConnectionService {
@@ -50,10 +49,13 @@ public class ConnectionService {
             39559640, 51559640, 66559640, 85559640, 109559640, 139559640, 177559640, 225559640, 285559640, 360559640,
             453559640, 569809640};
 
-    private static final long REFRESH_TIME = 1000L * 60 * 55;
+    private static final long TOKEN_REFRESH_TIME = 1000L * 60 * 55;
+    private static final long AUCTION_REFRESH_TIME = 1000L * 60;
     private static ConnectionService instance;
 
     private final OkHttpClient httpClient;
+
+    private final List<JsonObject> talismen = new ArrayList<>();
 
     @Getter
     private String apiToken;
@@ -68,7 +70,14 @@ public class ConnectionService {
             public void run() {
                 reloadToken();
             }
-        }, new Time(System.currentTimeMillis() + REFRESH_TIME), REFRESH_TIME);
+        }, new Time(System.currentTimeMillis() + TOKEN_REFRESH_TIME), TOKEN_REFRESH_TIME);
+
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                reloadTalismen();
+            }
+        }, new Time(System.currentTimeMillis()), AUCTION_REFRESH_TIME);
     }
 
     public static ConnectionService getInstance() {
@@ -908,5 +917,68 @@ public class ConnectionService {
         }
 
         return result;
+    }
+
+    public List<JsonObject> getTalismen(boolean bin) {
+        Stream<JsonObject> talismenData = talismen.stream();
+
+        if(bin) {
+            talismenData = talismenData.filter(jsonObject -> jsonObject.getAsJsonPrimitive("bin").getAsBoolean());
+        }
+
+        return talismenData.toList();
+    }
+
+    private void reloadTalismen() {
+        List<JsonObject> newTalismenData = reloadTalismen(0).toList();
+
+        talismen.clear();
+
+        talismen.addAll(newTalismenData);
+    }
+
+    private Stream<JsonObject> reloadTalismen(int page) {
+        String baseUrl = "https://api.hypixel.net/skyblock/auctions?page=";
+
+        Request request = new Request.Builder()
+                .url(baseUrl + page)
+                .get()
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(!response.isSuccessful() || response.body() == null) {
+                if(response.code() != 404) {
+                    logger.error("Unsuccessful auctions request: " + response.code());
+                }
+
+                return Stream.empty();
+            }
+
+            JsonObject baseObject = JsonParser.parseString(response.body().string()).getAsJsonObject();
+            List<JsonObject> result = new ArrayList<>();
+
+            for(JsonElement jsonElement : baseObject.getAsJsonArray("auctions").asList()) {
+                JsonObject auctionObject = jsonElement.getAsJsonObject();
+                if(auctionObject.getAsJsonPrimitive("category").getAsString().equalsIgnoreCase("accessories")) {
+                    NBTCompound nbtData = NBTReader.readBase64(auctionObject.getAsJsonPrimitive("item_bytes").getAsString());
+
+                    nbtData = nbtData.getList("i").getCompound(0);
+
+                    nbtData = nbtData.getCompound("tag");
+
+                    nbtData = nbtData.getCompound("ExtraAttributes");
+
+                    if(nbtData.containsKey("rarity_upgrades")) {
+                        result.add(auctionObject);
+                    }
+                }
+            }
+
+            return Stream.concat(result.stream(), reloadTalismen(++page));
+        }
+        catch(IOException ioException) {
+            logger.error("Auction request threw an error.", ioException);
+            return Stream.empty();
+        }
     }
 }
