@@ -25,7 +25,7 @@ import java.util.concurrent.CompletionException;
 
 @CommandParameters(name = "manage-strikes",
         description = "Manage the strikes of a carrier.",
-        enabledForPermissions = PermissionType.MANAGE_MESSAGES)
+        enabledForPermissions = PermissionType.MODERATE_MEMBERS)
 public class ManageStrikesCommand extends Command {
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {

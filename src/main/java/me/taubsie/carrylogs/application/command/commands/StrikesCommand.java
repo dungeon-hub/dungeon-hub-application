@@ -10,6 +10,7 @@ import me.taubsie.carrylogs.application.service.ConnectionService;
 import me.taubsie.dungeonhub.common.StrikeData;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -24,6 +25,10 @@ public class StrikesCommand extends Command {
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         User userToCheck;
         try {
+            if(!getServer().hasPermission(getUser(), PermissionType.MODERATE_MEMBERS)) {
+                throw new InvalidOptionException("user", "You don't have the permission to see the strikes of other people.");
+            }
+
             userToCheck = getUserOption("user");
         }
         catch(InvalidOptionException invalidOptionException) {
