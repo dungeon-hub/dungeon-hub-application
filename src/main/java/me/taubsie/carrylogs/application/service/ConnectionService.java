@@ -61,7 +61,13 @@ public class ConnectionService {
     private String apiToken;
 
     private ConnectionService() {
-        httpClient = new OkHttpClient();
+        httpClient = new OkHttpClient.Builder()
+                .retryOnConnectionFailure(true)
+                .connectTimeout(Duration.ofSeconds(30))
+                .readTimeout(Duration.ofSeconds(30))
+                .callTimeout(Duration.ofSeconds(30))
+                .writeTimeout(Duration.ofSeconds(30))
+                .build();
 
         reloadToken();
 
@@ -870,13 +876,7 @@ public class ConnectionService {
                 .get()
                 .build();
 
-        OkHttpClient client = httpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(30))
-                .readTimeout(Duration.ofSeconds(30))
-                .callTimeout(Duration.ofSeconds(30))
-                .build();
-
-        try(Response response = client.newCall(request).execute()) {
+        try(Response response = httpClient.newCall(request).execute()) {
             if(response.body() == null) {
                 return new HashMap<>();
             }

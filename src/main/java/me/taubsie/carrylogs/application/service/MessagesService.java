@@ -83,7 +83,7 @@ public class MessagesService implements StartupListener {
                             + " coins";
 
                     if(carryPrice.getBulkAmount() > 0) {
-                        result += "\n- "
+                        result += "\n - "
                                 + ApplicationService.getInstance().makeNumberReadable(carryPrice.getBulkPrice())
                                 + " per carry if you buy " + carryPrice.getBulkAmount() + "+ carries.";
                     }
