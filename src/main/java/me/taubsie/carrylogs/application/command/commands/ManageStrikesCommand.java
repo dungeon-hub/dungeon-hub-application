@@ -1,5 +1,6 @@
 package me.taubsie.carrylogs.application.command.commands;
 
+import me.taubsie.carrylogs.application.classes.ServerProperty;
 import me.taubsie.carrylogs.application.messages.AllStrikesMessage;
 import me.taubsie.carrylogs.application.messages.PageableMessage;
 import me.taubsie.carrylogs.application.command.Command;
@@ -58,7 +59,8 @@ public class ManageStrikesCommand extends Command {
 
                     EmbedBuilder embed = ApplicationService.getInstance().formatStrikes(strikeData, user, 1);
 
-                    int maxPage = ConnectionService.getInstance().getMaxAllStrikePage(getServer().getId(), user.getId());
+                    int maxPage = ConnectionService.getInstance().getMaxAllStrikePage(getServer().getId(),
+                            user.getId());
 
                     Message message = responseUpdater
                             .addEmbed(embed)
@@ -70,7 +72,6 @@ public class ManageStrikesCommand extends Command {
                 });
     }
 
-    //TODO dm person getting striked
     public void strikeAdd(SlashCommandCreateEvent slashCommandCreateEvent,
                           SlashCommandInteractionOption slashCommandInteractionOption) {
         User userToStrike = getUserOption(slashCommandInteractionOption, "user");
@@ -93,7 +94,14 @@ public class ManageStrikesCommand extends Command {
 
         try {
             userToStrike.sendMessage(ApplicationService.getInstance().formatStrikeDM(sentStrike));
-        } catch(CompletionException completionException) {
+
+            ServerProperty.STRIKES_LOGS_CHANNEL
+                    .getValue(getServer().getId())
+                    .flatMap(s -> slashCommandCreateEvent.getApi().getTextChannelById(s))
+                    .ifPresent(textChannel -> textChannel.sendMessage(ApplicationService.getInstance()
+                            .formatStrikeLog(sentStrike)));
+        }
+        catch(CompletionException completionException) {
             //ignored
         }
     }

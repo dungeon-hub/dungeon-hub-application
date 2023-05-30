@@ -261,6 +261,24 @@ public class ApplicationService {
         return embedBuilder;
     }
 
+    public EmbedBuilder formatStrikeLog(StrikeData strikeData) {
+        EmbedBuilder embedBuilder = getEmbed(strikeData.getStrikeTime())
+                .setColor(EmbedColor.INFORMATION.getColor())
+                .setTitle("Strike " +
+                        (strikeData.getId() != null
+                                ? "#" + strikeData.getId()
+                                : "for " + BotStarter.getInstance().getBot().getUserById(strikeData.getUser()).join()
+                                .getDiscriminatedName()));
+
+        embedBuilder.addField("User", "<@" + strikeData.getUser() + ">");
+        embedBuilder.addField("Striker", strikeData.getStriker() != null ? "<@" + strikeData.getStriker() + ">" :
+                "CONSOLE");
+        embedBuilder.addField("Reason", strikeData.getReason() != null ? strikeData.getReason() : "No reason provided" +
+                ".");
+
+        return embedBuilder;
+    }
+
     public EmbedBuilder formatStrikeDM(StrikeData strikeData) {
         EmbedBuilder embedBuilder = getEmbed(strikeData.getStrikeTime())
                 .setColor(EmbedColor.INFORMATION.getColor())
@@ -326,7 +344,8 @@ public class ApplicationService {
                 .build();
     }
 
-    //TODO maybe make it possible to update the embed in 2 intervals, since the mojang+safety+jerry api takes long, as well as the skycrypt api takes long too
+    //TODO maybe make it possible to update the embed in 2 intervals, since the mojang+safety+jerry api takes long,
+    // as well as the skycrypt api takes long too
     //probably first load skycrypt, then the rest?
     public EmbedBuilder getPlayerDataEmbed(String ign) {
         Map<String, String> skycryptData = ConnectionService.getInstance().getSkyCryptData(ign);
