@@ -974,6 +974,10 @@ public class ConnectionService {
                 }
             }
 
+            if(baseObject.getAsJsonPrimitive("totalPages").getAsInt() <= page + 1) {
+                return result.stream();
+            }
+
             return Stream.concat(result.stream(), reloadTalismen(++page));
         }
         catch(IOException ioException) {
