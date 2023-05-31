@@ -44,7 +44,8 @@ public class ProfileModerationService {
             "Hypixel",
             "Syntax",
             "Sеcurity",
-            "Bouncr"
+            "Bouncr",
+            "Base"
     };
     private static final Long[] excludedIds = new Long[]{
             727320030462869515L,
