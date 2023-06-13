@@ -141,7 +141,8 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
             for(CarryInformation carryInformation : DungeonHubConnection.getInstance().getFromLogQueue(channelId)) {
                 carryInformation.setAttachmentLink(attachmentLink);
-                CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty());
+                //TODO rework
+                CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty().getIdentifier());
 
                 if(carryInformation.getAmountOfCarries() >= APPROVE_AMOUNT_THRESHOLD
                         || carryInformation.calculateScore() >= APPROVE_SCORE_THRESHOLD) {

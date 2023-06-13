@@ -204,7 +204,8 @@ public class ApplicationService {
     }
 
     public EmbedBuilder loadEmbedFromCarryInformation(CarryInformation carryInformation, EmbedBuilder embedBuilder) {
-        CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty());
+        //TODO rework
+        CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty().getIdentifier());
 
         embedBuilder.setColor(EmbedColor.INFORMATION.getColor())
                 .addInlineField("Number of carries",

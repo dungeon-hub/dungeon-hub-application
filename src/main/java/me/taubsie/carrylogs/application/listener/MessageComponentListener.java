@@ -92,7 +92,8 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                     User carrier =
                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getCarrier()).join();
 
-                    CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty());
+                    //TODO rework
+                    CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty().getIdentifier());
 
                     if(carrier != null && carrier.openPrivateChannel().join() != null) {
                         carrier.openPrivateChannel().join();
@@ -167,7 +168,8 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                     User carrier =
                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getCarrier()).join();
 
-                    CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty());
+                    //TODO rework
+                    CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty().getIdentifier());
 
                     if(carrier != null && carrier.openPrivateChannel().join() != null) {
                         carrier.openPrivateChannel().join();

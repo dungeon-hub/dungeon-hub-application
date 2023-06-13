@@ -1,6 +1,7 @@
 package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
+import me.taubsie.dungeonhub.common.CarryDifficulty;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
@@ -62,10 +63,11 @@ public class LogCommand extends Command {
 
         Long amountOfCarries = getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), "amount");
 
-        String carryTier = getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-tier");
+        //TODO rework with new system
+        String carryDifficulty = getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-difficulty");
 
-        if(ApplicationService.getInstance().isInvalidCarryTier(carryTier)) {
-            throw new InvalidOptionException("carry-tier", carryTier + " is no valid type.");
+        if(ApplicationService.getInstance().isInvalidCarryTier(carryDifficulty)) {
+            throw new InvalidOptionException("carry-difficulty", carryDifficulty + " is no valid type.");
         }
 
         Optional<Message> firstMessage = channel.getMessagesAsStream().reduce((message, message2) -> message2);
@@ -90,20 +92,23 @@ public class LogCommand extends Command {
                         .setTitle("Are you sure that you want to log this?")
                         .setColor(EmbedColor.INFORMATION.getColor())
                         .addInlineField("Number of carries", String.valueOf(amountOfCarries))
-                        .addInlineField("Type of carry", carryTier)
+                        .addInlineField("Type of carry", carryDifficulty)
                         .addInlineField("Player", carried.getMentionTag())
                         .addInlineField("Carrier", carrier.getMentionTag()))
-                .addComponents(ActionRow.of(org.javacord.api.entity.message.component.Button.success("send_log",
-                        "Confirm"), Button.danger("discard", "Cancel")))
+                .addComponents(ActionRow.of(Button.success("send_log", "Confirm"),
+                        Button.danger("discard", "Cancel")))
                 .respond().join();
 
         IdList carryCategory = IdList.getCarryCategory(category.get().getId(), server.getId());
 
+        //TODO implement
+        CarryDifficulty carryDifficultyClass = null;
+
+        //TODO rework with new system
         CarryInformation carryInformation = new CarryInformation(
                 time,
                 amountOfCarries,
-                carryCategory != null ? carryCategory.getCarryType().name() : null,
-                carryTier,
+                carryDifficultyClass,
                 carried.getId(),
                 carrier.getId()
         );
