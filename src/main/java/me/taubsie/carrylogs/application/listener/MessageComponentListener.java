@@ -2,7 +2,7 @@ package me.taubsie.carrylogs.application.listener;
 
 import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.service.ConnectionService;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
 import me.taubsie.carrylogs.application.service.PermissionService;
@@ -73,7 +73,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                     return;
                 }
 
-                ConnectionService.getInstance().addToLogQueue(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId(), carryInformation);
+                DungeonHubConnection.getInstance().addToLogQueue(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId(), carryInformation);
                 BotStarter.getInstance().getCarryInformation().remove(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId());
 
                 messageComponentCreateEvent.getMessageComponentInteraction().createImmediateResponder().setContent(
@@ -87,7 +87,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                 long messageId = messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getId();
 
                 for(CarryInformation carryInformation :
-                        ConnectionService.getInstance().getFromLogApprovingQueue(messageId)) {
+                        DungeonHubConnection.getInstance().getFromLogApprovingQueue(messageId)) {
 
                     User carrier =
                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getCarrier()).join();
@@ -150,7 +150,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                     }
                 }
 
-                ConnectionService.getInstance().removeFromApprovingQueue(messageId);
+                DungeonHubConnection.getInstance().removeFromApprovingQueue(messageId);
 
                 messageComponentCreateEvent.getMessageComponentInteraction().getMessage().delete();
             }
@@ -159,10 +159,10 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                 long messageId = messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getId();
 
                 for(CarryInformation carryInformation :
-                        ConnectionService.getInstance().getFromLogApprovingQueue(messageId)) {
+                        DungeonHubConnection.getInstance().getFromLogApprovingQueue(messageId)) {
                     carryInformation.setApprover(messageComponentCreateEvent.getMessageComponentInteraction().getUser().getId());
 
-                    long updatedScore = ConnectionService.getInstance().logCarry(carryInformation);
+                    long updatedScore = DungeonHubConnection.getInstance().logCarry(carryInformation);
 
                     User carrier =
                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getCarrier()).join();
@@ -243,7 +243,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
 
                 LeaderboardService.getInstance().refreshLeaderboard();
 
-                ConnectionService.getInstance().removeFromApprovingQueue(messageId);
+                DungeonHubConnection.getInstance().removeFromApprovingQueue(messageId);
 
                 messageComponentCreateEvent.getMessageComponentInteraction().getMessage().delete();
             }

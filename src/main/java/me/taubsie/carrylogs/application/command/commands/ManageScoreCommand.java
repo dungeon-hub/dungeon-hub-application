@@ -7,7 +7,7 @@ import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.service.ConnectionService;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
 import me.taubsie.carrylogs.application.service.PermissionService;
 import org.javacord.api.entity.channel.ServerTextChannel;
@@ -67,7 +67,7 @@ public class ManageScoreCommand extends Command {
 
         Long amount = getLongOption(subCommand, "amount");
 
-        long updatedScore = ConnectionService.getInstance().modifyScore(user.getId(), scoreType, removed ? -amount :
+        long updatedScore = DungeonHubConnection.getInstance().modifyScore(user.getId(), scoreType, removed ? -amount :
                 amount);
 
         slashCommandCreateEvent

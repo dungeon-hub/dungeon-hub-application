@@ -159,6 +159,20 @@ public abstract class Command {
         return slashCommandCreateEvent.getSlashCommandInteraction().getUser();
     }
 
+    public final SlashCommandInteractionOption getOptionAtIndex(int index) {
+        return getOptionAtIndex(slashCommandCreateEvent.getSlashCommandInteraction(), index);
+    }
+
+    public final SlashCommandInteractionOption getOptionAtIndex(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, int index) {
+        Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByIndex(index);
+
+        if(interactionOption.isEmpty()) {
+            throw new InvalidOptionException("at index " + index);
+        }
+
+        return interactionOption.get();
+    }
+
     public final String getStringOption(String name) {
         return getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
     }
@@ -204,7 +218,8 @@ public abstract class Command {
         return booleanValue.get();
     }
 
-    public final ServerChannel getChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+    public final ServerChannel getChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
+                                                String name) {
         Optional<ServerChannel> channelValue = getOption(slashCommandCreateEvent, name).getChannelValue();
 
         if(channelValue.isEmpty()) {

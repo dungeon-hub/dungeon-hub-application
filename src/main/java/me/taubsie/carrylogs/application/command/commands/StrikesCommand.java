@@ -6,7 +6,7 @@ import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.service.ConnectionService;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.common.StrikeData;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -39,10 +39,10 @@ public class StrikesCommand extends Command {
         slashCommandCreateEvent.getSlashCommandInteraction()
                 .respondLater(true)
                 .thenAccept(responseUpdater -> {
-                    List<StrikeData> strikeData = ConnectionService.getInstance()
+                    List<StrikeData> strikeData = DungeonHubConnection.getInstance()
                             .loadValidStrikeData(getServer().getId(), finalUserToCheck.getId());
 
-                    int maxPage = ConnectionService.getInstance().getMaxValidStrikePage(getServer().getId(), finalUserToCheck.getId());
+                    int maxPage = DungeonHubConnection.getInstance().getMaxValidStrikePage(getServer().getId(), finalUserToCheck.getId());
 
                     EmbedBuilder embed = ApplicationService.getInstance().formatStrikes(strikeData, finalUserToCheck, 1);
 

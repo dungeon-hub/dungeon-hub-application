@@ -74,7 +74,7 @@ public class MessagesService implements StartupListener {
             description += carryType.getExtraInformation() + "\n\n";
         }
 
-        description+=  carryPrices.stream()
+        description +=  carryPrices.stream()
                 .map(carryPrice -> {
                     String result = "### "
                             + carryPrice.getCarryTier().getDescriptiveName()

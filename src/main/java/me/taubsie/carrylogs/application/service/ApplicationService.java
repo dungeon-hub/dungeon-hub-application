@@ -1,6 +1,7 @@
 package me.taubsie.carrylogs.application.service;
 
 import com.google.gson.JsonObject;
+import me.taubsie.carrylogs.application.connection.HypixelConnection;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.CarryInformation;
@@ -348,7 +349,7 @@ public class ApplicationService {
     // as well as the skycrypt api takes long too
     //probably first load skycrypt, then the rest?
     public EmbedBuilder getPlayerDataEmbed(String ign) {
-        Map<String, String> skycryptData = ConnectionService.getInstance().getSkyCryptData(ign);
+        Map<String, String> skycryptData = HypixelConnection.getInstance().getSkyCryptData(ign);
 
         String url = "https://sky.shiiyu.moe/stats/" + ign;
         String description = skycryptData.getOrDefault("description", "Couldn't load SkyCrypt data.");

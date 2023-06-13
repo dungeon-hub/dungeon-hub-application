@@ -4,7 +4,7 @@ import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.service.ConnectionService;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -28,7 +28,7 @@ public class ScoreCommand extends Command {
             userToCheck = getUser();
         }
 
-        Map<String, Long> scoreCount = ConnectionService.getInstance().countScore(userToCheck.getId());
+        Map<String, Long> scoreCount = DungeonHubConnection.getInstance().countScore(userToCheck.getId());
 
         slashCommandCreateEvent
                 .getSlashCommandInteraction()

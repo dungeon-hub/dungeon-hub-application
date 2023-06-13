@@ -2,10 +2,11 @@ package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.connection.HypixelConnection;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.service.ConnectionService;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -20,9 +21,9 @@ public class LinkCommand extends Command {
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         String ign = getStringOption("ign");
 
-        UUID uuid = ConnectionService.getInstance().getUUIDByName(ign);
+        UUID uuid = DungeonHubConnection.getInstance().getUUIDByName(ign);
 
-        String discriminatedName = ConnectionService.getInstance().getHypixelLinkedDiscord(uuid);
+        String discriminatedName = HypixelConnection.getInstance().getHypixelLinkedDiscord(uuid);
 
         if(!discriminatedName.equalsIgnoreCase(getUser().getDiscriminatedName())) {
             throw new InvalidOptionException("ign",

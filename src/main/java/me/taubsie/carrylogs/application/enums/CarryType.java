@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 
+//this relates to the new CarryTier
 public enum CarryType
 {
     F4("F4", "Floor 4: Thorn", Arrays.asList(SlashCommandOptionChoice.create("Completion", "Completion"),

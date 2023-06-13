@@ -8,7 +8,7 @@ import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.exceptions.InvalidSubCommandException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.service.ConnectionService;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.common.StrikeData;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -54,12 +54,12 @@ public class ManageStrikesCommand extends Command {
                 .thenAccept(responseUpdater -> {
                     User user = getUserOption(slashCommandInteractionOption, "user");
 
-                    List<StrikeData> strikeData = ConnectionService.getInstance().loadAllStrikeData(getServer().getId(),
+                    List<StrikeData> strikeData = DungeonHubConnection.getInstance().loadAllStrikeData(getServer().getId(),
                             user.getId());
 
                     EmbedBuilder embed = ApplicationService.getInstance().formatStrikes(strikeData, user, 1);
 
-                    int maxPage = ConnectionService.getInstance().getMaxAllStrikePage(getServer().getId(),
+                    int maxPage = DungeonHubConnection.getInstance().getMaxAllStrikePage(getServer().getId(),
                             user.getId());
 
                     Message message = responseUpdater
@@ -88,7 +88,7 @@ public class ManageStrikesCommand extends Command {
                 .setReason(reason)
                 .setStriker(getUser().getId());
 
-        StrikeData sentStrike = ConnectionService.getInstance().insertStrikeData(strike);
+        StrikeData sentStrike = DungeonHubConnection.getInstance().insertStrikeData(strike);
 
         respond(ApplicationService.getInstance().formatStrike(sentStrike));
 

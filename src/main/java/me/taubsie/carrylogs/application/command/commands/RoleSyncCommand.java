@@ -6,7 +6,7 @@ import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.service.ConnectionService;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
@@ -52,7 +52,7 @@ public class RoleSyncCommand extends Command {
                                 .map(RoleConversion::getCarryRole)
                                 .toList()));
 
-        ConnectionService.getInstance().addMultipleRoles(roleList);
+        DungeonHubConnection.getInstance().addMultipleRoles(roleList);
 
         responseUpdater.addEmbed(ApplicationService.getInstance().getEmbed()
                         .setColor(new Color(255, 255, 255 /*TODO change color*/))

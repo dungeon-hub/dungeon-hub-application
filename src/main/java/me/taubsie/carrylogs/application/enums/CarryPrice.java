@@ -107,12 +107,6 @@ public enum CarryPrice implements Nameable {
         return Arrays.stream(CarryPrice.values()).filter(carryPrice -> Arrays.stream(dungeonTypes).anyMatch(type -> type.equals(carryPrice.getCarryType()))).toList();
     }
 
-    public static List<CarryPrice> getSlayerPrices() {
-        CarryType[] slayerTypes = new CarryType[] {CarryType.EMAN, CarryType.BLAZE};
-
-        return Arrays.stream(CarryPrice.values()).filter(carryPrice -> Arrays.stream(slayerTypes).anyMatch(type -> type.equals(carryPrice.getCarryType()))).toList();
-    }
-
     public static List<CarryPrice> getEndermanPrices() {
         CarryType[] slayerTypes = new CarryType[] {CarryType.EMAN};
 

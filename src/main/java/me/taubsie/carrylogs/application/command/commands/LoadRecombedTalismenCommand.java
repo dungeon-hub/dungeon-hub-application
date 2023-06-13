@@ -3,12 +3,12 @@ package me.taubsie.carrylogs.application.command.commands;
 import com.google.gson.JsonObject;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.connection.HypixelConnection;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.messages.AuctionsMessage;
 import me.taubsie.carrylogs.application.messages.PageableMessage;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.service.ConnectionService;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -25,7 +25,7 @@ public class LoadRecombedTalismenCommand extends Command {
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         boolean bin = getBooleanOption("bin");
 
-        List<JsonObject> talismen = ConnectionService.getInstance().getTalismen(bin);
+        List<JsonObject> talismen = HypixelConnection.getInstance().getTalismen(bin);
 
         if(talismen.isEmpty()) {
             respondEphemeral(ApplicationService.getInstance()

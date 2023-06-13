@@ -1,6 +1,6 @@
 package me.taubsie.carrylogs.application.classes;
 
-import me.taubsie.carrylogs.application.service.ConnectionService;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import org.javacord.api.entity.user.User;
 
 import java.util.Map;
@@ -32,31 +32,31 @@ public class Carrier
 
     public Map<String, Long> getScore()
     {
-        return ConnectionService.getInstance().countScore(id);
+        return DungeonHubConnection.getInstance().countScore(id);
     }
 
     public Long getDungeonScore()
     {
-        return ConnectionService.getInstance().getDungeonScore(id);
+        return DungeonHubConnection.getInstance().getDungeonScore(id);
     }
 
     public Long getSlayerScore()
     {
-        return ConnectionService.getInstance().getSlayerScore(id);
+        return DungeonHubConnection.getInstance().getSlayerScore(id);
     }
 
     public Long setScore(String type, long amount)
     {
-        return ConnectionService.getInstance().modifyScore(id, type, amount);
+        return DungeonHubConnection.getInstance().modifyScore(id, type, amount);
     }
 
     public Long setDungeonScore(long amount)
     {
-        return ConnectionService.getInstance().modifyDungeonScore(id, amount);
+        return DungeonHubConnection.getInstance().modifyDungeonScore(id, amount);
     }
 
     public Long setSlayerScore(long amount)
     {
-        return ConnectionService.getInstance().modifySlayerScore(id, amount);
+        return DungeonHubConnection.getInstance().modifySlayerScore(id, amount);
     }
 }

@@ -1,6 +1,7 @@
 package me.taubsie.carrylogs.application.service;
 
 import me.taubsie.carrylogs.application.classes.Leaderboard;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.messages.LeaderboardMessage;
 import me.taubsie.dungeonhub.common.CarryLogService;
 import me.taubsie.dungeonhub.common.OnStart;
@@ -147,31 +148,31 @@ public class LeaderboardService implements StartupListener {
             dungeonChannel.ifPresent(channel -> refreshLeaderboardInChannel(channel,
                     List.of(
                             new Leaderboard("Leaderboard | Dungeon-Carries",
-                                    ConnectionService.getInstance().getDungeonLeaderboard()),
+                                    DungeonHubConnection.getInstance().getDungeonLeaderboard()),
                             new Leaderboard("Leaderboard | Dungeon-Carries (all-time)",
-                                    ConnectionService.getInstance().getAlltimeDungeonLeaderboard()),
+                                    DungeonHubConnection.getInstance().getAlltimeDungeonLeaderboard()),
                             new Leaderboard("Leaderboard | Dungeon-Carries (event)",
-                                    ConnectionService.getInstance().getEventDungeonLeaderboard()))));
+                                    DungeonHubConnection.getInstance().getEventDungeonLeaderboard()))));
 
             Optional<ServerTextChannel> slayerChannel =
                     BotStarter.getInstance().getBot().getServerTextChannelById(IdList.SLAYER_LEADERBOARD_CHANNEL.getLocalId(serverId));
             slayerChannel.ifPresent(channel -> refreshLeaderboardInChannel(channel,
                     List.of(
                             new Leaderboard("Leaderboard | Slayer-Carries",
-                                    ConnectionService.getInstance().getSlayerLeaderboard()),
+                                    DungeonHubConnection.getInstance().getSlayerLeaderboard()),
                             new Leaderboard("Leaderboard | Slayer-Carries (all-time)",
-                                    ConnectionService.getInstance().getAlltimeSlayerLeaderboard()),
+                                    DungeonHubConnection.getInstance().getAlltimeSlayerLeaderboard()),
                             new Leaderboard("Leaderboard | Slayer-Carries (event)",
-                                    ConnectionService.getInstance().getEventSlayerLeaderboard()))));
+                                    DungeonHubConnection.getInstance().getEventSlayerLeaderboard()))));
 
             Optional<ServerTextChannel> kuudraChannel =
                     BotStarter.getInstance().getBot().getServerTextChannelById(IdList.KUUDRA_LEADERBOARD_CHANNEL.getLocalId(serverId));
             kuudraChannel.ifPresent(channel -> refreshLeaderboardInChannel(channel,
                     List.of(
                             new Leaderboard("Leaderboard | Kuudra-Carries",
-                                    ConnectionService.getInstance().getKuudraLeaderboard()),
+                                    DungeonHubConnection.getInstance().getKuudraLeaderboard()),
                             new Leaderboard("Leaderboard | Kuudra-Carries (all-time)",
-                                    ConnectionService.getInstance().getAlltimeKuudraLeaderboard()))));
+                                    DungeonHubConnection.getInstance().getAlltimeKuudraLeaderboard()))));
         }
 
         return true;

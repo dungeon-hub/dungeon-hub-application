@@ -3,7 +3,7 @@ package me.taubsie.carrylogs.application.command.commands;
 import me.taubsie.carrylogs.application.messages.PageableMessage;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
-import me.taubsie.carrylogs.application.service.ConnectionService;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -27,9 +27,9 @@ public class LeaderboardCommand extends Command {
         slashCommandCreateEvent.getSlashCommandInteraction()
                 .respondLater()
                 .thenAccept(responseUpdater -> {
-                    Map<Long, Long> score = ConnectionService.getInstance().getLeaderboardData(type.toLowerCase(), 1);
+                    Map<Long, Long> score = DungeonHubConnection.getInstance().getLeaderboardData(type.toLowerCase(), 1);
 
-                    int maxPage = ConnectionService.getInstance().getMaxLeaderboardPage(type);
+                    int maxPage = DungeonHubConnection.getInstance().getMaxLeaderboardPage(type);
 
                     EmbedBuilder embed = LeaderboardService.getInstance().getLeaderboardEmbed(leaderboardTitle, score,
                             1, maxPage);

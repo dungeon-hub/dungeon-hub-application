@@ -1,7 +1,7 @@
 package me.taubsie.carrylogs.application.classes;
 
 import me.taubsie.carrylogs.application.enums.RoleConversion;
-import me.taubsie.carrylogs.application.service.ConnectionService;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.common.config.Nameable;
 
 import java.util.List;
@@ -10,12 +10,12 @@ import java.util.Map;
 public enum PurgeType implements Nameable {
     DUNGEONS(
             "dungeons",
-            threshold -> ConnectionService.getInstance().getPurgeableUsers(threshold, "dungeons"),
+            threshold -> DungeonHubConnection.getInstance().getPurgeableUsers(threshold, "dungeons"),
             RoleConversion::getDungeonCarryRoles
             ),
     SLAYER(
             "slayer",
-            threshold -> ConnectionService.getInstance().getPurgeableUsers(threshold, "slayer"),
+            threshold -> DungeonHubConnection.getInstance().getPurgeableUsers(threshold, "slayer"),
             RoleConversion::getSlayerCarryRoles
             );
 

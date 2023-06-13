@@ -1,21 +1,15 @@
-package me.taubsie.carrylogs.application.service;
+package me.taubsie.carrylogs.application.connection;
 
 import com.google.gson.*;
 import lombok.Getter;
-import me.nullicorn.nedit.NBTReader;
-import me.nullicorn.nedit.type.NBTCompound;
+import me.taubsie.carrylogs.application.classes.ApplicationCarryTier;
+import me.taubsie.carrylogs.application.classes.ApplicationCarryType;
 import me.taubsie.carrylogs.application.exceptions.NotFoundException;
 import me.taubsie.carrylogs.application.exceptions.PlayerNotFoundException;
-import me.taubsie.dungeonhub.common.CarryInformation;
-import me.taubsie.dungeonhub.common.CarryLogService;
-import me.taubsie.dungeonhub.common.CarryRole;
-import me.taubsie.dungeonhub.common.StrikeData;
+import me.taubsie.dungeonhub.common.*;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,12 +17,10 @@ import java.io.*;
 import java.sql.Time;
 import java.time.Duration;
 import java.util.*;
-import java.util.stream.Stream;
-import java.util.zip.GZIPInputStream;
 
 //TODO maybe split up in different services for each api (internal, hypixel, ...)
-public class ConnectionService {
-    private static final Logger logger = LoggerFactory.getLogger(ConnectionService.class);
+public class DungeonHubConnection {
+    private static final Logger logger = LoggerFactory.getLogger(DungeonHubConnection.class);
 
     private static final String DUNGEON = "dungeon";
     private static final String SLAYER = "slayer";
@@ -50,17 +42,14 @@ public class ConnectionService {
             453559640, 569809640};
 
     private static final long TOKEN_REFRESH_TIME = 1000L * 60 * 55;
-    private static final long AUCTION_REFRESH_TIME = 1000L * 60;
-    private static ConnectionService instance;
+    private static DungeonHubConnection instance;
 
     private final OkHttpClient httpClient;
-
-    private final List<JsonObject> talismen = new ArrayList<>();
 
     @Getter
     private String apiToken;
 
-    private ConnectionService() {
+    private DungeonHubConnection() {
         httpClient = new OkHttpClient.Builder()
                 .retryOnConnectionFailure(true)
                 .connectTimeout(Duration.ofSeconds(30))
@@ -77,18 +66,11 @@ public class ConnectionService {
                 reloadToken();
             }
         }, new Time(System.currentTimeMillis() + TOKEN_REFRESH_TIME), TOKEN_REFRESH_TIME);
-
-        new Timer().scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                reloadTalismen();
-            }
-        }, new Time(System.currentTimeMillis()), AUCTION_REFRESH_TIME);
     }
 
-    public static ConnectionService getInstance() {
+    public static DungeonHubConnection getInstance() {
         if(instance == null) {
-            instance = new ConnectionService();
+            instance = new DungeonHubConnection();
         }
 
         return instance;
@@ -634,7 +616,8 @@ public class ConnectionService {
     public UUID fromString(String uuid) {
         //TODO fix?
         //TODO check for uuid format
-        return UUID.fromString(String.format("%s-%s-%s-%s-%s", uuid.substring(0, 7), uuid.substring(7, 11), uuid.substring(11, 15), uuid.substring(15, 20), uuid.substring(20, 32)));
+        return UUID.fromString(String.format("%s-%s-%s-%s-%s", uuid.substring(0, 7), uuid.substring(7, 11),
+                uuid.substring(11, 15), uuid.substring(15, 20), uuid.substring(20, 32)));
     }
 
 
@@ -749,7 +732,8 @@ public class ConnectionService {
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.isSuccessful()) {
                 if(response.body() != null) {
-                    return CarryLogService.getInstance().getGson().fromJson(response.body().string(), CarryLogService.getInstance().getStrikeDataListType());
+                    return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
+                            CarryLogService.getInstance().getStrikeDataListType());
                 }
             } else {
                 logger.error("Error when trying to load valid strikes.");
@@ -770,7 +754,8 @@ public class ConnectionService {
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.isSuccessful()) {
                 if(response.body() != null) {
-                    return CarryLogService.getInstance().getGson().fromJson(response.body().string(), CarryLogService.getInstance().getStrikeDataListType());
+                    return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
+                            CarryLogService.getInstance().getStrikeDataListType());
                 }
             } else {
                 logger.error("Error when trying to load all strike data of user.");
@@ -846,7 +831,7 @@ public class ConnectionService {
 
     //TODO maybe extra endpoint with count() in database
     public int getMaxAllStrikePage(long serverId, long userId) {
-        int entries = ConnectionService.getInstance()
+        int entries = DungeonHubConnection.getInstance()
                 .loadAllStrikeData(serverId, userId)
                 .size();
 
@@ -855,134 +840,76 @@ public class ConnectionService {
 
     //TODO maybe extra endpoint with count() in database
     public int getMaxValidStrikePage(long serverId, long userId) {
-        int entries = ConnectionService.getInstance()
+        int entries = DungeonHubConnection.getInstance()
                 .loadValidStrikeData(serverId, userId)
                 .size();
 
         return (int) Math.ceil(entries / 10.0);
     }
 
-    public String getHypixelLinkedDiscord(UUID uuid) {
+    /**
+     * Loads all available carry types from the given server.
+     * This represents the types of carry, so for example dungeons, slayer, kuudra, ...
+     *
+     * @param serverId The server to load this for.
+     * @return The list of carry types that were loaded from the database.
+     */
+    public List<ApplicationCarryType> loadCarryTypesForServer(long serverId) {
         //TODO implement
-        return "Taubsie#0911";
+        return new ArrayList<>();
     }
 
-    public Map<String, String> getSkyCryptData(String ign) {
-        Map<String, String> result = new HashMap<>();
-        String url = "https://sky.shiiyu.moe/stats/" + ign;
-
-        Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .build();
-
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.body() == null) {
-                return new HashMap<>();
-            }
-
-            try(InputStream inputStream = response.body().byteStream();
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
-                StringBuilder content = new StringBuilder();
-                String line;
-
-                while((line = bufferedReader.readLine()) != null) {
-                    content.append(line);
-                    content.append(System.lineSeparator());
-
-                    if(line.equalsIgnoreCase("</head>") || line.contains("</head>")) {
-                        break;
-                    }
-                }
-
-                Document document = Jsoup.parse(content.toString());
-
-                Element head = document.head();
-
-                for(Element meta : head.getElementsByTag("meta")) {
-                    switch(meta.attr("property").toLowerCase()) {
-                        case "og:title" -> result.put("title", meta.attr("content"));
-                        case "og:image" -> result.put("icon", meta.attr("content"));
-                        case "og:description" -> result.put("description", meta.attr("content"));
-                    }
-                }
-            }
-        }
-        catch(IOException ioException) {
-            logger.error("Error when trying to load Skycrypt data for user {}.", ign, ioException);
-        }
-
-        if(result.getOrDefault("title", "SkyBlock Stats").equalsIgnoreCase("SkyBlock Stats")) {
-            return new HashMap<>();
-        }
-
-        return result;
+    /**
+     * Loads all available carry tiers for the given carry type.
+     * This represents the tiers of carry, so for example floor 1, master mode floor 1, tier 4, kuudra, ...
+     *
+     * @param carryType The carry type to load this for.
+     * @return The list of carry tiers that were loaded from the database.
+     */
+    public List<ApplicationCarryTier> loadCarryTiers(CarryType carryType) {
+        return loadCarryTiers(carryType.getId());
     }
 
-    public List<JsonObject> getTalismen(boolean bin) {
-        Stream<JsonObject> talismenData = talismen.stream();
-
-        if(bin) {
-            talismenData = talismenData.filter(jsonObject -> jsonObject.getAsJsonPrimitive("bin").getAsBoolean());
-        }
-
-        return talismenData.toList();
+    /**
+     * Loads all available carry tiers for the given carry type.
+     * This represents the tiers of carry, so for example floor 1, master mode floor 1, tier 4, kuudra, ...
+     *
+     * @param id The id of the carry type to load this for.
+     * @return The list of carry tiers that were loaded from the database.
+     */
+    public List<ApplicationCarryTier> loadCarryTiers(String id) {
+        //TODO implement
+        return new ArrayList<>();
     }
 
-    private void reloadTalismen() {
-        List<JsonObject> newTalismenData = reloadTalismen(0).toList();
-
-        talismen.clear();
-
-        talismen.addAll(newTalismenData);
+    public Optional<ApplicationCarryType> loadCarryType(long serverId, String identifier) {
+        //TODO implement
+        return Optional.empty();
     }
 
-    private Stream<JsonObject> reloadTalismen(int page) {
-        String baseUrl = "https://api.hypixel.net/skyblock/auctions?page=";
+    public Optional<ApplicationCarryType> loadCarryTier(CarryType carryType, String identifier) {
+        return loadCarryTier(carryType.getId(), identifier);
+    }
 
-        Request request = new Request.Builder()
-                .url(baseUrl + page)
-                .get()
-                .build();
+    public Optional<ApplicationCarryType> loadCarryTier(String id, String identifier) {
+        //TODO implement
+        return Optional.empty();
+    }
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(!response.isSuccessful() || response.body() == null) {
-                if(response.code() != 404) {
-                    logger.error("Unsuccessful auctions request: " + response.code());
-                }
+    public Optional<ApplicationCarryType> loadCarryDifficulty(CarryTier carryTier, String identifier) {
+        return loadCarryDifficulty(carryTier.getId(), identifier);
+    }
 
-                return Stream.empty();
-            }
+    public Optional<ApplicationCarryType> loadCarryDifficulty(String id, String identifier) {
+        //TODO implement
+        return Optional.empty();
+    }
 
-            JsonObject baseObject = JsonParser.parseString(response.body().string()).getAsJsonObject();
-            List<JsonObject> result = new ArrayList<>();
+    public void addNewCarryType(long serverId, String identifier) {
+        //TODO implement
+    }
 
-            for(JsonElement jsonElement : baseObject.getAsJsonArray("auctions").asList()) {
-                JsonObject auctionObject = jsonElement.getAsJsonObject();
-                if(auctionObject.getAsJsonPrimitive("category").getAsString().equalsIgnoreCase("accessories")) {
-                    NBTCompound nbtData = NBTReader.readBase64(auctionObject.getAsJsonPrimitive("item_bytes").getAsString());
-
-                    nbtData = nbtData.getList("i").getCompound(0);
-
-                    nbtData = nbtData.getCompound("tag");
-
-                    nbtData = nbtData.getCompound("ExtraAttributes");
-
-                    if(nbtData.containsKey("rarity_upgrades")) {
-                        result.add(auctionObject);
-                    }
-                }
-            }
-
-            if(baseObject.getAsJsonPrimitive("totalPages").getAsInt() <= page + 1) {
-                return result.stream();
-            }
-
-            return Stream.concat(result.stream(), reloadTalismen(++page));
-        }
-        catch(IOException ioException) {
-            logger.error("Auction request threw an error.", ioException);
-            return Stream.empty();
-        }
+    public void removeCarryType(long serverId, String identifier) {
+        //TODO implement
     }
 }

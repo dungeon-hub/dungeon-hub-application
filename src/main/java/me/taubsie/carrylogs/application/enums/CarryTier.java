@@ -3,6 +3,7 @@ package me.taubsie.carrylogs.application.enums;
 import java.util.Arrays;
 import java.util.Optional;
 
+//This relates to the new CarryDifficulty
 public enum CarryTier {
     COMPLETION("Completion"),
     S("S", "S Score"),

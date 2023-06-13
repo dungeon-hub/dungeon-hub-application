@@ -1,6 +1,6 @@
 package me.taubsie.carrylogs.application.messages;
 
-import me.taubsie.carrylogs.application.service.ConnectionService;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
 import org.javacord.api.interaction.callback.ComponentInteractionOriginalMessageUpdater;
 
@@ -14,7 +14,7 @@ public class LeaderboardMessage extends PageableMessage {
 
     @Override
     public int getMaxPage() {
-        return ConnectionService.getInstance().getMaxLeaderboardPage(type);
+        return DungeonHubConnection.getInstance().getMaxLeaderboardPage(type);
     }
 
     @Override
@@ -23,7 +23,7 @@ public class LeaderboardMessage extends PageableMessage {
                 .addEmbed(
                         LeaderboardService.getInstance().getLeaderboardEmbed(
                                 LeaderboardService.getInstance().getLeaderboardTitle(type),
-                                ConnectionService.getInstance().getLeaderboardData(type, currentPage),
+                                DungeonHubConnection.getInstance().getLeaderboardData(type, currentPage),
                                 currentPage,
                                 getMaxPage()
                         )

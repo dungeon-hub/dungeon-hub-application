@@ -2,6 +2,7 @@ package me.taubsie.carrylogs.application.service;
 
 import me.taubsie.carrylogs.application.classes.PurgeData;
 import me.taubsie.carrylogs.application.classes.PurgeType;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.enums.RoleConversion;
 import me.taubsie.carrylogs.application.start.BotStarter;
@@ -68,7 +69,7 @@ public class PurgingService implements StartupListener {
                     purgeData.purgeType(), purgeData.purgeThreshold());
 
             List<CarryRole> roleList = getUserRoles(user, server.get());
-            ConnectionService.getInstance().addRoles(user.getId(), roleList);
+            DungeonHubConnection.getInstance().addRoles(user.getId(), roleList);
 
             if(!rolesRemoved.isEmpty()) {
                 try {

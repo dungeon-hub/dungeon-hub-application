@@ -3,7 +3,7 @@ package me.taubsie.carrylogs.application.listener;
 import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.service.ConnectionService;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import org.javacord.api.entity.channel.PrivateChannel;
@@ -139,7 +139,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
             long approvingChannelId = IdList.APPROVING_CHANNEL.getLocalId(server.getId());
 
-            for(CarryInformation carryInformation : ConnectionService.getInstance().getFromLogQueue(channelId)) {
+            for(CarryInformation carryInformation : DungeonHubConnection.getInstance().getFromLogQueue(channelId)) {
                 carryInformation.setAttachmentLink(attachmentLink);
                 CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty());
 
@@ -167,9 +167,9 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                             , "Accept"), Button.danger("deny", "Deny")))
                             .join();
 
-                    ConnectionService.getInstance().addToApprovingQueue(message.getId(), carryInformation);
+                    DungeonHubConnection.getInstance().addToApprovingQueue(message.getId(), carryInformation);
                 } else {
-                    long updatedScore = ConnectionService.getInstance().logCarry(carryInformation);
+                    long updatedScore = DungeonHubConnection.getInstance().logCarry(carryInformation);
 
                     User carrier = messageEvent.getApi().getUserById(carryInformation.getCarrier()).join();
 
@@ -238,7 +238,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 }
             }
 
-            ConnectionService.getInstance().removeFromLogQueue(channelId);
+            DungeonHubConnection.getInstance().removeFromLogQueue(channelId);
         }
     }
 }

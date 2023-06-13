@@ -1,7 +1,7 @@
 package me.taubsie.carrylogs.application.messages;
 
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.service.ConnectionService;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.StrikeData;
 import org.javacord.api.entity.DiscordEntity;
@@ -24,7 +24,7 @@ public class AllStrikesMessage extends PageableMessage {
     public int getMaxPage() {
         return getServer()
                 .map(DiscordEntity::getId)
-                .map(server -> ConnectionService.getInstance().getMaxAllStrikePage(server, userId))
+                .map(server -> DungeonHubConnection.getInstance().getMaxAllStrikePage(server, userId))
                 .orElse(0);
     }
 
@@ -33,7 +33,7 @@ public class AllStrikesMessage extends PageableMessage {
         Optional<Server> serverOptional = getServer();
 
         serverOptional.ifPresent(server -> {
-            List<StrikeData> strikeData = ConnectionService.getInstance().loadAllStrikeData(server.getId(), userId);
+            List<StrikeData> strikeData = DungeonHubConnection.getInstance().loadAllStrikeData(server.getId(), userId);
 
             updater.removeAllEmbeds()
                     .addEmbed(ApplicationService.getInstance().formatStrikes(strikeData,
