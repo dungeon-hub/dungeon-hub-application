@@ -5,8 +5,10 @@ import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.exceptions.FailedToLoadException;
 import net.codebox.homoglyph.Homoglyph;
 import net.codebox.homoglyph.HomoglyphBuilder;
+import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
+import org.javacord.api.entity.message.mention.AllowedMentionsBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.jetbrains.annotations.Nullable;
@@ -90,45 +92,98 @@ public class ProfileModerationService {
         return searchResults.stream().map(searchResult -> searchResult.match).collect(Collectors.joining("; "));
     }
 
-    public void handleUserBan(Server server, User user, String reason) {
+    public void handleUserBan(Server server, User user, User executor, String reason) {
+        dmBannedPerson(server, user, reason);
+
+        executeBan(server, user, executor, reason);
+    }
+
+    public void handleUserBan(Server server, User user, String username) {
+        dmBannedPerson(server, user);
+
+        executeBan(server, user, username);
+    }
+
+    private void sendDm(User user, String message, @Nullable String unbanForm) throws CompletionException {
+        if(unbanForm == null) {
+            user.openPrivateChannel().join().sendMessage(message).join();
+        } else {
+            user.openPrivateChannel().join()
+                    .sendMessage(message, ActionRow.of(Button.link(unbanForm, "Appeal"))).join();
+        }
+    }
+
+    private void dmBannedPerson(Server server, User user, String reason) {
         Optional<String> unbanForm = ServerProperty.UNBAN_FORM.getValue(server.getId());
 
+        String message = ServerProperty.BAN_MESSAGE
+                .getValue(server.getId())
+                .orElse("You got banned from `%server%` because of \"" + reason + "\".\nIf you think this is a mistake, contact the administrators for further information.")
+                .replace("%server%", server.getName())
+                .replace("%reason", reason);
+
+        if(unbanForm.isPresent()) {
+            message = message.replace("%form%", unbanForm.get());
+        }
+
         try {
-            String message = ServerProperty.PROFILE_MODERATION_BAN_MESSAGE
-                    .getValue(server.getId())
-                    .orElse("You got banned from `%server%` because of a suspicious user profile.\nIf you think this is a mistake, contact the administrators for further information.")
-                    .replace("%server%", server.getName());
-
-            if(unbanForm.isPresent()) {
-                message = message.replace("%form%", unbanForm.get());
-
-                try {
-                    user.openPrivateChannel().join()
-                            .sendMessage(message, ActionRow.of(Button.link(unbanForm.get(), "Appeal"))).join();
-                }
-                catch(CompletionException completionException) {
-                    //ignored
-                }
-            } else {
-                try {
-                    user.openPrivateChannel().join().sendMessage(message).join();
-                }
-                catch(CompletionException completionException) {
-                    //ignored
-                }
-            }
+            sendDm(user, message, unbanForm.orElse(null));
         }
         catch(Exception exception) {
             logger.error("Error when trying to handle user ban.", exception);
         }
+    }
 
-        server.banUser(user, Duration.of(6, ChronoUnit.DAYS), "Bad username: " + reason);
+    private void dmBannedPerson(Server server, User user) {
+        Optional<String> unbanForm = ServerProperty.UNBAN_FORM.getValue(server.getId());
+
+        String message = ServerProperty.PROFILE_MODERATION_BAN_MESSAGE
+                .getValue(server.getId())
+                .orElse("You got banned from `%server%` because of a suspicious user profile.\nIf you think this is a mistake, contact the administrators for further information.")
+                .replace("%server%", server.getName());
+
+        if(unbanForm.isPresent()) {
+            message = message.replace("%form%", unbanForm.get());
+        }
+
+        try {
+            sendDm(user, message, unbanForm.orElse(null));
+        }
+        catch(Exception exception) {
+            logger.error("Error when trying to handle user ban.", exception);
+        }
+    }
+
+    private void executeBan(Server server, User user, String username) {
+        server.banUser(user, Duration.of(6, ChronoUnit.DAYS), "Bad username: " + username);
 
         ServerProperty.MODERATION_LOGS_CHANNEL
                 .getValue(server.getId())
                 .flatMap(server::getTextChannelById)
                 .ifPresent(serverTextChannel ->
-                        serverTextChannel.sendMessage("User " + user.getMentionTag() + " got banned because of a bad username:\n" + reason));
+                        serverTextChannel.sendMessage("User "
+                                + user.getMentionTag()
+                                + " got banned because of a bad username:\n"
+                                + username));
+    }
+
+    private void executeBan(Server server, User user, User executor, String reason) {
+        server.banUser(user, Duration.of(6, ChronoUnit.DAYS), "Executor: " + executor.getDiscriminatedName() + ", Reason:" + reason);
+
+        ServerProperty.MODERATION_LOGS_CHANNEL
+                .getValue(server.getId())
+                .flatMap(server::getTextChannelById)
+                .ifPresent(serverTextChannel ->
+                        new MessageBuilder()
+                                .setAllowedMentions(new AllowedMentionsBuilder()
+                                        .removeUser(executor.getId())
+                                        .build())
+                                .setContent("User "
+                                        + user.getMentionTag()
+                                        + " got banned by "
+                                        + executor.getMentionTag()
+                                        + " for reason:\n" + reason)
+                                .send(serverTextChannel));
     }
 
     public boolean isOverwritten(long userId) {

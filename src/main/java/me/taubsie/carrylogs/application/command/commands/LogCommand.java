@@ -1,22 +1,21 @@
 package me.taubsie.carrylogs.application.command.commands;
 
-import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
-import me.taubsie.dungeonhub.common.CarryDifficulty;
-import me.taubsie.dungeonhub.common.CarryInformation;
+import me.taubsie.carrylogs.application.classes.ApplicationCarryDifficulty;
+import me.taubsie.carrylogs.application.classes.ApplicationCarryTier;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
-import me.taubsie.carrylogs.application.enums.IdList;
+import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.start.BotStarter;
+import me.taubsie.dungeonhub.common.CarryInformation;
 import org.javacord.api.entity.channel.Categorizable;
-import org.javacord.api.entity.channel.ChannelCategory;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
-import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -32,18 +31,16 @@ import java.util.Optional;
         description = "Use this to log your carries.")
 public class LogCommand extends Command {
     @Override
-    public long[] getEnabledServers() {
-        return new long[]{693263712626278553L, 1023684107877761196L};
-    }
-
-    @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
-        Server server = getServer();
         TextChannel channel = getChannel();
 
-        Optional<ChannelCategory> category = channel.asCategorizable().flatMap(Categorizable::getCategory);
+        Optional<ApplicationCarryTier> carryTier = channel.asCategorizable()
+                .flatMap(Categorizable::getCategory)
+                .flatMap(channelCategory -> DungeonHubConnection.getInstance()
+                        .getCarryTierFromCategory(channelCategory.getId()));
 
-        if(category.isEmpty() || !IdList.isCarryCategory(category.get().getId(), server.getId())) {
+        if(carryTier.isEmpty()) {
+            //TODO custom class
             throw new CommandExecutionException() {
                 @Override
                 public String getMessage() {
@@ -53,6 +50,7 @@ public class LogCommand extends Command {
         }
 
         if(BotStarter.getInstance().getCarryInformation().containsKey(channel.getId())) {
+            //TODO custom class
             throw new CommandExecutionException() {
                 @Override
                 public String getMessage() {
@@ -63,10 +61,10 @@ public class LogCommand extends Command {
 
         Long amountOfCarries = getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), "amount");
 
-        //TODO rework with new system
-        String carryDifficulty = getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-difficulty");
+        Optional<ApplicationCarryDifficulty> carryDifficulty = DungeonHubConnection.getInstance()
+                .loadCarryDifficulty(carryTier.get(), getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-difficulty"));
 
-        if(ApplicationService.getInstance().isInvalidCarryTier(carryDifficulty)) {
+        if(carryDifficulty.isEmpty()) {
             throw new InvalidOptionException("carry-difficulty", carryDifficulty + " is no valid type.");
         }
 
@@ -85,6 +83,15 @@ public class LogCommand extends Command {
         User carried = firstMessage.get().getMentionedUsers().get(0);
         User carrier = slashCommandCreateEvent.getSlashCommandInteraction().getUser();
 
+        CarryInformation carryInformation = new CarryInformation(
+                time,
+                amountOfCarries,
+                carryDifficulty.get(),
+                carried.getId(),
+                carrier.getId()
+        );
+
+        //TODO method in ApplicationService
         slashCommandCreateEvent.getSlashCommandInteraction()
                 .createImmediateResponder()
                 .addEmbed(ApplicationService.getInstance()
@@ -92,26 +99,12 @@ public class LogCommand extends Command {
                         .setTitle("Are you sure that you want to log this?")
                         .setColor(EmbedColor.INFORMATION.getColor())
                         .addInlineField("Number of carries", String.valueOf(amountOfCarries))
-                        .addInlineField("Type of carry", carryDifficulty)
+                        .addInlineField("Type of carry", carryDifficulty.get().toString())
                         .addInlineField("Player", carried.getMentionTag())
                         .addInlineField("Carrier", carrier.getMentionTag()))
                 .addComponents(ActionRow.of(Button.success("send_log", "Confirm"),
                         Button.danger("discard", "Cancel")))
                 .respond().join();
-
-        IdList carryCategory = IdList.getCarryCategory(category.get().getId(), server.getId());
-
-        //TODO implement
-        CarryDifficulty carryDifficultyClass = null;
-
-        //TODO rework with new system
-        CarryInformation carryInformation = new CarryInformation(
-                time,
-                amountOfCarries,
-                carryDifficultyClass,
-                carried.getId(),
-                carrier.getId()
-        );
 
         BotStarter.getInstance().getCarryInformation().put(channel.getId(), carryInformation);
     }

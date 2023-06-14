@@ -1,14 +1,15 @@
 package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.classes.ServerProperty;
-import me.taubsie.carrylogs.application.messages.AllStrikesMessage;
-import me.taubsie.carrylogs.application.messages.PageableMessage;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
+import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.exceptions.InvalidSubCommandException;
+import me.taubsie.carrylogs.application.messages.AllStrikesMessage;
+import me.taubsie.carrylogs.application.messages.PageableMessage;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.common.StrikeData;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -114,8 +115,24 @@ public class ManageStrikesCommand extends Command {
 
     public void strikeRemove(SlashCommandCreateEvent slashCommandCreateEvent,
                              SlashCommandInteractionOption slashCommandInteractionOption) {
-        //TODO implement
-        throw new InvalidSubCommandException();
+        long id = getLongOption(slashCommandInteractionOption, "id");
+        User user = getUser();
+
+        DungeonHubConnection.getInstance().removeStrike(getServer().getId(), id);
+
+        respondEphemeral(ApplicationService.getInstance()
+                .getEmbed()
+                .setColor(EmbedColor.POSITIVE.getColor())
+                .setDescription("Removed strike #" + id + "."));
+
+        ServerProperty.STRIKES_LOGS_CHANNEL
+                .getValue(getServer().getId())
+                .flatMap(s -> slashCommandCreateEvent.getApi().getTextChannelById(s))
+                .ifPresent(textChannel -> textChannel.sendMessage(ApplicationService.getInstance()
+                        .getEmbed()
+                        .setColor(EmbedColor.INFORMATION.getColor())
+                        .setDescription(user.getDiscriminatedName()
+                                + " removed strike #" + id + ".")));
     }
 
     @Override
@@ -174,8 +191,7 @@ public class ManageStrikesCommand extends Command {
         SlashCommandOption removeOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("remove")
-                .setDescription("Remove a strike from the given user. <NOT IMPLEMENTED YET>")
-                .addOption(userOption)
+                .setDescription("Remove the given strike.")
                 .addOption(idOption)
                 .build();
 

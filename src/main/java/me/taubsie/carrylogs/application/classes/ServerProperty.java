@@ -19,6 +19,7 @@ import java.util.Optional;
  */
 public enum ServerProperty implements Nameable {
     PROFILE_MODERATION_BAN_MESSAGE("profile_moderation_message"),
+    BAN_MESSAGE("ban_message"),
     UNBAN_FORM("unban_form"),
 
     SCORE_ENABLED("score_enabled", ServerPropertyType.BOOLEAN, false),

@@ -1,7 +1,10 @@
 package me.taubsie.carrylogs.application.connection;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.Getter;
+import me.taubsie.carrylogs.application.classes.ApplicationCarryDifficulty;
 import me.taubsie.carrylogs.application.classes.ApplicationCarryTier;
 import me.taubsie.carrylogs.application.classes.ApplicationCarryType;
 import me.taubsie.carrylogs.application.exceptions.NotFoundException;
@@ -13,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.sql.Time;
 import java.time.Duration;
 import java.util.*;
@@ -343,17 +346,10 @@ public class DungeonHubConnection {
     }
 
     public long getScoreFromCarrier(CarryInformation carryInformation) {
-        if(carryInformation.isDungeonCarry()) {
-            return getDungeonScore(carryInformation.getCarrier());
-        }
-
-        if(carryInformation.isKuudraCarry()) {
-            return getKuudraScore(carryInformation.getCarrier());
-        }
-
-        return getSlayerScore(carryInformation.getCarrier());
+        return getScore(carryInformation.getServerId(), carryInformation.getCarryType().getIdentifier());
     }
 
+    //TODO adapt the new system
     public Map<String, Long> countScore(Long id) {
         Request request = getApiRequest("carry-score/" + id)
                 .get()
@@ -887,20 +883,20 @@ public class DungeonHubConnection {
         return Optional.empty();
     }
 
-    public Optional<ApplicationCarryType> loadCarryTier(CarryType carryType, String identifier) {
+    public Optional<ApplicationCarryTier> loadCarryTier(CarryType carryType, String identifier) {
         return loadCarryTier(carryType.getId(), identifier);
     }
 
-    public Optional<ApplicationCarryType> loadCarryTier(String id, String identifier) {
+    public Optional<ApplicationCarryTier> loadCarryTier(String id, String identifier) {
         //TODO implement
         return Optional.empty();
     }
 
-    public Optional<ApplicationCarryType> loadCarryDifficulty(CarryTier carryTier, String identifier) {
+    public Optional<ApplicationCarryDifficulty> loadCarryDifficulty(CarryTier carryTier, String identifier) {
         return loadCarryDifficulty(carryTier.getId(), identifier);
     }
 
-    public Optional<ApplicationCarryType> loadCarryDifficulty(String id, String identifier) {
+    public Optional<ApplicationCarryDifficulty> loadCarryDifficulty(String id, String identifier) {
         //TODO implement
         return Optional.empty();
     }
@@ -911,5 +907,10 @@ public class DungeonHubConnection {
 
     public void removeCarryType(long serverId, String identifier) {
         //TODO implement
+    }
+
+    public Optional<ApplicationCarryTier> getCarryTierFromCategory(long categoryId) {
+        //TODO implement
+        return Optional.empty();
     }
 }

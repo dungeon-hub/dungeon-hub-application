@@ -7,4 +7,10 @@ public class ApplicationCarryDifficulty extends CarryDifficulty {
     public ApplicationCarryDifficulty(String id, String identifier, String displayName, CarryTier carryTier) {
         super(id, identifier, displayName, carryTier);
     }
+
+    //TODO implement properly
+    @Override
+    public String toString() {
+        return toJson();
+    }
 }

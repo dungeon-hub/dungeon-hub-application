@@ -1,13 +1,13 @@
 package me.taubsie.carrylogs.application.service;
 
 import com.google.gson.JsonObject;
+import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.connection.HypixelConnection;
+import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
+import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.carrylogs.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.CarryInformation;
-import me.taubsie.carrylogs.application.command.Command;
-import me.taubsie.carrylogs.application.enums.CarryType;
-import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.common.CarryLogService;
 import me.taubsie.dungeonhub.common.StrikeData;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
@@ -45,10 +45,18 @@ public class ApplicationService {
         return getEmbed(Instant.now());
     }
 
+    public String getFooter() {
+        return "discord.gg/dungeons • made by Taubsie#0911";
+    }
+
+    public String getPriceFooter() {
+        return "discord.gg/dungeons • also see /calc-price • made by Taubsie#0911";
+    }
+
     public EmbedBuilder getEmbed(Instant time) {
         return new EmbedBuilder()
                 .setTimestamp(time)
-                .setFooter("discord.gg/dungeons • made by Taubsie#0911");
+                .setFooter(getFooter());
     }
 
     public User getBotOwner(DiscordApi api) {
@@ -290,8 +298,6 @@ public class ApplicationService {
                         + "`");
 
         embedBuilder.addField("You", "<@" + strikeData.getUser() + ">");
-        embedBuilder.addField("Striker", strikeData.getStriker() != null ? "<@" + strikeData.getStriker() + ">" :
-                "CONSOLE");
         embedBuilder.addField("Reason", strikeData.getReason() != null ? strikeData.getReason() : "No reason provided" +
                 ".");
 

@@ -94,6 +94,7 @@ public class MessagesService implements StartupListener {
 
         return ApplicationService.getInstance()
                 .getEmbed()
+                .setFooter(ApplicationService.getInstance().getPriceFooter())
                 .setColor(EmbedColor.DEFAULT.getColor())
                 .setTitle(title)
                 .setDescription(description)

@@ -24,13 +24,14 @@ import java.util.concurrent.CompletionException;
 public class BanAllCommand extends Command {
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
+        User executor = getUser();
         String users = getStringOption("users");
         String reason = getStringOption("reason");
 
         String[] userArray = users.split(",");
         List<String> errors = new ArrayList<>();
 
-        if(userArray.length <= 1) {
+        if(userArray.length < 1) {
             throw new InvalidOptionException("users", "Please provide a comma-separated list of users to ban.");
         }
 
@@ -44,7 +45,7 @@ public class BanAllCommand extends Command {
                             .getUserById(userId)
                             .join();
 
-                    ProfileModerationService.getInstance().handleUserBan(getServer(), user, reason);
+                    ProfileModerationService.getInstance().handleUserBan(getServer(), user, executor, reason);
                 }
                 catch(CompletionException completionException) {
                     errors.add(userId);
