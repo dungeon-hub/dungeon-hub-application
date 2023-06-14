@@ -5,7 +5,7 @@ import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.exceptions.UnknownCommandException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.dungeonhub.common.CarryRole;
+import me.taubsie.dungeonhub.common.OldCarryRole;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
@@ -20,10 +20,10 @@ public class RolecheckCommand extends Command {
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         String ign = getStringOption("ign");
 
-        Optional<CarryRole> carryRole;
+        Optional<OldCarryRole> carryRole;
 
         try {
-            carryRole = Optional.of(getStringOption("role")).map(CarryRole::valueOf);
+            carryRole = Optional.of(getStringOption("role")).map(OldCarryRole::valueOf);
         } catch(InvalidOptionException invalidOptionException) {
             carryRole = Optional.empty();
         }
@@ -41,8 +41,8 @@ public class RolecheckCommand extends Command {
                 .setType(SlashCommandOptionType.STRING)
                 .setRequired(false);
 
-        for(CarryRole carryRole : CarryRole.values()) {
-            roleOption.addChoice(carryRole.name(), carryRole.name());
+        for(OldCarryRole oldCarryRole : OldCarryRole.values()) {
+            roleOption.addChoice(oldCarryRole.name(), oldCarryRole.name());
         }
 
         return List.of(ignOption, roleOption.build());

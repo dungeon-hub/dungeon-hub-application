@@ -543,7 +543,7 @@ public class DungeonHubConnection {
         return 0L;
     }
 
-    public void addMultipleRoles(Map<Long, List<CarryRole>> roleList) {
+    public void addMultipleRoles(Map<Long, List<OldCarryRole>> roleList) {
         RequestBody requestBody = new FormBody.Builder()
                 .add("roles", CarryLogService.getInstance().getGson().toJson(roleList))
                 .build();
@@ -562,7 +562,7 @@ public class DungeonHubConnection {
         }
     }
 
-    public void addRoles(long id, List<CarryRole> roles) {
+    public void addRoles(long id, List<OldCarryRole> roles) {
         RequestBody requestBody = new FormBody.Builder()
                 .add("id", String.valueOf(id))
                 .add("roles", CarryLogService.getInstance().getGson().toJson(roles))

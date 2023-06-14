@@ -1,12 +1,12 @@
 package me.taubsie.carrylogs.application.command.commands;
 
-import me.taubsie.carrylogs.application.enums.RoleConversion;
-import me.taubsie.dungeonhub.common.CarryRole;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
+import me.taubsie.carrylogs.application.enums.RoleConversion;
 import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
+import me.taubsie.dungeonhub.common.OldCarryRole;
 import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
@@ -38,7 +38,7 @@ public class RoleSyncCommand extends Command {
         InteractionOriginalResponseUpdater responseUpdater = slashCommandCreateEvent.getSlashCommandInteraction().respondLater().join();
         Server server = getServer();
 
-        Map<Long, List<CarryRole>> roleList = Arrays.stream(RoleConversion.getCarryRoles())
+        Map<Long, List<OldCarryRole>> roleList = Arrays.stream(RoleConversion.getCarryRoles())
                 .map(RoleConversion::getServerProperty)
                 .map(serverProperty -> serverProperty.getValue(server.getId()))
                 .flatMap(Optional::stream)

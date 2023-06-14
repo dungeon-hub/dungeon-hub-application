@@ -6,7 +6,7 @@ import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.enums.RoleConversion;
 import me.taubsie.carrylogs.application.start.BotStarter;
-import me.taubsie.dungeonhub.common.CarryRole;
+import me.taubsie.dungeonhub.common.OldCarryRole;
 import me.taubsie.dungeonhub.common.OnStart;
 import me.taubsie.dungeonhub.common.ProgramOrigin;
 import me.taubsie.dungeonhub.common.StartupListener;
@@ -68,7 +68,7 @@ public class PurgingService implements StartupListener {
             List<String> rolesRemoved = removeRoles(purgeData.rolesToRemove(), server.get(), user,
                     purgeData.purgeType(), purgeData.purgeThreshold());
 
-            List<CarryRole> roleList = getUserRoles(user, server.get());
+            List<OldCarryRole> roleList = getUserRoles(user, server.get());
             DungeonHubConnection.getInstance().addRoles(user.getId(), roleList);
 
             if(!rolesRemoved.isEmpty()) {
@@ -124,7 +124,7 @@ public class PurgingService implements StartupListener {
         return rolesRemoved;
     }
 
-    private List<CarryRole> getUserRoles(User user, Server server) {
+    private List<OldCarryRole> getUserRoles(User user, Server server) {
         return RoleConversion.getCarryRoles(user.getRoles(server), server.getId()).stream().map(RoleConversion::getCarryRole).toList();
     }
 

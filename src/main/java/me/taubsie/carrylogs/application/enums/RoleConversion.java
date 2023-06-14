@@ -1,7 +1,7 @@
 package me.taubsie.carrylogs.application.enums;
 
 import me.taubsie.carrylogs.application.classes.ServerProperty;
-import me.taubsie.dungeonhub.common.CarryRole;
+import me.taubsie.dungeonhub.common.OldCarryRole;
 import org.javacord.api.entity.permission.Role;
 
 import java.util.ArrayList;
@@ -9,32 +9,32 @@ import java.util.List;
 import java.util.Optional;
 
 public enum RoleConversion {
-    F4_ROLE(CarryRole.F4, ServerProperty.F4_ROLE),
-    F5_ROLE(CarryRole.F5, ServerProperty.F5_ROLE),
-    F6_ROLE(CarryRole.F6, ServerProperty.F6_ROLE),
-    F7_ROLE(CarryRole.F7, ServerProperty.F7_ROLE),
-    MASTER_ROLE(CarryRole.MASTER_MODE, ServerProperty.MASTER_ROLE),
-    EMAN_T3_ROLE(CarryRole.EMAN_T3, ServerProperty.EMAN_T3_ROLE),
-    EMAN_T4_ROLE(CarryRole.EMAN_T4, ServerProperty.EMAN_T4_ROLE),
-    BLAZE_T2_ROLE(CarryRole.BLAZE_T2, ServerProperty.BLAZE_T2_ROLE),
-    BLAZE_T3_ROLE(CarryRole.BLAZE_T3, ServerProperty.BLAZE_T3_ROLE),
-    BLAZE_T4_ROLE(CarryRole.BLAZE_T4, ServerProperty.BLAZE_T4_ROLE),
-    KUUDRA_BASIC_ROLE(CarryRole.BASIC, ServerProperty.KUUDRA_BASIC_ROLE),
-    KUUDRA_HOT_ROLE(CarryRole.HOT, ServerProperty.KUUDRA_HOT_ROLE),
-    KUUDRA_BURNING_ROLE(CarryRole.BURNING, ServerProperty.KUUDRA_BURNING_ROLE),
-    KUUDRA_FIERY_ROLE(CarryRole.FIERY, ServerProperty.KUUDRA_FIERY_ROLE),
-    KUUDRA_INFERNAL_ROLE(CarryRole.INFERNAL, ServerProperty.KUUDRA_INFERNAL_ROLE);
+    F4_ROLE(OldCarryRole.F4, ServerProperty.F4_ROLE),
+    F5_ROLE(OldCarryRole.F5, ServerProperty.F5_ROLE),
+    F6_ROLE(OldCarryRole.F6, ServerProperty.F6_ROLE),
+    F7_ROLE(OldCarryRole.F7, ServerProperty.F7_ROLE),
+    MASTER_ROLE(OldCarryRole.MASTER_MODE, ServerProperty.MASTER_ROLE),
+    EMAN_T3_ROLE(OldCarryRole.EMAN_T3, ServerProperty.EMAN_T3_ROLE),
+    EMAN_T4_ROLE(OldCarryRole.EMAN_T4, ServerProperty.EMAN_T4_ROLE),
+    BLAZE_T2_ROLE(OldCarryRole.BLAZE_T2, ServerProperty.BLAZE_T2_ROLE),
+    BLAZE_T3_ROLE(OldCarryRole.BLAZE_T3, ServerProperty.BLAZE_T3_ROLE),
+    BLAZE_T4_ROLE(OldCarryRole.BLAZE_T4, ServerProperty.BLAZE_T4_ROLE),
+    KUUDRA_BASIC_ROLE(OldCarryRole.BASIC, ServerProperty.KUUDRA_BASIC_ROLE),
+    KUUDRA_HOT_ROLE(OldCarryRole.HOT, ServerProperty.KUUDRA_HOT_ROLE),
+    KUUDRA_BURNING_ROLE(OldCarryRole.BURNING, ServerProperty.KUUDRA_BURNING_ROLE),
+    KUUDRA_FIERY_ROLE(OldCarryRole.FIERY, ServerProperty.KUUDRA_FIERY_ROLE),
+    KUUDRA_INFERNAL_ROLE(OldCarryRole.INFERNAL, ServerProperty.KUUDRA_INFERNAL_ROLE);
 
-    private final CarryRole carryRole;
+    private final OldCarryRole oldCarryRole;
     private final ServerProperty serverProperty;
 
-    RoleConversion(CarryRole carryRole, ServerProperty serverProperty) {
-        this.carryRole = carryRole;
+    RoleConversion(OldCarryRole oldCarryRole, ServerProperty serverProperty) {
+        this.oldCarryRole = oldCarryRole;
         this.serverProperty = serverProperty;
     }
 
-    public CarryRole getCarryRole() {
-        return carryRole;
+    public OldCarryRole getCarryRole() {
+        return oldCarryRole;
     }
 
     public ServerProperty getServerProperty() {
