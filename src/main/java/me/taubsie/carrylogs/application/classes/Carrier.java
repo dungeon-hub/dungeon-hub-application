@@ -1,6 +1,7 @@
 package me.taubsie.carrylogs.application.classes;
 
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
+import me.taubsie.dungeonhub.common.CarryType;
 import org.javacord.api.entity.user.User;
 
 import java.util.Map;
@@ -35,12 +36,12 @@ public class Carrier
         return DungeonHubConnection.getInstance().countScore(id);
     }
 
-    public long getScore(String type) {
-        return DungeonHubConnection.getInstance().getScore(id, type);
+    public long getScore(CarryType carryType) {
+        return DungeonHubConnection.getInstance().getScore(id, carryType);
     }
 
-    public long setScore(String type, long amount)
+    public long setScore(CarryType carryType, long amount)
     {
-        return DungeonHubConnection.getInstance().modifyScore(id, type, amount);
+        return DungeonHubConnection.getInstance().modifyScore(id, carryType, amount);
     }
 }

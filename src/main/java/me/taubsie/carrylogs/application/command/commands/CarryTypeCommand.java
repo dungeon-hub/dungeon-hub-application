@@ -2,9 +2,9 @@ package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.carrylogs.application.exceptions.InvalidSubCommandException;
-import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import org.javacord.api.entity.channel.ChannelType;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
@@ -136,19 +136,18 @@ public class CarryTypeCommand extends Command {
                 .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
                 .setName("edit")
                 .setDescription("Edit a carry type")
-                .setOptions(List.of(carryTypeOption))
                 .build();
+
         SlashCommandOption addCommand = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
                 .setName("add")
                 .setDescription("Add a value to a carry type")
-                .setOptions(List.of(carryTypeOption))
                 .build();
+
         SlashCommandOption removeCommand = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
-                .setName("edit")
-                .setDescription("Remove a value to a carry type")
-                .setOptions(List.of(carryTypeOption))
+                .setName("remove")
+                .setDescription("Remove a value from a carry type")
                 .build();
 
         return List.of(createCommand, deleteCommand, editCommand, addCommand, removeCommand);

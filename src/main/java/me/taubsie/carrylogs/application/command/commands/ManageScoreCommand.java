@@ -2,13 +2,13 @@ package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
 import me.taubsie.carrylogs.application.service.PermissionService;
 import me.taubsie.dungeonhub.common.CarryType;
@@ -26,6 +26,7 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @CommandParameters(name = "manage-score",
         description = "Use this to manage the score of carriers.",
@@ -40,13 +41,10 @@ public class ManageScoreCommand extends Command {
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         Server server = getServer();
 
-        List<String> validTypes = DungeonHubConnection.getInstance()
-                .loadCarryTypesForServer(server.getId())
-                .stream().map(CarryType::getIdentifier)
-                .map(String::toLowerCase)
-                .toList();
+        List<CarryType> validTypes = DungeonHubConnection.getInstance()
+                .loadCarryTypesForServer(server.getId());
 
-        if(validTypes.isEmpty()) {
+        if (validTypes.isEmpty()) {
             throw new CommandExecutionException() {
                 @Override
                 public String getMessage() {
@@ -55,14 +53,14 @@ public class ManageScoreCommand extends Command {
             };
         }
 
-        if(!PermissionService.getInstance().mayManageScore(slashCommandCreateEvent.getSlashCommandInteraction().getUser(), server)) {
+        if (!PermissionService.getInstance().mayManageScore(slashCommandCreateEvent.getSlashCommandInteraction().getUser(), server)) {
             throw new MissingPermissionException();
         }
 
         Optional<SlashCommandInteractionOption> addRemoveOption =
                 slashCommandCreateEvent.getSlashCommandInteraction().getOptionByIndex(0);
 
-        if(addRemoveOption.isEmpty()) {
+        if (addRemoveOption.isEmpty()) {
             slashCommandCreateEvent.getSlashCommandInteraction().createImmediateResponder().setContent("Please either" +
                     " add or remove score.").setFlags(MessageFlag.EPHEMERAL).respond();
             return;
@@ -75,14 +73,19 @@ public class ManageScoreCommand extends Command {
 
         String scoreType = getStringOption(subCommand, "score-type").toLowerCase();
 
-        if(validTypes.stream().noneMatch(s -> s.equalsIgnoreCase(scoreType))) {
-            throw new InvalidOptionException("score-type", "Please enter a valid score-type (" + String.join(", ",
-                    validTypes) + ")");
+        Optional<CarryType> carryType = validTypes.stream()
+                .filter(type -> type.getIdentifier().equalsIgnoreCase(scoreType))
+                .findFirst();
+
+        if (carryType.isEmpty()) {
+            throw new InvalidOptionException("score-type", "Please enter a valid score-type ("
+                    + validTypes.stream().map(CarryType::getIdentifier).collect(Collectors.joining(", "))
+                    + ")");
         }
 
         Long amount = getLongOption(subCommand, "amount");
 
-        long updatedScore = DungeonHubConnection.getInstance().modifyScore(user.getId(), scoreType, removed ? -amount :
+        long updatedScore = DungeonHubConnection.getInstance().modifyScore(user.getId(), carryType.get(), removed ? -amount :
                 amount);
 
         slashCommandCreateEvent

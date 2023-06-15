@@ -343,7 +343,7 @@ public class DungeonHubConnection {
     }
 
     public long getScoreFromCarrier(CarryInformation carryInformation) {
-        return getScore(carryInformation.getServerId(), carryInformation.getCarryType().getIdentifier());
+        return getScore(carryInformation.getServerId(), carryInformation.getCarryType());
     }
 
     //TODO adapt the new system
@@ -380,8 +380,8 @@ public class DungeonHubConnection {
         return defaultMap;
     }
 
-    public long getScore(Long id, String type) {
-        Request request = getApiRequest("carry-score/" + id + "/" + type)
+    public long getScore(Long id, CarryType carryType) {
+        Request request = getApiRequest("carry-score/" + id + "/" + carryType.getId())
                 .get()
                 .build();
 
@@ -491,12 +491,12 @@ public class DungeonHubConnection {
         return getLeaderboardData(ALLTIME_KUUDRA, page);
     }
 
-    public long modifyScore(Long id, String type, Long amount) {
+    public long modifyScore(Long id, CarryType carryType, Long amount) {
         RequestBody requestBody = new FormBody.Builder()
                 .add("amount", String.valueOf(amount))
                 .build();
 
-        Request request = getApiRequest("carry-score/" + id + "/" + type)
+        Request request = getApiRequest("carry-score/" + id + "/" + carryType.getId())
                 .put(requestBody)
                 .build();
 
@@ -669,11 +669,11 @@ public class DungeonHubConnection {
         return 50;
     }
 
-    //TODO rework with new uri (uses parameters)
     public StrikeData loadStrikeDataFromId(long serverId, long id) throws NotFoundException {
         Request request = getApiRequest(getApiUrl("strike/" + serverId)
                 .addQueryParameter("id", String.valueOf(id)).build())
-                .get().build();
+                .get()
+                .build();
 
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.code() == 404) {
@@ -696,7 +696,8 @@ public class DungeonHubConnection {
     public List<StrikeData> loadValidStrikeData(long serverId, long userId) {
         Request request = getApiRequest(getApiUrl("strike/" + serverId)
                 .addQueryParameter("user", String.valueOf(userId)).build())
-                .get().build();
+                .get()
+                .build();
 
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.isSuccessful()) {
@@ -885,7 +886,7 @@ public class DungeonHubConnection {
     }
 
     public List<String> getLeaderboardTypesForServer(long serverId) {
-        Request request = getApiRequest("leaderboard-types/" + serverId)
+        Request request = getApiRequest("server/" + serverId + "/leaderboard-types")
                 .get()
                 .build();
 

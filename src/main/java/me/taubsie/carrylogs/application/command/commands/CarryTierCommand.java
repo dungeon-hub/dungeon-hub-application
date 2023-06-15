@@ -82,19 +82,18 @@ public class CarryTierCommand extends Command {
                 .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
                 .setName("edit")
                 .setDescription("Edit a carry tier")
-                .setOptions(List.of(carryTypeOption, identifierOption))
                 .build();
+
         SlashCommandOption addCommand = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
                 .setName("add")
                 .setDescription("Add a value to a carry tier")
-                .setOptions(List.of(carryTypeOption, identifierOption))
                 .build();
+
         SlashCommandOption removeCommand = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
-                .setName("edit")
-                .setDescription("Remove a value to a carry tier")
-                .setOptions(List.of(carryTypeOption, identifierOption))
+                .setName("remove")
+                .setDescription("Remove a value of a carry tier")
                 .build();
 
         return List.of(createCommand, deleteCommand, editCommand, addCommand, removeCommand);
