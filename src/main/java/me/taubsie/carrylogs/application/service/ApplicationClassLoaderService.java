@@ -1,9 +1,9 @@
 package me.taubsie.carrylogs.application.service;
 
-import me.taubsie.dungeonhub.common.ClassLoaderService;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.listener.Listener;
+import me.taubsie.dungeonhub.common.ClassLoaderService;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.interaction.ApplicationCommand;
@@ -24,7 +24,7 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
 
     private ApplicationClassLoaderService() {
         try {
-            for(Map.Entry<Class<Command>, CommandParameters> commandEntry :
+            for (Map.Entry<Class<Command>, CommandParameters> commandEntry :
                     getClassesInPackage(readPackage(getClass()),
                             Command.class,
                             CommandParameters.class).entrySet()) {
@@ -34,14 +34,14 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
 
                 commandMap.put(slashCommandBuilder, command);
             }
-        } catch(InstantiationException | IllegalAccessException | InvocationTargetException |
-                NoSuchMethodException | ClassCastException exception) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                 NoSuchMethodException | ClassCastException exception) {
             exception.printStackTrace();
         }
     }
 
     public static ApplicationClassLoaderService getInstance() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new ApplicationClassLoaderService();
         }
 
@@ -75,11 +75,11 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
                 .setDescription(commandParameters.description())
                 .setEnabledInDms(commandParameters.enabledInDms());
 
-        if(commandParameters.enabledForPermissions().length != 0) {
+        if (commandParameters.enabledForPermissions().length != 0) {
             slashCommandBuilder.setDefaultEnabledForPermissions(commandParameters.enabledForPermissions());
         }
 
-        if(!command.getSlashCommandOptions().isEmpty()) {
+        if (!command.getSlashCommandOptions().isEmpty()) {
             slashCommandBuilder.setOptions(command.getSlashCommandOptions());
         }
 
@@ -98,14 +98,14 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
     }
 
     public void loadListeners(DiscordApi bot) {
-        for(Class<GloballyAttachableListener> listenerClass :
+        for (Class<GloballyAttachableListener> listenerClass :
                 getClassesInPackage(readPackage(getClass()),
                         GloballyAttachableListener.class,
                         Listener.class).keySet()) {
             try {
                 bot.addListener(listenerClass.getDeclaredConstructor().newInstance());
-            } catch(InvocationTargetException | InstantiationException | IllegalAccessException |
-                    NoSuchMethodException exception) {
+            } catch (InvocationTargetException | InstantiationException | IllegalAccessException |
+                     NoSuchMethodException exception) {
                 exception.printStackTrace();
             }
         }
@@ -120,7 +120,7 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
                 .forEach(entry ->
                         {
                             long[] serverIds = entry.getValue().getEnabledServers();
-                            for(long id : serverIds) {
+                            for (long id : serverIds) {
                                 Set<SlashCommandBuilder> resultSet = serverCommandBuilders.containsKey(id)
                                         ? serverCommandBuilders.get(id)
                                         : new HashSet<>();
@@ -131,22 +131,22 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
                         }
                 );
 
-        for(Map.Entry<Long, Set<SlashCommandBuilder>> entry : serverCommandBuilders.entrySet()) {
+        for (Map.Entry<Long, Set<SlashCommandBuilder>> entry : serverCommandBuilders.entrySet()) {
             try {
                 Optional<Server> server = bot.getServerById(entry.getKey());
 
-                if(server.isPresent()) {
+                if (server.isPresent()) {
                     Set<ApplicationCommand> serverCommands = bot.bulkOverwriteServerApplicationCommands(server.get(),
                             entry.getValue()).join();
-                    for(ApplicationCommand applicationCommand : serverCommands) {
-                        if(applicationCommand instanceof SlashCommand slashCommand) {
+                    for (ApplicationCommand applicationCommand : serverCommands) {
+                        if (applicationCommand instanceof SlashCommand slashCommand) {
                             Command command =
                                     commandMap.values().stream().filter(command1 -> command1.getCommandName().equalsIgnoreCase(applicationCommand.getName())).findFirst().orElse(null);
                             slashCommandMap.put(slashCommand, command);
                         }
                     }
                 }
-            } catch(CompletionException completionException) {
+            } catch (CompletionException completionException) {
                 completionException.printStackTrace();
             }
         }
@@ -154,10 +154,13 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
 
     public void loadGlobalSlashCommands(DiscordApi bot) {
         Set<ApplicationCommand> globalCommands =
-                bot.bulkOverwriteGlobalApplicationCommands(commandMap.entrySet().stream().filter(entry -> entry.getValue().isGlobal()).map(Map.Entry::getKey).collect(Collectors.toSet())).join();
+                bot.bulkOverwriteGlobalApplicationCommands(commandMap.entrySet().stream()
+                        .filter(entry -> entry.getValue().isGlobal())
+                        .map(Map.Entry::getKey)
+                        .collect(Collectors.toSet())).join();
 
-        for(ApplicationCommand applicationCommand : globalCommands) {
-            if(applicationCommand instanceof SlashCommand slashCommand) {
+        for (ApplicationCommand applicationCommand : globalCommands) {
+            if (applicationCommand instanceof SlashCommand slashCommand) {
                 Command command =
                         commandMap.values().stream().filter(command1 -> command1.getCommandName().equalsIgnoreCase(applicationCommand.getName())).findFirst().orElse(null);
                 slashCommandMap.put(slashCommand, command);

@@ -4,9 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.Getter;
-import me.taubsie.carrylogs.application.classes.ApplicationCarryDifficulty;
-import me.taubsie.carrylogs.application.classes.ApplicationCarryTier;
-import me.taubsie.carrylogs.application.classes.ApplicationCarryType;
 import me.taubsie.carrylogs.application.exceptions.NotFoundException;
 import me.taubsie.carrylogs.application.exceptions.PlayerNotFoundException;
 import me.taubsie.dungeonhub.common.*;
@@ -826,8 +823,29 @@ public class DungeonHubConnection {
      * @param serverId The server to load this for.
      * @return The list of carry types that were loaded from the database.
      */
-    public List<ApplicationCarryType> loadCarryTypesForServer(long serverId) {
-        //TODO implement
+    public List<CarryType> loadCarryTypesForServer(long serverId) {
+        Request request = getApiRequest("server/" + serverId + "/carry-types")
+                .get()
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful() && response.body() != null) {
+                return CarryLogService.getInstance().getGson().fromJson(response.body().string(), CarryLogService.getInstance().getCarryTypeListType());
+            } else {
+                String result = "Error while trying to load the carry types for server {}";
+                if(response.body() != null) {
+                    result += ":\n{}";
+                    String exception = response.body().string();
+                    logger.error(result, serverId, exception);
+                } else {
+                    result += ".";
+                    logger.error(result, serverId);
+                }
+            }
+        } catch (IOException ioException) {
+            logger.error("Error while trying to load carry types for server {}.", serverId, ioException);
+        }
+
         return new ArrayList<>();
     }
 
@@ -838,22 +856,22 @@ public class DungeonHubConnection {
      * @param carryType The carry type to load this for.
      * @return The list of carry tiers that were loaded from the database.
      */
-    public List<ApplicationCarryTier> loadCarryTiers(CarryType carryType) {
+    public List<CarryTier> loadCarryTiers(CarryType carryType) {
         //TODO implement
         return new ArrayList<>();
     }
 
-    public Optional<ApplicationCarryType> loadCarryType(long serverId, String identifier) {
+    public Optional<CarryType> loadCarryType(long serverId, String identifier) {
         //TODO implement
         return Optional.empty();
     }
 
-    public Optional<ApplicationCarryTier> loadCarryTier(CarryType carryType, String identifier) {
+    public Optional<CarryTier> loadCarryTier(CarryType carryType, String identifier) {
         //TODO implement
         return Optional.empty();
     }
 
-    public Optional<ApplicationCarryDifficulty> loadCarryDifficulty(CarryTier carryTier, String identifier) {
+    public Optional<CarryDifficulty> loadCarryDifficulty(CarryTier carryTier, String identifier) {
         //TODO implement
         return Optional.empty();
     }
@@ -883,14 +901,14 @@ public class DungeonHubConnection {
         return new ArrayList<>(0);
     }
 
-    public Optional<ApplicationCarryTier> getCarryTierFromCategory(long serverId, long categoryId) {
+    public Optional<CarryTier> getCarryTierFromCategory(long serverId, long categoryId) {
         Request request = getApiRequest("server/" + serverId + "/category/" + categoryId + "/carry-tier")
                 .get()
                 .build();
 
         try(Response response = httpClient.newCall(request).execute()) {
             if(response.isSuccessful() && response.body() != null) {
-                return Optional.ofNullable((ApplicationCarryTier) CarryTier.fromJson(response.body().string()));
+                return Optional.ofNullable(CarryTier.fromJson(response.body().string()));
             } else {
                 if(response.code() != 404) {
                     if(response.body() != null) {

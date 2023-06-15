@@ -1,7 +1,5 @@
 package me.taubsie.carrylogs.application.command.commands;
 
-import me.taubsie.carrylogs.application.classes.ApplicationCarryDifficulty;
-import me.taubsie.carrylogs.application.classes.ApplicationCarryTier;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
@@ -34,7 +32,7 @@ public class LogCommand extends Command {
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         TextChannel channel = getChannel();
 
-        Optional<ApplicationCarryTier> carryTier = channel.asCategorizable()
+        Optional<CarryTier> carryTier = channel.asCategorizable()
                 .flatMap(Categorizable::getCategory)
                 .flatMap(channelCategory -> DungeonHubConnection.getInstance()
                         .getCarryTierFromCategory(getServer().getId(), channelCategory.getId()));
@@ -61,7 +59,7 @@ public class LogCommand extends Command {
 
         Long amountOfCarries = getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), "amount");
 
-        Optional<ApplicationCarryDifficulty> carryDifficulty = DungeonHubConnection.getInstance()
+        Optional<CarryDifficulty> carryDifficulty = DungeonHubConnection.getInstance()
                 .loadCarryDifficulty(carryTier.get(), getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-difficulty"));
 
         if(carryDifficulty.isEmpty()) {
