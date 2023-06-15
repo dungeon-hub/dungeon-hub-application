@@ -5,6 +5,8 @@ import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.carrylogs.application.exceptions.InvalidSubCommandException;
+import me.taubsie.carrylogs.application.service.ApplicationService;
+import me.taubsie.dungeonhub.common.CarryType;
 import org.javacord.api.entity.channel.ChannelType;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
@@ -15,6 +17,7 @@ import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
 
 import java.util.List;
+import java.util.Optional;
 
 @CommandParameters(name = "carry-type", description = "Set up the carry types for this server.",
         enabledForPermissions = PermissionType.ADMINISTRATOR)
@@ -27,8 +30,7 @@ public class CarryTypeCommand extends Command {
             case "create" -> create(subCommand);
             case "delete" -> delete(subCommand);
             case "edit" -> edit(subCommand);
-            case "add" -> add(subCommand);
-            case "remove" -> remove(subCommand);
+            case "get" -> get(subCommand);
             default -> throw new InvalidSubCommandException();
         }
     }
@@ -82,12 +84,20 @@ public class CarryTypeCommand extends Command {
         //TODO implement
     }
 
-    public void add(SlashCommandInteractionOption subCommand) {
-        //TODO implement
-    }
+    public void get(SlashCommandInteractionOption subCommand) {
+        Optional<CarryType> carryType = DungeonHubConnection.getInstance().loadCarryType(getServer().getId(), getStringOption(subCommand, "carry-type"));
 
-    public void remove(SlashCommandInteractionOption subCommand) {
-        //TODO implement
+        if(carryType.isEmpty()) {
+            //TODO custom exception class
+            throw new CommandExecutionException() {
+                @Override
+                public String getMessage() {
+                    return "Carry type not found.";
+                }
+            };
+        }
+
+        respondEphemeral(ApplicationService.getInstance().getCarryTypeEmbed(carryType.get()));
     }
 
     @Override
@@ -131,6 +141,13 @@ public class CarryTypeCommand extends Command {
                 .setOptions(List.of(identifierOption, logChannelOption))
                 .build();
 
+        SlashCommandOption getCommand = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("get")
+                .setDescription("Get information about a carry type")
+                .setOptions(List.of(carryTypeOption))
+                .build();
+
         //TODO add options to edit command
         SlashCommandOption editCommand = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
@@ -138,18 +155,6 @@ public class CarryTypeCommand extends Command {
                 .setDescription("Edit a carry type")
                 .build();
 
-        SlashCommandOption addCommand = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
-                .setName("add")
-                .setDescription("Add a value to a carry type")
-                .build();
-
-        SlashCommandOption removeCommand = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
-                .setName("remove")
-                .setDescription("Remove a value from a carry type")
-                .build();
-
-        return List.of(createCommand, deleteCommand, editCommand, addCommand, removeCommand);
+        return List.of(createCommand, deleteCommand, getCommand, editCommand);
     }
 }

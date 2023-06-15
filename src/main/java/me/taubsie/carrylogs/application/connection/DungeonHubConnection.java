@@ -825,7 +825,7 @@ public class DungeonHubConnection {
      * @return The list of carry types that were loaded from the database.
      */
     public List<CarryType> loadCarryTypesForServer(long serverId) {
-        Request request = getApiRequest("server/" + serverId + "/carry-types")
+        Request request = getApiRequest("server/" + serverId + "/carry-type")
                 .get()
                 .build();
 
@@ -863,7 +863,32 @@ public class DungeonHubConnection {
     }
 
     public Optional<CarryType> loadCarryType(long serverId, String identifier) {
-        //TODO implement
+        HttpUrl httpUrl = getApiUrl("server/" + serverId + "/carry-type")
+                .addQueryParameter("identifier", identifier)
+                .build();
+
+        Request request = getApiRequest(httpUrl)
+                .get()
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful() && response.body() != null) {
+                return Optional.ofNullable(CarryType.fromJson(response.body().string()));
+            } else {
+                String result = "Error while trying to load carry type {} for server {}";
+                if(response.body() != null) {
+                    result += ":\n{}";
+                    String exception = response.body().string();
+                    logger.error(result, identifier, serverId, exception);
+                } else {
+                    result += ".";
+                    logger.error(result, identifier, serverId);
+                }
+            }
+        } catch (IOException ioException) {
+            logger.error("Error while trying to load carry type {} for server {}.", identifier, serverId, ioException);
+        }
+
         return Optional.empty();
     }
 
@@ -886,7 +911,7 @@ public class DungeonHubConnection {
     }
 
     public List<String> getLeaderboardTypesForServer(long serverId) {
-        Request request = getApiRequest("server/" + serverId + "/leaderboard-types")
+        Request request = getApiRequest("server/" + serverId + "/leaderboard-type")
                 .get()
                 .build();
 

@@ -3,12 +3,12 @@ package me.taubsie.carrylogs.application.service;
 import com.google.gson.JsonObject;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.connection.HypixelConnection;
-import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.carrylogs.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import me.taubsie.dungeonhub.common.CarryLogService;
+import me.taubsie.dungeonhub.common.CarryType;
 import me.taubsie.dungeonhub.common.StrikeData;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import org.javacord.api.DiscordApi;
@@ -66,7 +66,7 @@ public class ApplicationService {
                         .orElse(null)));
     }
 
-    public boolean isCarryTier(String carryTier, CarryType carryType) {
+    public boolean isCarryTier(String carryTier, me.taubsie.carrylogs.application.enums.CarryType carryType) {
         if(isInvalidCarryTier(carryTier)) {
             return false;
         }
@@ -126,7 +126,7 @@ public class ApplicationService {
         return String.valueOf(number);
     }
 
-    public String getCarryTierUrl(CarryType carryType) {
+    public String getCarryTierUrl(me.taubsie.carrylogs.application.enums.CarryType carryType) {
         return switch(carryType) {
             case EMAN -> "https://cdn.discordapp.com/attachments/842827272733982730/992919618236719134/unknown.png";
             case BLAZE -> "https://cdn.discordapp.com/attachments/842827272733982730/992919430369656852/unknown.png";
@@ -140,8 +140,8 @@ public class ApplicationService {
         };
     }
 
-    public String getCarryTierUrl(CarryType carryType, String carryTier) {
-        if(carryType == CarryType.MASTER_MODE) {
+    public String getCarryTierUrl(me.taubsie.carrylogs.application.enums.CarryType carryType, String carryTier) {
+        if(carryType == me.taubsie.carrylogs.application.enums.CarryType.MASTER_MODE) {
             return switch(carryTier) {
                 case "Floor 1" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302674244391023" +
                         "/SkyBlock_npcs_bonzo_undead.png";
@@ -213,7 +213,7 @@ public class ApplicationService {
 
     public EmbedBuilder loadEmbedFromCarryInformation(CarryInformation carryInformation, EmbedBuilder embedBuilder) {
         //TODO rework
-        CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty().getIdentifier());
+        me.taubsie.carrylogs.application.enums.CarryType carryType = me.taubsie.carrylogs.application.enums.CarryType.fromString(carryInformation.getCarryDifficulty().getIdentifier());
 
         embedBuilder.setColor(EmbedColor.INFORMATION.getColor())
                 .addInlineField("Number of carries",
@@ -411,5 +411,12 @@ public class ApplicationService {
                                 + "` - "
                                 + jsonObject.getAsJsonPrimitive("item_name").getAsString())
                         .toList()));
+    }
+
+    public EmbedBuilder getCarryTypeEmbed(CarryType carryType) {
+        return ApplicationService.getInstance()
+                .getEmbed()
+                .setColor(EmbedColor.DEFAULT.getColor())
+                .setDescription(carryType.toString());
     }
 }
