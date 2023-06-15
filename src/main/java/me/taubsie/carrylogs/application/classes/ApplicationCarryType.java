@@ -7,8 +7,8 @@ import org.javacord.api.entity.server.Server;
 import java.util.Optional;
 
 public class ApplicationCarryType extends CarryType {
-    public ApplicationCarryType(String id, String identifier, long server) {
-        super(id, identifier, server);
+    public ApplicationCarryType(long id, String identifier, long server, long logChannel) {
+        super(id, identifier, server, logChannel);
     }
 
     public Optional<Server> getActualServer() {

@@ -35,28 +35,12 @@ public class Carrier
         return DungeonHubConnection.getInstance().countScore(id);
     }
 
-    public Long getDungeonScore()
-    {
-        return DungeonHubConnection.getInstance().getDungeonScore(id);
+    public long getScore(String type) {
+        return DungeonHubConnection.getInstance().getScore(id, type);
     }
 
-    public Long getSlayerScore()
-    {
-        return DungeonHubConnection.getInstance().getSlayerScore(id);
-    }
-
-    public Long setScore(String type, long amount)
+    public long setScore(String type, long amount)
     {
         return DungeonHubConnection.getInstance().modifyScore(id, type, amount);
-    }
-
-    public Long setDungeonScore(long amount)
-    {
-        return DungeonHubConnection.getInstance().modifyDungeonScore(id, amount);
-    }
-
-    public Long setSlayerScore(long amount)
-    {
-        return DungeonHubConnection.getInstance().modifySlayerScore(id, amount);
     }
 }

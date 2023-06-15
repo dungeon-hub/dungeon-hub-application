@@ -37,14 +37,14 @@ public class LogCommand extends Command {
         Optional<ApplicationCarryTier> carryTier = channel.asCategorizable()
                 .flatMap(Categorizable::getCategory)
                 .flatMap(channelCategory -> DungeonHubConnection.getInstance()
-                        .getCarryTierFromCategory(channelCategory.getId()));
+                        .getCarryTierFromCategory(getServer().getId(), channelCategory.getId()));
 
         if(carryTier.isEmpty()) {
             //TODO custom class
             throw new CommandExecutionException() {
                 @Override
                 public String getMessage() {
-                    return "Please use this in a carry-ticket.";
+                    return "Please use this in a carry-ticket. If this is one, tell the administrators to do `/setup`!";
                 }
             };
         }
@@ -120,14 +120,14 @@ public class LogCommand extends Command {
                 .setRequired(true)
                 .build();
 
-        SlashCommandOption carryTypeOption = new SlashCommandOptionBuilder()
+        SlashCommandOption carryDifficultyOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
-                .setName("carry-tier")
-                .setDescription("The type of the carry.")
+                .setName("carry-difficulty")
+                .setDescription("The difficulty of the carry.")
                 .setRequired(true)
                 .setAutocompletable(true)
                 .build();
 
-        return Arrays.asList(carryAmountOption, carryTypeOption);
+        return Arrays.asList(carryAmountOption, carryDifficultyOption);
     }
 }

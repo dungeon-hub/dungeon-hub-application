@@ -404,18 +404,6 @@ public class DungeonHubConnection {
         return 0L;
     }
 
-    public long getKuudraScore(Long id) {
-        return getScore(id, KUUDRA);
-    }
-
-    public long getDungeonScore(Long id) {
-        return getScore(id, DUNGEON);
-    }
-
-    public long getSlayerScore(@NotNull Long id) {
-        return getScore(id, SLAYER);
-    }
-
     public Map<Long, Long> getLeaderboardData(@NotNull String type, int page) {
         Request request = getApiRequest(getApiUrl("leaderboard/" + type)
                 .addQueryParameter("page", String.valueOf(page))
@@ -504,18 +492,6 @@ public class DungeonHubConnection {
 
     public Map<Long, Long> getAlltimeKuudraLeaderboard(int page) {
         return getLeaderboardData(ALLTIME_KUUDRA, page);
-    }
-
-    public long modifyDungeonScore(Long id, Long amount) {
-        return modifyScore(id, DUNGEON, amount);
-    }
-
-    public long modifySlayerScore(Long id, Long amount) {
-        return modifyScore(id, SLAYER, amount);
-    }
-
-    public long modifyKuudraScore(Long id, Long amount) {
-        return modifyScore(id, KUUDRA, amount);
     }
 
     public long modifyScore(Long id, String type, Long amount) {
@@ -863,17 +839,6 @@ public class DungeonHubConnection {
      * @return The list of carry tiers that were loaded from the database.
      */
     public List<ApplicationCarryTier> loadCarryTiers(CarryType carryType) {
-        return loadCarryTiers(carryType.getId());
-    }
-
-    /**
-     * Loads all available carry tiers for the given carry type.
-     * This represents the tiers of carry, so for example floor 1, master mode floor 1, tier 4, kuudra, ...
-     *
-     * @param id The id of the carry type to load this for.
-     * @return The list of carry tiers that were loaded from the database.
-     */
-    public List<ApplicationCarryTier> loadCarryTiers(String id) {
         //TODO implement
         return new ArrayList<>();
     }
@@ -884,24 +849,16 @@ public class DungeonHubConnection {
     }
 
     public Optional<ApplicationCarryTier> loadCarryTier(CarryType carryType, String identifier) {
-        return loadCarryTier(carryType.getId(), identifier);
-    }
-
-    public Optional<ApplicationCarryTier> loadCarryTier(String id, String identifier) {
         //TODO implement
         return Optional.empty();
     }
 
     public Optional<ApplicationCarryDifficulty> loadCarryDifficulty(CarryTier carryTier, String identifier) {
-        return loadCarryDifficulty(carryTier.getId(), identifier);
-    }
-
-    public Optional<ApplicationCarryDifficulty> loadCarryDifficulty(String id, String identifier) {
         //TODO implement
         return Optional.empty();
     }
 
-    public void addNewCarryType(long serverId, String identifier) {
+    public void addNewCarryType(long serverId, String identifier, long logChannel) {
         //TODO implement
     }
 
@@ -909,8 +866,47 @@ public class DungeonHubConnection {
         //TODO implement
     }
 
-    public Optional<ApplicationCarryTier> getCarryTierFromCategory(long categoryId) {
-        //TODO implement
+    public List<String> getLeaderboardTypesForServer(long serverId) {
+        Request request = getApiRequest("leaderboard-types/" + serverId)
+                .get()
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful() && response.body() != null) {
+                return CarryLogService.getInstance().getGson().fromJson(response.body().string(), CarryLogService.getInstance().getStringListType());
+            }
+        }
+        catch (IOException ioException) {
+            logger.error("Error while trying to load score types for server {}.", serverId);
+        }
+
+        return new ArrayList<>(0);
+    }
+
+    public Optional<ApplicationCarryTier> getCarryTierFromCategory(long serverId, long categoryId) {
+        Request request = getApiRequest("server/" + serverId + "/category/" + categoryId + "/carry-tier")
+                .get()
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful() && response.body() != null) {
+                return Optional.ofNullable((ApplicationCarryTier) CarryTier.fromJson(response.body().string()));
+            } else {
+                if(response.code() != 404) {
+                    if(response.body() != null) {
+                        String responseBody = response.body().string();
+
+                        logger.error(responseBody);
+                    } else {
+                        logger.error("Error while trying to load carry tier for category {}.", categoryId);
+                    }
+                }
+            }
+        }
+        catch (IOException ioException) {
+            logger.error("Error while trying to load carry tier for category {}.", categoryId);
+        }
+
         return Optional.empty();
     }
 }

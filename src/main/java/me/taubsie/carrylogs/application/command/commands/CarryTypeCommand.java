@@ -5,6 +5,7 @@ import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.carrylogs.application.exceptions.InvalidSubCommandException;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
+import org.javacord.api.entity.channel.ChannelType;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -35,6 +36,7 @@ public class CarryTypeCommand extends Command {
     public void create(SlashCommandInteractionOption subCommand) {
         Server server = getServer();
         String identifier = getStringOption(subCommand, "identifier");
+        long logChannel = getChannelOption(subCommand, "log-channel").getId();
 
         //TODO custom method in ConnectionService for that check
         if(DungeonHubConnection.getInstance()
@@ -51,7 +53,7 @@ public class CarryTypeCommand extends Command {
         }
 
         //TODO add response
-        DungeonHubConnection.getInstance().addNewCarryType(server.getId(), identifier);
+        DungeonHubConnection.getInstance().addNewCarryType(server.getId(), identifier, logChannel);
     }
 
     public void delete(SlashCommandInteractionOption subCommand) {
@@ -95,20 +97,38 @@ public class CarryTypeCommand extends Command {
                 .setName("identifier")
                 .setDescription("The identifier of the carry type")
                 .setRequired(true)
+                .setMaxLength(30)
+                .build();
+
+        //TODO add auto completion
+        SlashCommandOption carryTypeOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName("carry-type")
+                .setDescription("The identifier of the carry type")
+                .setRequired(true)
+                .setMaxLength(30)
+                .build();
+
+        SlashCommandOption logChannelOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.CHANNEL)
+                .setChannelTypes(List.of(ChannelType.SERVER_TEXT_CHANNEL))
+                .setName("log-channel")
+                .setDescription("Set the channel that will be used for logging")
+                .setRequired(true)
                 .build();
 
         SlashCommandOption deleteCommand = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("delete")
                 .setDescription("Delete a carry type")
-                .setOptions(List.of(identifierOption))
+                .setOptions(List.of(carryTypeOption))
                 .build();
 
         SlashCommandOption createCommand = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("create")
                 .setDescription("Create a new carry type")
-                .setOptions(List.of(identifierOption))
+                .setOptions(List.of(identifierOption, logChannelOption))
                 .build();
 
         //TODO add options to edit command
@@ -116,19 +136,19 @@ public class CarryTypeCommand extends Command {
                 .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
                 .setName("edit")
                 .setDescription("Edit a carry type")
-                .setOptions(List.of(identifierOption))
+                .setOptions(List.of(carryTypeOption))
                 .build();
         SlashCommandOption addCommand = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
                 .setName("add")
                 .setDescription("Add a value to a carry type")
-                .setOptions(List.of(identifierOption))
+                .setOptions(List.of(carryTypeOption))
                 .build();
         SlashCommandOption removeCommand = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
                 .setName("edit")
                 .setDescription("Remove a value to a carry type")
-                .setOptions(List.of(identifierOption))
+                .setOptions(List.of(carryTypeOption))
                 .build();
 
         return List.of(createCommand, deleteCommand, editCommand, addCommand, removeCommand);

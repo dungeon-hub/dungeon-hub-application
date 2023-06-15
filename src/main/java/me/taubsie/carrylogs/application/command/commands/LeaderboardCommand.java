@@ -46,6 +46,7 @@ public class LeaderboardCommand extends Command {
 
     @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
+        //TODO add auto completion
         SlashCommandOptionBuilder typeOptionBuilder = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
                 .setName("leaderboard")

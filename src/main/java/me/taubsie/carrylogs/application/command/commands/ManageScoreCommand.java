@@ -4,12 +4,14 @@ import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.enums.IdList;
+import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
 import me.taubsie.carrylogs.application.service.PermissionService;
+import me.taubsie.dungeonhub.common.CarryType;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.permission.PermissionType;
@@ -36,9 +38,22 @@ public class ManageScoreCommand extends Command {
 
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
-        String[] validTypes = new String[]{"dungeons", "slayer", "kuudra"};
-
         Server server = getServer();
+
+        List<String> validTypes = DungeonHubConnection.getInstance()
+                .loadCarryTypesForServer(server.getId())
+                .stream().map(CarryType::getIdentifier)
+                .map(String::toLowerCase)
+                .toList();
+
+        if(validTypes.isEmpty()) {
+            throw new CommandExecutionException() {
+                @Override
+                public String getMessage() {
+                    return "There are no valid score types.\nPlease tell an administrator to configure the bot using `/setup`.";
+                }
+            };
+        }
 
         if(!PermissionService.getInstance().mayManageScore(slashCommandCreateEvent.getSlashCommandInteraction().getUser(), server)) {
             throw new MissingPermissionException();
@@ -58,9 +73,9 @@ public class ManageScoreCommand extends Command {
 
         User user = getUserOption(subCommand, "user");
 
-        String scoreType = getStringOption(subCommand, "score-type");
+        String scoreType = getStringOption(subCommand, "score-type").toLowerCase();
 
-        if(Arrays.stream(validTypes).noneMatch(s -> s.equalsIgnoreCase(scoreType))) {
+        if(validTypes.stream().noneMatch(s -> s.equalsIgnoreCase(scoreType))) {
             throw new InvalidOptionException("score-type", "Please enter a valid score-type (" + String.join(", ",
                     validTypes) + ")");
         }
@@ -104,6 +119,7 @@ public class ManageScoreCommand extends Command {
                 .setRequired(true)
                 .build();
 
+        //TODO add auto completion
         SlashCommandOption scoreTypeOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
                 .setName("score-type")

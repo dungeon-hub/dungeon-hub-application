@@ -4,8 +4,8 @@ import me.taubsie.dungeonhub.common.CarryDifficulty;
 import me.taubsie.dungeonhub.common.CarryTier;
 
 public class ApplicationCarryDifficulty extends CarryDifficulty {
-    public ApplicationCarryDifficulty(String id, String identifier, String displayName, CarryTier carryTier) {
-        super(id, identifier, displayName, carryTier);
+    public ApplicationCarryDifficulty(long id, String identifier, String displayName, CarryTier carryTier, int price, int score) {
+        super(id, identifier, displayName, carryTier, price, score);
     }
 
     //TODO implement properly

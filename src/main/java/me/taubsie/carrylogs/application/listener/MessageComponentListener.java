@@ -1,6 +1,7 @@
 package me.taubsie.carrylogs.application.listener;
 
 import me.taubsie.carrylogs.application.enums.CarryType;
+import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.IdList;
@@ -32,15 +33,15 @@ public class MessageComponentListener implements MessageComponentCreateListener 
 
     @Override
     public void onComponentCreate(MessageComponentCreateEvent messageComponentCreateEvent) {
-        if(messageComponentCreateEvent.getMessageComponentInteraction().getServer().isEmpty()) {
+        if (messageComponentCreateEvent.getMessageComponentInteraction().getServer().isEmpty()) {
             messageComponentCreateEvent.getMessageComponentInteraction().createImmediateResponder().setContent("Use " +
                     "this on a server!").setFlags(MessageFlag.EPHEMERAL).respond().join();
             return;
         }
 
-        switch(messageComponentCreateEvent.getMessageComponentInteraction().getCustomId().trim().toLowerCase()) {
+        switch (messageComponentCreateEvent.getMessageComponentInteraction().getCustomId().trim().toLowerCase()) {
             case "discard" -> {
-                if(!PermissionService.getInstance().mayDiscardOthers(messageComponentCreateEvent.getMessageComponentInteraction().getUser(), messageComponentCreateEvent.getMessageComponentInteraction().getServer().get())
+                if (!PermissionService.getInstance().mayDiscardOthers(messageComponentCreateEvent.getMessageComponentInteraction().getUser(), messageComponentCreateEvent.getMessageComponentInteraction().getServer().get())
                         && (messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().isEmpty()
                         || messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().get(0).getFields().isEmpty()
                         || messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().get(0).getFields().stream().filter(embedField -> embedField.getName().equalsIgnoreCase("carrier")).findFirst().isEmpty()
@@ -52,14 +53,14 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                 messageComponentCreateEvent.getMessageComponentInteraction().createImmediateResponder().setContent(
                         "Log discarded!").setFlags(MessageFlag.EPHEMERAL).respond().join();
 
-                if(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().isPresent()) {
+                if (messageComponentCreateEvent.getMessageComponentInteraction().getChannel().isPresent()) {
                     BotStarter.getInstance().getCarryInformation().remove(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId());
                 }
 
                 messageComponentCreateEvent.getMessageComponentInteraction().getMessage().delete().join();
             }
             case "send_log" -> {
-                if(messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().isEmpty()
+                if (messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().isEmpty()
                         || messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().get(0).getFields().isEmpty()
                         || messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().get(0).getFields().stream().filter(embedField -> embedField.getName().equalsIgnoreCase("carrier")).findFirst().isEmpty()
                         || !messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().get(0).getFields().stream().filter(embedField -> embedField.getName().equalsIgnoreCase("carrier")).findFirst().get().getValue().equalsIgnoreCase(messageComponentCreateEvent.getMessageComponentInteraction().getUser().getMentionTag())) {
@@ -67,9 +68,10 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                     return;
                 }
 
-                CarryInformation carryInformation = BotStarter.getInstance().getCarryInformation().get(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId());
+                CarryInformation carryInformation =
+                        BotStarter.getInstance().getCarryInformation().get(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId());
 
-                if(carryInformation == null) {
+                if (carryInformation == null) {
                     return;
                 }
 
@@ -95,7 +97,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                     //TODO rework
                     CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty().getIdentifier());
 
-                    if(carrier != null && carrier.openPrivateChannel().join() != null) {
+                    if (carrier != null && carrier.openPrivateChannel().join() != null) {
                         carrier.openPrivateChannel().join();
                         Optional<PrivateChannel> privateChannelOptional = carrier.getPrivateChannel();
 
@@ -110,24 +112,26 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                                     .addInlineField("Number of carries",
                                                             String.valueOf(carryInformation.getAmountOfCarries()))
                                                     .addInlineField("Type of carry",
-                                                            (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
+                                                            (carryType != null ? carryType.getPrettyName() :
+                                                                    carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
                                                     .addInlineField("Player",
                                                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                                     .addInlineField("Carrier", carrier.getMentionTag())
                                                     .addInlineField("Transcript-Link", "[Click to open]" +
                                                             "(https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")")).join());
-                        } catch(CompletionException completionException) {
+                        }
+                        catch (CompletionException completionException) {
                             completionException.printStackTrace();
                         }
                     }
 
                     Optional<Server> server = messageComponentCreateEvent.getMessageComponentInteraction().getServer();
 
-                    if(server.isPresent()) {
+                    if (server.isPresent()) {
                         Optional<ServerTextChannel> logChannel =
                                 server.get().getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getLocalId(server.get().getId()));
 
-                        if(logChannel.isPresent()) {
+                        if (logChannel.isPresent()) {
                             logger.debug("Carry denied:" + carryInformation);
 
                             logChannel.get().sendMessage(
@@ -138,7 +142,8 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                             .addInlineField("Number of carries",
                                                     String.valueOf(carryInformation.getAmountOfCarries()))
                                             .addInlineField("Type of carry",
-                                                    (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
+                                                    (carryType != null ? carryType.getPrettyName() :
+                                                            carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
                                             .addInlineField("Player",
                                                     messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                             .addInlineField("Carrier",
@@ -171,7 +176,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                     //TODO rework
                     CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty().getIdentifier());
 
-                    if(carrier != null && carrier.openPrivateChannel().join() != null) {
+                    if (carrier != null && carrier.openPrivateChannel().join() != null) {
                         carrier.openPrivateChannel().join();
                         Optional<PrivateChannel> privateChannelOptional = carrier.getPrivateChannel();
                         long gainedScore = carryInformation.calculateScore();
@@ -190,7 +195,8 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                                     .addInlineField("Number of carries",
                                                             String.valueOf(carryInformation.getAmountOfCarries()))
                                                     .addInlineField("Type of carry",
-                                                            (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
+                                                            (carryType != null ? carryType.getPrettyName() :
+                                                                    carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
                                                     .addInlineField("Player",
                                                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                                     .addInlineField("Carrier", carrier.getMentionTag())
@@ -198,38 +204,32 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getApprover()).join().getMentionTag())
                                                     .addInlineField("Transcript-Link", "[Click to open]" +
                                                             "(https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")")).join());
-                        } catch(CompletionException completionException) {
+                        }
+                        catch (CompletionException completionException) {
                             completionException.printStackTrace();
                         }
                     }
 
                     Optional<Server> server = messageComponentCreateEvent.getMessageComponentInteraction().getServer();
 
-                    if(server.isPresent()) {
-                        Optional<ServerTextChannel> logChannel;
+                    if (server.isPresent()) {
+                        Optional<ServerTextChannel> logChannel = carryInformation.getCarryType()
+                                .getLogChannel()
+                                .flatMap(id -> server.get().getTextChannelById(id));
 
-                        if(carryInformation.isDungeonCarry()) {
-                            logChannel =
-                                    server.get().getTextChannelById(IdList.DUNGEON_LOGS_CHANNEL.getLocalId(server.get().getId()));
-                        } else if(carryInformation.isKuudraCarry()) {
-                            logChannel = server.get().getTextChannelById(IdList.KUUDRA_LOGS_CHANNEL.getLocalId(server.get().getId()));
-                        } else {
-                            logChannel =
-                                    server.get().getTextChannelById(IdList.SLAYER_LOGS_CHANNEL.getLocalId(server.get().getId()));
-                        }
-
-                        if(logChannel.isPresent()) {
-                            logger.debug("Carry logged:" + carryInformation);
+                        if (logChannel.isPresent()) {
+                            logger.debug("Carry logged: {}", carryInformation);
 
                             logChannel.get().sendMessage(
                                     ApplicationService.getInstance()
                                             .getEmbed(carryInformation.getTime())
                                             .setTitle("Carry accepted.")
-                                            .setColor(new Color(0, 255, 0 /*TODO*/))
+                                            .setColor(EmbedColor.POSITIVE.getColor())
                                             .addInlineField("Number of carries",
                                                     String.valueOf(carryInformation.getAmountOfCarries()))
                                             .addInlineField("Type of carry",
-                                                    (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) +
+                                                    (carryType != null ? carryType.getPrettyName() :
+                                                            carryInformation.getCarryDifficulty()) +
                                                             " - " + carryInformation.getCarryType())
                                             .addInlineField("Player",
                                                     messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())

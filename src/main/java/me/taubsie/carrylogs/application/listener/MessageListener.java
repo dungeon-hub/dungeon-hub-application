@@ -204,17 +204,9 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                         }
                     }
 
-                    Optional<ServerTextChannel> logChannel;
-
-                    if(carryInformation.isDungeonCarry()) {
-                        logChannel =
-                                server.getTextChannelById(IdList.DUNGEON_LOGS_CHANNEL.getLocalId(server.getId()));
-                    } else if(carryInformation.isKuudraCarry()) {
-                        logChannel = server.getTextChannelById(IdList.KUUDRA_LOGS_CHANNEL.getLocalId(server.getId()));
-                    } else {
-                        logChannel =
-                                server.getTextChannelById(IdList.SLAYER_LOGS_CHANNEL.getLocalId(server.getId()));
-                    }
+                    Optional<ServerTextChannel> logChannel = carryInformation.getCarryType()
+                            .getLogChannel()
+                            .flatMap(server::getTextChannelById);
 
                     if(logChannel.isPresent()) {
                         logger.debug("Carry logged: {}", carryInformation);
