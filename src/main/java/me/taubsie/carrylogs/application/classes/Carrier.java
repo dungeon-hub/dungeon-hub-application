@@ -31,9 +31,9 @@ public class Carrier
         return new Carrier(user.getId());
     }
 
-    public Map<String, Long> getScore()
+    public Map<String, Long> getScore(long serverId)
     {
-        return DungeonHubConnection.getInstance().countScore(id);
+        return DungeonHubConnection.getInstance().countScore(serverId, id);
     }
 
     public long getScore(CarryType carryType) {

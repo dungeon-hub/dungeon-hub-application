@@ -327,19 +327,17 @@ public class ApplicationService {
     }
 
     public EmbedBuilder getScoreCountMessage(User userToCheck, User user, Server server, Map<String, Long> scoreCount) {
-        return getEmbed()
+        EmbedBuilder embed = getEmbed()
                 .setTitle((userToCheck.getId() != user.getId() && server != null)
                         ? userToCheck.getDisplayName(server) + "'s score:"
                         : "Your score:")
-                .setColor(EmbedColor.DEFAULT.getColor())
-                .addInlineField("Dungeon-Score:", String.valueOf(scoreCount.get("dungeon")))
-                .addInlineField("Slayer-Score:", String.valueOf(scoreCount.get("slayer")))
-                .addInlineField("Kuudra-Score:", String.valueOf(scoreCount.get("kuudra")))
-                .addInlineField("Alltime-Dungeon-Score:", String.valueOf(scoreCount.get("alltime-dungeon")))
-                .addInlineField("Alltime-Slayer-Score:", String.valueOf(scoreCount.get("alltime-slayer")))
-                .addInlineField("Alltime-Kuudra-Score:", String.valueOf(scoreCount.get("alltime-kuudra")))
-                .addInlineField("Event-Dungeon-Score:", String.valueOf(scoreCount.get("event-dungeon")))
-                .addInlineField("Event-Slayer-Score:", String.valueOf(scoreCount.get("event-slayer")));
+                .setColor(EmbedColor.DEFAULT.getColor());
+
+        //TODO format
+        scoreCount.entrySet().stream()
+                .forEach(entry -> embed.addInlineField(entry.getKey(), String.valueOf(entry.getValue())));
+
+        return embed;
     }
 
     public SlashCommandOption getIngamenameOption() {

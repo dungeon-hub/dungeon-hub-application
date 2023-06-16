@@ -22,15 +22,6 @@ import java.util.*;
 public class DungeonHubConnection {
     private static final Logger logger = LoggerFactory.getLogger(DungeonHubConnection.class);
 
-    private static final String DUNGEON = "dungeon";
-    private static final String SLAYER = "slayer";
-    private static final String KUUDRA = "kuudra";
-    private static final String ALLTIME_DUNGEON = "alltime-dungeon";
-    private static final String ALLTIME_SLAYER = "alltime-slayer";
-    private static final String ALLTIME_KUUDRA = "alltime-kuudra";
-    private static final String EVENT_DUNGEON = "event-dungeon";
-    private static final String EVENT_SLAYER = "event-slayer";
-
     private static final String API_PREFIX = "api/v1/";
 
     private static final String AUTHORIZATION = "Authorization";
@@ -69,7 +60,7 @@ public class DungeonHubConnection {
     }
 
     public static DungeonHubConnection getInstance() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new DungeonHubConnection();
         }
 
@@ -90,15 +81,15 @@ public class DungeonHubConnection {
                         "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes()))
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(!response.isSuccessful() || response.body() == null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful() || response.body() == null) {
                 logger.error("Token-request wasn't successful!");
                 return;
             }
 
             apiToken = response.body().string();
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
     }
@@ -116,9 +107,9 @@ public class DungeonHubConnection {
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
+        try (Response response = httpClient.newCall(request).execute()) {
             ResponseBody responseBody = response.body();
-            if(!response.isSuccessful() || responseBody == null) {
+            if (!response.isSuccessful() || responseBody == null) {
                 return new String[0];
             }
 
@@ -126,7 +117,7 @@ public class DungeonHubConnection {
             JsonObject responseObject = JsonParser.parseString(body).getAsJsonObject();
             responseObject = responseObject.getAsJsonObject("data");
 
-            if(responseObject.has("scammer")) {
+            if (responseObject.has("scammer")) {
                 return new String[]{
                         "Scammer",
                         responseObject
@@ -134,7 +125,7 @@ public class DungeonHubConnection {
                                 .getAsJsonPrimitive("reason")
                                 .getAsString()
                 };
-            } else if(responseObject.has("ratter")) {
+            } else if (responseObject.has("ratter")) {
                 return new String[]{
                         "Ratter",
                         responseObject
@@ -144,7 +135,7 @@ public class DungeonHubConnection {
                 };
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -193,14 +184,14 @@ public class DungeonHubConnection {
                 .post(getRequestBody(id, carryInformation))
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
                 logger.debug("Added new carry to log-queue.");
             } else {
                 logger.error("Adding new carry to log-queue wasn't successful");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
     }
@@ -210,14 +201,14 @@ public class DungeonHubConnection {
                 .post(getRequestBody(id, carryInformation))
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
                 logger.debug("Added new carry to approving-queue.");
             } else {
                 logger.error("Adding new carry to approving-queue wasn't successful.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
     }
@@ -227,14 +218,14 @@ public class DungeonHubConnection {
                 .delete(getRequestBody(id))
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
                 logger.debug("Removed a carry from approving-queue.");
             } else {
                 logger.error("Removing a carry from approving-queue wasn't successful.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
     }
@@ -244,14 +235,14 @@ public class DungeonHubConnection {
                 .delete(getRequestBody(id))
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
                 logger.debug("Removed a carry from log-queue.");
             } else {
                 logger.error("Removing a carry from log-queue wasn't successful.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
     }
@@ -263,11 +254,11 @@ public class DungeonHubConnection {
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
                 logger.debug("Loaded carries from approving-queue.");
 
-                if(response.body() == null) {
+                if (response.body() == null) {
                     return new HashSet<>();
                 }
 
@@ -279,7 +270,7 @@ public class DungeonHubConnection {
             }
             return new HashSet<>();
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
             return new HashSet<>();
         }
@@ -292,11 +283,11 @@ public class DungeonHubConnection {
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
                 logger.debug("Loaded carries from log-queue.");
 
-                if(response.body() == null) {
+                if (response.body() == null) {
                     return new HashSet<>();
                 }
 
@@ -308,7 +299,7 @@ public class DungeonHubConnection {
             }
             return new HashSet<>();
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
             return new HashSet<>();
         }
@@ -319,15 +310,15 @@ public class DungeonHubConnection {
                 .post(getRequestBody(carryInformation))
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
                 logger.debug("Logged carry successfully.");
-                if(response.body() != null) {
+                if (response.body() != null) {
                     //TODO nested try-block -> refactor or put into extra method
                     try {
                         return Long.parseLong(response.body().string());
                     }
-                    catch(NumberFormatException numberFormatException) {
+                    catch (NumberFormatException numberFormatException) {
                         numberFormatException.printStackTrace();
                     }
                 }
@@ -335,7 +326,7 @@ public class DungeonHubConnection {
                 logger.error("Error when trying to log carry.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -347,14 +338,14 @@ public class DungeonHubConnection {
     }
 
     //TODO adapt the new system
-    public Map<String, Long> countScore(Long id) {
-        Request request = getApiRequest("carry-score/" + id)
+    public Map<String, Long> countScore(long serverId, Long id) {
+        Request request = getApiRequest("server/" + serverId + "/carry-score/" + id)
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
-                if(response.body() != null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                if (response.body() != null) {
                     return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
                             CarryLogService.getInstance().getStringLongMapType());
                 }
@@ -362,47 +353,37 @@ public class DungeonHubConnection {
                 logger.error("Error when trying to count carries.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
 
-        Map<String, Long> defaultMap = new HashMap<>();
-
-        defaultMap.put(DUNGEON, 0L);
-        defaultMap.put(SLAYER, 0L);
-        defaultMap.put(KUUDRA, 0L);
-        defaultMap.put(ALLTIME_DUNGEON, 0L);
-        defaultMap.put(ALLTIME_SLAYER, 0L);
-        defaultMap.put(ALLTIME_KUUDRA, 0L);
-        defaultMap.put(EVENT_DUNGEON, 0L);
-        defaultMap.put(EVENT_SLAYER, 0L);
-
-        return defaultMap;
+        return new HashMap<>();
     }
 
     public long getScore(Long id, CarryType carryType) {
-        Request request = getApiRequest("carry-score/" + id + "/" + carryType.getId())
+        Request request =
+                getApiRequest("server" + carryType.getServer() + "/carry-score/" + id + "/" + carryType.getId())
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
-                if(response.body() != null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                if (response.body() != null) {
                     return Long.parseLong(response.body().string());
                 }
             } else {
                 logger.error("Error when trying to get score.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
 
         return 0L;
     }
 
-    public Map<Long, Long> getLeaderboardData(@NotNull String type, int page) {
-        Request request = getApiRequest(getApiUrl("leaderboard/" + type)
+    public Map<Long, Long> getLeaderboardData(@NotNull CarryType carryType, LeaderboardType leaderboardType, int page) {
+        Request request = getApiRequest(getApiUrl("leaderboard/" + carryType.getId() + "/" + leaderboardType.getName())
                 .addQueryParameter("page", String.valueOf(page))
                 .build())
                 .get()
@@ -410,9 +391,9 @@ public class DungeonHubConnection {
 
         Map<Long, Long> result = new HashMap<>();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
-                if(response.body() != null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                if (response.body() != null) {
                     result = CarryLogService.getInstance().getGson().fromJson(response.body().string(),
                             CarryLogService.getInstance().getLongLongMapType());
                 }
@@ -420,75 +401,11 @@ public class DungeonHubConnection {
                 logger.error("Error when trying to get leaderboard.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
 
         return result;
-    }
-
-    public Map<Long, Long> getDungeonLeaderboard() {
-        return getDungeonLeaderboard(1);
-    }
-
-    public Map<Long, Long> getDungeonLeaderboard(int page) {
-        return getLeaderboardData(DUNGEON, page);
-    }
-
-    public Map<Long, Long> getAlltimeDungeonLeaderboard() {
-        return getAlltimeDungeonLeaderboard(1);
-    }
-
-    public Map<Long, Long> getAlltimeDungeonLeaderboard(int page) {
-        return getLeaderboardData(ALLTIME_DUNGEON, page);
-    }
-
-    public Map<Long, Long> getEventDungeonLeaderboard() {
-        return getEventDungeonLeaderboard(1);
-    }
-
-    public Map<Long, Long> getEventDungeonLeaderboard(int page) {
-        return getLeaderboardData(EVENT_DUNGEON, page);
-    }
-
-    public Map<Long, Long> getSlayerLeaderboard() {
-        return getSlayerLeaderboard(1);
-    }
-
-    public Map<Long, Long> getSlayerLeaderboard(int page) {
-        return getLeaderboardData(SLAYER, page);
-    }
-
-    public Map<Long, Long> getAlltimeSlayerLeaderboard() {
-        return getAlltimeSlayerLeaderboard(1);
-    }
-
-    public Map<Long, Long> getAlltimeSlayerLeaderboard(int page) {
-        return getLeaderboardData(ALLTIME_SLAYER, page);
-    }
-
-    public Map<Long, Long> getEventSlayerLeaderboard() {
-        return getEventSlayerLeaderboard(1);
-    }
-
-    public Map<Long, Long> getEventSlayerLeaderboard(int page) {
-        return getLeaderboardData(EVENT_SLAYER, page);
-    }
-
-    public Map<Long, Long> getKuudraLeaderboard() {
-        return getKuudraLeaderboard(1);
-    }
-
-    public Map<Long, Long> getKuudraLeaderboard(int page) {
-        return getLeaderboardData(KUUDRA, page);
-    }
-
-    public Map<Long, Long> getAlltimeKuudraLeaderboard() {
-        return getAlltimeKuudraLeaderboard(1);
-    }
-
-    public Map<Long, Long> getAlltimeKuudraLeaderboard(int page) {
-        return getLeaderboardData(ALLTIME_KUUDRA, page);
     }
 
     public long modifyScore(Long id, CarryType carryType, Long amount) {
@@ -500,16 +417,16 @@ public class DungeonHubConnection {
                 .put(requestBody)
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
-                if(response.body() != null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                if (response.body() != null) {
                     return Long.parseLong(response.body().string());
                 }
             } else {
                 logger.error("Error when trying to update score.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -525,12 +442,12 @@ public class DungeonHubConnection {
                 .put(requestBody)
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(!response.isSuccessful()) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
                 logger.error("Error when trying to add roles.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
     }
@@ -553,7 +470,7 @@ public class DungeonHubConnection {
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) {
-                if(!response.isSuccessful()) {
+                if (!response.isSuccessful()) {
                     logger.error("Error when trying to add roles for user {}.", id);
                 }
             }
@@ -565,9 +482,9 @@ public class DungeonHubConnection {
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
-                if(response.body() != null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                if (response.body() != null) {
                     return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
                             CarryLogService.getInstance().getLongLongMapType());
                 }
@@ -575,7 +492,7 @@ public class DungeonHubConnection {
                 logger.error("Error when trying to load purgable users.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -597,12 +514,12 @@ public class DungeonHubConnection {
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful() && response.body() != null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
                 return fromString(JsonParser.parseString(response.body().string()).getAsJsonObject().get("id").getAsString());
             }
         }
-        catch(IOException | NullPointerException exception) {
+        catch (IOException | NullPointerException exception) {
             exception.printStackTrace();
         }
 
@@ -612,7 +529,7 @@ public class DungeonHubConnection {
     //This is a request on the Hypixel API, and therefore unneccessary calls should be avoided
     public int getCataLevelByUUID(UUID uuid) {
         JsonArray profiles = getProfiles(uuid);
-        if(profiles == null) return 0;
+        if (profiles == null) return 0;
 
         //Highest cata xp of all profiles
         double highestXP = 0;
@@ -631,7 +548,7 @@ public class DungeonHubConnection {
                 highestXP = Math.max(highestXP, thisXP);
                 // null if profile hasn't entered dungeons
             }
-            catch(NullPointerException ignored) {
+            catch (NullPointerException ignored) {
                 //TODO this happens if the profile hasn't entered dungeons. Custom exception?
             }
         }
@@ -645,15 +562,15 @@ public class DungeonHubConnection {
                         "&uuid=" + uuid)
                 .get()
                 .build();
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(!response.isSuccessful() || response.body() == null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful() || response.body() == null) {
                 logger.error("Unsuccessful profile request for UUID {}", uuid);
                 return null;
             }
 
             return JsonParser.parseString(response.body().string()).getAsJsonObject().getAsJsonArray("profiles");
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             logger.error("Profile request for UUID threw an error.", ioException);
         }
 
@@ -662,7 +579,7 @@ public class DungeonHubConnection {
 
     private int cataXPToLevel(double xp) {
         for(int i = 0; i < requiredXp.length; i++) {
-            if(requiredXp[i] > xp) return i;
+            if (requiredXp[i] > xp) return i;
         }
 
         // 50 and everything higher is returned as 50
@@ -675,18 +592,18 @@ public class DungeonHubConnection {
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.code() == 404) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.code() == 404) {
                 throw new NotFoundException();
-            } else if(response.isSuccessful()) {
-                if(response.body() != null) {
+            } else if (response.isSuccessful()) {
+                if (response.body() != null) {
                     return CarryLogService.getInstance().getGson().fromJson(response.body().string(), StrikeData.class);
                 }
             } else {
                 logger.error("Error when trying to load strike by id.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             logger.error("Error when trying to load strike by id.", ioException);
         }
 
@@ -699,9 +616,9 @@ public class DungeonHubConnection {
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
-                if(response.body() != null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                if (response.body() != null) {
                     return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
                             CarryLogService.getInstance().getStrikeDataListType());
                 }
@@ -709,7 +626,7 @@ public class DungeonHubConnection {
                 logger.error("Error when trying to load valid strikes.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -721,9 +638,9 @@ public class DungeonHubConnection {
                 .addQueryParameter("user", String.valueOf(userId)).build())
                 .get().build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
-                if(response.body() != null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                if (response.body() != null) {
                     return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
                             CarryLogService.getInstance().getStrikeDataListType());
                 }
@@ -731,7 +648,7 @@ public class DungeonHubConnection {
                 logger.error("Error when trying to load all strike data of user.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             ioException.printStackTrace();
         }
 
@@ -747,16 +664,16 @@ public class DungeonHubConnection {
                 .post(requestBody)
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
-                if(response.body() != null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                if (response.body() != null) {
                     return CarryLogService.getInstance().getGson().fromJson(response.body().string(), StrikeData.class);
                 }
             } else {
                 logger.error("Error when trying to insert strike.");
             }
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             logger.error("Error when trying to insert strike.", ioException);
         }
 
@@ -772,14 +689,14 @@ public class DungeonHubConnection {
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful()) {
-                if(response.body() != null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                if (response.body() != null) {
                     return Integer.parseInt(response.body().string());
                 }
             } else {
                 String result = "Error when trying to load the max leaderboard page of type {}";
-                if(response.body() != null) {
+                if (response.body() != null) {
                     result += ":\n{}";
                     String exception = response.body().string();
                     logger.error(result, type, exception);
@@ -789,10 +706,10 @@ public class DungeonHubConnection {
                 }
             }
         }
-        catch(NumberFormatException numberFormatException) {
+        catch (NumberFormatException numberFormatException) {
             logger.error("Couldn't parse number from return value (max leaderboard page).", numberFormatException);
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             logger.error("Error when loading the max leaderboard page for type {}.", type, ioException);
         }
 
@@ -829,12 +746,13 @@ public class DungeonHubConnection {
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful() && response.body() != null) {
-                return CarryLogService.getInstance().getGson().fromJson(response.body().string(), CarryLogService.getInstance().getCarryTypeListType());
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
+                        CarryLogService.getInstance().getCarryTypeListType());
             } else {
                 String result = "Error while trying to load the carry types for server {}";
-                if(response.body() != null) {
+                if (response.body() != null) {
                     result += ":\n{}";
                     String exception = response.body().string();
                     logger.error(result, serverId, exception);
@@ -843,8 +761,26 @@ public class DungeonHubConnection {
                     logger.error(result, serverId);
                 }
             }
-        } catch (IOException ioException) {
+        }
+        catch (IOException ioException) {
             logger.error("Error while trying to load carry types for server {}.", serverId, ioException);
+        }
+
+        return new ArrayList<>();
+    }
+
+    public List<CarryType> loadCarryTypes() {
+        Request request = getApiRequest("carry-types")
+                .get()
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful() && response.body() != null) {
+                return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
+                        CarryLogService.getInstance().getCarryTypeListType());
+            }
+        } catch (IOException ioException) {
+            logger.error("Error while trying to load all carry types.", ioException);
         }
 
         return new ArrayList<>();
@@ -871,12 +807,12 @@ public class DungeonHubConnection {
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful() && response.body() != null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
                 return Optional.ofNullable(CarryType.fromJson(response.body().string()));
             } else {
                 String result = "Error while trying to load carry type {} for server {}";
-                if(response.body() != null) {
+                if (response.body() != null) {
                     result += ":\n{}";
                     String exception = response.body().string();
                     logger.error(result, identifier, serverId, exception);
@@ -885,7 +821,8 @@ public class DungeonHubConnection {
                     logger.error(result, identifier, serverId);
                 }
             }
-        } catch (IOException ioException) {
+        }
+        catch (IOException ioException) {
             logger.error("Error while trying to load carry type {} for server {}.", identifier, serverId, ioException);
         }
 
@@ -915,9 +852,10 @@ public class DungeonHubConnection {
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful() && response.body() != null) {
-                return CarryLogService.getInstance().getGson().fromJson(response.body().string(), CarryLogService.getInstance().getStringListType());
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
+                        CarryLogService.getInstance().getStringListType());
             }
         }
         catch (IOException ioException) {
@@ -932,12 +870,12 @@ public class DungeonHubConnection {
                 .get()
                 .build();
 
-        try(Response response = httpClient.newCall(request).execute()) {
-            if(response.isSuccessful() && response.body() != null) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
                 return Optional.ofNullable(CarryTier.fromJson(response.body().string()));
             } else {
-                if(response.code() != 404) {
-                    if(response.body() != null) {
+                if (response.code() != 404) {
+                    if (response.body() != null) {
                         String responseBody = response.body().string();
 
                         logger.error(responseBody);

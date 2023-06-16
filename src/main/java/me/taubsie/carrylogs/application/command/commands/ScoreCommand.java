@@ -24,11 +24,12 @@ public class ScoreCommand extends Command {
         try {
             userToCheck = getUserOption("user");
         }
-        catch(InvalidOptionException invalidOptionException) {
+        catch (InvalidOptionException invalidOptionException) {
             userToCheck = getUser();
         }
 
-        Map<String, Long> scoreCount = DungeonHubConnection.getInstance().countScore(userToCheck.getId());
+        Map<String, Long> scoreCount = DungeonHubConnection.getInstance().countScore(getServer().getId(),
+                userToCheck.getId());
 
         slashCommandCreateEvent
                 .getSlashCommandInteraction()

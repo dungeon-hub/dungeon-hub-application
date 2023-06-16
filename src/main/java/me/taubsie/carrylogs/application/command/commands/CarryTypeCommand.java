@@ -19,6 +19,7 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 import java.util.List;
 import java.util.Optional;
 
+//TODO make it so that carry type identifier can't start with either event or alltime
 @CommandParameters(name = "carry-type", description = "Set up the carry types for this server.",
         enabledForPermissions = PermissionType.ADMINISTRATOR)
 public class CarryTypeCommand extends Command {

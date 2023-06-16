@@ -78,6 +78,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                 DungeonHubConnection.getInstance().addToLogQueue(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId(), carryInformation);
                 BotStarter.getInstance().getCarryInformation().remove(messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().getId());
 
+                //TODO make an embed that stays
                 messageComponentCreateEvent.getMessageComponentInteraction().createImmediateResponder().setContent(
                         "**Thank you for your service. Your carry will be sent to the staff team for review once the " +
                                 "ticket is closed.**\n" +
