@@ -17,15 +17,15 @@ import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.interaction.SlashCommandInteractionOptionsProvider;
 import org.javacord.api.interaction.SlashCommandOption;
-import org.jetbrains.annotations.NotNull;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  * This class is used to allow easier implementation of commands, as a class scanner looks for classes that extends
@@ -175,6 +175,15 @@ public abstract class Command {
 
     public final String getStringOption(String name) {
         return getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
+    }
+
+    public final <T extends Enum<T> & Nameable> T getEnumOption(@NotNull String name, @NotNull Class<T> enumClass, T defaultValue) {
+        try {
+            return T.valueOf(enumClass, name);
+        }
+        catch(IllegalArgumentException illegalArgumentException) {
+            return defaultValue;
+        }
     }
 
     public final <T extends Enum<T> & Nameable> T getEnumOption(@NotNull String name, @NotNull Class<T> enumClass) {

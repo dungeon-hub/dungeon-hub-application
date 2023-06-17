@@ -2,10 +2,10 @@ package me.taubsie.carrylogs.application.service;
 
 import me.taubsie.carrylogs.application.classes.Leaderboard;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
-import me.taubsie.carrylogs.application.messages.LeaderboardMessage;
-import me.taubsie.dungeonhub.common.*;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
+import me.taubsie.carrylogs.application.messages.LeaderboardMessage;
 import me.taubsie.carrylogs.application.start.BotStarter;
+import me.taubsie.dungeonhub.common.*;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -31,21 +31,16 @@ public class LeaderboardService implements StartupListener {
         return instance;
     }
 
-    public void registerPageListener(Message message, String type) {
-        new LeaderboardMessage(1, message.getChannel().getId(), message.getId(), type);
+    public void registerPageListener(Message message, CarryType carryType, LeaderboardType leaderboardType) {
+        new LeaderboardMessage(1, message.getChannel().getId(), message.getId(), carryType, leaderboardType);
     }
 
     public Set<String> getAvailableTypes() {
         return getLeaderboards().keySet();
     }
 
-    public String getLeaderboardTitle(String type) {
-        return getLeaderboards()
-                .entrySet().stream()
-                .filter(entry -> entry.getKey().equalsIgnoreCase(type))
-                .map(Map.Entry::getValue)
-                .findAny()
-                .orElse(getUnknownLeaderboardTitle());
+    public String getLeaderboardTitle(CarryType carryType, LeaderboardType leaderboardType) {
+        return "Leaderboard | " + carryType.getDisplayName() + "-Carries" + leaderboardType.getLeaderboardSuffix();
     }
 
     public EmbedBuilder getLeaderboardEmbed(String title, Map<Long, Long> score, int page) {
@@ -73,10 +68,6 @@ public class LeaderboardService implements StartupListener {
     public EmbedBuilder getLeaderboardEmbed(String title, Map<Long, Long> score, int page, int maxPage) {
         return getLeaderboardEmbed(title, score, page)
                 .setFooter("Page " + page + "/" + maxPage);
-    }
-
-    public String getUnknownLeaderboardTitle() {
-        return "Leaderboard | Unknown [Please report]";
     }
 
     private Map<String, String> getLeaderboards() {
@@ -146,7 +137,7 @@ public class LeaderboardService implements StartupListener {
 
             for(LeaderboardType leaderboardType : LeaderboardType.values()) {
                 leaderboards.add(new Leaderboard(
-                        "Leaderboard | " + carryType.getDisplayName() + "-Carries" + leaderboardType.getLeaderboardSuffix(),
+                        getLeaderboardTitle(carryType, leaderboardType),
                         DungeonHubConnection.getInstance().getLeaderboardData(carryType, leaderboardType, 1)
                 ));
             }

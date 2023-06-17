@@ -684,8 +684,9 @@ public class DungeonHubConnection {
         //TODO implement
     }
 
-    public int getMaxLeaderboardPage(String type) {
-        Request request = getApiRequest("leaderboard/" + type + "/pages")
+    //TODO rework with new system
+    public int getMaxLeaderboardPage(CarryType carryType, LeaderboardType leaderboardType) {
+        Request request = getApiRequest("leaderboard/" + carryType.getId() + "/pages/" + leaderboardType.getName())
                 .get()
                 .build();
 
@@ -695,14 +696,14 @@ public class DungeonHubConnection {
                     return Integer.parseInt(response.body().string());
                 }
             } else {
-                String result = "Error when trying to load the max leaderboard page of type {}";
+                String result = "Error when trying to load the max leaderboard page of type {} {}";
                 if (response.body() != null) {
                     result += ":\n{}";
                     String exception = response.body().string();
-                    logger.error(result, type, exception);
+                    logger.error(result, carryType.getId(), leaderboardType.getName(), exception);
                 } else {
                     result += ".";
-                    logger.error(result, type);
+                    logger.error(result, carryType.getId(), leaderboardType.getName());
                 }
             }
         }
@@ -710,7 +711,7 @@ public class DungeonHubConnection {
             logger.error("Couldn't parse number from return value (max leaderboard page).", numberFormatException);
         }
         catch (IOException ioException) {
-            logger.error("Error when loading the max leaderboard page for type {}.", type, ioException);
+            logger.error("Error when loading the max leaderboard page for type {} {}.", carryType.getId(), leaderboardType.getName(), ioException);
         }
 
         return 1;

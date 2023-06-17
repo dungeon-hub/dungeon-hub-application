@@ -1,10 +1,10 @@
 package me.taubsie.carrylogs.application.listener;
 
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
-import me.taubsie.carrylogs.application.service.ApplicationService;
-import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.IdList;
+import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
 import me.taubsie.carrylogs.application.service.PermissionService;
 import me.taubsie.carrylogs.application.start.BotStarter;
@@ -19,7 +19,7 @@ import org.javacord.api.listener.interaction.MessageComponentCreateListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.Color;
+import java.awt.*;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
 
@@ -83,13 +83,30 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                         "**Thank you for your service. Your carry will be sent to the staff team for review once the " +
                                 "ticket is closed.**\n" +
                                 "**You will be notified once it has been reviewed.**").setFlags(MessageFlag.EPHEMERAL).respond().join();
+
+                messageComponentCreateEvent.getMessageComponentInteraction().getChannel().get().sendMessage(
+                        ApplicationService.getInstance()
+                                .getEmbed(carryInformation.getTime())
+                                .setTitle("Carry logged")
+                                .setDescription("This will we sent when the ticket is deleted.\n" +
+                                        "If the client doesn't want any more carries, please delete this ticket.")
+                                .setColor(new Color(/* TODO green */ 165, 23, 112))
+                                .addInlineField("Number of carries",
+                                        String.valueOf(carryInformation.getAmountOfCarries()))
+                                .addInlineField("Type of carry",
+                                        carryInformation.getCarryTier().getDisplayName() + " - " + carryInformation.getCarryDifficulty().getDisplayName())
+                                .addInlineField("Player",
+                                        messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
+                                .addInlineField("Carrier", "<@" + carryInformation.getCarrier() + ">")
+                );
+
                 messageComponentCreateEvent.getMessageComponentInteraction().getMessage().delete();
             }
             case "deny" -> {
                 messageComponentCreateEvent.getMessageComponentInteraction().acknowledge();
                 long messageId = messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getId();
 
-                for(CarryInformation carryInformation :
+                for (CarryInformation carryInformation :
                         DungeonHubConnection.getInstance().getFromLogApprovingQueue(messageId)) {
 
                     User carrier =
@@ -120,8 +137,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                                     .addInlineField("Carrier", carrier.getMentionTag())
                                                     .addInlineField("Transcript-Link", "[Click to open]" +
                                                             "(https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")")).join());
-                        }
-                        catch (CompletionException completionException) {
+                        } catch (CompletionException completionException) {
                             completionException.printStackTrace();
                         }
                     }
@@ -165,7 +181,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                 messageComponentCreateEvent.getMessageComponentInteraction().acknowledge();
                 long messageId = messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getId();
 
-                for(CarryInformation carryInformation :
+                for (CarryInformation carryInformation :
                         DungeonHubConnection.getInstance().getFromLogApprovingQueue(messageId)) {
                     carryInformation.setApprover(messageComponentCreateEvent.getMessageComponentInteraction().getUser().getId());
 
@@ -205,8 +221,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getApprover()).join().getMentionTag())
                                                     .addInlineField("Transcript-Link", "[Click to open]" +
                                                             "(https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")")).join());
-                        }
-                        catch (CompletionException completionException) {
+                        } catch (CompletionException completionException) {
                             completionException.printStackTrace();
                         }
                     }
