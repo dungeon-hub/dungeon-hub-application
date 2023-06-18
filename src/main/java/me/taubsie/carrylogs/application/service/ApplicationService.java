@@ -34,7 +34,7 @@ public class ApplicationService {
     private static ApplicationService instance;
 
     public static ApplicationService getInstance() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new ApplicationService();
         }
 
@@ -67,32 +67,32 @@ public class ApplicationService {
     }
 
     public boolean isCarryTier(String carryTier, me.taubsie.carrylogs.application.enums.CarryType carryType) {
-        if(isInvalidCarryTier(carryTier)) {
+        if (isInvalidCarryTier(carryTier)) {
             return false;
         }
 
-        return switch(carryType) {
-            case F4 -> switch(carryTier) {
+        return switch (carryType) {
+            case F4 -> switch (carryTier) {
                 case "Completion", "S" -> true;
                 default -> false;
             };
-            case F5, F6, F7 -> switch(carryTier) {
+            case F5, F6, F7 -> switch (carryTier) {
                 case "Completion", "S", "S+" -> true;
                 default -> false;
             };
-            case EMAN -> switch(carryTier) {
+            case EMAN -> switch (carryTier) {
                 case "Tier 3", "Tier 4" -> true;
                 default -> false;
             };
-            case BLAZE -> switch(carryTier) {
+            case BLAZE -> switch (carryTier) {
                 case "Tier 2", "Tier 3", "Tier 4" -> true;
                 default -> false;
             };
-            case KUUDRA -> switch(carryTier) {
+            case KUUDRA -> switch (carryTier) {
                 case "Basic", "Hot", "Burning", "Fiery", "Infernal" -> true;
                 default -> false;
             };
-            case MASTER_MODE -> switch(carryTier) {
+            case MASTER_MODE -> switch (carryTier) {
                 case "Floor 1", "Floor 2", "Floor 3", "Floor 4", "Floor 5", "Floor 6", "Floor 7" -> true;
                 default -> false;
             };
@@ -107,19 +107,19 @@ public class ApplicationService {
     }
 
     public String makeNumberReadable(long number) {
-        if(number >= 1000000000000L) {
+        if (number >= 1000000000000L) {
             return makeDoubleReadable(number / 1000000000000.0) + "t";
         }
 
-        if(number >= 1000000000L) {
+        if (number >= 1000000000L) {
             return makeDoubleReadable(number / 1000000000.0) + "b";
         }
 
-        if(number >= 1000000L) {
+        if (number >= 1000000L) {
             return makeDoubleReadable(number / 1000000.0) + "m";
         }
 
-        if(number >= 1000L) {
+        if (number >= 1000L) {
             return makeDoubleReadable(number / 1000.0) + "k";
         }
 
@@ -127,7 +127,7 @@ public class ApplicationService {
     }
 
     public String getCarryTierUrl(me.taubsie.carrylogs.application.enums.CarryType carryType) {
-        return switch(carryType) {
+        return switch (carryType) {
             case EMAN -> "https://cdn.discordapp.com/attachments/842827272733982730/992919618236719134/unknown.png";
             case BLAZE -> "https://cdn.discordapp.com/attachments/842827272733982730/992919430369656852/unknown.png";
             case KUUDRA -> "https://cdn.discordapp.com/attachments/842827272733982730/1080981866657615872" +
@@ -141,8 +141,8 @@ public class ApplicationService {
     }
 
     public String getCarryTierUrl(me.taubsie.carrylogs.application.enums.CarryType carryType, String carryTier) {
-        if(carryType == me.taubsie.carrylogs.application.enums.CarryType.MASTER_MODE) {
-            return switch(carryTier) {
+        if (carryType == me.taubsie.carrylogs.application.enums.CarryType.MASTER_MODE) {
+            return switch (carryTier) {
                 case "Floor 1" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302674244391023" +
                         "/SkyBlock_npcs_bonzo_undead.png";
                 case "Floor 2" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302768633000006" +
@@ -161,7 +161,7 @@ public class ApplicationService {
     }
 
     public boolean isInvalidCarryTier(String carryTier) {
-        return switch(carryTier) {
+        return switch (carryTier) {
             case "Completion",
                     "S",
                     "S+",
@@ -224,11 +224,11 @@ public class ApplicationService {
                 .addInlineField("Player", "<@" + carryInformation.getPlayer() + ">")
                 .addInlineField("Carrier", "<@" + carryInformation.getCarrier() + ">");
 
-        if(carryInformation.getApprover() != null) {
+        if (carryInformation.getApprover() != null) {
             embedBuilder.addInlineField("Approved by", "<@" + carryInformation.getApprover() + ">");
         }
 
-        if(carryInformation.getAttachmentLink() != null) {
+        if (carryInformation.getAttachmentLink() != null) {
             embedBuilder.addInlineField("Transcript-Link", "[Click to open]" +
                     "(https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")");
         }
@@ -245,7 +245,7 @@ public class ApplicationService {
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setTitle("Strikes of user " + user.getDiscriminatedName());
 
-        if(strikeData.isEmpty()) {
+        if (strikeData.isEmpty()) {
             embedBuilder.setDescription("User has no strikes!");
             return embedBuilder;
         }
@@ -390,7 +390,7 @@ public class ApplicationService {
 
     //TODO remove json object, maybe only work on strings if possible -> connection service as an api only
     public EmbedBuilder loadAuctionsMessage(List<JsonObject> auctionData, int page) {
-        if(auctionData.isEmpty()) {
+        if (auctionData.isEmpty()) {
             return ApplicationService.getInstance()
                     .getEmbed()
                     .setColor(EmbedColor.NEGATIVE.getColor())
@@ -412,9 +412,15 @@ public class ApplicationService {
     }
 
     public EmbedBuilder getCarryTypeEmbed(CarryType carryType) {
-        return ApplicationService.getInstance()
+        EmbedBuilder embed = ApplicationService.getInstance()
                 .getEmbed()
                 .setColor(EmbedColor.DEFAULT.getColor())
-                .setDescription(carryType.toString());
+                .addInlineField("Identifier", carryType.getIdentifier())
+                .addInlineField("Display Name", carryType.getDisplayName());
+
+        carryType.getLogChannel().ifPresent(logChannel -> embed.addInlineField("Log Channel", "<#" + logChannel + ">"));
+        carryType.getLeaderboardChannel().ifPresent(leaderboardChannel -> embed.addInlineField("Leaderboard Channel", "<#" + leaderboardChannel + ">"));
+
+        return embed;
     }
 }

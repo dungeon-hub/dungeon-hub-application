@@ -2,7 +2,9 @@ package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.exceptions.InvalidSubCommandException;
+import me.taubsie.dungeonhub.common.CarryType;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -10,6 +12,7 @@ import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
 
 import java.util.List;
+import java.util.Optional;
 
 @CommandParameters(name = "carry-tier", description = "Set up the carry tiers for this server.")
 public class CarryTierCommand extends Command {
@@ -17,12 +20,12 @@ public class CarryTierCommand extends Command {
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         SlashCommandInteractionOption subCommand = getOptionAtIndex(0);
 
-        switch(subCommand.getName().toLowerCase()) {
+        switch (subCommand.getName().toLowerCase()) {
             case "create" -> create(subCommand);
             case "delete" -> delete(subCommand);
-            case "add" -> add(subCommand);
+            case "get" -> get(subCommand);
             case "edit" -> edit(subCommand);
-            case "remove" -> remove(subCommand);
+            case "reset" -> reset(subCommand);
             default -> throw new InvalidSubCommandException();
         }
     }
@@ -35,27 +38,67 @@ public class CarryTierCommand extends Command {
         //TODO implement
     }
 
+    public void get(SlashCommandInteractionOption subCommand) {
+        //TODO implement
+    }
+
     public void edit(SlashCommandInteractionOption subCommand) {
         //TODO implement
     }
 
-    public void add(SlashCommandInteractionOption subCommand) {
+    public void reset(SlashCommandInteractionOption subCommand) {
         //TODO implement
     }
 
-    public void remove(SlashCommandInteractionOption subCommand) {
-        //TODO implement
+    private Optional<CarryType> getFromInteraction(SlashCommandInteractionOption interaction) {
+        return DungeonHubConnection.getInstance()
+                .loadCarryType(getServer().getId(), getStringOption(interaction, "carry-type"));
     }
 
     @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
-        SlashCommandOption carryTypeOption = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.STRING)
-                .setName("carry-type")
-                .setDescription("The carry type this belongs to")
-                .setRequired(true)
-                .build();
+        return List.of(getCreateCommand(), getDeleteCommand(), getGetCommand(), getEditCommand(), getResetCommand());
+    }
 
+    private SlashCommandOption getGetCommand() {
+        return new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("get")
+                .setDescription("Get information about a carry tier")
+                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), getCarryTierOption()))
+                .build();
+    }
+
+    private SlashCommandOption getEditCommand() {
+        //TODO add options to edit command
+        return new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("edit")
+                .setDescription("Edit a carry tier")
+                .setOptions(List.of(getCarryTierOption()))
+                .build();
+    }
+
+    private SlashCommandOption getResetCommand() {
+        //TODO add options to reset command
+        return new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("reset")
+                .setDescription("Reset a carry tier")
+                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), getCarryTierOption()))
+                .build();
+    }
+
+    private SlashCommandOption getDeleteCommand() {
+        return new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("delete")
+                .setDescription("Delete a carry tier")
+                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), getCarryTierOption()))
+                .build();
+    }
+
+    private SlashCommandOption getCreateCommand() {
         SlashCommandOption identifierOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
                 .setName("identifier")
@@ -63,39 +106,30 @@ public class CarryTierCommand extends Command {
                 .setRequired(true)
                 .build();
 
-        SlashCommandOption deleteCommand = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.SUB_COMMAND)
-                .setName("delete")
-                .setDescription("Delete a carry tier")
-                .setOptions(List.of(carryTypeOption, identifierOption))
+        SlashCommandOption displayNameOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName("display-name")
+                .setDescription("The display name of the carry tier")
+                .setRequired(true)
+                .setMaxLength(30)
                 .build();
 
-        SlashCommandOption createCommand = new SlashCommandOptionBuilder()
+        return new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("create")
                 .setDescription("Create a new carry tier")
-                .setOptions(List.of(carryTypeOption, identifierOption))
+                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), identifierOption, displayNameOption))
                 .build();
+    }
 
-        //TODO add options to edit command
-        SlashCommandOption editCommand = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
-                .setName("edit")
-                .setDescription("Edit a carry tier")
+    public static SlashCommandOption getCarryTierOption() {
+        return new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName("carry-tier")
+                .setDescription("The identifier of the carry tier")
+                .setRequired(true)
+                .setMaxLength(30)
+                .setAutocompletable(true)
                 .build();
-
-        SlashCommandOption addCommand = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
-                .setName("add")
-                .setDescription("Add a value to a carry tier")
-                .build();
-
-        SlashCommandOption removeCommand = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.SUB_COMMAND_GROUP)
-                .setName("remove")
-                .setDescription("Remove a value of a carry tier")
-                .build();
-
-        return List.of(createCommand, deleteCommand, editCommand, addCommand, removeCommand);
     }
 }

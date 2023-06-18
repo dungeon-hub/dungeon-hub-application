@@ -57,14 +57,13 @@ public class LeaderboardCommand extends Command {
 
     @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
-        //TODO add auto completion
-        SlashCommandOptionBuilder carryTypeOptionBuilder = new SlashCommandOptionBuilder()
+        SlashCommandOption carryTypeOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
                 .setName("carry-type")
                 .setDescription("Select which leaderboard you want to see.")
-                .setRequired(true);
-
-        LeaderboardService.getInstance().getAvailableTypes().forEach(s -> carryTypeOptionBuilder.addChoice(s, s));
+                .setAutocompletable(true)
+                .setRequired(true)
+                .build();
 
         SlashCommandOptionBuilder leaderboardTypeOptionBuilder = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
@@ -72,8 +71,8 @@ public class LeaderboardCommand extends Command {
                 .setDescription("Select which type of leaderboard you want.")
                 .setRequired(false);
 
-        Arrays.stream(LeaderboardType.values()).forEach(leaderboardType -> carryTypeOptionBuilder.addChoice(leaderboardType.getName(), leaderboardType.getName()));
+        Arrays.stream(LeaderboardType.values()).forEach(leaderboardType -> leaderboardTypeOptionBuilder.addChoice(leaderboardType.getName(), leaderboardType.getName()));
 
-        return List.of(carryTypeOptionBuilder.build(), leaderboardTypeOptionBuilder.build());
+        return List.of(carryTypeOption, leaderboardTypeOptionBuilder.build());
     }
 }

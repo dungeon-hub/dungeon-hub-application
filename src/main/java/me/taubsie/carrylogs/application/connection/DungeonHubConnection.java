@@ -179,6 +179,13 @@ public class DungeonHubConnection {
                 .build();
     }
 
+    private RequestBody getRequestBody(String identifier, String displayName) {
+        return new FormBody.Builder()
+                .add("identifier", identifier)
+                .add("displayName", displayName)
+                .build();
+    }
+
     public void addToLogQueue(Long id, CarryInformation carryInformation) {
         Request request = getApiRequest("log-queue")
                 .post(getRequestBody(id, carryInformation))
@@ -811,6 +818,8 @@ public class DungeonHubConnection {
         try (Response response = httpClient.newCall(request).execute()) {
             if (response.isSuccessful() && response.body() != null) {
                 return Optional.ofNullable(CarryType.fromJson(response.body().string()));
+            } else if(response.code() == 404) {
+                return Optional.empty();
             } else {
                 String result = "Error while trying to load carry type {} for server {}";
                 if (response.body() != null) {
@@ -840,30 +849,61 @@ public class DungeonHubConnection {
         return Optional.empty();
     }
 
-    public void addNewCarryType(long serverId, String identifier, long logChannel) {
-        //TODO implement
-    }
+    public Optional<CarryType> addNewCarryType(long serverId, String identifier, String displayName) {
+        RequestBody requestBody = getRequestBody(identifier, displayName);
 
-    public void removeCarryType(long serverId, String identifier) {
-        //TODO implement
-    }
-
-    public List<String> getLeaderboardTypesForServer(long serverId) {
-        Request request = getApiRequest("server/" + serverId + "/leaderboard-type")
-                .get()
+        Request request = getApiRequest("server/" + serverId + "/carry-type")
+                .post(requestBody)
                 .build();
 
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (response.isSuccessful() && response.body() != null) {
-                return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
-                        CarryLogService.getInstance().getStringListType());
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful() && response.body() != null) {
+                return Optional.ofNullable(CarryType.fromJson(response.body().string()));
             }
         }
         catch (IOException ioException) {
-            logger.error("Error while trying to load score types for server {}.", serverId);
+            logger.error("Error while trying to add new carry type {} to server {}.", identifier, serverId, ioException);
         }
 
-        return new ArrayList<>(0);
+        return Optional.empty();
+    }
+
+    public Optional<CarryType> removeCarryType(CarryType carryType) {
+        Request request = getApiRequest("server/" + carryType.getServer() + "/carry-type/" + carryType.getId())
+                .delete()
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                return Optional.ofNullable(CarryType.fromJson(response.body().string()));
+            }
+        }
+        catch (IOException ioException) {
+            logger.error("Error while trying to remove carry type {}.", carryType.getId(), ioException);
+        }
+
+        return Optional.empty();
+    }
+
+    public Optional<CarryType> updateCarryType(CarryType carryType) {
+        RequestBody requestBody = new FormBody.Builder()
+                .add("carryTypeJson", carryType.toJson())
+                .build();
+
+        Request request = getApiRequest("server/" + carryType.getServer() + "/carry-type")
+                .put(requestBody)
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                return Optional.ofNullable(CarryType.fromJson(response.body().string()));
+            }
+        }
+        catch (IOException ioException) {
+            logger.error("Error while trying to update carry type {}.", carryType.getId(), ioException);
+        }
+
+        return Optional.empty();
     }
 
     public Optional<CarryTier> getCarryTierFromCategory(long serverId, long categoryId) {

@@ -203,6 +203,10 @@ public abstract class Command {
         }
     }
 
+    public final Optional<String> getOptionalStringOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+        return slashCommandCreateEvent.getOptionByName(name).flatMap(SlashCommandInteractionOption::getStringValue);
+    }
+
     public final String getStringOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         Optional<String> stringValue = getOption(slashCommandCreateEvent, name).getStringValue();
 
@@ -225,6 +229,10 @@ public abstract class Command {
         }
 
         return booleanValue.get();
+    }
+
+    public final Optional<ServerChannel> getOptionalChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+        return slashCommandCreateEvent.getOptionByName(name).flatMap(SlashCommandInteractionOption::getChannelValue);
     }
 
     public final ServerChannel getChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
