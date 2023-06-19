@@ -55,7 +55,7 @@ public class LeaderboardService implements StartupListener {
 
         int counter = CarryLogService.getInstance().getOffsetFromPageNumber(page);
 
-        for(Map.Entry<Long, Long> entry : score.entrySet()) {
+        for (Map.Entry<Long, Long> entry : score.entrySet()) {
             embed.addField(
                     "#" + ++counter + " Carrier",
                     "<@" + entry.getKey() + "> - " + entry.getValue() + " Score"
@@ -104,7 +104,7 @@ public class LeaderboardService implements StartupListener {
     private void refreshLeaderboardInChannel(ServerTextChannel channel, List<Leaderboard> leaderboards) {
         List<EmbedBuilder> embeds = new ArrayList<>();
 
-        for(Leaderboard leaderboard : leaderboards) {
+        for (Leaderboard leaderboard : leaderboards) {
             embeds.add(leaderboard.getEmbed());
         }
 
@@ -129,22 +129,32 @@ public class LeaderboardService implements StartupListener {
         this.lastRefresh = Instant.now();
         logger.debug("Leaderboard refresh started!");
 
-        for(CarryType carryType : DungeonHubConnection.getInstance().loadCarryTypes()) {
+        Map<ServerTextChannel, List<Leaderboard>> leaderboards = new HashMap<>();
+
+        for (CarryType carryType : DungeonHubConnection.getInstance().loadCarryTypes()) {
             Optional<ServerTextChannel> leaderboardChannel = carryType.getLeaderboardChannel()
                     .flatMap(id -> BotStarter.getInstance().getBot().getServerTextChannelById(id));
 
-            List<Leaderboard> leaderboards = new ArrayList<>();
-
-            for(ScoreType scoreType : ScoreType.values()) {
-                leaderboards.add(new Leaderboard(
-                        getLeaderboardTitle(carryType, scoreType),
-                        DungeonHubConnection.getInstance().getLeaderboardData(carryType, scoreType, 1)
-                ));
+            if (leaderboardChannel.isEmpty()) {
+                continue;
             }
 
-            leaderboardChannel.ifPresent(channel -> refreshLeaderboardInChannel(channel,
-                    leaderboards));
+            for (ScoreType scoreType : ScoreType.values()) {
+                if (leaderboards.containsKey(leaderboardChannel.get())) {
+                    leaderboards.get(leaderboardChannel.get()).add(new Leaderboard(
+                            getLeaderboardTitle(carryType, scoreType),
+                            DungeonHubConnection.getInstance().getLeaderboardData(carryType, scoreType, 1)
+                    ));
+                } else {
+                    leaderboards.put(leaderboardChannel.get(), new ArrayList<>(List.of(new Leaderboard(
+                            getLeaderboardTitle(carryType, scoreType),
+                            DungeonHubConnection.getInstance().getLeaderboardData(carryType, scoreType, 1)
+                    ))));
+                }
+            }
         }
+
+        leaderboards.forEach(this::refreshLeaderboardInChannel);
 
         return true;
     }

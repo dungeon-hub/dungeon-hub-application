@@ -8,7 +8,9 @@ import me.taubsie.carrylogs.application.service.LeaderboardService;
 import me.taubsie.carrylogs.application.service.MessagesService;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
-import org.javacord.api.interaction.*;
+import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.SlashCommandOptionBuilder;
+import org.javacord.api.interaction.SlashCommandOptionType;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
 import java.util.List;
@@ -57,7 +59,7 @@ public class RefreshCommand extends Command {
 
                 slashCommandCreateEvent.getSlashCommandInteraction()
                         .getServer()
-                        .ifPresent(server -> MessagesService.getInstance().refreshPriceMessagesInServer(server));
+                        .ifPresent(server -> MessagesService.getInstance().refreshPriceMessages(server));
 
                 updater.addEmbed(getEmbed()
                                 .setColor(EmbedColor.POSITIVE.getColor())

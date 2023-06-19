@@ -6,10 +6,7 @@ import me.taubsie.carrylogs.application.connection.HypixelConnection;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
 import me.taubsie.carrylogs.application.start.BotStarter;
-import me.taubsie.dungeonhub.common.CarryInformation;
-import me.taubsie.dungeonhub.common.CarryLogService;
-import me.taubsie.dungeonhub.common.CarryType;
-import me.taubsie.dungeonhub.common.StrikeData;
+import me.taubsie.dungeonhub.common.*;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
@@ -391,14 +388,12 @@ public class ApplicationService {
     //TODO remove json object, maybe only work on strings if possible -> connection service as an api only
     public EmbedBuilder loadAuctionsMessage(List<JsonObject> auctionData, int page) {
         if (auctionData.isEmpty()) {
-            return ApplicationService.getInstance()
-                    .getEmbed()
+            return getEmbed()
                     .setColor(EmbedColor.NEGATIVE.getColor())
                     .setTitle("No auctions found! Try again later.");
         }
 
-        return ApplicationService.getInstance()
-                .getEmbed()
+        return getEmbed()
                 .setColor(EmbedColor.POSITIVE.getColor())
                 .setTitle("Auctions:")
                 .setDescription(String.join("\n", auctionData.stream()
@@ -412,8 +407,7 @@ public class ApplicationService {
     }
 
     public EmbedBuilder getCarryTypeEmbed(CarryType carryType) {
-        EmbedBuilder embed = ApplicationService.getInstance()
-                .getEmbed()
+        EmbedBuilder embed = getEmbed()
                 .setColor(EmbedColor.DEFAULT.getColor())
                 .addInlineField("Identifier", carryType.getIdentifier())
                 .addInlineField("Display Name", carryType.getDisplayName());
@@ -421,6 +415,22 @@ public class ApplicationService {
         carryType.getLogChannel().ifPresent(logChannel -> embed.addInlineField("Log Channel", "<#" + logChannel + ">"));
         carryType.getLeaderboardChannel().ifPresent(leaderboardChannel -> embed.addInlineField("Leaderboard Channel",
                 "<#" + leaderboardChannel + ">"));
+
+        return embed;
+    }
+
+    public EmbedBuilder getCarryTierEmbed(CarryTier carryTier) {
+        EmbedBuilder embed = getEmbed()
+                .setColor(EmbedColor.DEFAULT.getColor())
+                .addInlineField("Identifier", carryTier.getIdentifier())
+                .addInlineField("Display Name", carryTier.getDisplayName())
+                .addInlineField("Descriptive Name", carryTier.getDescriptiveName())
+                .addInlineField("Carry Type", carryTier.getCarryType().getDisplayName() + " (" + carryTier.getCarryType().getIdentifier() + ")");
+
+        carryTier.getCategory().ifPresent(category -> embed.addInlineField("Category", "<#" + category + ">"));
+        carryTier.getPriceChannel().ifPresent(priceChannel -> embed.addInlineField("Price Channel", "<#" + priceChannel + ">"));
+        carryTier.getThumbnailUrl().ifPresent(thumbnailUrl -> embed.addInlineField("Thumbnail URL", thumbnailUrl));
+
 
         return embed;
     }

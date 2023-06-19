@@ -9,6 +9,7 @@ import me.taubsie.carrylogs.application.exceptions.PlayerNotFoundException;
 import me.taubsie.dungeonhub.common.*;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import okhttp3.*;
+import org.javacord.api.entity.server.Server;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -794,7 +795,36 @@ public class DungeonHubConnection {
     }
 
     public List<CarryTier> loadCarryTiers() {
-        //TODO implement
+        Request request = getApiRequest("carry-tiers")
+                .get()
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful() && response.body() != null) {
+                return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
+                        CarryLogService.getInstance().getCarryTierListType());
+            }
+        } catch (IOException ioException) {
+            logger.error("Error while trying to load all carry tiers.", ioException);
+        }
+
+        return new ArrayList<>();
+    }
+
+    public List<CarryDifficulty> loadCarryDifficulties() {
+        Request request = getApiRequest("carry-difficulties")
+                .get()
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful() && response.body() != null) {
+                return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
+                        CarryLogService.getInstance().getCarryDifficultyListType());
+            }
+        } catch (IOException ioException) {
+            logger.error("Error while trying to load all carry difficulties.", ioException);
+        }
+
         return new ArrayList<>();
     }
 
@@ -806,13 +836,24 @@ public class DungeonHubConnection {
      * @return The list of carry tiers that were loaded from the database.
      */
     public List<CarryTier> loadCarryTiers(CarryType carryType) {
-        //TODO implement
-        return new ArrayList<>();
+        //TODO implement properly
+        return loadCarryTiers()
+                .stream().filter(carryTier -> carryTier.getCarryType().equals(carryType))
+                .toList();
+    }
+
+    public List<CarryTier> loadCarryTiers(Server server) {
+        //TODO implement properly
+        return loadCarryTiers()
+                .stream().filter(carryTier -> carryTier.getCarryType().getServer() == server.getId())
+                .toList();
     }
 
     public List<CarryDifficulty> loadCarryDifficulties(CarryTier carryTier) {
-        //TODO implement
-        return new ArrayList<>();
+        //TODO implement properly
+        return loadCarryDifficulties()
+                .stream().filter(carryDifficulty -> carryDifficulty.getCarryTier().equals(carryTier))
+                .toList();
     }
 
     public Optional<CarryType> loadCarryType(long serverId, String identifier) {
@@ -849,13 +890,19 @@ public class DungeonHubConnection {
     }
 
     public Optional<CarryTier> loadCarryTier(CarryType carryType, String identifier) {
-        //TODO implement
-        return Optional.empty();
+        //TODO implement properly
+        return loadCarryTiers()
+                .stream().filter(carryTier -> carryTier.getCarryType().equals(carryType))
+                .filter(carryTier -> carryTier.getIdentifier().equalsIgnoreCase(identifier))
+                .findFirst();
     }
 
     public Optional<CarryDifficulty> loadCarryDifficulty(CarryTier carryTier, String identifier) {
-        //TODO implement
-        return Optional.empty();
+        //TODO implement properly
+        return loadCarryDifficulties()
+                .stream().filter(carryDifficulty -> carryDifficulty.getCarryTier().equals(carryTier))
+                .filter(carryDifficulty -> carryDifficulty.getIdentifier().equalsIgnoreCase(identifier))
+                .findFirst();
     }
 
     public Optional<CarryType> addNewCarryType(long serverId, String identifier, String displayName) {
@@ -937,6 +984,25 @@ public class DungeonHubConnection {
         }
         catch (IOException ioException) {
             logger.error("Error while trying to load carry tier for category {}.", categoryId);
+        }
+
+        return Optional.empty();
+    }
+
+    public Optional<CarryTier> addNewCarryTier(CarryType carryType, String identifier, String displayName) {
+        RequestBody requestBody = getRequestBody(identifier, displayName);
+
+        Request request = getApiRequest("server/" + carryType.getServer() + "/carry-type/" + carryType.getId() + "/carry-tier")
+                .post(requestBody)
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful() && response.body() != null) {
+                return Optional.ofNullable(CarryTier.fromJson(response.body().string()));
+            }
+        }
+        catch (IOException ioException) {
+            logger.error("Error while trying to add new carry tier {} for carry type {}.", identifier, carryType.getId(), ioException);
         }
 
         return Optional.empty();

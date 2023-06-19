@@ -88,7 +88,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                         ApplicationService.getInstance()
                                 .getEmbed(carryInformation.getTime())
                                 .setTitle("Carry logged")
-                                .setDescription("This will we sent when the ticket is deleted.\n" +
+                                .setDescription("This will get sent when the ticket is deleted.\n" +
                                         "If the client doesn't want any more carries, please delete this ticket.")
                                 .setColor(new Color(/* TODO green */ 165, 23, 112))
                                 .addInlineField("Number of carries",

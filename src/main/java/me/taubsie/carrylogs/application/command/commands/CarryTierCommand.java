@@ -3,8 +3,13 @@ package me.taubsie.carrylogs.application.command.commands;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
+import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
+import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.exceptions.InvalidSubCommandException;
+import me.taubsie.carrylogs.application.service.ApplicationService;
+import me.taubsie.dungeonhub.common.CarryTier;
 import me.taubsie.dungeonhub.common.CarryType;
+import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -32,7 +37,51 @@ public class CarryTierCommand extends Command {
     }
 
     public void create(SlashCommandInteractionOption subCommand) {
-        //TODO implement
+        Server server = getServer();
+
+        Optional<CarryType> carryType = DungeonHubConnection.getInstance()
+                .loadCarryType(server.getId(), getStringOption(subCommand, "carry-type"));
+
+        if(carryType.isEmpty()) {
+            throw new InvalidOptionException("carry-type", "Carry Type couldn't be found.");
+        }
+
+        String identifier = getStringOption(subCommand, "identifier")
+                .strip()
+                .toLowerCase()
+                .replace(" ", "_");
+        String displayName = getStringOption(subCommand, "display-name");
+
+        //TODO custom method in ConnectionService for that check
+        if (DungeonHubConnection.getInstance()
+                .loadCarryTiers(carryType.get())
+                .stream()
+                .anyMatch(carryTier -> carryTier.getIdentifier().equalsIgnoreCase(identifier))) {
+            //TODO custom class
+            throw new CommandExecutionException() {
+                @Override
+                public String getMessage() {
+                    return "That carry tier already exists!";
+                }
+            };
+        }
+
+        Optional<CarryTier> carryTier = DungeonHubConnection.getInstance()
+                .addNewCarryTier(carryType.get(), identifier, displayName);
+
+        if (carryTier.isEmpty()) {
+            //TODO custom class?
+            throw new CommandExecutionException() {
+                @Override
+                public String getMessage() {
+                    return "Couldn't add that carry tier.";
+                }
+            };
+        }
+
+        respond(ApplicationService.getInstance()
+                .getCarryTierEmbed(carryTier.get())
+                .setTitle("Carry Tier created"));
     }
 
     public void delete(SlashCommandInteractionOption subCommand) {
@@ -76,7 +125,7 @@ public class CarryTierCommand extends Command {
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("edit")
                 .setDescription("Edit a carry tier")
-                .setOptions(List.of(getCarryTierOption()))
+                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), getCarryTierOption()))
                 .build();
     }
 

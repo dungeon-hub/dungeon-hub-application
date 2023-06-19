@@ -238,7 +238,7 @@ public class CarryTypeCommand extends Command {
         SlashCommandOption identifierOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
                 .setName("identifier")
-                .setDescription("The identifier of the carry type. It will be all lowercase, spaces will be replaced with underscores.")
+                .setDescription("The identifier of the carry type.")
                 .setRequired(true)
                 .setMaxLength(30)
                 .build();
@@ -313,14 +313,14 @@ public class CarryTypeCommand extends Command {
         SlashCommandOption logChannelOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.BOOLEAN)
                 .setName("log-channel")
-                .setDescription("Set if the channel that will be used for logging should be reset")
+                .setDescription("Set if the log channel should be reset")
                 .setRequired(true)
                 .build();
 
         SlashCommandOption leaderboardChannelOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.BOOLEAN)
                 .setName("leaderboard-channel")
-                .setDescription("Set if the channel that will be used to show a static leaderboard should be reset")
+                .setDescription("Set if the leaderboard channel should be reset")
                 .setRequired(true)
                 .build();
 
