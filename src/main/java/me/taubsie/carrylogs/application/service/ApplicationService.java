@@ -46,11 +46,11 @@ public class ApplicationService {
     }
 
     public String getFooter() {
-        return "discord.gg/dungeons • made by Taubsie#0911";
+        return "discord.gg/dungeons • made by @taubsie";
     }
 
     public String getPriceFooter() {
-        return "discord.gg/dungeons • also see /calc-price • made by Taubsie#0911";
+        return "discord.gg/dungeons • also see /calc-price • made by @taubsie";
     }
 
     public EmbedBuilder getEmbed(Instant time) {
@@ -213,7 +213,8 @@ public class ApplicationService {
 
     public EmbedBuilder loadEmbedFromCarryInformation(CarryInformation carryInformation, EmbedBuilder embedBuilder) {
         //TODO rework
-        me.taubsie.carrylogs.application.enums.CarryType carryType = me.taubsie.carrylogs.application.enums.CarryType.fromString(carryInformation.getCarryDifficulty().getIdentifier());
+        me.taubsie.carrylogs.application.enums.CarryType carryType =
+                me.taubsie.carrylogs.application.enums.CarryType.fromString(carryInformation.getCarryDifficulty().getIdentifier());
 
         embedBuilder.setColor(EmbedColor.INFORMATION.getColor())
                 .addInlineField("Number of carries",
@@ -333,8 +334,7 @@ public class ApplicationService {
                         : "Your score:")
                 .setColor(EmbedColor.DEFAULT.getColor());
 
-        //TODO format
-        scoreCount.entrySet().stream()
+        scoreCount.entrySet()
                 .forEach(entry -> embed.addInlineField(entry.getKey(), String.valueOf(entry.getValue())));
 
         return embed;
@@ -419,7 +419,8 @@ public class ApplicationService {
                 .addInlineField("Display Name", carryType.getDisplayName());
 
         carryType.getLogChannel().ifPresent(logChannel -> embed.addInlineField("Log Channel", "<#" + logChannel + ">"));
-        carryType.getLeaderboardChannel().ifPresent(leaderboardChannel -> embed.addInlineField("Leaderboard Channel", "<#" + leaderboardChannel + ">"));
+        carryType.getLeaderboardChannel().ifPresent(leaderboardChannel -> embed.addInlineField("Leaderboard Channel",
+                "<#" + leaderboardChannel + ">"));
 
         return embed;
     }

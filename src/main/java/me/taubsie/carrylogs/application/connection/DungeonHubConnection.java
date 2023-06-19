@@ -793,6 +793,11 @@ public class DungeonHubConnection {
         return new ArrayList<>();
     }
 
+    public List<CarryTier> loadCarryTiers() {
+        //TODO implement
+        return new ArrayList<>();
+    }
+
     /**
      * Loads all available carry tiers for the given carry type.
      * This represents the tiers of carry, so for example floor 1, master mode floor 1, tier 4, kuudra, ...

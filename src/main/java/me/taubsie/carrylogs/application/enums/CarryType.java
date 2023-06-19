@@ -2,14 +2,12 @@ package me.taubsie.carrylogs.application.enums;
 
 import lombok.Getter;
 import org.javacord.api.interaction.SlashCommandOptionChoice;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
 
 //this relates to the new CarryTier
-public enum CarryType
-{
+public enum CarryType {
     F4("F4", "Floor 4: Thorn", Arrays.asList(SlashCommandOptionChoice.create("Completion", "Completion"),
             SlashCommandOptionChoice.create("S", "S"))),
     F5("F5", "Floor 5: Livid", Arrays.asList(SlashCommandOptionChoice.create("Completion", "Completion"),
@@ -55,16 +53,9 @@ public enum CarryType
     public static CarryType fromString(String value) {
         try {
             return CarryType.valueOf(value);
-        } catch(IllegalArgumentException illegalArgumentException) {
+        }
+        catch (IllegalArgumentException illegalArgumentException) {
             return null;
         }
-    }
-
-    @Nullable public String getExtraInformation() {
-        if(this == CarryType.MASTER_MODE) {
-            return "All master mode carries will be S.";
-        }
-
-        return null;
     }
 }

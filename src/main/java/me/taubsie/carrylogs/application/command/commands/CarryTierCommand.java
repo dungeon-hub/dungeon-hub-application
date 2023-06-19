@@ -14,6 +14,7 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 import java.util.List;
 import java.util.Optional;
 
+//TODO make sure that category is unique
 @CommandParameters(name = "carry-tier", description = "Set up the carry tiers for this server.")
 public class CarryTierCommand extends Command {
     @Override

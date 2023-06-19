@@ -132,7 +132,7 @@ public class HypixelConnection {
     //TODO isn't this the same as getUserDiscord() ?
     public String getHypixelLinkedDiscord(UUID uuid) {
         //TODO implement
-        return "Taubsie#0911";
+        return "taubsie";
     }
 
     private Optional<String> getUserDiscord(UUID uuid) {

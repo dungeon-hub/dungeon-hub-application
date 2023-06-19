@@ -1,153 +1,109 @@
 package me.taubsie.carrylogs.application.service;
 
-import com.google.common.collect.Lists;
-import me.taubsie.carrylogs.application.classes.ServerProperty;
-import me.taubsie.carrylogs.application.enums.CarryPrice;
-import me.taubsie.carrylogs.application.enums.CarryType;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
-import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.start.BotStarter;
-import me.taubsie.dungeonhub.common.OnStart;
-import me.taubsie.dungeonhub.common.ProgramOrigin;
-import me.taubsie.dungeonhub.common.StartupListener;
-import org.javacord.api.DiscordApi;
+import me.taubsie.dungeonhub.common.*;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
-import org.javacord.api.entity.server.Server;
 
+import java.sql.Time;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @OnStart
 public class MessagesService implements StartupListener {
+    private static final long REFRESH_PERIOD = 1000L * 60 * 15;
     private static MessagesService instance;
 
     public static MessagesService getInstance() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new MessagesService();
         }
 
         return instance;
     }
 
-    public List<EmbedBuilder> getDungeonEmbed() {
-        List<EmbedBuilder> result = new ArrayList<>();
-        Map<CarryType, List<CarryPrice>> priceMap = new HashMap<>();
+    public Optional<EmbedBuilder> getPriceEmbed(CarryTier carryTier) {
+        List<CarryDifficulty> carryDifficulties = DungeonHubConnection.getInstance().loadCarryDifficulties(carryTier);
 
-        for(CarryPrice carryPrice : CarryPrice.getDungeonPrices()) {
-            if(priceMap.containsKey(carryPrice.getCarryType())) {
-                priceMap.get(carryPrice.getCarryType()).add(carryPrice);
-            } else {
-                priceMap.put(carryPrice.getCarryType(), Lists.newArrayList(carryPrice));
-            }
+        return getEmbedFromCarryDifficulty(carryDifficulties);
+    }
+
+    private Optional<EmbedBuilder> getEmbedFromCarryDifficulty(List<CarryDifficulty> carryDifficulties) {
+        if (carryDifficulties.isEmpty()) {
+            return Optional.empty();
         }
 
-        Map<CarryType, List<CarryPrice>> sortedMap = new TreeMap<>(priceMap);
+        CarryDifficulty mainCarryDifficulty = carryDifficulties.get(0);
 
-        for(Map.Entry<CarryType, List<CarryPrice>> entry : sortedMap.entrySet()) {
-            result.add(getEmbedFromPriceInformation(entry.getKey(), entry.getValue()));
-        }
+        String title = mainCarryDifficulty.getDescriptiveName();
 
-        return result;
-    }
+        String description = carryDifficulties.stream()
+                .map(carryDifficulty -> {
+                    StringBuilder result = new StringBuilder("### ");
 
-    public EmbedBuilder getEndermanEmbed() {
-        return getEmbedFromPriceInformation(CarryType.EMAN, CarryPrice.getEndermanPrices());
-    }
+                    result.append(carryDifficulty.getCarryTier().getDescriptiveName())
+                            .append(" Price\n- ")
+                            .append(ApplicationService.getInstance().makeNumberReadable(carryDifficulty.getPrice()))
+                            .append(" coins");
 
-    public EmbedBuilder getBlazeEmbed() {
-        return getEmbedFromPriceInformation(CarryType.BLAZE, CarryPrice.getBlazePrices());
-    }
-
-    public EmbedBuilder getKuudraEmbed() {
-        return getEmbedFromPriceInformation(CarryType.KUUDRA, CarryPrice.getKuudraPrices());
-    }
-
-    private EmbedBuilder getEmbedFromPriceInformation(CarryType carryType, List<CarryPrice> carryPrices) {
-        String title = carryType.getDescriptiveName();
-
-        String description = "";
-
-        if(carryType.getExtraInformation() != null) {
-            description += carryType.getExtraInformation() + "\n\n";
-        }
-
-        description +=  carryPrices.stream()
-                .map(carryPrice -> {
-                    String result = "### "
-                            + carryPrice.getCarryTier().getDescriptiveName()
-                            + " Price\n- "
-                            + ApplicationService.getInstance().makeNumberReadable(carryPrice.getPrice())
-                            + " coins";
-
-                    if(carryPrice.getBulkAmount() > 0) {
-                        result += "\n - "
-                                + ApplicationService.getInstance().makeNumberReadable(carryPrice.getBulkPrice())
-                                + " per carry if you buy " + carryPrice.getBulkAmount() + "+ carries.";
+                    if (carryDifficulty.getBulkAmount().isPresent() && carryDifficulty.getBulkPrice().isPresent()) {
+                        result.append("\n - ")
+                                .append(ApplicationService.getInstance().makeNumberReadable(carryDifficulty.getBulkPrice().get()))
+                                .append(" per carry if you buy ")
+                                .append(carryDifficulty.getBulkAmount().get())
+                                .append("+ carries.");
                     }
 
                     return result;
-                })
-                .collect(Collectors.joining("\n"));
+                }).collect(Collectors.joining("\n"));
 
-        return ApplicationService.getInstance()
+        EmbedBuilder embed = ApplicationService.getInstance()
                 .getEmbed()
                 .setFooter(ApplicationService.getInstance().getPriceFooter())
                 .setColor(EmbedColor.DEFAULT.getColor())
                 .setTitle(title)
-                .setDescription(description)
-                .setThumbnail(ApplicationService.getInstance().getCarryTierUrl(carryType));
-    }
+                .setDescription(description);
 
-    public void loadAllStaticMessages() {
-        DiscordApi bot = BotStarter.getInstance().getBot();
-
-        Stream.concat(bot.getServerById(IdList.SERVER.getId()).stream(), bot.getServerById(IdList.SERVER.getTestId()).stream())
-                .forEach(this::refreshPriceMessagesInServer);
-    }
-
-    public void refreshPriceMessagesInServer(Server server) {
-        if(server.getId() != IdList.SERVER.getId() && server.getId() != IdList.SERVER.getTestId()) {
-            return;
+        if (mainCarryDifficulty.getCarryTier().getThumbnailUrl().isPresent()) {
+            embed.setThumbnail(mainCarryDifficulty.getCarryTier().getThumbnailUrl().get());
         }
 
-        DiscordApi bot = BotStarter.getInstance().getBot();
-
-        ServerProperty.DUNGEON_PRICE_CHANNEL.getValue(server.getId())
-                .flatMap(bot::getServerTextChannelById)
-                .ifPresent(textChannel -> refreshPriceMessageInChannel(textChannel, getDungeonEmbed()));
-
-        ServerProperty.ENDERMAN_PRICE_CHANNEL.getValue(server.getId())
-                .flatMap(bot::getServerTextChannelById)
-                .ifPresent(textChannel -> refreshPriceMessageInChannel(textChannel, getEndermanEmbed()));
-
-        ServerProperty.BLAZE_PRICE_CHANNEL.getValue(server.getId())
-                .flatMap(bot::getServerTextChannelById)
-                .ifPresent(textChannel -> refreshPriceMessageInChannel(textChannel, getBlazeEmbed()));
-
-        ServerProperty.KUUDRA_PRICE_CHANNEL.getValue(server.getId())
-                .flatMap(bot::getServerTextChannelById)
-                .ifPresent(textChannel -> refreshPriceMessageInChannel(textChannel, getKuudraEmbed()));
+        return Optional.of(embed);
     }
 
-    private void refreshPriceMessageInChannel(ServerTextChannel textChannel, EmbedBuilder embed) {
-        Optional<Message> messageOptional =
-                textChannel.getMessagesAsStream().filter(message -> message.getAuthor().isYourself()).findFirst();
+    private void refreshPriceMessages() {
+        Map<Long, List<CarryTier>> carryTiersPerChannel = DungeonHubConnection.getInstance()
+                .loadCarryTiers().stream()
+                .filter(carryTier -> carryTier.getPriceChannel().isPresent())
+                .collect(Collectors.toMap(
+                        carryTier -> carryTier.getPriceChannel().get(),
+                        carryTier -> new ArrayList<>(List.of(carryTier)),
+                        (o, o2) -> {
+                            o.addAll(o2);
+                            return o;
+                        }
+                ));
 
-        if(messageOptional.isEmpty()) {
-            textChannel.sendMessage(embed);
-        } else {
-            messageOptional.get().createUpdater().removeAllEmbeds().addEmbed(embed).applyChanges().join();
-        }
+        carryTiersPerChannel
+                .forEach((key, value) -> BotStarter.getInstance().getBot()
+                        .getServerTextChannelById(key)
+                        .ifPresent(serverTextChannel -> refreshPriceMessageInChannel(
+                                serverTextChannel,
+                                value.stream()
+                                        .flatMap(carryTier -> getPriceEmbed(carryTier).stream())
+                                        .toList()
+                        ))
+                );
     }
 
     private void refreshPriceMessageInChannel(ServerTextChannel textChannel, List<EmbedBuilder> embeds) {
         Optional<Message> messageOptional =
                 textChannel.getMessagesAsStream().filter(message -> message.getAuthor().isYourself()).findFirst();
 
-        if(messageOptional.isEmpty()) {
+        if (messageOptional.isEmpty()) {
             textChannel.sendMessage(embeds);
         } else {
             messageOptional.get().createUpdater().removeAllEmbeds().addEmbeds(embeds).applyChanges().join();
@@ -156,6 +112,11 @@ public class MessagesService implements StartupListener {
 
     @Override
     public void postStart(ProgramOrigin programOrigin) {
-        loadAllStaticMessages();
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                refreshPriceMessages();
+            }
+        }, new Time(System.currentTimeMillis() + 15000), REFRESH_PERIOD);
     }
 }
