@@ -57,6 +57,11 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
                 }
             }
 
+            if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase("carry-difficulty")) {
+                //TODO implement
+                //first load from options, if they aren't there look for carry difficulty in the current channel
+            }
+
             CarryType carryType = null;
 
             if (autocompleteCreateEvent.getAutocompleteInteraction().getCommandName().equalsIgnoreCase("calc-price")) {

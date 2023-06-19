@@ -6,7 +6,9 @@ import me.taubsie.carrylogs.application.enums.*;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
-import org.javacord.api.interaction.*;
+import org.javacord.api.interaction.SlashCommandOption;
+import org.javacord.api.interaction.SlashCommandOptionBuilder;
+import org.javacord.api.interaction.SlashCommandOptionType;
 
 import java.util.Arrays;
 import java.util.List;
@@ -78,31 +80,6 @@ public class CalcPriceCommand extends Command {
 
     @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
-        //F4, F5, F6, F7, MM, Eman, Blaze, Kuudra
-        SlashCommandOptionBuilder typeOption = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.STRING)
-                .setName("type")
-                .setDescription("The type of carry you want.")
-                .setRequired(true);
-
-        Arrays.stream(CarryType.values())
-                .forEach(carryType ->
-                        typeOption.addChoice(
-                                new SlashCommandOptionChoiceBuilder()
-                                        .setName(carryType.name())
-                                        .setValue(carryType.name())
-                                        .build()
-                        ));
-
-        //Comp, S, S+, Tier 2-4, Kuudra Tiers
-        SlashCommandOption tierOption = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.STRING)
-                .setName("tier")
-                .setDescription("The tier of carry you want. If nothing shows up here, please enter the type of carry first.")
-                .setRequired(true)
-                .setAutocompletable(true)
-                .build();
-
         SlashCommandOption amountOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.LONG)
                 .setName("amount")
@@ -112,6 +89,9 @@ public class CalcPriceCommand extends Command {
                 .setRequired(true)
                 .build();
 
-        return Arrays.asList(typeOption.build(), tierOption, amountOption);
+        return Arrays.asList(CarryTypeCommand.getCarryTypeOption(),
+                CarryTierCommand.getCarryTierOption(),
+                CarryDifficultyCommand.getCarryDifficultyOption(),
+                amountOption);
     }
 }

@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+//TODO rework
 @CommandParameters(name = "rolesync",
         description = "Test command for adding carriers to database.",
         enabledForPermissions = {PermissionType.ADMINISTRATOR})

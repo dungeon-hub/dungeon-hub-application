@@ -3,22 +3,22 @@ package me.taubsie.carrylogs.application.messages;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.common.CarryType;
-import me.taubsie.dungeonhub.common.LeaderboardType;
+import me.taubsie.dungeonhub.common.ScoreType;
 import org.javacord.api.interaction.callback.ComponentInteractionOriginalMessageUpdater;
 
 public class LeaderboardMessage extends PageableMessage {
     private final CarryType carryType;
-    private final LeaderboardType leaderboardType;
+    private final ScoreType scoreType;
 
-    public LeaderboardMessage(int currentPage, long channel, long message, CarryType carryType, LeaderboardType leaderboardType) {
+    public LeaderboardMessage(int currentPage, long channel, long message, CarryType carryType, ScoreType scoreType) {
         super(currentPage, channel, message);
         this.carryType = carryType;
-        this.leaderboardType = leaderboardType;
+        this.scoreType = scoreType;
     }
 
     @Override
     public int getMaxPage() {
-        return DungeonHubConnection.getInstance().getMaxLeaderboardPage(carryType, leaderboardType);
+        return DungeonHubConnection.getInstance().getMaxLeaderboardPage(carryType, scoreType);
     }
 
     @Override
@@ -26,8 +26,8 @@ public class LeaderboardMessage extends PageableMessage {
         updater.removeAllEmbeds()
                 .addEmbed(
                         LeaderboardService.getInstance().getLeaderboardEmbed(
-                                LeaderboardService.getInstance().getLeaderboardTitle(carryType, leaderboardType),
-                                DungeonHubConnection.getInstance().getLeaderboardData(carryType, leaderboardType, currentPage),
+                                LeaderboardService.getInstance().getLeaderboardTitle(carryType, scoreType),
+                                DungeonHubConnection.getInstance().getLeaderboardData(carryType, scoreType, currentPage),
                                 currentPage,
                                 getMaxPage()
                         )

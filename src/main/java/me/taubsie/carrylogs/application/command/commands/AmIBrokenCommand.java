@@ -17,8 +17,7 @@ public class AmIBrokenCommand extends Command {
                 .getEmbed()
                 .setColor(Color.YELLOW)
                 .setDescription("""
-                        There is currently no feature that is known to be broken, but revamps of some code has happened. This can cause issues with:
-                        > Configs
+                        > The score and carry-system, including `/log` and others
                         > Strikes (unfinished)""");
 
         respondEphemeral(response);

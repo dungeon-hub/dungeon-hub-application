@@ -31,16 +31,16 @@ public class LeaderboardService implements StartupListener {
         return instance;
     }
 
-    public void registerPageListener(Message message, CarryType carryType, LeaderboardType leaderboardType) {
-        new LeaderboardMessage(1, message.getChannel().getId(), message.getId(), carryType, leaderboardType);
+    public void registerPageListener(Message message, CarryType carryType, ScoreType scoreType) {
+        new LeaderboardMessage(1, message.getChannel().getId(), message.getId(), carryType, scoreType);
     }
 
     public Set<String> getAvailableTypes() {
         return getLeaderboards().keySet();
     }
 
-    public String getLeaderboardTitle(CarryType carryType, LeaderboardType leaderboardType) {
-        return "Leaderboard | " + carryType.getDisplayName() + "-Carries" + leaderboardType.getLeaderboardSuffix();
+    public String getLeaderboardTitle(CarryType carryType, ScoreType scoreType) {
+        return "Leaderboard | " + carryType.getDisplayName() + "-Carries" + scoreType.getLeaderboardSuffix();
     }
 
     public EmbedBuilder getLeaderboardEmbed(String title, Map<Long, Long> score, int page) {
@@ -135,10 +135,10 @@ public class LeaderboardService implements StartupListener {
 
             List<Leaderboard> leaderboards = new ArrayList<>();
 
-            for(LeaderboardType leaderboardType : LeaderboardType.values()) {
+            for(ScoreType scoreType : ScoreType.values()) {
                 leaderboards.add(new Leaderboard(
-                        getLeaderboardTitle(carryType, leaderboardType),
-                        DungeonHubConnection.getInstance().getLeaderboardData(carryType, leaderboardType, 1)
+                        getLeaderboardTitle(carryType, scoreType),
+                        DungeonHubConnection.getInstance().getLeaderboardData(carryType, scoreType, 1)
                 ));
             }
 

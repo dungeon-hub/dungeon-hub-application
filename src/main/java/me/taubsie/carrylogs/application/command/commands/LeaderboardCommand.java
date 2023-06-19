@@ -7,7 +7,7 @@ import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.messages.PageableMessage;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.common.CarryType;
-import me.taubsie.dungeonhub.common.LeaderboardType;
+import me.taubsie.dungeonhub.common.ScoreType;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -30,17 +30,17 @@ public class LeaderboardCommand extends Command {
             throw new InvalidOptionException("carry-type");
         }
 
-        LeaderboardType leaderboardType = getEnumOption("leaderboard-type", LeaderboardType.class, LeaderboardType.DEFAULT);
+        ScoreType scoreType = getEnumOption("leaderboard-type", ScoreType.class, ScoreType.DEFAULT);
 
-        String leaderboardTitle = LeaderboardService.getInstance().getLeaderboardTitle(carryType.get(), leaderboardType);
+        String leaderboardTitle = LeaderboardService.getInstance().getLeaderboardTitle(carryType.get(), scoreType);
 
         //TODO use respondLater() and CompletableFuture
         slashCommandCreateEvent.getSlashCommandInteraction()
                 .respondLater()
                 .thenAccept(responseUpdater -> {
-                    Map<Long, Long> score = DungeonHubConnection.getInstance().getLeaderboardData(carryType.get(), leaderboardType, 1);
+                    Map<Long, Long> score = DungeonHubConnection.getInstance().getLeaderboardData(carryType.get(), scoreType, 1);
 
-                    int maxPage = DungeonHubConnection.getInstance().getMaxLeaderboardPage(carryType.get(), leaderboardType);
+                    int maxPage = DungeonHubConnection.getInstance().getMaxLeaderboardPage(carryType.get(), scoreType);
 
                     EmbedBuilder embed = LeaderboardService.getInstance().getLeaderboardEmbed(leaderboardTitle, score,
                             1, maxPage);
@@ -51,28 +51,25 @@ public class LeaderboardCommand extends Command {
                             .update()
                             .join();
 
-                    LeaderboardService.getInstance().registerPageListener(message, carryType.get(), leaderboardType);
+                    LeaderboardService.getInstance().registerPageListener(message, carryType.get(), scoreType);
                 });
+    }
+
+    public static SlashCommandOption getScoreTypeOption() {
+        SlashCommandOptionBuilder scoreTypeOptionBuilder = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName("score-type")
+                .setDescription("Select which type of score you want.")
+                .setRequired(false);
+
+        Arrays.stream(ScoreType.values()).forEach(leaderboardType -> scoreTypeOptionBuilder.addChoice(leaderboardType.getDisplayName(), leaderboardType.getName()));
+
+        return scoreTypeOptionBuilder.build();
     }
 
     @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
-        SlashCommandOption carryTypeOption = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.STRING)
-                .setName("carry-type")
-                .setDescription("Select which leaderboard you want to see.")
-                .setAutocompletable(true)
-                .setRequired(true)
-                .build();
 
-        SlashCommandOptionBuilder leaderboardTypeOptionBuilder = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.STRING)
-                .setName("leaderboard-type")
-                .setDescription("Select which type of leaderboard you want.")
-                .setRequired(false);
-
-        Arrays.stream(LeaderboardType.values()).forEach(leaderboardType -> leaderboardTypeOptionBuilder.addChoice(leaderboardType.getName(), leaderboardType.getName()));
-
-        return List.of(carryTypeOption, leaderboardTypeOptionBuilder.build());
+        return List.of(CarryTypeCommand.getCarryTypeOption(), getScoreTypeOption());
     }
 }
