@@ -179,7 +179,14 @@ public abstract class Command {
 
     public final <T extends Enum<T> & Nameable> T getEnumOption(@NotNull String name, @NotNull Class<T> enumClass, T defaultValue) {
         try {
-            return T.valueOf(enumClass, name);
+            String value = getStringOption(name);
+
+            Optional<T> possibleMatch = Arrays.stream(enumClass.getEnumConstants())
+                    .filter(t -> t.getName().equalsIgnoreCase(value))
+                    .findFirst();
+
+            return possibleMatch
+                    .orElseGet(() -> T.valueOf(enumClass, value));
         }
         catch(IllegalArgumentException illegalArgumentException) {
             return defaultValue;
@@ -188,7 +195,15 @@ public abstract class Command {
 
     public final <T extends Enum<T> & Nameable> T getEnumOption(@NotNull String name, @NotNull Class<T> enumClass) {
         try {
-            return T.valueOf(enumClass, name);
+            String value = getStringOption(name);
+
+            Optional<T> possibleMatch = Arrays.stream(enumClass.getEnumConstants())
+                    .filter(t -> t.getName().equalsIgnoreCase(value))
+                    .findFirst();
+
+            return possibleMatch
+                    .orElseGet(() -> T.valueOf(enumClass, value));
+
         }
         catch(IllegalArgumentException illegalArgumentException) {
             String message = String.format(

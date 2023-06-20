@@ -130,8 +130,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                                     .addInlineField("Number of carries",
                                                             String.valueOf(carryInformation.getAmountOfCarries()))
                                                     .addInlineField("Type of carry",
-                                                            (carryType != null ? carryType.getPrettyName() :
-                                                                    carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
+                                                            carryInformation.getCarryTier().getDisplayName() + " - " + carryInformation.getCarryDifficulty().getDisplayName())
                                                     .addInlineField("Player",
                                                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                                     .addInlineField("Carrier", carrier.getMentionTag())
@@ -159,8 +158,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                             .addInlineField("Number of carries",
                                                     String.valueOf(carryInformation.getAmountOfCarries()))
                                             .addInlineField("Type of carry",
-                                                    (carryType != null ? carryType.getPrettyName() :
-                                                            carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
+                                                    carryInformation.getCarryTier().getDisplayName() + " - " + carryInformation.getCarryDifficulty().getDisplayName())
                                             .addInlineField("Player",
                                                     messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                             .addInlineField("Carrier",
@@ -212,8 +210,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                                     .addInlineField("Number of carries",
                                                             String.valueOf(carryInformation.getAmountOfCarries()))
                                                     .addInlineField("Type of carry",
-                                                            (carryType != null ? carryType.getPrettyName() :
-                                                                    carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
+                                                            carryInformation.getCarryTier().getDisplayName() + " - " + carryInformation.getCarryDifficulty().getDisplayName())
                                                     .addInlineField("Player",
                                                             messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                                     .addInlineField("Carrier", carrier.getMentionTag())
@@ -244,9 +241,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                             .addInlineField("Number of carries",
                                                     String.valueOf(carryInformation.getAmountOfCarries()))
                                             .addInlineField("Type of carry",
-                                                    (carryType != null ? carryType.getPrettyName() :
-                                                            carryInformation.getCarryDifficulty()) +
-                                                            " - " + carryInformation.getCarryType())
+                                                    carryInformation.getCarryTier().getDisplayName() + " - " + carryInformation.getCarryDifficulty().getDisplayName())
                                             .addInlineField("Player",
                                                     messageComponentCreateEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                             .addInlineField("Carrier",

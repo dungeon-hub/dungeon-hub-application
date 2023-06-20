@@ -99,7 +99,7 @@ public class LogCommand extends Command {
                         .setTitle("Are you sure that you want to log this?")
                         .setColor(EmbedColor.INFORMATION.getColor())
                         .addInlineField("Number of carries", String.valueOf(amountOfCarries))
-                        .addInlineField("Type of carry", carryDifficulty.get().getCarryTier().getDisplayName() + " | " + carryDifficulty.get().getDisplayName())
+                        .addInlineField("Type of carry", carryDifficulty.get().getCarryTier().getDisplayName() + " - " + carryDifficulty.get().getDisplayName())
                         .addInlineField("Player", carried.getMentionTag())
                         .addInlineField("Carrier", carrier.getMentionTag()))
                 .addComponents(ActionRow.of(Button.success("send_log", "Confirm"),
