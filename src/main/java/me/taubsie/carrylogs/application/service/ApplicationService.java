@@ -188,16 +188,20 @@ public class ApplicationService {
                 .addIntents(Intent.MESSAGE_CONTENT, Intent.GUILD_MEMBERS);
     }
 
+    public EmbedBuilder getErrorEmbed() {
+        return getErrorEmbed(getEmbed());
+    }
+
+    public EmbedBuilder getErrorEmbed(EmbedBuilder embed) {
+        return embed.setTitle("Error").setColor(EmbedColor.NEGATIVE.getColor());
+    }
+
     public void respondWithError(SlashCommandCreateEvent slashCommandCreateEvent,
                                  CommandExecutionException commandExecutionException) {
         slashCommandCreateEvent.getSlashCommandInteraction()
                 .createImmediateResponder()
                 .setFlags(MessageFlag.EPHEMERAL)
-                .addEmbed(ApplicationService.getInstance()
-                        .getEmbed()
-                        .setTitle("Error")
-                        .setDescription(commandExecutionException.getMessage())
-                        .setColor(EmbedColor.NEGATIVE.getColor()))
+                .addEmbed(getErrorEmbed().setDescription(commandExecutionException.getMessage()))
                 .respond();
     }
 
@@ -425,12 +429,35 @@ public class ApplicationService {
                 .addInlineField("Identifier", carryTier.getIdentifier())
                 .addInlineField("Display Name", carryTier.getDisplayName())
                 .addInlineField("Descriptive Name", carryTier.getDescriptiveName())
-                .addInlineField("Carry Type", carryTier.getCarryType().getDisplayName() + " (" + carryTier.getCarryType().getIdentifier() + ")");
+                .addInlineField("Carry Type",
+                        carryTier.getCarryType().getDisplayName() + " (" + carryTier.getCarryType().getIdentifier() + ")");
 
         carryTier.getCategory().ifPresent(category -> embed.addInlineField("Category", "<#" + category + ">"));
-        carryTier.getPriceChannel().ifPresent(priceChannel -> embed.addInlineField("Price Channel", "<#" + priceChannel + ">"));
+        carryTier.getPriceChannel().ifPresent(priceChannel -> embed.addInlineField("Price Channel",
+                "<#" + priceChannel + ">"));
         carryTier.getThumbnailUrl().ifPresent(thumbnailUrl -> embed.addInlineField("Thumbnail URL", thumbnailUrl));
 
+
+        return embed;
+    }
+
+    public EmbedBuilder getCarryDifficultyEmbed(CarryDifficulty carryDifficulty) {
+        EmbedBuilder embed = getEmbed()
+                .setColor(EmbedColor.DEFAULT.getColor())
+                .addInlineField("Identifier", carryDifficulty.getIdentifier())
+                .addInlineField("Display Name", carryDifficulty.getDisplayName())
+                .addInlineField("Carry Type",
+                        carryDifficulty.getCarryType().getDisplayName() + " (" + carryDifficulty.getCarryType().getIdentifier() + ")")
+                .addInlineField("Carry Tier",
+                        carryDifficulty.getCarryTier().getDisplayName() + " (" + carryDifficulty.getCarryTier().getIdentifier() + ")")
+                .addInlineField("Price", String.valueOf(carryDifficulty.getPrice()))
+                .addInlineField("Score", String.valueOf(carryDifficulty.getScore()));
+
+        carryDifficulty.getBulkAmount()
+                .ifPresent(integer -> embed.addInlineField("Bulk Amount", String.valueOf(integer)));
+        carryDifficulty.getBulkPrice()
+                .ifPresent(integer -> embed.addInlineField("Bulk Price", String.valueOf(integer)));
+        carryDifficulty.getActualThumbnailUrl().ifPresent(s -> embed.addInlineField("Thumbnail URL", s));
 
         return embed;
     }

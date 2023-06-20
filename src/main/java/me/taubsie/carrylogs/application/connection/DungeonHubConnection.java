@@ -1007,4 +1007,30 @@ public class DungeonHubConnection {
 
         return Optional.empty();
     }
+
+    public Optional<CarryTier> removeCarryTier(CarryTier carryTier) {
+        //TODO implement
+        return Optional.empty();
+    }
+
+    public Optional<CarryTier> updateCarryTier(CarryTier carryTier) {
+        RequestBody requestBody = new FormBody.Builder()
+                .add("carryTierJson", carryTier.toJson())
+                .build();
+
+        Request request = getApiRequest("server/" + carryTier.getCarryType().getServer() + "/carry-type/" + carryTier.getCarryType().getId() + "/carry-tier")
+                .put(requestBody)
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                return Optional.ofNullable(CarryTier.fromJson(response.body().string()));
+            }
+        }
+        catch (IOException ioException) {
+            logger.error("Error while trying to update carry tier {}.", carryTier.getId(), ioException);
+        }
+
+        return Optional.empty();
+    }
 }

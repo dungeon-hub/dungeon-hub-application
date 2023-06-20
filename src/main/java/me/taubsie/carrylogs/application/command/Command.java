@@ -232,7 +232,8 @@ public abstract class Command {
     }
 
     public final Optional<ServerChannel> getOptionalChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
-        return slashCommandCreateEvent.getOptionByName(name).flatMap(SlashCommandInteractionOption::getChannelValue);
+        return slashCommandCreateEvent.getOptionByName(name)
+                .flatMap(SlashCommandInteractionOption::getChannelValue);
     }
 
     public final ServerChannel getChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
