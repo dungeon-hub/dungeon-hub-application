@@ -61,6 +61,15 @@ public enum RoleConversion {
         };
     }
 
+    public static RoleConversion[] getDungeonCarryRolesWithoutMasterMode() {
+        return new RoleConversion[]{
+                F4_ROLE,
+                F5_ROLE,
+                F6_ROLE,
+                F7_ROLE
+        };
+    }
+
     public static RoleConversion[] getKuudraCarryRoles() {
         return new RoleConversion[]{
                 KUUDRA_BASIC_ROLE,

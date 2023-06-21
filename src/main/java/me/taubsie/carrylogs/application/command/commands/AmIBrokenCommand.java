@@ -10,7 +10,6 @@ import java.awt.*;
 
 @CommandParameters(name = "amibroken", description = "Tells you if the bot is currently broken.", enabledInDms = true)
 public class AmIBrokenCommand extends Command {
-    //TODO update
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         EmbedBuilder response = ApplicationService.getInstance()

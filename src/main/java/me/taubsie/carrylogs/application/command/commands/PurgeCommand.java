@@ -35,13 +35,12 @@ public class PurgeCommand extends Command {
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         long threshold = getLongOption("threshold");
 
-        //TODO test enum loading and loading of purge data etc
         PurgeType purgeType = getEnumOption("purge-type", PurgeType.class);
 
-        Map<Long, Long> purgeData = purgeType.getPurgeData(threshold);
+        Map<Long, Long> purgeData = purgeType.getPurgeData(threshold, getServer().getId());
         List<RoleConversion> rolesToRemove = purgeType.getRolesToRemove();
 
-        if(purgeData.isEmpty()) {
+        if (purgeData.isEmpty()) {
             respondEphemeral(ApplicationService.getInstance()
                     .getEmbed()
                     .setColor(EmbedColor.INFORMATION.getColor())
@@ -56,10 +55,10 @@ public class PurgeCommand extends Command {
         List<String> purgeDisplay = new ArrayList<>();
 
         for(Map.Entry<Long, Long> entry : purgeData.entrySet()) {
-            User carrier =
-                    slashCommandCreateEvent.getSlashCommandInteraction().getApi().getUserById(entry.getKey()).join();
+            User carrier = slashCommandCreateEvent.getApi().getUserById(entry.getKey()).join();
 
-            PurgeData userPurgeData = new PurgeData(getServer().getId(), carrier.getId(), rolesToRemove, entry.getValue(), purgeType, threshold);
+            PurgeData userPurgeData = new PurgeData(getServer().getId(), carrier.getId(), rolesToRemove,
+                    entry.getValue(), purgeType, threshold);
 
             PurgingService.getInstance().addPurgeData(userPurgeData);
 
@@ -74,7 +73,7 @@ public class PurgeCommand extends Command {
                         .getEmbed()
                         .setColor(EmbedColor.DEFAULT.getColor())
                         .setTitle("Added the roles of " + amount + " carriers to removal-list.")
-                        .setDescription((purgedList.length() >= 4090)
+                        .setDescription((purgedList.length() >= 4000)
                                 ? "The list of carriers purged would be too long.\nThe full list has been logged, " +
                                 "contact administrators for more information."
                                 : purgedList))
@@ -101,7 +100,8 @@ public class PurgeCommand extends Command {
                 .setDescription("The type of purge.")
                 .setRequired(true);
 
-        Arrays.stream(PurgeType.values()).forEach(purgeType -> carryTypeOption.addChoice(purgeType.getDisplayName(), purgeType.name()));
+        Arrays.stream(PurgeType.values()).forEach(purgeType -> carryTypeOption.addChoice(purgeType.getDisplayName(),
+                purgeType.name()));
 
         return Arrays.asList(carryAmountOption, carryTypeOption.build());
     }

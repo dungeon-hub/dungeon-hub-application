@@ -4,6 +4,7 @@ import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.exceptions.CommandExecutionException;
+import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.exceptions.InvalidSubCommandException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.dungeonhub.common.CarryType;
@@ -21,7 +22,7 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 import java.util.List;
 import java.util.Optional;
 
-//TODO make it so that carry type identifier can't start with either event or alltime
+//TODO add optional arguments in create command too
 @CommandParameters(name = "carry-type", description = "Set up the carry types for this server.",
         enabledForPermissions = PermissionType.ADMINISTRATOR)
 public class CarryTypeCommand extends Command {
@@ -47,18 +48,8 @@ public class CarryTypeCommand extends Command {
                 .replace(" ", "_");
         String displayName = getStringOption(subCommand, "display-name");
 
-        //TODO custom method in ConnectionService for that check
-        if (DungeonHubConnection.getInstance()
-                .loadCarryTypesForServer(server.getId())
-                .stream()
-                .anyMatch(carryType -> carryType.getIdentifier().equalsIgnoreCase(identifier))) {
-            //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "That carry type already exists!";
-                }
-            };
+        if (DungeonHubConnection.getInstance().isCarryTypeExistant(server.getId(), identifier)) {
+            throw new InvalidOptionException("identifier", "That carry type already exists!");
         }
 
         Optional<CarryType> carryType = DungeonHubConnection.getInstance()

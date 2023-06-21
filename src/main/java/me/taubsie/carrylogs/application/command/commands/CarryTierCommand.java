@@ -24,11 +24,9 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 import java.util.List;
 import java.util.Optional;
 
-//TODO make sure that category is unique
+//TODO add optional arguments in create command too
 @CommandParameters(name = "carry-tier", description = "Set up the carry tiers for this server.")
 public class CarryTierCommand extends Command {
-
-
     public static SlashCommandOption getCarryTierOption() {
         return new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
@@ -70,18 +68,8 @@ public class CarryTierCommand extends Command {
                 .replace(" ", "_");
         String displayName = getStringOption(subCommand, "display-name");
 
-        //TODO custom method in ConnectionService for that check
-        if (DungeonHubConnection.getInstance()
-                .loadCarryTiers(carryType.get())
-                .stream()
-                .anyMatch(carryTier -> carryTier.getIdentifier().equalsIgnoreCase(identifier))) {
-            //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "That carry tier already exists!";
-                }
-            };
+        if (DungeonHubConnection.getInstance().isCarryTierExistant(carryType.get(), identifier)) {
+            throw new InvalidOptionException("identifier", "That carry tier already exists!");
         }
 
         Optional<CarryTier> carryTier = DungeonHubConnection.getInstance()

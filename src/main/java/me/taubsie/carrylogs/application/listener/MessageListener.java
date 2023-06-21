@@ -89,6 +89,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
         String ignOptional = Arrays.stream(lines)
                 .filter(s -> s.startsWith("IGN: "))
                 .findFirst()
+                //TODO replace with orElseGet
                 .orElse(user.getNickname(server)
                         .orElse(null));
 

@@ -59,7 +59,7 @@ public class ApplicationService {
     public User getBotOwner(DiscordApi api) {
         return Objects.requireNonNull(api.getCachedTeam()
                 .map(team -> team.requestOwner().join())
-                .orElse(api.getOwner().map(CompletableFuture::join)
+                .orElseGet(() -> api.getOwner().map(CompletableFuture::join)
                         .orElse(null)));
     }
 

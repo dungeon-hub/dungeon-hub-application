@@ -484,7 +484,7 @@ public class DungeonHubConnection {
         });
     }
 
-    public Map<Long, Long> getPurgeableUsers(long amount, String type) {
+    public Map<Long, Long> getPurgeableUsers(long amount, long serverId, String type) {
         Request request = getApiRequest("purge/" + type + "/" + amount)
                 .get()
                 .build();
@@ -1032,5 +1032,23 @@ public class DungeonHubConnection {
         }
 
         return Optional.empty();
+    }
+
+    public boolean isCarryTypeExistant(long server, String identifier) {
+        return loadCarryTypesForServer(server)
+                .stream()
+                .anyMatch(carryType -> carryType.getIdentifier().equalsIgnoreCase(identifier));
+    }
+
+    public boolean isCarryTierExistant(CarryType carryType, String identifier) {
+        return loadCarryTiers(carryType)
+                .stream()
+                .anyMatch(carryTier -> carryTier.getIdentifier().equalsIgnoreCase(identifier));
+    }
+
+    public boolean isCarryDifficultyExistant(CarryTier carryTier, String identifier) {
+        return loadCarryDifficulties(carryTier)
+                .stream()
+                .anyMatch(carryDifficulty -> carryDifficulty.getIdentifier().equalsIgnoreCase(identifier));
     }
 }

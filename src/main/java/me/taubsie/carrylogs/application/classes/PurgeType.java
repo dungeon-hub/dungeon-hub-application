@@ -10,14 +10,22 @@ import java.util.Map;
 public enum PurgeType implements Nameable {
     DUNGEONS(
             "dungeons",
-            threshold -> DungeonHubConnection.getInstance().getPurgeableUsers(threshold, "dungeons"),
+            (threshold, serverId) -> DungeonHubConnection.getInstance().getPurgeableUsers(threshold, serverId,
+                    "dungeons"),
             RoleConversion::getDungeonCarryRoles
-            ),
+    ),
+    DUNGEONS_NO_MASTERMODE(
+            "dungeons without mastermode",
+            (threshold, serverId) -> DungeonHubConnection.getInstance().getPurgeableUsers(threshold, serverId,
+                    "dungeons"),
+            RoleConversion::getDungeonCarryRolesWithoutMasterMode
+    ),
     SLAYER(
             "slayer",
-            threshold -> DungeonHubConnection.getInstance().getPurgeableUsers(threshold, "slayer"),
+            (threshold, serverId) -> DungeonHubConnection.getInstance().getPurgeableUsers(threshold, serverId,
+                    "slayer"),
             RoleConversion::getSlayerCarryRoles
-            );
+    );
 
     private final String displayName;
     private final PurgeData purgeData;
@@ -39,8 +47,8 @@ public enum PurgeType implements Nameable {
         return displayName;
     }
 
-    public Map<Long, Long> getPurgeData(long threshold) {
-        return purgeData.execute(threshold);
+    public Map<Long, Long> getPurgeData(long threshold, long serverId) {
+        return purgeData.execute(threshold, serverId);
     }
 
     public List<RoleConversion> getRolesToRemove() {
@@ -48,7 +56,7 @@ public enum PurgeType implements Nameable {
     }
 
     private interface PurgeData {
-        Map<Long, Long> execute(long threshold);
+        Map<Long, Long> execute(long threshold, long serverId);
     }
 
     private interface RolesToRemove {

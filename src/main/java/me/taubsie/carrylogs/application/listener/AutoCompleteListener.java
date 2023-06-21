@@ -1,8 +1,12 @@
 package me.taubsie.carrylogs.application.listener;
 
+import me.taubsie.carrylogs.application.command.commands.CarryTypeCommand;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
-import me.taubsie.carrylogs.application.enums.CarryType;
 import me.taubsie.carrylogs.application.enums.IdList;
+import me.taubsie.dungeonhub.common.CarryTier;
+import org.javacord.api.entity.DiscordEntity;
+import org.javacord.api.entity.channel.Categorizable;
+import org.javacord.api.entity.channel.Channel;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.AutocompleteCreateEvent;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
@@ -27,20 +31,26 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
                 throw new NoSuchElementException();
             }
 
-            if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase("carry-type")) {
+            if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase(
+                    "carry-type")) {
                 autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(
                         DungeonHubConnection.getInstance()
                                 .loadCarryTypesForServer(server.getId())
                                 .stream()
-                                .map(carryType -> SlashCommandOptionChoice.create(carryType.getDisplayName(), carryType.getIdentifier()))
+                                .map(carryType -> SlashCommandOptionChoice.create(carryType.getDisplayName(),
+                                        carryType.getIdentifier()))
                                 .toList()
                 );
                 return;
             }
 
-            if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase("carry-tier")) {
+            if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase(
+                    "carry-tier")) {
                 if (autocompleteCreateEvent.getAutocompleteInteraction().getOptionByName("carry-type").isPresent()) {
-                    Optional<String> carryTypeIdentifier = autocompleteCreateEvent.getAutocompleteInteraction().getOptionByName("carry-type").get().getStringValue();
+                    Optional<String> carryTypeIdentifier =
+                            autocompleteCreateEvent.getAutocompleteInteraction()
+                                    .getOptionByName("carry-type")
+                                    .flatMap(SlashCommandInteractionOption::getStringValue);
 
                     if (carryTypeIdentifier.isPresent()) {
                         autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(
@@ -49,20 +59,57 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
                                         .map(carryType -> DungeonHubConnection.getInstance().loadCarryTiers(carryType))
                                         .orElse(List.of())
                                         .stream()
-                                        .map(carryTier -> SlashCommandOptionChoice.create(carryTier.getDisplayName(), carryTier.getIdentifier()))
+                                        .map(carryTier -> SlashCommandOptionChoice.create(carryTier.getDisplayName(),
+                                                carryTier.getIdentifier()))
                                         .toList()
                         );
                         return;
                     }
                 }
+
+                autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(List.of());
+                return;
             }
 
-            if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase("carry-difficulty")) {
-                //TODO implement
-                //first load from options, if they aren't there look for carry difficulty in the current channel
+            if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase(
+                    "carry-difficulty")) {
+                Optional<String> carryTierIdentifier = autocompleteCreateEvent.getAutocompleteInteraction()
+                        .getOptionByName("carry-tier")
+                        .flatMap(SlashCommandInteractionOption::getStringValue);
+
+
+                if (carryTierIdentifier.isPresent()) {
+                    Optional<CarryTier> carryTier = autocompleteCreateEvent.getAutocompleteInteraction()
+                            .getOptionByName("carry-type")
+                            .flatMap(SlashCommandInteractionOption::getStringValue)
+                            .flatMap(s -> DungeonHubConnection.getInstance().loadCarryType(server.getId(), s))
+                            .flatMap(carryType -> DungeonHubConnection.getInstance().loadCarryTier(carryType,
+                                    carryTierIdentifier.get()))
+                            .or(() -> autocompleteCreateEvent.getAutocompleteInteraction()
+                                    .getChannel()
+                                    .flatMap(Channel::asCategorizable)
+                                    .flatMap(Categorizable::getCategory)
+                                    .map(DiscordEntity::getId)
+                                    .flatMap(category -> DungeonHubConnection.getInstance()
+                                            .getCarryTierFromCategory(server.getId(), category))
+                            );
+
+                    if (carryTier.isPresent()) {
+                        autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(
+                                DungeonHubConnection.getInstance()
+                                        .loadCarryDifficulties(carryTier.get()).stream()
+                                        .map(carryDifficulty -> SlashCommandOptionChoice.create(carryDifficulty.getDisplayName(), carryDifficulty.getIdentifier()))
+                                        .toList()
+                        );
+                        return;
+                    }
+                }
+
+                autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(List.of());
+                return;
             }
 
-            CarryType carryType = null;
+            me.taubsie.carrylogs.application.enums.CarryType carryType = null;
 
             if (autocompleteCreateEvent.getAutocompleteInteraction().getCommandName().equalsIgnoreCase("calc-price")) {
                 Optional<SlashCommandInteractionOption> typeOption =
@@ -84,7 +131,7 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
                                     .getCategory().orElseThrow()
                                     .getId()))
                             .map(IdList::getCarryType))
-                            .map(CarryType::getChoiceList)
+                            .map(me.taubsie.carrylogs.application.enums.CarryType::getChoiceList)
                             .flatMap(Collection::stream)
                             .distinct()
                             .toList()
@@ -95,9 +142,9 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
         }
     }
 
-    private CarryType getCarryTypeFromOption(SlashCommandInteractionOption typeOption) {
+    private me.taubsie.carrylogs.application.enums.CarryType getCarryTypeFromOption(SlashCommandInteractionOption typeOption) {
         try {
-            return CarryType.valueOf(typeOption.getStringValue().orElse(""));
+            return me.taubsie.carrylogs.application.enums.CarryType.valueOf(typeOption.getStringValue().orElse(""));
         }
         catch (IllegalArgumentException illegalArgumentException) {
             return null;
