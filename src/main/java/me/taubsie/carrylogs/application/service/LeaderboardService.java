@@ -35,10 +35,6 @@ public class LeaderboardService implements StartupListener {
         new LeaderboardMessage(1, message.getChannel().getId(), message.getId(), carryType, scoreType);
     }
 
-    public Set<String> getAvailableTypes() {
-        return getLeaderboards().keySet();
-    }
-
     public String getLeaderboardTitle(CarryType carryType, ScoreType scoreType) {
         return "Leaderboard | " + carryType.getDisplayName() + "-Carries" + scoreType.getLeaderboardSuffix();
     }
@@ -68,21 +64,6 @@ public class LeaderboardService implements StartupListener {
     public EmbedBuilder getLeaderboardEmbed(String title, Map<Long, Long> score, int page, int maxPage) {
         return getLeaderboardEmbed(title, score, page)
                 .setFooter("Page " + page + "/" + maxPage);
-    }
-
-    private Map<String, String> getLeaderboards() {
-        Map<String, String> leaderboards = new HashMap<>();
-
-        leaderboards.put("dungeons", "Leaderboard | Dungeon-Carries");
-        leaderboards.put("slayer", "Leaderboard | Slayer-Carries");
-        leaderboards.put("kuudra", "Leaderboard | Kuudra-Carries");
-        leaderboards.put("alltime-dungeons", "Leaderboard | Dungeon-Carries (all-time)");
-        leaderboards.put("alltime-slayer", "Leaderboard | Slayer-Carries (all-time)");
-        leaderboards.put("alltime-kuudra", "Leaderboard | Kuudra-Carries (all-time)");
-        leaderboards.put("event-slayer", "Leaderboard | Slayer-Carries (event)");
-        leaderboards.put("event-dungeons", "Leaderboard | Dungeon-Carries (event)");
-
-        return leaderboards;
     }
 
     public long getNextPossibleRefresh() {
@@ -140,6 +121,10 @@ public class LeaderboardService implements StartupListener {
             }
 
             for (ScoreType scoreType : ScoreType.values()) {
+                if(scoreType == ScoreType.EVENT && !carryType.isEventActive()) {
+                    continue;
+                }
+
                 if (leaderboards.containsKey(leaderboardChannel.get())) {
                     leaderboards.get(leaderboardChannel.get()).add(new Leaderboard(
                             getLeaderboardTitle(carryType, scoreType),

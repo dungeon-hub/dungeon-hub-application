@@ -203,7 +203,6 @@ public abstract class Command {
 
             return possibleMatch
                     .orElseGet(() -> T.valueOf(enumClass, value));
-
         }
         catch(IllegalArgumentException illegalArgumentException) {
             String message = String.format(
@@ -230,6 +229,10 @@ public abstract class Command {
         }
 
         return stringValue.get();
+    }
+
+    public final Optional<Boolean> getOptionalBooleanOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+        return slashCommandCreateEvent.getOptionByName(name).flatMap(SlashCommandInteractionOption::getBooleanValue);
     }
 
     public final Boolean getBooleanOption(String name) {

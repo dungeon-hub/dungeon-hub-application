@@ -1,11 +1,10 @@
 package me.taubsie.carrylogs.application.service;
 
+import me.taubsie.carrylogs.application.classes.ServerProperty;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Set;
 
 /**
  * This class represents a service used to manage the permissions of users within a system.
@@ -46,25 +45,18 @@ public class PermissionService {
      * @return an instance of this class.
      */
     public static @NotNull PermissionService getInstance() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new PermissionService();
         }
 
         return instance;
     }
 
-    public boolean mayDiscardOthers(User user, Server server) {
-        Set<PermissionType> allowedPermissions = server.getAllowedPermissions(user);
-
-        return allowedPermissions.contains(PermissionType.MANAGE_SERVER)
-                || allowedPermissions.contains(PermissionType.MANAGE_MESSAGES);
-    }
-
-    public boolean mayManageScore(User user, Server server) {
-        Set<PermissionType> allowedPermissions = server.getAllowedPermissions(user);
-
-        return allowedPermissions.contains(PermissionType.ADMINISTRATOR)
-                || allowedPermissions.contains(PermissionType.MANAGE_SERVER)
-                || allowedPermissions.contains(PermissionType.MANAGE_MESSAGES);
+    public boolean mayManageServices(User user, Server server) {
+        return ServerProperty.SCORE_MANAGEMENT_ROLE
+                .getValue(server.getId())
+                .flatMap(server::getRoleById)
+                .map(role -> role.hasUser(user))
+                .orElseGet(() -> server.getAllowedPermissions(user).contains(PermissionType.ADMINISTRATOR));
     }
 }

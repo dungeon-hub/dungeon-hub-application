@@ -11,7 +11,10 @@ import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.interaction.SlashCommandOptionChoice;
 import org.javacord.api.listener.interaction.AutocompleteCreateListener;
 
-import java.util.*;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * @author Taubsie
@@ -39,11 +42,19 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
 
             if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase(
                     "carry-tier")) {
-                if (autocompleteCreateEvent.getAutocompleteInteraction().getOptionByName("carry-type").isPresent()) {
+                List<SlashCommandInteractionOption> allOptions = autocompleteCreateEvent.getAutocompleteInteraction()
+                        .getOptions().stream()
+                        .flatMap(option -> option.isSubcommandOrGroup() ? option.getOptions().stream() : Stream.of(option))
+                        .flatMap(option -> option.isSubcommandOrGroup() ? option.getOptions().stream() : Stream.of(option))
+                        .toList();
+
+                Optional<SlashCommandInteractionOption> carryTypeOption = allOptions.stream()
+                        .filter(option -> option.getName().equalsIgnoreCase("carry-type"))
+                        .findFirst();
+
+                if (carryTypeOption.isPresent()) {
                     Optional<String> carryTypeIdentifier =
-                            autocompleteCreateEvent.getAutocompleteInteraction()
-                                    .getOptionByName("carry-type")
-                                    .flatMap(SlashCommandInteractionOption::getStringValue);
+                            carryTypeOption.flatMap(SlashCommandInteractionOption::getStringValue);
 
                     if (carryTypeIdentifier.isPresent()) {
                         autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(
@@ -65,10 +76,16 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
 
             if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase(
                     "carry-difficulty")) {
-                Optional<String> carryTierIdentifier = autocompleteCreateEvent.getAutocompleteInteraction()
-                        .getOptionByName("carry-tier")
-                        .flatMap(SlashCommandInteractionOption::getStringValue);
+                List<SlashCommandInteractionOption> allOptions = autocompleteCreateEvent.getAutocompleteInteraction()
+                        .getOptions().stream()
+                        .flatMap(option -> option.isSubcommandOrGroup() ? option.getOptions().stream() : Stream.of(option))
+                        .flatMap(option -> option.isSubcommandOrGroup() ? option.getOptions().stream() : Stream.of(option))
+                        .toList();
 
+                Optional<String> carryTierIdentifier = allOptions.stream()
+                        .filter(option -> option.getName().equalsIgnoreCase("carry-tier"))
+                        .findFirst()
+                        .flatMap(SlashCommandInteractionOption::getStringValue);
 
                 if (carryTierIdentifier.isPresent()) {
                     Optional<CarryTier> carryTier = autocompleteCreateEvent.getAutocompleteInteraction()
@@ -76,15 +93,25 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
                             .flatMap(SlashCommandInteractionOption::getStringValue)
                             .flatMap(s -> DungeonHubConnection.getInstance().loadCarryType(server.getId(), s))
                             .flatMap(carryType -> DungeonHubConnection.getInstance().loadCarryTier(carryType,
-                                    carryTierIdentifier.get()))
-                            .or(() -> autocompleteCreateEvent.getAutocompleteInteraction()
-                                    .getChannel()
-                                    .flatMap(Channel::asCategorizable)
-                                    .flatMap(Categorizable::getCategory)
-                                    .map(DiscordEntity::getId)
-                                    .flatMap(category -> DungeonHubConnection.getInstance()
-                                            .getCarryTierFromCategory(server.getId(), category))
-                            );
+                                    carryTierIdentifier.get()));
+
+                    if (carryTier.isPresent()) {
+                        autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(
+                                DungeonHubConnection.getInstance()
+                                        .loadCarryDifficulties(carryTier.get()).stream()
+                                        .map(carryDifficulty -> SlashCommandOptionChoice.create(carryDifficulty.getDisplayName(), carryDifficulty.getIdentifier()))
+                                        .toList()
+                        );
+                        return;
+                    }
+                } else {
+                    Optional<CarryTier> carryTier = autocompleteCreateEvent.getAutocompleteInteraction()
+                            .getChannel()
+                            .flatMap(Channel::asCategorizable)
+                            .flatMap(Categorizable::getCategory)
+                            .map(DiscordEntity::getId)
+                            .flatMap(category -> DungeonHubConnection.getInstance()
+                                    .getCarryTierFromCategory(server.getId(), category));
 
                     if (carryTier.isPresent()) {
                         autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(

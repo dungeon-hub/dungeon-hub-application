@@ -50,6 +50,11 @@ public class ApplicationService {
         return "discord.gg/dungeons • also see /calc-price • made by @taubsie";
     }
 
+    public EmbedBuilder getEmbedWithoutTimestamp() {
+        return new EmbedBuilder()
+                .setFooter(getFooter());
+    }
+
     public EmbedBuilder getEmbed(Instant time) {
         return new EmbedBuilder()
                 .setTimestamp(time)
@@ -122,16 +127,11 @@ public class ApplicationService {
     }
 
     public EmbedBuilder loadEmbedFromCarryInformation(CarryInformation carryInformation, EmbedBuilder embedBuilder) {
-        //TODO rework
-        me.taubsie.carrylogs.application.enums.CarryType carryType =
-                me.taubsie.carrylogs.application.enums.CarryType.fromString(carryInformation.getCarryDifficulty().getIdentifier());
-
         embedBuilder.setColor(EmbedColor.INFORMATION.getColor())
                 .addInlineField("Number of carries",
                         String.valueOf(carryInformation.getAmountOfCarries()))
                 .addInlineField("Type of carry",
-                        (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty())
-                                + " - " + carryInformation.getCarryType())
+                        carryInformation.getCarryTier().getDisplayName() + " - " + carryInformation.getCarryDifficulty().getDisplayName())
                 .addInlineField("Player", "<@" + carryInformation.getPlayer() + ">")
                 .addInlineField("Carrier", "<@" + carryInformation.getCarrier() + ">");
 
@@ -237,17 +237,29 @@ public class ApplicationService {
         return embedBuilder;
     }
 
+    public EmbedBuilder getNoCarryTypeFoundEmbed() {
+        return getEmbed()
+                .setTitle("No score was found!")
+                .setDescription("Please make sure that a carry type is setup on this server.\n" +
+                        "For more information about how to do this, contact `@taubsie` (<@356134481452597250>)!")
+                .setColor(EmbedColor.NEGATIVE.getColor());
+    }
+
     public EmbedBuilder getScoreCountMessage(User userToCheck, User user, Server server, List<ScoreValue> scoreCount) {
+        if (scoreCount.isEmpty()) {
+            return getNoCarryTypeFoundEmbed();
+        }
+
         EmbedBuilder embed = getEmbed()
                 .setTitle((userToCheck.getId() != user.getId() && server != null)
                         ? userToCheck.getDisplayName(server) + "'s score:"
                         : "Your score:")
                 .setColor(EmbedColor.DEFAULT.getColor());
 
-        Map<ScoreType, List<String>> scoreDescriptions = new HashMap<>();
+        Map<ScoreType, List<String>> scoreDescriptions = new EnumMap<>(ScoreType.class);
 
         scoreCount.forEach(scoreValue -> {
-            if(scoreValue.scoreType() == ScoreType.EVENT && !scoreValue.carryType().isEventActive()) {
+            if (scoreValue.scoreType() == ScoreType.EVENT && !scoreValue.carryType().isEventActive()) {
                 return;
             }
 
@@ -261,10 +273,8 @@ public class ApplicationService {
         });
 
         scoreDescriptions
-                .forEach((scoreType, strings) -> embed.addInlineField(
-                        scoreType == ScoreType.DEFAULT
-                                ? "Score"
-                                : scoreType.getDisplayName() + "-Score",
+                .forEach((carryType, strings) -> embed.addInlineField(
+                        carryType.getDisplayName(),
                         String.join(System.lineSeparator(), strings)
                 ));
 
@@ -349,6 +359,7 @@ public class ApplicationService {
         carryType.getLogChannel().ifPresent(logChannel -> embed.addInlineField("Log Channel", "<#" + logChannel + ">"));
         carryType.getLeaderboardChannel().ifPresent(leaderboardChannel -> embed.addInlineField("Leaderboard Channel",
                 "<#" + leaderboardChannel + ">"));
+        embed.addInlineField("Event active", carryType.isEventActive() ? "yes" : "no");
 
         return embed;
     }

@@ -7,13 +7,14 @@ import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.exceptions.InvalidSubCommandException;
+import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.messages.AllStrikesMessage;
 import me.taubsie.carrylogs.application.messages.PageableMessage;
 import me.taubsie.carrylogs.application.service.ApplicationService;
+import me.taubsie.carrylogs.application.service.PermissionService;
 import me.taubsie.dungeonhub.common.StrikeData;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
-import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
@@ -26,11 +27,14 @@ import java.util.Optional;
 import java.util.concurrent.CompletionException;
 
 @CommandParameters(name = "manage-strikes",
-        description = "Manage the strikes of a carrier.",
-        enabledForPermissions = PermissionType.MODERATE_MEMBERS)
+        description = "Manage the strikes of a carrier.")
 public class ManageStrikesCommand extends Command {
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
+        if (!PermissionService.getInstance().mayManageServices(slashCommandCreateEvent.getSlashCommandInteraction().getUser(), getServer())) {
+            throw new MissingPermissionException();
+        }
+
         //TODO LIMIT STRIKE COMMAND TO STRIKES THAT WERE ISSUED ON THE SAME SERVER
         Optional<SlashCommandInteractionOption> option =
                 slashCommandCreateEvent.getSlashCommandInteraction().getOptionByIndex(0);

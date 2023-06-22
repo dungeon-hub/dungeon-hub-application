@@ -1,7 +1,7 @@
 package me.taubsie.carrylogs.application.classes;
 
-import me.taubsie.carrylogs.application.enums.RoleConversion;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
+import me.taubsie.carrylogs.application.enums.RoleConversion;
 import me.taubsie.dungeonhub.common.config.Nameable;
 
 import java.util.List;
@@ -13,12 +13,6 @@ public enum PurgeType implements Nameable {
             (threshold, serverId) -> DungeonHubConnection.getInstance().getPurgeableUsers(threshold, serverId,
                     "dungeons"),
             RoleConversion::getDungeonCarryRoles
-    ),
-    DUNGEONS_NO_MASTERMODE(
-            "dungeons without mastermode",
-            (threshold, serverId) -> DungeonHubConnection.getInstance().getPurgeableUsers(threshold, serverId,
-                    "dungeons"),
-            RoleConversion::getDungeonCarryRolesWithoutMasterMode
     ),
     SLAYER(
             "slayer",

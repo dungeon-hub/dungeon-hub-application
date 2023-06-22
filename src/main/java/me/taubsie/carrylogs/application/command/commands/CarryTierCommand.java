@@ -14,6 +14,7 @@ import org.javacord.api.entity.channel.Channel;
 import org.javacord.api.entity.channel.ChannelCategory;
 import org.javacord.api.entity.channel.ChannelType;
 import org.javacord.api.entity.channel.ServerChannel;
+import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
@@ -25,7 +26,7 @@ import java.util.List;
 import java.util.Optional;
 
 //TODO add optional arguments in create command too
-@CommandParameters(name = "carry-tier", description = "Set up the carry tiers for this server.")
+@CommandParameters(name = "carry-tier", description = "Set up the carry tiers for this server.", enabledForPermissions = PermissionType.ADMINISTRATOR)
 public class CarryTierCommand extends Command {
     public static SlashCommandOption getCarryTierOption() {
         return new SlashCommandOptionBuilder()
@@ -156,7 +157,7 @@ public class CarryTierCommand extends Command {
         }
 
         Optional<CarryTier> carryTier = DungeonHubConnection.getInstance()
-                .loadCarryTier(carryType.get(), getStringOption(CarryTier.FIELD_NAME));
+                .loadCarryTier(carryType.get(), getStringOption(subCommand, CarryTier.FIELD_NAME));
 
         if (carryTier.isEmpty()) {
             throw new InvalidOptionException(CarryTier.FIELD_NAME, "That carry tier doesn't exist!");
@@ -180,7 +181,7 @@ public class CarryTierCommand extends Command {
         }
 
         Optional<CarryTier> carryTier = DungeonHubConnection.getInstance()
-                .loadCarryTier(carryType.get(), getStringOption(CarryTier.FIELD_NAME));
+                .loadCarryTier(carryType.get(), getStringOption(subCommand, CarryTier.FIELD_NAME));
 
         if (carryTier.isEmpty()) {
             throw new InvalidOptionException(CarryTier.FIELD_NAME, "That carry tier doesn't exist");
@@ -192,8 +193,9 @@ public class CarryTierCommand extends Command {
         Optional<ServerChannel> priceChannel = getOptionalChannelOption(subCommand, "price-channel");
         Optional<String> descriptiveName = getOptionalStringOption(subCommand, "descriptive-name");
         Optional<String> thumbnailUrl = getOptionalStringOption(subCommand, "thumbnail-url");
+        Optional<String> priceTitle = getOptionalStringOption(subCommand, "price-title");
 
-        if (displayName.isEmpty() && category.isEmpty() && priceChannel.isEmpty() && descriptiveName.isEmpty() && thumbnailUrl.isEmpty()) {
+        if (displayName.isEmpty() && category.isEmpty() && priceChannel.isEmpty() && descriptiveName.isEmpty() && thumbnailUrl.isEmpty() && priceTitle.isEmpty()) {
             //TODO custom class
             throw new CommandExecutionException() {
                 @Override
@@ -220,6 +222,7 @@ public class CarryTierCommand extends Command {
         priceChannel.map(DiscordEntity::getId).ifPresent(id -> carryTier.get().setPriceChannel(id));
         descriptiveName.ifPresent(s -> carryTier.get().setDescriptiveName(s));
         thumbnailUrl.ifPresent(s -> carryTier.get().setThumbnailUrl(s));
+        priceTitle.ifPresent(s -> carryTier.get().setPriceTitle(s));
 
         Optional<CarryTier> updatedCarryTier = DungeonHubConnection.getInstance().updateCarryTier(carryTier.get());
 
@@ -263,6 +266,7 @@ public class CarryTierCommand extends Command {
         Boolean priceChannel = getBooleanOption(subCommand, "price-channel");
         Boolean descriptiveName = getBooleanOption(subCommand, "descriptive-name");
         Boolean thumbnailUrl = getBooleanOption(subCommand, "thumbnail-url");
+        Boolean priceTitle = getBooleanOption(subCommand, "price-title");
 
         if (!category && !priceChannel && !descriptiveName && !thumbnailUrl) {
             //TODO custom class
@@ -288,6 +292,10 @@ public class CarryTierCommand extends Command {
 
         if (thumbnailUrl) {
             carryTier.get().setThumbnailUrl(null);
+        }
+
+        if(priceTitle) {
+            carryTier.get().setPriceTitle(null);
         }
 
         Optional<CarryTier> updatedCarryTier = DungeonHubConnection.getInstance().updateCarryTier(carryTier.get());
@@ -354,6 +362,12 @@ public class CarryTierCommand extends Command {
                 .setDescription("Set the thumbnail which is used to make some embeds look nicer")
                 .build();
 
+        SlashCommandOption priceTitleOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName("price-title")
+                .setDescription("Set the title of the price embed")
+                .build();
+
         return new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("edit")
@@ -364,7 +378,8 @@ public class CarryTierCommand extends Command {
                         descriptiveNameOption,
                         categoryOption,
                         priceChannelOption,
-                        thumbnailUrlOption))
+                        thumbnailUrlOption,
+                        priceTitleOption))
                 .build();
     }
 

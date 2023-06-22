@@ -41,7 +41,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
 
         switch (messageComponentCreateEvent.getMessageComponentInteraction().getCustomId().trim().toLowerCase()) {
             case "discard" -> {
-                if (!PermissionService.getInstance().mayDiscardOthers(messageComponentCreateEvent.getMessageComponentInteraction().getUser(), messageComponentCreateEvent.getMessageComponentInteraction().getServer().get())
+                if (!PermissionService.getInstance().mayManageServices(messageComponentCreateEvent.getMessageComponentInteraction().getUser(), messageComponentCreateEvent.getMessageComponentInteraction().getServer().get())
                         && (messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().isEmpty()
                         || messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().get(0).getFields().isEmpty()
                         || messageComponentCreateEvent.getMessageComponentInteraction().getMessage().getEmbeds().get(0).getFields().stream().filter(embedField -> embedField.getName().equalsIgnoreCase("carrier")).findFirst().isEmpty()

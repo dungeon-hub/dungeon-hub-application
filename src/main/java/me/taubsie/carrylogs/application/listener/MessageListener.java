@@ -1,10 +1,9 @@
 package me.taubsie.carrylogs.application.listener;
 
-import me.taubsie.carrylogs.application.enums.CarryType;
-import me.taubsie.carrylogs.application.enums.EmbedColor;
-import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
+import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.enums.IdList;
+import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
@@ -142,8 +141,6 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
             for(CarryInformation carryInformation : DungeonHubConnection.getInstance().getFromLogQueue(channelId)) {
                 carryInformation.setAttachmentLink(attachmentLink);
-                //TODO rework
-                CarryType carryType = CarryType.fromString(carryInformation.getCarryDifficulty().getIdentifier());
 
                 if(carryInformation.getAmountOfCarries() >= APPROVE_AMOUNT_THRESHOLD
                         || carryInformation.calculateScore() >= APPROVE_SCORE_THRESHOLD) {
@@ -157,8 +154,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                             .addInlineField("Number of carries",
                                                     String.valueOf(carryInformation.getAmountOfCarries()))
                                             .addInlineField("Type of carry",
-                                                    (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) +
-                                                            " - " + carryInformation.getCarryType())
+                                                    carryInformation.getCarryTier().getDisplayName() + " - " + carryInformation.getCarryDifficulty().getDisplayName())
                                             .addInlineField("Player",
                                                     messageEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                             .addInlineField("Carrier",
@@ -193,7 +189,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                                     .addInlineField("Number of carries",
                                                             String.valueOf(carryInformation.getAmountOfCarries()))
                                                     .addInlineField("Type of carry",
-                                                            (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) + " - " + carryInformation.getCarryType())
+                                                            carryInformation.getCarryTier().getDisplayName() + " - " + carryInformation.getCarryDifficulty().getDisplayName())
                                                     .addInlineField("Player",
                                                             messageEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                                     .addInlineField("Carrier", carrier.getMentionTag())
@@ -220,8 +216,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                         .addInlineField("Number of carries",
                                                 String.valueOf(carryInformation.getAmountOfCarries()))
                                         .addInlineField("Type of carry",
-                                                (carryType != null ? carryType.getPrettyName() : carryInformation.getCarryDifficulty()) +
-                                                        " - " + carryInformation.getCarryType())
+                                                carryInformation.getCarryTier().getDisplayName() + " - " + carryInformation.getCarryDifficulty().getDisplayName())
                                         .addInlineField("Player",
                                                 messageEvent.getApi().getUserById(carryInformation.getPlayer()).join().getMentionTag())
                                         .addInlineField("Carrier",

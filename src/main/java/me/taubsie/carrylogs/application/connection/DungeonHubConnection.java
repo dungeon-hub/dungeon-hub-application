@@ -485,7 +485,14 @@ public class DungeonHubConnection {
     }
 
     public Map<Long, Long> getPurgeableUsers(long amount, long serverId, String type) {
-        Request request = getApiRequest("purge/" + type + "/" + amount)
+        Optional<CarryType> carryType = loadCarryType(serverId, type);
+
+        if(carryType.isEmpty()) {
+            logger.error("Error when trying to load carry type {} for purge!", type);
+            return new HashMap<>();
+        }
+
+        Request request = getApiRequest("purge/" + carryType.get().getId() + "/" + amount)
                 .get()
                 .build();
 

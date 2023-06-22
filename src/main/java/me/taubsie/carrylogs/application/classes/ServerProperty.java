@@ -31,11 +31,11 @@ public enum ServerProperty implements Nameable {
     BLAZE_PRICE_CHANNEL("blaze_price_channel", ServerPropertyType.CHANNEL),
     KUUDRA_PRICE_CHANNEL("kuudra_price_channel", ServerPropertyType.CHANNEL),
 
+    SCORE_MANAGEMENT_ROLE("id_score_management_score", ServerPropertyType.ROLE),
     F4_ROLE("id_f4_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
     F5_ROLE("id_f5_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
     F6_ROLE("id_f6_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
     F7_ROLE("id_f7_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    MASTER_ROLE("id_master_mode_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
     EMAN_T3_ROLE("id_eman_t3_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
     EMAN_T4_ROLE("id_eman_t4_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
     BLAZE_T2_ROLE("id_blaze_t2_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),

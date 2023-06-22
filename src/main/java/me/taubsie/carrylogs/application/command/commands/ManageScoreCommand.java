@@ -39,7 +39,7 @@ public class ManageScoreCommand extends Command {
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         Server server = getServer();
 
-        if (!PermissionService.getInstance().mayManageScore(slashCommandCreateEvent.getSlashCommandInteraction().getUser(), server)) {
+        if (!PermissionService.getInstance().mayManageServices(slashCommandCreateEvent.getSlashCommandInteraction().getUser(), server)) {
             throw new MissingPermissionException();
         }
 

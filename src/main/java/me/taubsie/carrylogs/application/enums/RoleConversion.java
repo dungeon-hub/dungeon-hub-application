@@ -13,7 +13,6 @@ public enum RoleConversion {
     F5_ROLE(OldCarryRole.F5, ServerProperty.F5_ROLE),
     F6_ROLE(OldCarryRole.F6, ServerProperty.F6_ROLE),
     F7_ROLE(OldCarryRole.F7, ServerProperty.F7_ROLE),
-    MASTER_ROLE(OldCarryRole.MASTER_MODE, ServerProperty.MASTER_ROLE),
     EMAN_T3_ROLE(OldCarryRole.EMAN_T3, ServerProperty.EMAN_T3_ROLE),
     EMAN_T4_ROLE(OldCarryRole.EMAN_T4, ServerProperty.EMAN_T4_ROLE),
     BLAZE_T2_ROLE(OldCarryRole.BLAZE_T2, ServerProperty.BLAZE_T2_ROLE),
@@ -52,16 +51,6 @@ public enum RoleConversion {
     }
 
     public static RoleConversion[] getDungeonCarryRoles() {
-        return new RoleConversion[]{
-                F4_ROLE,
-                F5_ROLE,
-                F6_ROLE,
-                F7_ROLE,
-                MASTER_ROLE
-        };
-    }
-
-    public static RoleConversion[] getDungeonCarryRolesWithoutMasterMode() {
         return new RoleConversion[]{
                 F4_ROLE,
                 F5_ROLE,

@@ -12,6 +12,7 @@ import org.javacord.api.entity.server.Server;
 import java.sql.Time;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @OnStart
 public class MessagesService implements StartupListener {
@@ -39,19 +40,24 @@ public class MessagesService implements StartupListener {
 
         CarryDifficulty mainCarryDifficulty = carryDifficulties.get(0);
 
-        String title = mainCarryDifficulty.getCarryTier().getDescriptiveName();
+        String title = "## " + mainCarryDifficulty.getCarryTier().getPriceTitle() + "\n";
 
-        String description = carryDifficulties.stream()
+        String description = title + carryDifficulties.stream()
                 .map(carryDifficulty -> {
-                    StringBuilder result = new StringBuilder("### ");
+                    StringBuilder result = new StringBuilder();
 
-                    result.append(carryDifficulty.getDisplayName())
-                            .append(" Price\n- ")
+                    if (carryDifficulty.getBulkAmount().isPresent() && carryDifficulty.getBulkPrice().isPresent()) {
+                        result.append("\n");
+                    }
+
+                    result.append("**")
+                            .append(carryDifficulty.getPriceName())
+                            .append("**: ")
                             .append(ApplicationService.getInstance().makeNumberReadable(carryDifficulty.getPrice()))
                             .append(" coins");
 
                     if (carryDifficulty.getBulkAmount().isPresent() && carryDifficulty.getBulkPrice().isPresent()) {
-                        result.append("\n - ")
+                        result.append("\n\\*")
                                 .append(ApplicationService.getInstance().makeNumberReadable(carryDifficulty.getBulkPrice().get()))
                                 .append(" per carry if you buy ")
                                 .append(carryDifficulty.getBulkAmount().get())
@@ -62,10 +68,8 @@ public class MessagesService implements StartupListener {
                 }).collect(Collectors.joining("\n"));
 
         EmbedBuilder embed = ApplicationService.getInstance()
-                .getEmbed()
-                .setFooter(ApplicationService.getInstance().getPriceFooter())
+                .getEmbedWithoutTimestamp()
                 .setColor(EmbedColor.DEFAULT.getColor())
-                .setTitle(title)
                 .setDescription(description);
 
         if (mainCarryDifficulty.getCarryTier().getThumbnailUrl().isPresent()) {
@@ -76,33 +80,15 @@ public class MessagesService implements StartupListener {
     }
 
     public void refreshPriceMessages(Server server) {
-        Map<Long, List<CarryTier>> carryTiersPerChannel = DungeonHubConnection.getInstance()
-                .loadCarryTiers(server).stream()
-                .filter(carryTier -> carryTier.getPriceChannel().isPresent())
-                .collect(Collectors.toMap(
-                        carryTier -> carryTier.getPriceChannel().get(),
-                        carryTier -> new ArrayList<>(List.of(carryTier)),
-                        (o, o2) -> {
-                            o.addAll(o2);
-                            return o;
-                        }
-                ));
-
-        carryTiersPerChannel
-                .forEach((key, value) -> BotStarter.getInstance().getBot()
-                        .getServerTextChannelById(key)
-                        .ifPresent(serverTextChannel -> refreshPriceMessageInChannel(
-                                serverTextChannel,
-                                value.stream()
-                                        .flatMap(carryTier -> getPriceEmbed(carryTier).stream())
-                                        .toList()
-                        ))
-                );
+        refreshPriceMessages(DungeonHubConnection.getInstance().loadCarryTiers(server).stream());
     }
 
     private void refreshPriceMessages() {
-        Map<Long, List<CarryTier>> carryTiersPerChannel = DungeonHubConnection.getInstance()
-                .loadCarryTiers().stream()
+        refreshPriceMessages(DungeonHubConnection.getInstance().loadCarryTiers().stream());
+    }
+
+    private void refreshPriceMessages(Stream<CarryTier> carryTiers) {
+        Map<Long, List<CarryTier>> carryTiersPerChannel = carryTiers
                 .filter(carryTier -> carryTier.getPriceChannel().isPresent())
                 .collect(Collectors.toMap(
                         carryTier -> carryTier.getPriceChannel().get(),
@@ -118,15 +104,29 @@ public class MessagesService implements StartupListener {
                         .getServerTextChannelById(key)
                         .ifPresent(serverTextChannel -> refreshPriceMessageInChannel(
                                 serverTextChannel,
-                                value.stream()
-                                        .flatMap(carryTier -> getPriceEmbed(carryTier).stream())
-                                        .toList()
+                                addPriceFooterToLast(
+                                        value.stream()
+                                                .flatMap(carryTier -> getPriceEmbed(carryTier).stream())
+                                                .toList()
+                                )
                         ))
                 );
     }
 
+    private List<EmbedBuilder> addPriceFooterToLast(List<EmbedBuilder> embeds) {
+        for(EmbedBuilder embed : embeds) {
+            embed.setFooter(null);
+        }
+
+        if(embeds.size() > 0) {
+            embeds.get(embeds.size() - 1).setFooter(ApplicationService.getInstance().getPriceFooter());
+        }
+
+        return embeds;
+    }
+
     private void refreshPriceMessageInChannel(ServerTextChannel textChannel, List<EmbedBuilder> embeds) {
-        if(embeds.isEmpty()) {
+        if (embeds.isEmpty()) {
             return;
         }
 

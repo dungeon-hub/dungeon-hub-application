@@ -120,8 +120,9 @@ public class CarryTypeCommand extends Command {
         Optional<String> displayName = getOptionalStringOption(editCommand, "display-name");
         Optional<ServerChannel> logChannel = getOptionalChannelOption(editCommand, "log-channel");
         Optional<ServerChannel> leaderboardChannel = getOptionalChannelOption(editCommand, "leaderboard-channel");
+        Optional<Boolean> eventActive = getOptionalBooleanOption(editCommand, "event-active");
 
-        if(displayName.isEmpty() && logChannel.isEmpty() && leaderboardChannel.isEmpty()) {
+        if(displayName.isEmpty() && logChannel.isEmpty() && leaderboardChannel.isEmpty() && eventActive.isEmpty()) {
             //TODO custom class
             throw new CommandExecutionException() {
                 @Override
@@ -134,6 +135,7 @@ public class CarryTypeCommand extends Command {
         displayName.ifPresent(s -> carryType.get().setDisplayName(s));
         logChannel.map(DiscordEntity::getId).ifPresent(id -> carryType.get().setLogChannel(id));
         leaderboardChannel.map(DiscordEntity::getId).ifPresent(id -> carryType.get().setLeaderboardChannel(id));
+        eventActive.ifPresent(active -> carryType.get().setEventActive(active));
 
         Optional<CarryType> updatedCarryType = DungeonHubConnection.getInstance().updateCarryType(carryType.get());
 
@@ -292,11 +294,18 @@ public class CarryTypeCommand extends Command {
                 .setRequired(false)
                 .build();
 
+        SlashCommandOption eventActiveOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.BOOLEAN)
+                .setName("event-active")
+                .setDescription("Set if there if an active event for score")
+                .setRequired(false)
+                .build();
+
         return new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("edit")
                 .setDescription("Edit a carry type")
-                .setOptions(List.of(getCarryTypeOption(), displayNameOption, logChannelOption, leaderboardChannelOption))
+                .setOptions(List.of(getCarryTypeOption(), displayNameOption, logChannelOption, leaderboardChannelOption, eventActiveOption))
                 .build();
     }
 
