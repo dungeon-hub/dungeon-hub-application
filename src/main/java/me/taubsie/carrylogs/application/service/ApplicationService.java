@@ -63,39 +63,6 @@ public class ApplicationService {
                         .orElse(null)));
     }
 
-    public boolean isCarryTier(String carryTier, me.taubsie.carrylogs.application.enums.CarryType carryType) {
-        if (isInvalidCarryTier(carryTier)) {
-            return false;
-        }
-
-        return switch (carryType) {
-            case F4 -> switch (carryTier) {
-                case "Completion", "S" -> true;
-                default -> false;
-            };
-            case F5, F6, F7 -> switch (carryTier) {
-                case "Completion", "S", "S+" -> true;
-                default -> false;
-            };
-            case EMAN -> switch (carryTier) {
-                case "Tier 3", "Tier 4" -> true;
-                default -> false;
-            };
-            case BLAZE -> switch (carryTier) {
-                case "Tier 2", "Tier 3", "Tier 4" -> true;
-                default -> false;
-            };
-            case KUUDRA -> switch (carryTier) {
-                case "Basic", "Hot", "Burning", "Fiery", "Infernal" -> true;
-                default -> false;
-            };
-            case MASTER_MODE -> switch (carryTier) {
-                case "Floor 1", "Floor 2", "Floor 3", "Floor 4", "Floor 5", "Floor 6", "Floor 7" -> true;
-                default -> false;
-            };
-        };
-    }
-
     public String makeDoubleReadable(double number) {
         DecimalFormat df = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.US));
         df.setMaximumFractionDigits(340); //340 = DecimalFormat.DOUBLE_FRACTION_DIGITS
@@ -121,64 +88,6 @@ public class ApplicationService {
         }
 
         return String.valueOf(number);
-    }
-
-    public String getCarryTierUrl(me.taubsie.carrylogs.application.enums.CarryType carryType) {
-        return switch (carryType) {
-            case EMAN -> "https://cdn.discordapp.com/attachments/842827272733982730/992919618236719134/unknown.png";
-            case BLAZE -> "https://cdn.discordapp.com/attachments/842827272733982730/992919430369656852/unknown.png";
-            case KUUDRA -> "https://cdn.discordapp.com/attachments/842827272733982730/1080981866657615872" +
-                    "/Minecraft_entities_magma_cube.png";
-            case F4 -> "https://cdn.discordapp.com/emojis/759298333608378388.png?v=1";
-            case F5 -> "https://cdn.discordapp.com/emojis/759298251068801044.png?v=1";
-            case F6 -> "https://cdn.discordapp.com/emojis/761951536829825035.png?v=1";
-            case F7 -> "https://cdn.discordapp.com/emojis/792055627248566312.webp?size=80&quality=lossless";
-            default -> "https://cdn.discordapp.com/emojis/739232979771195454.gif?v=1";
-        };
-    }
-
-    public String getCarryTierUrl(me.taubsie.carrylogs.application.enums.CarryType carryType, String carryTier) {
-        if (carryType == me.taubsie.carrylogs.application.enums.CarryType.MASTER_MODE) {
-            return switch (carryTier) {
-                case "Floor 1" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302674244391023" +
-                        "/SkyBlock_npcs_bonzo_undead.png";
-                case "Floor 2" -> "https://cdn.discordapp.com/attachments/842827272733982730/1081302768633000006" +
-                        "/SkyBlock_entities_scarf.png";
-                case "Floor 3" ->
-                        "https://cdn.discordapp.com/attachments/842827272733982730/1081302836857557022/latest.png";
-                case "Floor 4" -> "https://cdn.discordapp.com/emojis/759298333608378388.png?v=1";
-                case "Floor 5" -> "https://cdn.discordapp.com/emojis/759298251068801044.png?v=1";
-                case "Floor 6" -> "https://cdn.discordapp.com/emojis/761951536829825035.png?v=1";
-                case "Floor 7" -> "https://cdn.discordapp.com/emojis/792055627248566312.webp?size=80&quality=lossless";
-                default -> "https://cdn.discordapp.com/emojis/739232979771195454.gif?v=1";
-            };
-        }
-
-        return getCarryTierUrl(carryType);
-    }
-
-    public boolean isInvalidCarryTier(String carryTier) {
-        return switch (carryTier) {
-            case "Completion",
-                    "S",
-                    "S+",
-                    "Floor 1",
-                    "Floor 2",
-                    "Floor 3",
-                    "Floor 4",
-                    "Floor 5",
-                    "Floor 6",
-                    "Floor 7",
-                    "Basic",
-                    "Hot",
-                    "Burning",
-                    "Fiery",
-                    "Infernal",
-                    "Tier 2",
-                    "Tier 3",
-                    "Tier 4" -> false;
-            default -> true;
-        };
     }
 
     public DiscordApiBuilder getApiBuilder() {

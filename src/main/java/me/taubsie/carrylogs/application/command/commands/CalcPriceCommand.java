@@ -89,7 +89,7 @@ public class CalcPriceCommand extends Command {
                 .getEmbed()
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setTitle("Carry-Price")
-                .addInlineField("Type", carryDifficulty.get().getCarryTier().getDisplayName() + " | " + carryTier)
+                .addInlineField("Type", carryTier.get().getDisplayName() + " | " + carryDifficulty.get().getDisplayName())
                 .addInlineField("Amount", String.valueOf(amount))
                 .addInlineField("Price", ApplicationService.getInstance().makeNumberReadable(price) + " coins");
 
