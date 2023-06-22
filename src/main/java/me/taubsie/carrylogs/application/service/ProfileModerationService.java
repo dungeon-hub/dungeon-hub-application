@@ -199,7 +199,7 @@ public class ProfileModerationService {
     }
 
     public boolean isExcluded(User user, Server server) {
-        return user.isBot() || user.isBotOwnerOrTeamMember() || isOverwritten(user.getId()) || isVerified(user, server);
+        return isExcluded(user) || isVerified(user, server);
     }
 
     public boolean isExcluded(User user) {

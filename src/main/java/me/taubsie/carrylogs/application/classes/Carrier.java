@@ -2,9 +2,10 @@ package me.taubsie.carrylogs.application.classes;
 
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.common.CarryType;
+import me.taubsie.dungeonhub.common.ScoreValue;
 import org.javacord.api.entity.user.User;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * WIP
@@ -31,7 +32,7 @@ public class Carrier
         return new Carrier(user.getId());
     }
 
-    public Map<String, Long> getScore(long serverId)
+    public List<ScoreValue> getScore(long serverId)
     {
         return DungeonHubConnection.getInstance().countScore(serverId, id);
     }

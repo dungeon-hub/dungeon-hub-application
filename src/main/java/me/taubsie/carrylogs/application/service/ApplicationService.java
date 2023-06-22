@@ -237,15 +237,36 @@ public class ApplicationService {
         return embedBuilder;
     }
 
-    public EmbedBuilder getScoreCountMessage(User userToCheck, User user, Server server, Map<String, Long> scoreCount) {
+    public EmbedBuilder getScoreCountMessage(User userToCheck, User user, Server server, List<ScoreValue> scoreCount) {
         EmbedBuilder embed = getEmbed()
                 .setTitle((userToCheck.getId() != user.getId() && server != null)
                         ? userToCheck.getDisplayName(server) + "'s score:"
                         : "Your score:")
                 .setColor(EmbedColor.DEFAULT.getColor());
 
-        scoreCount.entrySet()
-                .forEach(entry -> embed.addInlineField(entry.getKey(), String.valueOf(entry.getValue())));
+        Map<ScoreType, List<String>> scoreDescriptions = new HashMap<>();
+
+        scoreCount.forEach(scoreValue -> {
+            if(scoreValue.scoreType() == ScoreType.EVENT && !scoreValue.carryType().isEventActive()) {
+                return;
+            }
+
+            String description = scoreValue.carryType().getDisplayName() + ": " + scoreValue.amount();
+
+            if (scoreDescriptions.containsKey(scoreValue.scoreType())) {
+                scoreDescriptions.get(scoreValue.scoreType()).add(description);
+            } else {
+                scoreDescriptions.put(scoreValue.scoreType(), new ArrayList<>(List.of(description)));
+            }
+        });
+
+        scoreDescriptions
+                .forEach((scoreType, strings) -> embed.addInlineField(
+                        scoreType == ScoreType.DEFAULT
+                                ? "Score"
+                                : scoreType.getDisplayName() + "-Score",
+                        String.join(System.lineSeparator(), strings)
+                ));
 
         return embed;
     }

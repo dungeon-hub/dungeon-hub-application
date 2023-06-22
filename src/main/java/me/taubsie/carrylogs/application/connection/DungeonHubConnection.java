@@ -345,7 +345,7 @@ public class DungeonHubConnection {
         return getScore(carryInformation.getServerId(), carryInformation.getCarryType());
     }
 
-    public Map<String, Long> countScore(long serverId, Long id) {
+    public List<ScoreValue> countScore(long serverId, Long id) {
         Request request = getApiRequest("server/" + serverId + "/carry-score/" + id)
                 .get()
                 .build();
@@ -354,7 +354,7 @@ public class DungeonHubConnection {
             if (response.isSuccessful()) {
                 if (response.body() != null) {
                     return CarryLogService.getInstance().getGson().fromJson(response.body().string(),
-                            CarryLogService.getInstance().getStringLongMapType());
+                            CarryLogService.getInstance().getScoreValueListType());
                 }
             } else {
                 logger.error("Error when trying to count carries.");
@@ -364,7 +364,7 @@ public class DungeonHubConnection {
             ioException.printStackTrace();
         }
 
-        return new HashMap<>();
+        return new ArrayList<>();
     }
 
     public long getScore(Long id, CarryType carryType) {

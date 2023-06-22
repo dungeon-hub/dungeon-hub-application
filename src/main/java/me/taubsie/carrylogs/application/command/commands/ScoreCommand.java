@@ -5,6 +5,7 @@ import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
+import me.taubsie.dungeonhub.common.ScoreValue;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -14,7 +15,6 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 @CommandParameters(name = "score", description = "Use this to count your or another user's carries.")
 public class ScoreCommand extends Command {
@@ -28,7 +28,7 @@ public class ScoreCommand extends Command {
             userToCheck = getUser();
         }
 
-        Map<String, Long> scoreCount = DungeonHubConnection.getInstance().countScore(getServer().getId(),
+        List<ScoreValue> scoreCount = DungeonHubConnection.getInstance().countScore(getServer().getId(),
                 userToCheck.getId());
 
         slashCommandCreateEvent
