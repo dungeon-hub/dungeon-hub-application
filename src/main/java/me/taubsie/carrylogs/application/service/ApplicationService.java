@@ -377,7 +377,7 @@ public class ApplicationService {
         carryTier.getPriceChannel().ifPresent(priceChannel -> embed.addInlineField("Price Channel",
                 "<#" + priceChannel + ">"));
         carryTier.getThumbnailUrl().ifPresent(thumbnailUrl -> embed.addInlineField("Thumbnail URL", thumbnailUrl));
-
+        carryTier.getActualPriceTitle().ifPresent(s -> embed.addInlineField("Price Title", s));
 
         return embed;
     }
@@ -391,7 +391,7 @@ public class ApplicationService {
                         carryDifficulty.getCarryType().getDisplayName() + " (" + carryDifficulty.getCarryType().getIdentifier() + ")")
                 .addInlineField("Carry Tier",
                         carryDifficulty.getCarryTier().getDisplayName() + " (" + carryDifficulty.getCarryTier().getIdentifier() + ")")
-                .addInlineField("Price", String.valueOf(carryDifficulty.getPrice()))
+                .addInlineField("Price", carryDifficulty.getPrice() + " (" + makeNumberReadable(carryDifficulty.getPrice()) + ")")
                 .addInlineField("Score", String.valueOf(carryDifficulty.getScore()));
 
         carryDifficulty.getBulkAmount()
@@ -399,6 +399,7 @@ public class ApplicationService {
         carryDifficulty.getBulkPrice()
                 .ifPresent(integer -> embed.addInlineField("Bulk Price", String.valueOf(integer)));
         carryDifficulty.getActualThumbnailUrl().ifPresent(s -> embed.addInlineField("Thumbnail URL", s));
+        carryDifficulty.getActualPriceName().ifPresent(s -> embed.addInlineField("Price Title", s));
 
         return embed;
     }

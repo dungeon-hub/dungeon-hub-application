@@ -2,51 +2,140 @@ package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
+import me.taubsie.carrylogs.application.exceptions.MustBeServerException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
-import org.javacord.api.entity.message.MessageFlag;
+import me.taubsie.dungeonhub.common.CarryDifficulty;
+import me.taubsie.dungeonhub.common.CarryType;
+import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+
 @CommandParameters(name = "score-help",
-        description = "Show an explanation about how score works.",
-        enabledInDms = true)
+        description = "Show an explanation about how score works.")
 public class ScoreHelpCommand extends Command {
     @Override
     public void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
-        slashCommandCreateEvent
-                .getSlashCommandInteraction()
-                .createImmediateResponder()
-                .setFlags(MessageFlag.EPHEMERAL)
-                .addEmbed(ApplicationService.getInstance()
-                        .getEmbed()
-                        .setTitle("Carry Score")
-                        .setDescription("You gain score based on the carries that you do.\n" +
-                                "Different types of carries give you certain score:")
-                        .setColor(EmbedColor.INFORMATION.getColor())
-                        .addField(
-                                "Dungeons",
-                                "Completion - 2\n" +
-                                        "S / S+ - 3"
-                        )
-                        .addField(
-                                "Master Mode Dungeons",
-                                "Any - 5"
-                        )
-                        .addField(
-                                "Slayer",
-                                """
-                                        T2 - 1
-                                        T3 - 2
-                                        T4 - 3"""
-                        ).addField(
-                                "Kuudra",
-                                """
-                                        Basic - 2
-                                        Hot - 3
-                                        Burning - 4
-                                        Fiery - 5
-                                        Infernal - 6"""
-                        ))
-                .respond();
+        Optional<Server> server = slashCommandCreateEvent.getSlashCommandInteraction().getServer();
+
+        if (server.isEmpty()) {
+            throw new MustBeServerException();
+        }
+
+        respondLaterEphemeral(new CompletableFuture<EmbedBuilder>().completeAsync(() -> {
+            EmbedBuilder embed = ApplicationService.getInstance()
+                    .getEmbed()
+                    .setTitle("Carry Score")
+                    .setDescription("You gain score based on the carries that you do.\n" +
+                            "Different types of carries give you certain score:")
+                    .setColor(EmbedColor.INFORMATION.getColor());
+
+            /*Map<CarryTier, Map<String, Integer>> fields = new HashMap<>();
+
+            for (CarryDifficulty carryDifficulty : DungeonHubConnection.getInstance()
+                    .loadCarryDifficulties(server.get())) {
+                if(fields.containsKey(carryDifficulty.getCarryTier())) {
+                    fields.get(carryDifficulty.getCarryTier()).put(carryDifficulty.getDisplayName(), carryDifficulty.getScore());
+                } else {
+                    fields.put(carryDifficulty.getCarryTier(), new HashMap<>(Map.of(carryDifficulty.getDisplayName(), carryDifficulty.getScore())));
+                }
+            }
+
+            for (Map.Entry<CarryTier, Map<String, Integer>> field : fields.entrySet()) {
+                String value = String.join("\n", field.getValue()
+                        .entrySet().stream()
+                        .sorted(Map.Entry.<String, Integer>comparingByValue()
+                                .thenComparing(Map.Entry.comparingByKey()))
+                        .map(entry -> entry.getKey() + " - " + entry.getValue())
+                        .toList());
+
+                embed.addField(field.getKey().getDisplayName(), value);
+            }*/
+
+            Map<CarryType, Map<String, Integer>> fields = new HashMap<>();
+
+            List<CarryDifficulty> carryDifficulties = DungeonHubConnection.getInstance()
+                    .loadCarryDifficulties();
+
+            Map<CarryType, List<CarryDifficulty>> carryDifficultiesByCarryType = new HashMap<>();
+
+            for (CarryDifficulty carryDifficulty : carryDifficulties) {
+                if (carryDifficultiesByCarryType.containsKey(carryDifficulty.getCarryType())) {
+                    carryDifficultiesByCarryType.get(carryDifficulty.getCarryType()).add(carryDifficulty);
+                } else {
+                    carryDifficultiesByCarryType.put(carryDifficulty.getCarryType(), new ArrayList<>(List.of(carryDifficulty)));
+                }
+            }
+
+            for (Map.Entry<CarryType, List<CarryDifficulty>> entry : carryDifficultiesByCarryType.entrySet()) {
+                if (entry.getValue().isEmpty()) {
+                    continue;
+                }
+
+                CarryDifficulty mainDifficulty = entry.getValue().get(0);
+
+                boolean showCarryTier = !entry.getValue().stream().allMatch(carryDifficulty -> carryDifficulty.getCarryTier().getId() == mainDifficulty.getCarryTier().getId());
+
+                for (CarryDifficulty carryDifficulty : entry.getValue()) {
+                    boolean hasMultipleWithSameName = entry.getValue().stream()
+                            .filter(otherDifficulty -> otherDifficulty.getDisplayName().equalsIgnoreCase(carryDifficulty.getDisplayName()))
+                            .count() >= 2;
+
+                    if (hasMultipleWithSameName) {
+                        boolean sameScoreForEach = entry.getValue().stream()
+                                .allMatch(otherDifficulty -> otherDifficulty.getScore() == carryDifficulty.getScore());
+
+                        boolean sameScoreForName = entry.getValue().stream()
+                                .filter(otherDifficulty -> otherDifficulty.getDisplayName().equalsIgnoreCase(carryDifficulty.getDisplayName()))
+                                .allMatch(otherDifficulty -> otherDifficulty.getScore() == carryDifficulty.getScore());
+
+                        if (sameScoreForEach) {
+                            fields.put(entry.getKey(), Map.of("Any", carryDifficulty.getScore()));
+                            break;
+                        } else if (sameScoreForName) {
+                            if (fields.getOrDefault(entry.getKey(), Map.of())
+                                    .entrySet().stream().anyMatch(field -> field.getKey().equalsIgnoreCase(carryDifficulty.getDisplayName()) && field.getValue() == carryDifficulty.getScore())) {
+                                continue;
+                            }
+
+                            if (fields.containsKey(entry.getKey())) {
+                                fields.get(entry.getKey()).put(carryDifficulty.getDisplayName(), carryDifficulty.getScore());
+                            } else {
+                                fields.put(entry.getKey(), new HashMap<>(Map.of(carryDifficulty.getDisplayName(), carryDifficulty.getScore())));
+                            }
+                        } else {
+                            if (fields.containsKey(entry.getKey())) {
+                                fields.get(entry.getKey()).put(carryDifficulty.getCarryTier().getDisplayName() + " | " + carryDifficulty.getDisplayName(), carryDifficulty.getScore());
+                            } else {
+                                fields.put(entry.getKey(), new HashMap<>(Map.of(carryDifficulty.getCarryTier().getDisplayName() + " | " + carryDifficulty.getDisplayName(), carryDifficulty.getScore())));
+                            }
+                        }
+                    } else {
+                        if (fields.containsKey(entry.getKey())) {
+                            fields.get(entry.getKey()).put(carryDifficulty.getDisplayName(), carryDifficulty.getScore());
+                        } else {
+                            fields.put(entry.getKey(), new HashMap<>(Map.of(carryDifficulty.getDisplayName(), carryDifficulty.getScore())));
+                        }
+                    }
+                }
+            }
+
+            for (Map.Entry<CarryType, Map<String, Integer>> field : fields.entrySet()) {
+                String value = String.join("\n", field.getValue()
+                        .entrySet().stream()
+                        .sorted(Map.Entry.<String, Integer>comparingByValue()
+                                .thenComparing(Map.Entry.comparingByKey()))
+                        .map(entry -> entry.getKey() + " - " + entry.getValue())
+                        .toList());
+
+                embed.addField(field.getKey().getDisplayName(), value);
+            }
+
+            return embed;
+        }));
     }
 }

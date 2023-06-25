@@ -6,6 +6,8 @@ import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Optional;
+
 /**
  * This class represents a service used to manage the permissions of users within a system.
  *
@@ -57,6 +59,7 @@ public class PermissionService {
                 .getValue(server.getId())
                 .flatMap(server::getRoleById)
                 .map(role -> role.hasUser(user))
+                .flatMap(bool -> bool ? Optional.of(true) : Optional.empty())
                 .orElseGet(() -> server.getAllowedPermissions(user).contains(PermissionType.ADMINISTRATOR));
     }
 }

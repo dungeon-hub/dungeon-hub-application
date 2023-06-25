@@ -13,6 +13,7 @@ import me.taubsie.carrylogs.application.service.PermissionService;
 import me.taubsie.dungeonhub.common.CarryType;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.MessageFlag;
+import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -25,6 +26,7 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @CommandParameters(name = "manage-score",
         description = "Use this to manage the score of carriers.",
@@ -66,32 +68,30 @@ public class ManageScoreCommand extends Command {
 
         Long amount = getLongOption(subCommand, "amount");
 
-        long updatedScore = DungeonHubConnection.getInstance().modifyScore(user.getId(), carryType.get(), removed ? -amount :
-                amount);
+        respondLater(new CompletableFuture<EmbedBuilder>().completeAsync(() -> {
+            long updatedScore = DungeonHubConnection.getInstance().modifyScore(user.getId(), carryType.get(), removed ? -amount :
+                    amount);
 
-        slashCommandCreateEvent
-                .getSlashCommandInteraction()
-                .createImmediateResponder()
-                .addEmbed(ApplicationService
-                        .getInstance()
-                        .getEmbed()
-                        .setColor(EmbedColor.INFORMATION.getColor())
-                        .setTitle("Score-Management")
-                        .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + ", the user " + user.getMentionTag() + " now has " + updatedScore + " " + carryType.get().getDisplayName() + "-score.\nYou " + (removed ? "removed" : "added") + " " + amount + " of that score."))
-                .respond();
+            Optional<ServerTextChannel> logs =
+                    server.getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getLocalId(server.getId()));
 
-        Optional<ServerTextChannel> logs =
-                server.getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getLocalId(server.getId()));
+            logs.ifPresent(serverTextChannel ->
+                    serverTextChannel.sendMessage(ApplicationService
+                            .getInstance()
+                            .getEmbed()
+                            .setColor(EmbedColor.INFORMATION.getColor())
+                            .setTitle("Score-Management")
+                            .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + " edited the " + carryType.get().getDisplayName() + "-score of " + user.getMentionTag() + ".\nThey " + (removed ? "removed" : "added") + " " + amount + " score, the user now has " + updatedScore + " score.")));
 
-        logs.ifPresent(serverTextChannel ->
-                serverTextChannel.sendMessage(ApplicationService
-                        .getInstance()
-                        .getEmbed()
-                        .setColor(EmbedColor.INFORMATION.getColor())
-                        .setTitle("Score-Management")
-                        .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + " edited the " + carryType.get().getDisplayName() + "-score of " + user.getMentionTag() + ".\nThey " + (removed ? "removed" : "added") + " " + amount + " score, the user now has " + updatedScore + " score.")));
+            LeaderboardService.getInstance().refreshLeaderboard();
 
-        LeaderboardService.getInstance().refreshLeaderboard();
+            return ApplicationService
+                    .getInstance()
+                    .getEmbed()
+                    .setColor(EmbedColor.INFORMATION.getColor())
+                    .setTitle("Score-Management")
+                    .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + ", the user " + user.getMentionTag() + " now has " + updatedScore + " " + carryType.get().getDisplayName() + "-score.\nYou " + (removed ? "removed" : "added") + " " + amount + " of that score.");
+        }));
     }
 
     @Override

@@ -136,15 +136,15 @@ public class HypixelConnection {
     }
 
     private Optional<String> getUserDiscord(UUID uuid) {
-        String baseUrl = "https://api.hypixel.net/player?key=&uuid=";
+        String baseUrl = "https://api.hypixel.net/player";
 
         HttpUrl url = HttpUrl.get(baseUrl)
                 .newBuilder()
-                .addQueryParameter("key", ConfigProperty.HYPIXEL_API_KEY.getValue())
                 .addQueryParameter("uuid", uuid.toString())
                 .build();
 
         Request request = new Request.Builder()
+                .addHeader("API-Key", ConfigProperty.HYPIXEL_API_KEY.getValue())
                 .url(url)
                 .get()
                 .build();

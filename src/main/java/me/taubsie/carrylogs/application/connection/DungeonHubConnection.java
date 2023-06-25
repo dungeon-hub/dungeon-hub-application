@@ -180,11 +180,14 @@ public class DungeonHubConnection {
                 .build();
     }
 
-    private RequestBody getRequestBody(String identifier, String displayName) {
-        return new FormBody.Builder()
+    private RequestBody getRequestBody(String identifier, String displayName, Map<String, String> optionals) {
+        FormBody.Builder bodyBuilder = new FormBody.Builder()
                 .add("identifier", identifier)
-                .add("displayName", displayName)
-                .build();
+                .add("displayName", displayName);
+
+        optionals.forEach(bodyBuilder::add);
+
+        return bodyBuilder.build();
     }
 
     public void addToLogQueue(Long id, CarryInformation carryInformation) {
@@ -835,6 +838,13 @@ public class DungeonHubConnection {
         return new ArrayList<>();
     }
 
+    public List<CarryDifficulty> loadCarryDifficulties(Server server) {
+        //TODO implement properly
+        return loadCarryDifficulties().stream()
+                .filter(carryDifficulty -> carryDifficulty.getCarryType().getServer() == server.getId())
+                .toList();
+    }
+
     /**
      * Loads all available carry tiers for the given carry type.
      * This represents the tiers of carry, so for example floor 1, master mode floor 1, tier 4, kuudra, ...
@@ -912,8 +922,9 @@ public class DungeonHubConnection {
                 .findFirst();
     }
 
-    public Optional<CarryType> addNewCarryType(long serverId, String identifier, String displayName) {
-        RequestBody requestBody = getRequestBody(identifier, displayName);
+    public Optional<CarryType> addNewCarryType(long serverId, String identifier, String displayName, Map<String, String> optionals) {
+        //TODO implement optionals
+        RequestBody requestBody = getRequestBody(identifier, displayName, optionals);
 
         Request request = getApiRequest("server/" + serverId + "/carry-type")
                 .post(requestBody)
@@ -996,8 +1007,9 @@ public class DungeonHubConnection {
         return Optional.empty();
     }
 
-    public Optional<CarryTier> addNewCarryTier(CarryType carryType, String identifier, String displayName) {
-        RequestBody requestBody = getRequestBody(identifier, displayName);
+    public Optional<CarryTier> addNewCarryTier(CarryType carryType, String identifier, String displayName, Map<String, String> optionals) {
+        //TODO implement optionals
+        RequestBody requestBody = getRequestBody(identifier, displayName, optionals);
 
         Request request = getApiRequest("server/" + carryType.getServer() + "/carry-type/" + carryType.getId() + "/carry-tier")
                 .post(requestBody)

@@ -68,13 +68,13 @@ public class ProfileModerationService {
         try {
             this.homoglyph = HomoglyphBuilder.build();
         }
-        catch(IOException ioException) {
+        catch (IOException ioException) {
             throw new FailedToLoadException(ioException);
         }
     }
 
     public static ProfileModerationService getInstance() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new ProfileModerationService();
         }
 
@@ -85,7 +85,7 @@ public class ProfileModerationService {
     public String checkUserName(String userName) {
         List<Homoglyph.SearchResult> searchResults = homoglyph.search(userName, forbiddenUsernames);
 
-        if(searchResults.isEmpty()) {
+        if (searchResults.isEmpty()) {
             return null;
         }
 
@@ -104,12 +104,17 @@ public class ProfileModerationService {
         executeBan(server, user, username);
     }
 
-    private void sendDm(User user, String message, @Nullable String unbanForm) throws CompletionException {
-        if(unbanForm == null) {
-            user.openPrivateChannel().join().sendMessage(message).join();
-        } else {
-            user.openPrivateChannel().join()
-                    .sendMessage(message, ActionRow.of(Button.link(unbanForm, "Appeal"))).join();
+    private void sendDm(User user, String message, @Nullable String unbanForm) {
+        try {
+            if (unbanForm == null) {
+                user.openPrivateChannel().join().sendMessage(message).join();
+            } else {
+                user.openPrivateChannel().join()
+                        .sendMessage(message, ActionRow.of(Button.link(unbanForm, "Appeal"))).join();
+            }
+        }
+        catch (CompletionException completionException) {
+            //ignored since this just means that the user couldn't be dmed
         }
     }
 
@@ -122,14 +127,14 @@ public class ProfileModerationService {
                 .replace("%server%", server.getName())
                 .replace("%reason", reason);
 
-        if(unbanForm.isPresent()) {
+        if (unbanForm.isPresent()) {
             message = message.replace("%form%", unbanForm.get());
         }
 
         try {
             sendDm(user, message, unbanForm.orElse(null));
         }
-        catch(Exception exception) {
+        catch (Exception exception) {
             logger.error("Error when trying to handle user ban.", exception);
         }
     }
@@ -142,14 +147,14 @@ public class ProfileModerationService {
                 .orElse("You got banned from `%server%` because of a suspicious user profile.\nIf you think this is a mistake, contact the administrators for further information.")
                 .replace("%server%", server.getName());
 
-        if(unbanForm.isPresent()) {
+        if (unbanForm.isPresent()) {
             message = message.replace("%form%", unbanForm.get());
         }
 
         try {
             sendDm(user, message, unbanForm.orElse(null));
         }
-        catch(Exception exception) {
+        catch (Exception exception) {
             logger.error("Error when trying to handle user ban.", exception);
         }
     }
@@ -159,7 +164,14 @@ public class ProfileModerationService {
 
         ServerProperty.MODERATION_LOGS_CHANNEL
                 .getValue(server.getId())
-                .flatMap(server::getTextChannelById)
+                .flatMap(s -> {
+                    try {
+                        return server.getTextChannelById(s);
+                    }
+                    catch (CompletionException completionException) {
+                        return Optional.empty();
+                    }
+                })
                 .ifPresent(serverTextChannel ->
                         serverTextChannel.sendMessage("User "
                                 + user.getMentionTag()
@@ -172,7 +184,14 @@ public class ProfileModerationService {
 
         ServerProperty.MODERATION_LOGS_CHANNEL
                 .getValue(server.getId())
-                .flatMap(server::getTextChannelById)
+                .flatMap(s -> {
+                    try {
+                        return server.getTextChannelById(s);
+                    }
+                    catch (CompletionException completionException) {
+                        return Optional.empty();
+                    }
+                })
                 .ifPresent(serverTextChannel ->
                         new MessageBuilder()
                                 .setAllowedMentions(new AllowedMentionsBuilder()

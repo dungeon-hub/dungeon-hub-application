@@ -7,7 +7,6 @@ import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
-import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
@@ -51,29 +50,29 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
     private void loadSkycryptFromTicket(MessageCreateEvent messageCreateEvent) {
         Server server = messageCreateEvent.getServer().orElse(null);
+        Optional<ServerTextChannel> channel = messageCreateEvent.getMessage().getServerTextChannel();
 
-        if(!messageCreateEvent.isServerMessage()
+        if (!messageCreateEvent.isServerMessage()
+                || channel.isEmpty()
                 || server == null
                 || !(server.getId() == IdList.SERVER.getId()
                 || server.getId() == IdList.SERVER.getTestId())) {
             return;
         }
 
-        TextChannel channel = messageCreateEvent.getMessage().getChannel();
-
-        if(channel.getMessages(5).join().size() != 1) {
+        if (channel.get().getMessages(5).join().size() != 1) {
             return;
         }
 
-        Message firstMessage = channel.getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
+        Message firstMessage = channel.get().getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
 
-        if(firstMessage == null) {
+        if (firstMessage == null) {
             return;
         }
 
         List<User> mentionedUsers = firstMessage.getMentionedUsers();
 
-        if(mentionedUsers.size() != 1) {
+        if (mentionedUsers.size() != 1) {
             return;
         }
 
@@ -81,7 +80,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
         String[] lines = firstMessage.getContent().split("\n");
 
-        if(lines.length < 2) {
+        if (lines.length < 2) {
             return;
         }
 
@@ -92,7 +91,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 .orElse(user.getNickname(server)
                         .orElse(null));
 
-        if(ignOptional == null) {
+        if (ignOptional == null) {
             return;
         }
 
@@ -106,43 +105,42 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 .replace("❊", "")
                 .strip();
 
-        messageCreateEvent.getChannel()
-                .sendMessage(ApplicationService.getInstance().getPlayerDataEmbed(ign));
+        channel.get().sendMessage(ApplicationService.getInstance().getPlayerDataEmbed(ign));
     }
 
     //TODO reduce complexity
     private void logTicket(CertainMessageEvent messageEvent) {
         Server server = messageEvent.getServer().orElse(null);
 
-        if(!messageEvent.isServerMessage()
+        if (!messageEvent.isServerMessage()
                 || server == null
                 || !(server.getId() == IdList.SERVER.getId()
                 || server.getId() == IdList.SERVER.getTestId())) {
             return;
         }
 
-        if(messageEvent.getChannel().getId() == IdList.TRANSCRIPTS_CHANNEL.getLocalId(server.getId())
+        if (messageEvent.getChannel().getId() == IdList.TRANSCRIPTS_CHANNEL.getLocalId(server.getId())
                 && (messageEvent.getMessageContent().startsWith("carrylog;")
                 || messageEvent.getMessageContent().startsWith("carrylogs;"))) {
 
             String[] splitContent = messageEvent.getMessageContent().split(";");
-            if(splitContent.length != 3) {
+            if (splitContent.length != 3) {
                 return;
             }
 
             long channelId = Long.parseLong(splitContent[1]);
             final String attachmentLink = splitContent[2];
 
-            if(attachmentLink.equals("{transcript_url}")) {
+            if (attachmentLink.equals("{transcript_url}")) {
                 return;
             }
 
             long approvingChannelId = IdList.APPROVING_CHANNEL.getLocalId(server.getId());
 
-            for(CarryInformation carryInformation : DungeonHubConnection.getInstance().getFromLogQueue(channelId)) {
+            for (CarryInformation carryInformation : DungeonHubConnection.getInstance().getFromLogQueue(channelId)) {
                 carryInformation.setAttachmentLink(attachmentLink);
 
-                if(carryInformation.getAmountOfCarries() >= APPROVE_AMOUNT_THRESHOLD
+                if (carryInformation.getAmountOfCarries() >= APPROVE_AMOUNT_THRESHOLD
                         || carryInformation.calculateScore() >= APPROVE_SCORE_THRESHOLD) {
                     Message message = messageEvent.getApi()
                             .getTextChannelById(approvingChannelId)
@@ -171,7 +169,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
                     User carrier = messageEvent.getApi().getUserById(carryInformation.getCarrier()).join();
 
-                    if(carrier != null && carrier.openPrivateChannel().join() != null) {
+                    if (carrier != null && carrier.openPrivateChannel().join() != null) {
                         carrier.openPrivateChannel().join();
                         Optional<PrivateChannel> privateChannelOptional = carrier.getPrivateChannel();
                         long gainedScore = carryInformation.calculateScore();
@@ -196,7 +194,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                                     .addInlineField("Transcript-Link", "[Click to open]" +
                                                             "(https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")")).join());
                         }
-                        catch(CompletionException completionException) {
+                        catch (CompletionException completionException) {
                             completionException.printStackTrace();
                         }
                     }
@@ -205,7 +203,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                             .getLogChannel()
                             .flatMap(server::getTextChannelById);
 
-                    if(logChannel.isPresent()) {
+                    if (logChannel.isPresent()) {
                         logger.debug("Carry logged: {}", carryInformation);
 
                         logChannel.get().sendMessage(

@@ -88,8 +88,9 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
                         .flatMap(SlashCommandInteractionOption::getStringValue);
 
                 if (carryTierIdentifier.isPresent()) {
-                    Optional<CarryTier> carryTier = autocompleteCreateEvent.getAutocompleteInteraction()
-                            .getOptionByName("carry-type")
+                    Optional<CarryTier> carryTier = allOptions.stream()
+                            .filter(option -> option.getName().equalsIgnoreCase("carry-type"))
+                            .findFirst()
                             .flatMap(SlashCommandInteractionOption::getStringValue)
                             .flatMap(s -> DungeonHubConnection.getInstance().loadCarryType(server.getId(), s))
                             .flatMap(carryType -> DungeonHubConnection.getInstance().loadCarryTier(carryType,

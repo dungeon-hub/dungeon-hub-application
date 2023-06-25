@@ -19,10 +19,11 @@ import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
-//TODO add optional arguments in create command too
 @CommandParameters(name = "carry-type", description = "Set up the carry types for this server.",
         enabledForPermissions = PermissionType.ADMINISTRATOR)
 public class CarryTypeCommand extends Command {
@@ -52,8 +53,17 @@ public class CarryTypeCommand extends Command {
             throw new InvalidOptionException("identifier", "That carry type already exists!");
         }
 
+        Map<String, String> optionals = new HashMap<>();
+
+        getOptionalChannelOption(subCommand, "log-channel")
+                .ifPresent(channel -> optionals.put("logChannel", channel.getIdAsString()));
+        getOptionalChannelOption(subCommand, "leaderboard-channel")
+                .ifPresent(channel -> optionals.put("leaderboardChannel", channel.getIdAsString()));
+        getOptionalBooleanOption(subCommand, "event-active")
+                .ifPresent(bool -> optionals.put("eventActive", String.valueOf(bool)));
+
         Optional<CarryType> carryType = DungeonHubConnection.getInstance()
-                .addNewCarryType(server.getId(), identifier, displayName);
+                .addNewCarryType(server.getId(), identifier, displayName, optionals);
 
         if(carryType.isEmpty()) {
             //TODO custom class?
@@ -244,11 +254,34 @@ public class CarryTypeCommand extends Command {
                 .setMaxLength(30)
                 .build();
 
+        SlashCommandOption logChannelOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.CHANNEL)
+                .setChannelTypes(List.of(ChannelType.SERVER_TEXT_CHANNEL))
+                .setName("log-channel")
+                .setDescription("Set the channel that will be used for logging")
+                .setRequired(false)
+                .build();
+
+        SlashCommandOption leaderboardChannelOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.CHANNEL)
+                .setChannelTypes(List.of(ChannelType.SERVER_TEXT_CHANNEL))
+                .setName("leaderboard-channel")
+                .setDescription("Set the channel that will be used to show a static leaderboard")
+                .setRequired(false)
+                .build();
+
+        SlashCommandOption eventActiveOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.BOOLEAN)
+                .setName("event-active")
+                .setDescription("Set if there if an active event for score")
+                .setRequired(false)
+                .build();
+
         return new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("create")
                 .setDescription("Create a new carry type")
-                .setOptions(List.of(identifierOption, displayNameOption))
+                .setOptions(List.of(identifierOption, displayNameOption, logChannelOption, leaderboardChannelOption, eventActiveOption))
                 .build();
     }
 

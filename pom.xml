@@ -31,8 +31,7 @@
         <dependency>
             <groupId>org.javacord</groupId>
             <artifactId>javacord</artifactId>
-            <!--TODO update to 3.8.0 -->
-            <version>3.7.0</version>
+            <version>3.8.0</version>
             <type>pom</type>
         </dependency>
 

@@ -22,10 +22,11 @@ import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
-//TODO add optional arguments in create command too
 @CommandParameters(name = "carry-tier", description = "Set up the carry tiers for this server.", enabledForPermissions = PermissionType.ADMINISTRATOR)
 public class CarryTierCommand extends Command {
     public static SlashCommandOption getCarryTierOption() {
@@ -73,8 +74,32 @@ public class CarryTierCommand extends Command {
             throw new InvalidOptionException("identifier", "That carry tier already exists!");
         }
 
+        Map<String, String> optionals = new HashMap<>();
+
+        getOptionalStringOption(subCommand, "descriptive-name")
+                .ifPresent(s -> optionals.put("descriptiveName", s));
+        Optional<ChannelCategory> category = getOptionalChannelOption(subCommand, "category")
+                .flatMap(Channel::asChannelCategory);
+        getOptionalChannelOption(subCommand, "price-channel")
+                .ifPresent(channel -> optionals.put("priceChannel", channel.getIdAsString()));
+        getOptionalStringOption(subCommand, "thumbnail-url")
+                .ifPresent(s -> optionals.put("thumbnailUrl", s));
+        getOptionalStringOption(subCommand, "price-title")
+                .ifPresent(s -> optionals.put("priceTitle", s));
+
+        if (category.isPresent()) {
+            Optional<CarryTier> categoryCarryTier =
+                    DungeonHubConnection.getInstance()
+                            .getCarryTierFromCategory(server.getId(), category.get().getId());
+            if (categoryCarryTier.isPresent()) {
+                category = Optional.empty();
+            }
+        }
+
+        category.ifPresent(c -> optionals.put("category", c.getIdAsString()));
+
         Optional<CarryTier> carryTier = DungeonHubConnection.getInstance()
-                .addNewCarryTier(carryType.get(), identifier, displayName);
+                .addNewCarryTier(carryType.get(), identifier, displayName, optionals);
 
         if (carryTier.isEmpty()) {
             //TODO custom class?
@@ -167,8 +192,10 @@ public class CarryTierCommand extends Command {
     }
 
     public void edit(SlashCommandInteractionOption subCommand) {
+        Server server = getServer();
+
         Optional<CarryType> carryType = DungeonHubConnection.getInstance()
-                .loadCarryType(getServer().getId(), getStringOption(subCommand, "carry-type"));
+                .loadCarryType(server.getId(), getStringOption(subCommand, "carry-type"));
 
         if (carryType.isEmpty()) {
             //TODO custom class
@@ -208,7 +235,7 @@ public class CarryTierCommand extends Command {
         if (category.isPresent()) {
             Optional<CarryTier> categoryCarryTier =
                     DungeonHubConnection.getInstance()
-                            .getCarryTierFromCategory(category.get().getServer().getId(), category.get().getId());
+                            .getCarryTierFromCategory(server.getId(), category.get().getId());
             if (categoryCarryTier.isPresent()) {
                 respondEphemeral(ApplicationService.getInstance()
                         .getErrorEmbed(ApplicationService.getInstance().getCarryTierEmbed(categoryCarryTier.get()))
@@ -294,7 +321,7 @@ public class CarryTierCommand extends Command {
             carryTier.get().setThumbnailUrl(null);
         }
 
-        if(priceTitle) {
+        if (priceTitle) {
             carryTier.get().setPriceTitle(null);
         }
 
@@ -384,12 +411,46 @@ public class CarryTierCommand extends Command {
     }
 
     private SlashCommandOption getResetCommand() {
-        //TODO add options to reset command
+        SlashCommandOption descriptiveNameOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.BOOLEAN)
+                .setName("descriptive-name")
+                .setDescription("Reset the descriptive name which replaces the display name in some places")
+                .setRequired(true)
+                .build();
+
+        SlashCommandOption categoryOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.BOOLEAN)
+                .setName("category")
+                .setDescription("Reset the category of the tickets")
+                .setRequired(true)
+                .build();
+
+        SlashCommandOption priceChannelOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.BOOLEAN)
+                .setName("price-channel")
+                .setDescription("Reset the channel where the price list should appear")
+                .setRequired(true)
+                .build();
+
+        SlashCommandOption thumbnailUrlOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.BOOLEAN)
+                .setName("thumbnail-url")
+                .setDescription("Reset the thumbnail which is used to make some embeds look nicer")
+                .setRequired(true)
+                .build();
+
+        SlashCommandOption priceTitleOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.BOOLEAN)
+                .setName("price-title")
+                .setDescription("Reset the title of the price embed")
+                .setRequired(true)
+                .build();
+
         return new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("reset")
                 .setDescription("Reset a carry tier")
-                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), getCarryTierOption()))
+                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), getCarryTierOption(), descriptiveNameOption, categoryOption, priceChannelOption, thumbnailUrlOption, priceTitleOption))
                 .build();
     }
 
@@ -418,11 +479,43 @@ public class CarryTierCommand extends Command {
                 .setMaxLength(30)
                 .build();
 
+        SlashCommandOption descriptiveNameOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName("descriptive-name")
+                .setDescription("Set the descriptive name which replaces the display name in some places")
+                .build();
+
+        SlashCommandOption categoryOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.CHANNEL)
+                .setChannelTypes(List.of(ChannelType.CHANNEL_CATEGORY))
+                .setName("category")
+                .setDescription("Set the category of the tickets")
+                .build();
+
+        SlashCommandOption priceChannelOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.CHANNEL)
+                .setChannelTypes(List.of(ChannelType.SERVER_TEXT_CHANNEL))
+                .setName("price-channel")
+                .setDescription("Set the channel where the price list should appear")
+                .build();
+
+        SlashCommandOption thumbnailUrlOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName("thumbnail-url")
+                .setDescription("Set the thumbnail which is used to make some embeds look nicer")
+                .build();
+
+        SlashCommandOption priceTitleOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName("price-title")
+                .setDescription("Set the title of the price embed")
+                .build();
+
         return new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("create")
                 .setDescription("Create a new carry tier")
-                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), identifierOption, displayNameOption))
+                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), identifierOption, displayNameOption, descriptiveNameOption, categoryOption, priceChannelOption, thumbnailUrlOption, priceTitleOption))
                 .build();
     }
 }
