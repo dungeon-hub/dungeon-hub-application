@@ -59,7 +59,8 @@ public class ProfileModerationService {
             1097692461452767272L,
             928744398571831359L,
             542229014681747456L,
-            1059959722549190728L
+            1059959722549190728L,
+            1119562575458336828L
     };
     private static ProfileModerationService instance;
     private final Homoglyph homoglyph;
