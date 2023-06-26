@@ -30,19 +30,14 @@ public class MessagesService implements StartupListener {
     public Optional<EmbedBuilder> getPriceEmbed(CarryTier carryTier) {
         List<CarryDifficulty> carryDifficulties = DungeonHubConnection.getInstance().loadCarryDifficulties(carryTier);
 
-        return getEmbedFromCarryDifficulty(carryDifficulties);
-    }
-
-    private Optional<EmbedBuilder> getEmbedFromCarryDifficulty(List<CarryDifficulty> carryDifficulties) {
         if (carryDifficulties.isEmpty()) {
             return Optional.empty();
         }
 
-        CarryDifficulty mainCarryDifficulty = carryDifficulties.get(0);
+        String title = "## " + carryTier.getPriceTitle() + "\n";
+        Optional<String> priceDescription = carryTier.getPriceDescription();
 
-        String title = "## " + mainCarryDifficulty.getCarryTier().getPriceTitle() + "\n";
-
-        String description = title + carryDifficulties.stream()
+        String description = title + priceDescription.map(s -> s + "\n\n").orElse("") + carryDifficulties.stream()
                 .map(carryDifficulty -> {
                     StringBuilder result = new StringBuilder();
 
@@ -72,8 +67,8 @@ public class MessagesService implements StartupListener {
                 .setColor(EmbedColor.DEFAULT.getColor())
                 .setDescription(description);
 
-        if (mainCarryDifficulty.getCarryTier().getThumbnailUrl().isPresent()) {
-            embed.setThumbnail(mainCarryDifficulty.getCarryTier().getThumbnailUrl().get());
+        if (carryTier.getThumbnailUrl().isPresent()) {
+            embed.setThumbnail(carryTier.getThumbnailUrl().get());
         }
 
         return Optional.of(embed);
@@ -118,7 +113,7 @@ public class MessagesService implements StartupListener {
             embed.setFooter(null);
         }
 
-        if(embeds.size() > 0) {
+        if(!embeds.isEmpty()) {
             embeds.get(embeds.size() - 1).setFooter(ApplicationService.getInstance().getPriceFooter());
         }
 

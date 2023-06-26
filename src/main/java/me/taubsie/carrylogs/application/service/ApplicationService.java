@@ -378,6 +378,7 @@ public class ApplicationService {
                 "<#" + priceChannel + ">"));
         carryTier.getThumbnailUrl().ifPresent(thumbnailUrl -> embed.addInlineField("Thumbnail URL", thumbnailUrl));
         carryTier.getActualPriceTitle().ifPresent(s -> embed.addInlineField("Price Title", s));
+        carryTier.getPriceDescription().ifPresent(s -> embed.addInlineField("Price Description", s));
 
         return embed;
     }
