@@ -60,54 +60,58 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
             return;
         }
 
-        if (channel.get().getMessages(5).join().size() != 1) {
-            return;
+        try {
+            if (channel.get().getMessages(5).join().size() != 1) {
+                return;
+            }
+
+            Message firstMessage = channel.get().getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
+
+            if (firstMessage == null) {
+                return;
+            }
+
+            List<User> mentionedUsers = firstMessage.getMentionedUsers();
+
+            if (mentionedUsers.size() != 1) {
+                return;
+            }
+
+            User user = mentionedUsers.get(0);
+
+            String[] lines = firstMessage.getContent().split("\n");
+
+            if (lines.length < 2) {
+                return;
+            }
+
+            String ignOptional = Arrays.stream(lines)
+                    .filter(s -> s.startsWith("IGN: "))
+                    .findFirst()
+                    //TODO replace with orElseGet
+                    .orElse(user.getNickname(server)
+                            .orElse(null));
+
+            if (ignOptional == null) {
+                return;
+            }
+
+            String ign = ignOptional
+                    .replace("IGN: ", "")
+                    .replaceAll("❮(\\S*)❯", "")
+                    .replace("★", "")
+                    .replace("✦", "")
+                    .replace("✶", "")
+                    .replace("✽", "")
+                    .replace("❊", "")
+                    .strip();
+
+            channel.get().sendMessage(ApplicationService.getInstance().getPlayerDataEmbed(ign));
         }
-
-        Message firstMessage = channel.get().getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
-
-        if (firstMessage == null) {
-            return;
+        catch (CompletionException ignored) {
+            //this just happens when the execution takes so long that the channel gets deleted
+            //sending an error then wouldn't be needed
         }
-
-        List<User> mentionedUsers = firstMessage.getMentionedUsers();
-
-        if (mentionedUsers.size() != 1) {
-            return;
-        }
-
-        User user = mentionedUsers.get(0);
-
-        String[] lines = firstMessage.getContent().split("\n");
-
-        if (lines.length < 2) {
-            return;
-        }
-
-        String ignOptional = Arrays.stream(lines)
-                .filter(s -> s.startsWith("IGN: "))
-                .findFirst()
-                //TODO replace with orElseGet
-                .orElse(user.getNickname(server)
-                        .orElse(null));
-
-        if (ignOptional == null) {
-            return;
-        }
-
-        String ign = ignOptional
-                .replace("IGN: ", "")
-                .replaceAll("❮(\\S*)❯", "")
-                .replace("★", "")
-                .replace("✦", "")
-                .replace("✶", "")
-                .replace("✽", "")
-                .replace("❊", "")
-                .strip();
-
-        //TODO add try-catch to prevent errors being logged
-        //apparently running this takes so long that the channel could be deleted
-        channel.get().sendMessage(ApplicationService.getInstance().getPlayerDataEmbed(ign));
     }
 
     //TODO reduce complexity
