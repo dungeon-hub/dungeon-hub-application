@@ -29,37 +29,24 @@ public class ScoreHelpCommand extends Command {
         respondLaterEphemeral(new CompletableFuture<EmbedBuilder>().completeAsync(() -> {
             EmbedBuilder embed = ApplicationService.getInstance()
                     .getEmbed()
-                    .setTitle("Carry Score")
-                    .setDescription("You gain score based on the carries that you do.\n" +
-                            "Different types of carries give you certain score:")
-                    .setColor(EmbedColor.INFORMATION.getColor());
-
-            /*Map<CarryTier, Map<String, Integer>> fields = new HashMap<>();
-
-            for (CarryDifficulty carryDifficulty : DungeonHubConnection.getInstance()
-                    .loadCarryDifficulties(server.get())) {
-                if(fields.containsKey(carryDifficulty.getCarryTier())) {
-                    fields.get(carryDifficulty.getCarryTier()).put(carryDifficulty.getDisplayName(), carryDifficulty.getScore());
-                } else {
-                    fields.put(carryDifficulty.getCarryTier(), new HashMap<>(Map.of(carryDifficulty.getDisplayName(), carryDifficulty.getScore())));
-                }
-            }
-
-            for (Map.Entry<CarryTier, Map<String, Integer>> field : fields.entrySet()) {
-                String value = String.join("\n", field.getValue()
-                        .entrySet().stream()
-                        .sorted(Map.Entry.<String, Integer>comparingByValue()
-                                .thenComparing(Map.Entry.comparingByKey()))
-                        .map(entry -> entry.getKey() + " - " + entry.getValue())
-                        .toList());
-
-                embed.addField(field.getKey().getDisplayName(), value);
-            }*/
+                    .setTitle("Carry Score");
 
             Map<CarryType, Map<String, Integer>> fields = new HashMap<>();
 
             List<CarryDifficulty> carryDifficulties = DungeonHubConnection.getInstance()
-                    .loadCarryDifficulties();
+                    .loadCarryDifficulties(server.get());
+
+            if(carryDifficulties.isEmpty()) {
+                return embed.setColor(EmbedColor.NEGATIVE.getColor())
+                        .setDescription("""
+                                You gain score based on the carries that you do.
+                                Different types of carries give you certain score.
+                                No scores have been set up yet!""");
+            }
+
+            embed.setDescription("You gain score based on the carries that you do.\n" +
+                            "Different types of carries give you certain score:")
+                    .setColor(EmbedColor.INFORMATION.getColor());
 
             Map<CarryType, List<CarryDifficulty>> carryDifficultiesByCarryType = new HashMap<>();
 
@@ -75,10 +62,6 @@ public class ScoreHelpCommand extends Command {
                 if (entry.getValue().isEmpty()) {
                     continue;
                 }
-
-                CarryDifficulty mainDifficulty = entry.getValue().get(0);
-
-                boolean showCarryTier = !entry.getValue().stream().allMatch(carryDifficulty -> carryDifficulty.getCarryTier().getId() == mainDifficulty.getCarryTier().getId());
 
                 for (CarryDifficulty carryDifficulty : entry.getValue()) {
                     boolean hasMultipleWithSameName = entry.getValue().stream()
