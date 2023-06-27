@@ -105,6 +105,8 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 .replace("❊", "")
                 .strip();
 
+        //TODO add try-catch to prevent errors being logged
+        //apparently running this takes so long that the channel could be deleted
         channel.get().sendMessage(ApplicationService.getInstance().getPlayerDataEmbed(ign));
     }
 
