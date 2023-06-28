@@ -17,6 +17,7 @@ import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
+import org.javacord.api.interaction.Interaction;
 import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
@@ -110,10 +111,9 @@ public class ApplicationService {
         return embed.setTitle("Error").setColor(EmbedColor.NEGATIVE.getColor());
     }
 
-    public void respondWithError(SlashCommandCreateEvent slashCommandCreateEvent,
+    public void respondWithError(Interaction interaction,
                                  CommandExecutionException commandExecutionException) {
-        slashCommandCreateEvent.getSlashCommandInteraction()
-                .createImmediateResponder()
+        interaction.createImmediateResponder()
                 .setFlags(MessageFlag.EPHEMERAL)
                 .addEmbed(getErrorEmbed().setDescription(commandExecutionException.getMessage()))
                 .respond();
