@@ -10,6 +10,7 @@ import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.dungeonhub.common.CarryDifficulty;
 import me.taubsie.dungeonhub.common.CarryTier;
 import me.taubsie.dungeonhub.common.CarryType;
+import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
@@ -20,7 +21,7 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 import java.util.List;
 import java.util.Optional;
 
-@CommandParameters(name = "carry-difficulty", description = "Set up the carry difficulties for this server.")
+@CommandParameters(name = "carry-difficulty", description = "Set up the carry difficulties for this server.", enabledForPermissions = PermissionType.ADMINISTRATOR)
 public class CarryDifficultyCommand extends Command {
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
@@ -101,7 +102,7 @@ public class CarryDifficultyCommand extends Command {
         Optional<CarryDifficulty> carryDifficulty = DungeonHubConnection.getInstance()
                 .loadCarryDifficulty(carryTier.get(), getStringOption(subCommand, "carry-difficulty"));
 
-        if(carryDifficulty.isEmpty()) {
+        if (carryDifficulty.isEmpty()) {
             throw new InvalidOptionException("carry.difficulty", "That carry difficulty doesn't exist");
         }
 
