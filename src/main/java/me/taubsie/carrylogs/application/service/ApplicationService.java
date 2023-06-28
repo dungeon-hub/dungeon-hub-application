@@ -297,7 +297,6 @@ public class ApplicationService {
     public EmbedBuilder getPlayerDataEmbed(String ign) {
         Map<String, String> skycryptData = HypixelConnection.getInstance().getSkyCryptData(ign);
 
-        String url = "https://sky.shiiyu.moe/stats/" + ign;
         String description = skycryptData.getOrDefault("description", "Couldn't load SkyCrypt data.");
 
         EmbedBuilder embed = ApplicationService.getInstance()
@@ -305,9 +304,8 @@ public class ApplicationService {
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setDescription(description)
                 .setTitle(skycryptData.getOrDefault("title", ign))
-                .setUrl(url)
-                .setThumbnail(skycryptData.getOrDefault("icon", null))
-                .addInlineField("SkyCrypt", "[Click here](" + url + ")");
+                .setUrl("https://sky.shiiyu.moe/stats/" + ign)
+                .setThumbnail(skycryptData.getOrDefault("icon", null));
 
         /*String uuid = ConnectionService.getInstance()
                 .getUUIDByName(ign);

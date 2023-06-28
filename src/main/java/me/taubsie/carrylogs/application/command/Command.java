@@ -8,6 +8,7 @@ import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.channel.ServerChannel;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.MessageFlag;
+import org.javacord.api.entity.message.component.HighLevelComponent;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.permission.Role;
@@ -63,12 +64,14 @@ public abstract class Command {
                 .respond();
     }
 
-    public final void respondLater(CompletableFuture<EmbedBuilder> embedBuilderFuture) {
+    public final void respondLater(CompletableFuture<EmbedBuilder> embedBuilderFuture,
+                                   HighLevelComponent... highLevelComponents) {
+        //TODO maybe update in 2 steps, first add the components and then add the embed
         InteractionOriginalResponseUpdater updater = slashCommandCreateEvent.getSlashCommandInteraction()
                 .respondLater()
                 .join();
 
-        embedBuilderFuture.thenAccept(embedBuilder -> updater.addEmbed(embedBuilder).update());
+        embedBuilderFuture.thenAccept(embedBuilder -> updater.addEmbed(embedBuilder).addComponents(highLevelComponents).update());
     }
 
     public final void respondEphemeral(EmbedBuilder embedBuilder) {
@@ -278,6 +281,11 @@ public abstract class Command {
 
     public final Long getLongOption(String name) {
         return getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
+    }
+
+    public final Optional<Long> getOptionalLongOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
+                                                      String name) {
+        return slashCommandCreateEvent.getOptionByName(name).flatMap(SlashCommandInteractionOption::getLongValue);
     }
 
     public final Long getLongOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {

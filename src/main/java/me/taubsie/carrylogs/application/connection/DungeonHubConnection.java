@@ -1053,6 +1053,26 @@ public class DungeonHubConnection {
         return Optional.empty();
     }
 
+    public Optional<CarryDifficulty> updateCarryDifficulty(CarryDifficulty carryDifficulty) {
+        RequestBody requestBody = new FormBody.Builder()
+                .add("carryDifficultyJson", carryDifficulty.toJson())
+                .build();
+
+        Request request = getApiRequest("server/" + carryDifficulty.getCarryType().getServer() + "/carry-type/" + carryDifficulty.getCarryType().getId() + "/carry-tier/" + carryDifficulty.getCarryTier().getId() + "/carry-difficulty")
+                .put(requestBody)
+                .build();
+
+        try(Response response = httpClient.newCall(request).execute()) {
+            if(response.isSuccessful() && response.body() != null) {
+                return Optional.ofNullable(CarryDifficulty.fromJson(response.body().string()));
+            }
+        } catch (IOException ioException) {
+            logger.error("Error while trying to update carry difficulty {}.", carryDifficulty.getId(), ioException);
+        }
+
+        return Optional.empty();
+    }
+
     public boolean isCarryTypeExistant(long server, String identifier) {
         return loadCarryTypesForServer(server)
                 .stream()

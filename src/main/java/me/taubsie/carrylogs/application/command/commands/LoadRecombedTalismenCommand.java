@@ -20,7 +20,6 @@ import java.util.List;
 
 @CommandParameters(name = "load-recombed-talismen", description = "Shows you all recombed talismen currently in the auction house.")
 public class LoadRecombedTalismenCommand extends Command {
-
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         boolean bin = getBooleanOption("bin");

@@ -1,10 +1,10 @@
 package me.taubsie.carrylogs.application.command.commands;
 
+import me.taubsie.carrylogs.application.classes.ServerProperty;
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
 import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
-import me.taubsie.carrylogs.application.enums.IdList;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
 import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.service.ApplicationService;
@@ -72,8 +72,9 @@ public class ManageScoreCommand extends Command {
             long updatedScore = DungeonHubConnection.getInstance().modifyScore(user.getId(), carryType.get(), removed ? -amount :
                     amount);
 
-            Optional<ServerTextChannel> logs =
-                    server.getTextChannelById(IdList.SCORE_LOGS_CHANNEL.getLocalId(server.getId()));
+            Optional<ServerTextChannel> logs = ServerProperty.SCORE_LOGS_CHANNEL
+                    .getValue(server.getId())
+                    .flatMap(server::getTextChannelById);
 
             logs.ifPresent(serverTextChannel ->
                     serverTextChannel.sendMessage(ApplicationService

@@ -1,7 +1,7 @@
-package me.taubsie.carrylogs.application.listener;
+package me.taubsie.carrylogs.application.command;
 
-import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.exceptions.*;
+import me.taubsie.carrylogs.application.listener.Listener;
 import me.taubsie.carrylogs.application.service.ApplicationService;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.listener.interaction.SlashCommandCreateListener;
@@ -26,7 +26,7 @@ public class SlashCommandListener implements SlashCommandCreateListener {
             command.get().execute(slashCommandCreateEvent);
         }
         catch(CommandExecutionException commandExecutionException) {
-            ApplicationService.getInstance().respondWithError(slashCommandCreateEvent, commandExecutionException);
+            ApplicationService.getInstance().respondWithError(slashCommandCreateEvent.getInteraction(), commandExecutionException);
         }
     }
 }

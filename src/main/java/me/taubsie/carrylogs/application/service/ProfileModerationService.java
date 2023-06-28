@@ -93,6 +93,12 @@ public class ProfileModerationService {
         return searchResults.stream().map(searchResult -> searchResult.match).collect(Collectors.joining("; "));
     }
 
+    private boolean isBanDisabled(long serverId) {
+        return ServerProperty.PROFILE_MODERATION_BAN.getValue(serverId)
+                .map(s -> s.equalsIgnoreCase("false"))
+                .orElse(Boolean.FALSE);
+    }
+
     public void handleUserBan(Server server, User user, User executor, String reason) {
         dmBannedPerson(server, user, reason);
 
@@ -141,6 +147,10 @@ public class ProfileModerationService {
     }
 
     private void dmBannedPerson(Server server, User user) {
+        if(isBanDisabled(server.getId())) {
+            return;
+        }
+
         Optional<String> unbanForm = ServerProperty.UNBAN_FORM.getValue(server.getId());
 
         String message = ServerProperty.PROFILE_MODERATION_BAN_MESSAGE
@@ -161,8 +171,6 @@ public class ProfileModerationService {
     }
 
     private void executeBan(Server server, User user, String username) {
-        server.banUser(user, Duration.of(6, ChronoUnit.DAYS), "Bad username: " + username);
-
         ServerProperty.MODERATION_LOGS_CHANNEL
                 .getValue(server.getId())
                 .flatMap(s -> {
@@ -176,8 +184,14 @@ public class ProfileModerationService {
                 .ifPresent(serverTextChannel ->
                         serverTextChannel.sendMessage("User "
                                 + user.getMentionTag()
-                                + " got banned because of a bad username:\n"
+                                + " got flagged because of a bad username:\n"
                                 + username));
+
+        if(isBanDisabled(server.getId())) {
+            return;
+        }
+
+        server.banUser(user, Duration.of(6, ChronoUnit.DAYS), "Bad username: " + username);
     }
 
     private void executeBan(Server server, User user, User executor, String reason) {

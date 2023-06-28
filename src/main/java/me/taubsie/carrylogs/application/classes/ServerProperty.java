@@ -22,14 +22,12 @@ public enum ServerProperty implements Nameable {
     BAN_MESSAGE("ban_message"),
     UNBAN_FORM("unban_form"),
 
+    PROFILE_MODERATION_BAN("profile_moderation_ban", ServerPropertyType.BOOLEAN),
     SCORE_ENABLED("score_enabled", ServerPropertyType.BOOLEAN, false),
 
     MODERATION_LOGS_CHANNEL("id_moderation_logs_channel", ServerPropertyType.CHANNEL),
+    SCORE_LOGS_CHANNEL("id_score_logs_channel", ServerPropertyType.CHANNEL),
     STRIKES_LOGS_CHANNEL("id_strikes_logs_channel", ServerPropertyType.CHANNEL),
-    DUNGEON_PRICE_CHANNEL("dungeon_price_channel", ServerPropertyType.CHANNEL),
-    ENDERMAN_PRICE_CHANNEL("enderman_price_channel", ServerPropertyType.CHANNEL),
-    BLAZE_PRICE_CHANNEL("blaze_price_channel", ServerPropertyType.CHANNEL),
-    KUUDRA_PRICE_CHANNEL("kuudra_price_channel", ServerPropertyType.CHANNEL),
 
     SCORE_MANAGEMENT_ROLE("id_score_management_score", ServerPropertyType.ROLE),
     F4_ROLE("id_f4_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),

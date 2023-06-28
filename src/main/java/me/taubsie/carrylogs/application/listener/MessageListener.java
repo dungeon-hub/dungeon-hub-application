@@ -8,8 +8,7 @@ import me.taubsie.dungeonhub.common.CarryInformation;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
-import org.javacord.api.entity.message.component.ActionRow;
-import org.javacord.api.entity.message.component.Button;
+import org.javacord.api.entity.message.component.*;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.message.CertainMessageEvent;
@@ -49,6 +48,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
     }
 
     private void loadSkycryptFromTicket(MessageCreateEvent messageCreateEvent) {
+        //TODO make optional
         Server server = messageCreateEvent.getServer().orElse(null);
         Optional<ServerTextChannel> channel = messageCreateEvent.getMessage().getServerTextChannel();
 
@@ -65,7 +65,8 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 return;
             }
 
-            Message firstMessage = channel.get().getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
+            Message firstMessage =
+                    channel.get().getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
 
             if (firstMessage == null) {
                 return;
@@ -106,7 +107,13 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                     .replace("❊", "")
                     .strip();
 
-            channel.get().sendMessage(ApplicationService.getInstance().getPlayerDataEmbed(ign));
+            channel.get().sendMessage(ApplicationService.getInstance().getPlayerDataEmbed(ign),
+                    new ActionRowBuilder().addComponents(
+                            new ButtonBuilder().setStyle(ButtonStyle.LINK)
+                                    .setUrl("https://sky.shiiyu.moe/stats/" + ign)
+                                    .setLabel("SkyCrypt")
+                                    .build()
+                    ).build());
         }
         catch (CompletionException ignored) {
             //this just happens when the execution takes so long that the channel gets deleted
@@ -143,7 +150,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
             long approvingChannelId = IdList.APPROVING_CHANNEL.getLocalId(server.getId());
 
-            for (CarryInformation carryInformation : DungeonHubConnection.getInstance().getFromLogQueue(channelId)) {
+            for(CarryInformation carryInformation : DungeonHubConnection.getInstance().getFromLogQueue(channelId)) {
                 carryInformation.setAttachmentLink(attachmentLink);
 
                 if (carryInformation.getAmountOfCarries() >= APPROVE_AMOUNT_THRESHOLD

@@ -10,6 +10,7 @@ import me.taubsie.carrylogs.application.service.ApplicationService;
 import me.taubsie.dungeonhub.common.CarryDifficulty;
 import me.taubsie.dungeonhub.common.CarryTier;
 import me.taubsie.dungeonhub.common.CarryType;
+import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -75,7 +76,76 @@ public class CarryDifficultyCommand extends Command {
     }
 
     public void edit(SlashCommandInteractionOption subCommand) {
-        throw new InvalidSubCommandException();
+        Server server = getServer();
+
+        Optional<CarryType> carryType = DungeonHubConnection.getInstance()
+                .loadCarryType(server.getId(), getStringOption(subCommand, "carry-type"));
+
+        if (carryType.isEmpty()) {
+            //TODO custom class
+            throw new CommandExecutionException() {
+                @Override
+                public String getMessage() {
+                    return "That carry type doesn't exists!";
+                }
+            };
+        }
+
+        Optional<CarryTier> carryTier = DungeonHubConnection.getInstance()
+                .loadCarryTier(carryType.get(), getStringOption(subCommand, CarryTier.FIELD_NAME));
+
+        if (carryTier.isEmpty()) {
+            throw new InvalidOptionException(CarryTier.FIELD_NAME, "That carry tier doesn't exist");
+        }
+
+        Optional<CarryDifficulty> carryDifficulty = DungeonHubConnection.getInstance()
+                .loadCarryDifficulty(carryTier.get(), getStringOption(subCommand, "carry-difficulty"));
+
+        if(carryDifficulty.isEmpty()) {
+            throw new InvalidOptionException("carry.difficulty", "That carry difficulty doesn't exist");
+        }
+
+        Optional<String> displayName = getOptionalStringOption(subCommand, "display-name");
+        Optional<Long> price = getOptionalLongOption(subCommand, "price");
+        Optional<Long> score = getOptionalLongOption(subCommand, "score");
+        Optional<Long> bulkAmount = getOptionalLongOption(subCommand, "bulk-amount");
+        Optional<Long> bulkPrice = getOptionalLongOption(subCommand, "bulk-price");
+        Optional<String> thumbnailUrl = getOptionalStringOption(subCommand, "thumbnail-url");
+        Optional<String> priceName = getOptionalStringOption(subCommand, "price-name");
+
+        if (displayName.isEmpty() && price.isEmpty() && score.isEmpty() && bulkAmount.isEmpty() && bulkPrice.isEmpty() && thumbnailUrl.isEmpty() && priceName.isEmpty()) {
+            //TODO custom class
+            throw new CommandExecutionException() {
+                @Override
+                public String getMessage() {
+                    return "Please provide something you want to edit.";
+                }
+            };
+        }
+
+        displayName.ifPresent(s -> carryDifficulty.get().setDisplayName(s));
+        price.ifPresent(p -> carryDifficulty.get().setPrice(Math.toIntExact(p)));
+        score.ifPresent(s -> carryDifficulty.get().setScore(Math.toIntExact(s)));
+        bulkAmount.ifPresent(ba -> carryDifficulty.get().setBulkAmount(Math.toIntExact(ba)));
+        bulkPrice.ifPresent(bp -> carryDifficulty.get().setBulkPrice(Math.toIntExact(bp)));
+        thumbnailUrl.ifPresent(s -> carryDifficulty.get().setThumbnailUrl(s));
+        priceName.ifPresent(s -> carryDifficulty.get().setPriceName(s));
+
+        Optional<CarryDifficulty> updatedCarryDifficulty = DungeonHubConnection.getInstance().updateCarryDifficulty(carryDifficulty.get());
+
+        if (updatedCarryDifficulty.isEmpty()) {
+            //TODO custom class
+            throw new CommandExecutionException() {
+                @Override
+                public String getMessage() {
+                    return "Couldn't update carry difficulty.";
+                }
+            };
+        }
+
+        respond(ApplicationService.getInstance()
+                .getCarryDifficultyEmbed(updatedCarryDifficulty.get())
+                .setTitle("Updated Carry Difficulty"));
     }
 
     public void reset(SlashCommandInteractionOption subCommand) {
