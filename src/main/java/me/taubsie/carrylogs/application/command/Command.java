@@ -41,11 +41,11 @@ public abstract class Command {
     public final void execute(SlashCommandCreateEvent slashCommandCreateEvent) {
         this.slashCommandCreateEvent = slashCommandCreateEvent;
 
-        if(!isEnabledInServer(slashCommandCreateEvent.getSlashCommandInteraction().getServer().map(DiscordEntity::getId).orElse(0L))) {
+        if (!isEnabledInServer(slashCommandCreateEvent.getSlashCommandInteraction().getServer().map(DiscordEntity::getId).orElse(0L))) {
             throw new NotAllowedThereException();
         }
 
-        if(!hasPermissions(getUser()) || !isEnabledForUser(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getId())) {
+        if (!hasPermissions(getUser()) || !isEnabledForUser(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getId())) {
             throw new MissingPermissionException();
         }
 
@@ -106,7 +106,7 @@ public abstract class Command {
                     .orElse(new PermissionType[]{});
             return getServer().hasPermissions(user, permissions) || getServer().isAdmin(user) || getServer().isOwner(user);
         }
-        catch(MustBeServerException mustBeServerException) {
+        catch (MustBeServerException mustBeServerException) {
             return isEnabledInDms();
         }
     }
@@ -138,7 +138,7 @@ public abstract class Command {
     public final Server getServer() {
         Optional<Server> server = slashCommandCreateEvent.getSlashCommandInteraction().getServer();
 
-        if(server.isEmpty()) {
+        if (server.isEmpty()) {
             throw new MustBeServerException();
         }
 
@@ -148,7 +148,7 @@ public abstract class Command {
     public final TextChannel getChannel() {
         Optional<TextChannel> channel = slashCommandCreateEvent.getSlashCommandInteraction().getChannel();
 
-        if(channel.isEmpty()) {
+        if (channel.isEmpty()) {
             throw new ChannelNotFoundException();
         }
 
@@ -166,7 +166,7 @@ public abstract class Command {
     public final SlashCommandInteractionOption getOptionAtIndex(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, int index) {
         Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByIndex(index);
 
-        if(interactionOption.isEmpty()) {
+        if (interactionOption.isEmpty()) {
             throw new InvalidOptionException("at index " + index);
         }
 
@@ -177,7 +177,8 @@ public abstract class Command {
         return getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
     }
 
-    public final <T extends Enum<T> & Nameable> T getEnumOption(@NotNull String name, @NotNull Class<T> enumClass, T defaultValue) {
+    public final <T extends Enum<T> & Nameable> T getEnumOption(@NotNull String name, @NotNull Class<T> enumClass,
+                                                                T defaultValue) {
         try {
             String value = getStringOption(name);
 
@@ -188,7 +189,7 @@ public abstract class Command {
             return possibleMatch
                     .orElseGet(() -> T.valueOf(enumClass, value));
         }
-        catch(IllegalArgumentException illegalArgumentException) {
+        catch (IllegalArgumentException illegalArgumentException) {
             return defaultValue;
         }
     }
@@ -204,7 +205,7 @@ public abstract class Command {
             return possibleMatch
                     .orElseGet(() -> T.valueOf(enumClass, value));
         }
-        catch(IllegalArgumentException illegalArgumentException) {
+        catch (IllegalArgumentException illegalArgumentException) {
             String message = String.format(
                     "Please enter a valid %s (%s)",
                     name,
@@ -224,7 +225,7 @@ public abstract class Command {
     public final String getStringOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         Optional<String> stringValue = getOption(slashCommandCreateEvent, name).getStringValue();
 
-        if(stringValue.isEmpty()) {
+        if (stringValue.isEmpty()) {
             throw new InvalidOptionException(name);
         }
 
@@ -242,7 +243,7 @@ public abstract class Command {
     public final Boolean getBooleanOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         Optional<Boolean> booleanValue = getOption(slashCommandCreateEvent, name).getBooleanValue();
 
-        if(booleanValue.isEmpty()) {
+        if (booleanValue.isEmpty()) {
             throw new InvalidOptionException(name);
         }
 
@@ -258,7 +259,7 @@ public abstract class Command {
                                                 String name) {
         Optional<ServerChannel> channelValue = getOption(slashCommandCreateEvent, name).getChannelValue();
 
-        if(channelValue.isEmpty()) {
+        if (channelValue.isEmpty()) {
             throw new InvalidOptionException(name);
         }
 
@@ -268,7 +269,7 @@ public abstract class Command {
     public final Role getRoleOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         Optional<Role> roleValue = getOption(slashCommandCreateEvent, name).getRoleValue();
 
-        if(roleValue.isEmpty()) {
+        if (roleValue.isEmpty()) {
             throw new InvalidOptionException(name);
         }
 
@@ -282,7 +283,7 @@ public abstract class Command {
     public final Long getLongOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         Optional<Long> longValue = getOption(slashCommandCreateEvent, name).getLongValue();
 
-        if(longValue.isEmpty()) {
+        if (longValue.isEmpty()) {
             throw new InvalidOptionException(name);
         }
 
@@ -296,7 +297,7 @@ public abstract class Command {
     public final User getUserOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         Optional<User> userValue = getOption(slashCommandCreateEvent, name).getUserValue();
 
-        if(userValue.isEmpty()) {
+        if (userValue.isEmpty()) {
             throw new InvalidOptionException(name);
         }
 
@@ -307,7 +308,7 @@ public abstract class Command {
                                                          String name) {
         Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByName(name);
 
-        if(interactionOption.isEmpty()) {
+        if (interactionOption.isEmpty()) {
             throw new InvalidOptionException(name);
         }
 
@@ -315,6 +316,7 @@ public abstract class Command {
     }
 
     public final void respondWithError(CommandExecutionException commandExecutionException) {
-        ApplicationService.getInstance().respondWithError(slashCommandCreateEvent, commandExecutionException);
+        ApplicationService.getInstance().respondWithError(slashCommandCreateEvent.getInteraction(),
+                commandExecutionException);
     }
 }
