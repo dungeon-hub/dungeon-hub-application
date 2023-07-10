@@ -2,15 +2,15 @@ package me.taubsie.carrylogs.application.command.commands;
 
 import me.taubsie.carrylogs.application.command.Command;
 import me.taubsie.carrylogs.application.command.CommandParameters;
+import me.taubsie.carrylogs.application.connection.DungeonHubConnection;
 import me.taubsie.carrylogs.application.enums.EmbedColor;
 import me.taubsie.carrylogs.application.exceptions.InvalidOptionException;
+import me.taubsie.carrylogs.application.exceptions.MissingPermissionException;
 import me.taubsie.carrylogs.application.service.LeaderboardService;
 import me.taubsie.carrylogs.application.service.MessagesService;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
-import org.javacord.api.interaction.SlashCommandOption;
-import org.javacord.api.interaction.SlashCommandOptionBuilder;
-import org.javacord.api.interaction.SlashCommandOptionType;
+import org.javacord.api.interaction.*;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
 import java.util.List;
@@ -19,7 +19,7 @@ import java.util.List;
         description = "Refreshes some data from the bot.",
         enabledForPermissions = {PermissionType.MANAGE_MESSAGES})
 public class RefreshCommand extends Command {
-    private static final List<String> choices = List.of("leaderboard", "price-message");
+    private static final List<String> choices = List.of("leaderboard", "price-message", "backend");
 
     @Override
     public long[] getEnabledServers() {
@@ -66,8 +66,23 @@ public class RefreshCommand extends Command {
                                 .setDescription("Prices refreshed!"))
                         .update();
             }
-            //so that intellij doesn't make this into an if statement, can remove this
-            case "" -> {
+            case "backend" -> {
+                if(!getUser().isBotOwnerOrTeamMember()) {
+                    throw new MissingPermissionException();
+                }
+
+                InteractionOriginalResponseUpdater updater = slashCommandCreateEvent
+                        .getSlashCommandInteraction()
+                                .respondLater(true)
+                                        .join();
+
+                DungeonHubConnection.getInstance()
+                        .reloadToken();
+
+                updater.addEmbed(getEmbed()
+                        .setColor(EmbedColor.POSITIVE.getColor())
+                        .setDescription("Token should have been reloaded!"))
+                        .update();
             }
 
             default -> respondWithError(new InvalidOptionException("type",
