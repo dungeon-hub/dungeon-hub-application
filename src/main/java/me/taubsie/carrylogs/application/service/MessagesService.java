@@ -47,9 +47,13 @@ public class MessagesService implements StartupListener {
 
                     result.append("**")
                             .append(carryDifficulty.getPriceName())
-                            .append("**: ")
-                            .append(ApplicationService.getInstance().makeNumberReadable(carryDifficulty.getPrice()))
-                            .append(" coins");
+                            .append("**: ");
+
+                    String priceText = carryDifficulty.getPrice() != 0
+                            ? ApplicationService.getInstance().makeNumberReadable(carryDifficulty.getPrice()) + " coins"
+                            : "Free";
+
+                    result.append(priceText);
 
                     if (carryDifficulty.getBulkAmount().isPresent() && carryDifficulty.getBulkPrice().isPresent()) {
                         result.append("\n\\*")
@@ -67,9 +71,7 @@ public class MessagesService implements StartupListener {
                 .setColor(EmbedColor.DEFAULT.getColor())
                 .setDescription(description);
 
-        if (carryTier.getThumbnailUrl().isPresent()) {
-            embed.setThumbnail(carryTier.getThumbnailUrl().get());
-        }
+        carryTier.getThumbnailUrl().ifPresent(embed::setThumbnail);
 
         return Optional.of(embed);
     }

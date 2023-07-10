@@ -85,13 +85,17 @@ public class CalcPriceCommand extends Command {
             };
         }
 
+        String priceText = price != 0
+                ? ApplicationService.getInstance().makeNumberReadable(price) + " coins"
+                : "Free";
+
         EmbedBuilder embed = ApplicationService.getInstance()
                 .getEmbed()
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setTitle("Carry-Price")
                 .addInlineField("Type", carryTier.get().getDisplayName() + " | " + carryDifficulty.get().getDisplayName())
                 .addInlineField("Amount", String.valueOf(amount))
-                .addInlineField("Price", ApplicationService.getInstance().makeNumberReadable(price) + " coins");
+                .addInlineField("Price", priceText);
 
         carryDifficulty.flatMap(CarryDifficulty::getThumbnailUrl).ifPresent(embed::setThumbnail);
 

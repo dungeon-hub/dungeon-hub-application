@@ -68,10 +68,7 @@ public class DungeonHubConnection {
         return instance;
     }
 
-    /**
-     * Do not call this outside of constructor or the scheduled run.
-     */
-    private void reloadToken() {
+    public void reloadToken() {
         String username = ConfigProperty.API_USER.getValue();
         String password = ConfigProperty.API_PASSWORD.getValue();
 
@@ -91,7 +88,7 @@ public class DungeonHubConnection {
             apiToken = response.body().string();
         }
         catch (IOException ioException) {
-            ioException.printStackTrace();
+            logger.error("Error while loading token.", ioException);
         }
     }
 
