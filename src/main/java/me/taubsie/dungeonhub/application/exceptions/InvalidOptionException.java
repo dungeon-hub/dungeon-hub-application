@@ -1,0 +1,31 @@
+package me.taubsie.dungeonhub.application.exceptions;
+
+public class InvalidOptionException extends CommandExecutionException
+{
+    private final String name;
+    private final String additionalMessage;
+
+    public InvalidOptionException(String name)
+    {
+        this(name, null);
+    }
+
+    public InvalidOptionException(String name, String additionalMessage)
+    {
+        this.name = name;
+        this.additionalMessage = additionalMessage;
+    }
+
+    @Override
+    public String getMessage()
+    {
+        if (additionalMessage == null)
+        {
+            return String.format("The option \"%s\" you entered is invalid.", name);
+        }
+        else
+        {
+            return String.format("The option \"%s\" you entered is invalid:%n%s", name, additionalMessage);
+        }
+    }
+}

@@ -100,8 +100,8 @@
                 <configuration>
                     <programs>
                         <program>
-                            <mainClass>me.taubsie.carrylogs.application.start.BotStarter</mainClass>
-                            <id>carrylogs-application</id>
+                            <mainClass>start.me.taubsie.dungeonhub.application.BotStarter</mainClass>
+                            <id>dungeonhub-application</id>
                         </program>
                     </programs>
                 </configuration>
