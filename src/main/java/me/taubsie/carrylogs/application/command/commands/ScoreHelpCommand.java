@@ -68,18 +68,20 @@ public class ScoreHelpCommand extends Command {
                             .filter(otherDifficulty -> otherDifficulty.getDisplayName().equalsIgnoreCase(carryDifficulty.getDisplayName()))
                             .count() >= 2;
 
-                    if (hasMultipleWithSameName) {
-                        boolean sameScoreForEach = entry.getValue().stream()
-                                .allMatch(otherDifficulty -> otherDifficulty.getScore() == carryDifficulty.getScore());
+                    boolean sameScoreForEach = entry.getValue().stream()
+                            .allMatch(otherDifficulty -> otherDifficulty.getScore() == carryDifficulty.getScore());
 
+                    if (sameScoreForEach) {
+                        fields.put(entry.getKey(), Map.of("Any", carryDifficulty.getScore()));
+                        break;
+                    }
+
+                    if (hasMultipleWithSameName) {
                         boolean sameScoreForName = entry.getValue().stream()
                                 .filter(otherDifficulty -> otherDifficulty.getDisplayName().equalsIgnoreCase(carryDifficulty.getDisplayName()))
                                 .allMatch(otherDifficulty -> otherDifficulty.getScore() == carryDifficulty.getScore());
 
-                        if (sameScoreForEach) {
-                            fields.put(entry.getKey(), Map.of("Any", carryDifficulty.getScore()));
-                            break;
-                        } else if (sameScoreForName) {
+                        if (sameScoreForName) {
                             if (fields.getOrDefault(entry.getKey(), Map.of())
                                     .entrySet().stream().anyMatch(field -> field.getKey().equalsIgnoreCase(carryDifficulty.getDisplayName()) && field.getValue() == carryDifficulty.getScore())) {
                                 continue;
