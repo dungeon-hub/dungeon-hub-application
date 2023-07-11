@@ -1,0 +1,1 @@
+rootProject.name = "dungeon-hub-application"

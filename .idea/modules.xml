@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../carrylogs-server/dungeon-hub-server.iml" filepath="$PROJECT_DIR$/../carrylogs-server/dungeon-hub-server.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/dungeon-hub-application.main.iml" filepath="$PROJECT_DIR$/.idea/modules/dungeon-hub-application.main.iml" />
     </modules>
   </component>
 </project>
