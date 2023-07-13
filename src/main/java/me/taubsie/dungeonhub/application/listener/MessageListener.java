@@ -86,18 +86,17 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 return;
             }
 
-            String ignOptional = Arrays.stream(lines)
+            Optional<String> ignOptional = Arrays.stream(lines)
                     .filter(s -> s.startsWith("IGN: "))
                     .findFirst()
                     //TODO replace with orElseGet
-                    .orElse(user.getNickname(server)
-                            .orElse(null));
+                    .or(() -> user.getNickname(server));
 
-            if (ignOptional == null) {
+            if (ignOptional.isEmpty()) {
                 return;
             }
 
-            String ign = ignOptional
+            String ign = ignOptional.get()
                     .replace("IGN: ", "")
                     .replaceAll("❮(\\S*)❯", "")
                     .replace("★", "")
