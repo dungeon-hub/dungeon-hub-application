@@ -18,7 +18,8 @@ public class AmIBrokenCommand extends Command {
                 .setDescription("""
                         > The score and carry-system, including `/log` and others
                         > Strikes (unfinished)""");
-
+            // probably try running each of the commands and see if they throw exceptions to check if it's broken?
+            // still need to read through more code not sure
         respondEphemeral(response);
     }
 }
