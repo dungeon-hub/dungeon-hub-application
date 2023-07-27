@@ -295,7 +295,7 @@ public class CarryTierCommand extends Command {
         Boolean thumbnailUrl = getBooleanOption(subCommand, "thumbnail-url");
         Boolean priceTitle = getBooleanOption(subCommand, "price-title");
 
-        if (!category && !priceChannel && !descriptiveName && !thumbnailUrl) {
+        if (!category && !priceChannel && !descriptiveName && !thumbnailUrl && !priceTitle) {
             //TODO custom class
             throw new CommandExecutionException() {
                 @Override

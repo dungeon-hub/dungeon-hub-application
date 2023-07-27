@@ -43,11 +43,11 @@ public class ApplicationService {
         return getEmbed(Instant.now());
     }
 
-    public String getFooter() {
+    public static String getFooter() {
         return "discord.gg/dungeons • made by @taubsie";
     }
 
-    public String getPriceFooter() {
+    public static String getPriceFooter() {
         return "discord.gg/dungeons • also see /calc-price • made by @taubsie";
     }
 

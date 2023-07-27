@@ -21,7 +21,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.projectlombok:lombok:1.18.26")
+    implementation("org.projectlombok:lombok:1.18.28")
     implementation("org.javacord:javacord:3.8.0")
     implementation("me.taubsie:dungeon-hub-common:1.0.0")
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
@@ -42,10 +42,10 @@ java {
     sourceCompatibility = JavaVersion.VERSION_17
 }
 
-tasks.withType<JavaCompile>() {
+tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
-tasks.withType<Javadoc>() {
+tasks.withType<Javadoc> {
     options.encoding = "UTF-8"
 }

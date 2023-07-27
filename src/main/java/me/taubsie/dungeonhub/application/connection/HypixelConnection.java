@@ -170,6 +170,7 @@ public class HypixelConnection implements HypixelHttpClient {
                         case "og:title" -> result.put("title", meta.attr("content"));
                         case "og:image" -> result.put("icon", meta.attr("content"));
                         case "og:description" -> result.put("description", meta.attr("content"));
+                        default -> {}
                     }
                 }
             }

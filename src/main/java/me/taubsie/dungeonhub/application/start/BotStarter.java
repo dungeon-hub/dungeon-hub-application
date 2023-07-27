@@ -32,6 +32,7 @@ import java.util.Map;
 @OnStart(priority = 1)
 public class BotStarter implements StartupListener, ProgramOrigin {
     private static final Logger logger = LoggerFactory.getLogger(BotStarter.class);
+    private static final String LINE = "--------------------";
 
     private static BotStarter instance;
     @Getter
@@ -108,8 +109,8 @@ public class BotStarter implements StartupListener, ProgramOrigin {
      *
      * @return a line for command-line output.
      */
-    public String getLine() {
-        return "--------------------";
+    public static String getLine() {
+        return LINE;
     }
 
     /**

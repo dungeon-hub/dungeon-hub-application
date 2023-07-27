@@ -26,11 +26,11 @@ public class BotServerLeaveListener implements ServerLeaveListener {
         ApplicationService.getInstance()
                 .getBotOwner(serverLeaveEvent.getApi())
                 .openPrivateChannel().join()
-                .sendMessage("I just left server '"
+                .sendMessage("I just left server `"
                         + serverLeaveEvent.getServer().getName()
-                        + "' by '"
-                        + serverLeaveEvent.getServer().getOwner().map(Nameable::getName).orElse("no-name")
-                        + "' ("
+                        + "` by "
+                        + serverLeaveEvent.getServer().getOwner().map(Nameable::getName).map(s -> "`" + s + "`").orElse("no name")
+                        + " ("
                         + serverLeaveEvent.getServer().getOwnerId()
                         + ").");
 

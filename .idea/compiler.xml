@@ -23,7 +23,7 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="dungeon-hub-server" options="-parameters" />
+      <module name="dungeon-hub-server" options="" />
     </option>
   </component>
 </project>

@@ -17,7 +17,7 @@ public class SetupCommand extends Command {
                 .getEmbed()
                 .setColor(Color.YELLOW)
                 .setDescription("""
-                        > Setup the bot! 
+                        > Setup the bot!
                         > (command is unfinished)
                         """);
         respondEphemeral(response);

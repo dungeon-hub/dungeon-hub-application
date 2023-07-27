@@ -26,11 +26,11 @@ public class BotServerJoinListener implements ServerJoinListener {
         ApplicationService.getInstance()
                 .getBotOwner(serverJoinEvent.getApi())
                 .openPrivateChannel().join()
-                .sendMessage("I just joined server '"
+                .sendMessage("I just joined server `"
                         + serverJoinEvent.getServer().getName()
-                        + "' by '"
-                        + serverJoinEvent.getServer().getOwner().map(Nameable::getName).orElse("no-name")
-                        + "' (<@"
+                        + "` by "
+                        + serverJoinEvent.getServer().getOwner().map(Nameable::getName).map(s -> "`" + s + "`").orElse("no name")
+                        + " (<@"
                         + serverJoinEvent.getServer().getOwnerId()
                         + ">).");
 
