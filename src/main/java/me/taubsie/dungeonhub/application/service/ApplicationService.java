@@ -5,6 +5,7 @@ import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.connection.HypixelConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
+import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException;
 import me.taubsie.dungeonhub.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.*;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
@@ -43,11 +44,11 @@ public class ApplicationService {
         return getEmbed(Instant.now());
     }
 
-    public static String getFooter() {
+    public String getFooter() {
         return "discord.gg/dungeons • made by @taubsie";
     }
 
-    public static String getPriceFooter() {
+    public String getPriceFooter() {
         return "discord.gg/dungeons • also see /calc-price • made by @taubsie";
     }
 
@@ -294,10 +295,10 @@ public class ApplicationService {
     //TODO maybe make it possible to update the embed in 2 intervals, since the mojang+safety+jerry api takes long,
     // as well as the skycrypt api takes long too
     //probably first load skycrypt, then the rest?
-    public EmbedBuilder getPlayerDataEmbed(String ign) {
+    public EmbedBuilder getPlayerDataEmbed(String ign) throws FailedToLoadEmbedException {
         Map<String, String> skycryptData = HypixelConnection.getInstance().getSkyCryptData(ign);
 
-        String description = skycryptData.getOrDefault("description", "Couldn't load SkyCrypt data.");
+        String description = skycryptData.getOrDefault("description", "Couldn't load SkyCrypt data. Please try again later.");
 
         EmbedBuilder embed = ApplicationService.getInstance()
                 .getEmbed()
@@ -323,6 +324,10 @@ public class ApplicationService {
         }*/
 
         embed.addInlineField("Flagged", "Please remember to run `/lookup`.");
+
+        if(!skycryptData.containsKey("description") || !skycryptData.containsKey("title")) {
+            throw new FailedToLoadEmbedException(embed);
+        }
 
         return embed;
     }

@@ -3,17 +3,21 @@ package me.taubsie.dungeonhub.application.listener;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.enums.IdList;
+import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
+import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.component.*;
+import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.message.CertainMessageEvent;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.event.message.MessageEditEvent;
+import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 import org.javacord.api.listener.message.MessageCreateListener;
 import org.javacord.api.listener.message.MessageEditListener;
 import org.slf4j.Logger;
@@ -48,15 +52,14 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
     }
 
     private void loadSkycryptFromTicket(MessageCreateEvent messageCreateEvent) {
-        //TODO make optional
-        Server server = messageCreateEvent.getServer().orElse(null);
+        Optional<Server> server = messageCreateEvent.getServer();
         Optional<ServerTextChannel> channel = messageCreateEvent.getMessage().getServerTextChannel();
 
         if (!messageCreateEvent.isServerMessage()
                 || channel.isEmpty()
-                || server == null
-                || !(server.getId() == IdList.SERVER.getId()
-                || server.getId() == IdList.SERVER.getTestId())) {
+                || server.isEmpty()
+                || !(server.get().getId() == IdList.SERVER.getId()
+                || server.get().getId() == IdList.SERVER.getTestId())) {
             return;
         }
 
@@ -86,11 +89,11 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 return;
             }
 
+            //TODO load usernames from linked player information
             Optional<String> ignOptional = Arrays.stream(lines)
                     .filter(s -> s.startsWith("IGN: "))
                     .findFirst()
-                    //TODO replace with orElseGet
-                    .or(() -> user.getNickname(server));
+                    .or(() -> user.getNickname(server.get()));
 
             if (ignOptional.isEmpty()) {
                 return;
@@ -106,17 +109,68 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                     .replace("❊", "")
                     .strip();
 
-            channel.get().sendMessage(ApplicationService.getInstance().getPlayerDataEmbed(ign),
-                    new ActionRowBuilder().addComponents(
-                            new ButtonBuilder().setStyle(ButtonStyle.LINK)
-                                    .setUrl("https://sky.shiiyu.moe/stats/" + ign)
-                                    .setLabel("SkyCrypt")
-                                    .build()
-                    ).build());
+            sendPlayerDataEmbed(ign, channel.get());
         }
         catch (CompletionException ignored) {
             //this just happens when the execution takes so long that the channel gets deleted
             //sending an error then wouldn't be needed
+        }
+    }
+
+    private Button getSkyCryptButton(String ign) {
+        return new ButtonBuilder().setStyle(ButtonStyle.LINK)
+                .setUrl("https://sky.shiiyu.moe/stats/" + ign)
+                .setLabel("SkyCrypt")
+                .build();
+    }
+
+    private void sendPlayerDataEmbed(String ign, ServerTextChannel channel) {
+        EmbedBuilder playerDataEmbed;
+        try {
+            playerDataEmbed = ApplicationService.getInstance().getPlayerDataEmbed(ign);
+
+            channel.sendMessage(playerDataEmbed,
+                    new ActionRowBuilder().addComponents(
+                            getSkyCryptButton(ign)
+                    ).build());
+        }
+        catch (FailedToLoadEmbedException failedToLoadEmbedException) {
+            playerDataEmbed = failedToLoadEmbedException.getEmbed();
+
+            channel.sendMessage(playerDataEmbed,
+                            new ActionRowBuilder().addComponents(
+                                    getSkyCryptButton(ign),
+                                    new ButtonBuilder().setStyle(ButtonStyle.SECONDARY)
+                                            .setLabel("Reload")
+                                            .setCustomId("reload_playerdata")
+                                            .build()
+                            ).build())
+                    .thenAccept(message -> message.addButtonClickListener(event ->
+                            event.getButtonInteractionWithCustomId("reload_playerdata")
+                                    .ifPresent(buttonInteraction -> {
+                                        InteractionOriginalResponseUpdater updater = buttonInteraction
+                                                .respondLater().join();
+
+                                        try {
+                                            EmbedBuilder embed =
+                                                    ApplicationService.getInstance().getPlayerDataEmbed(ign);
+
+                                            updater.removeAllEmbeds()
+                                                    .addEmbed(embed);
+
+                                            updater.removeAllComponents()
+                                                    .addComponents(new ActionRowBuilder().addComponents(
+                                                            getSkyCryptButton(ign)
+                                                    ).build());
+                                        }
+                                        catch (FailedToLoadEmbedException ignored) {
+                                            //ignored
+                                        }
+
+                                        //TODO please please please make sure that this method updates the original message and does NOT post a new one
+                                        updater.update();
+                                    })
+                    ));
         }
     }
 
@@ -148,15 +202,16 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
             }
 
             long approvingChannelId = IdList.APPROVING_CHANNEL.getLocalId(server.getId());
+            Optional<TextChannel> approvingChannel = messageEvent.getApi()
+                    .getTextChannelById(approvingChannelId);
 
             for(CarryInformation carryInformation : DungeonHubConnection.getInstance().getFromLogQueue(channelId)) {
                 carryInformation.setAttachmentLink(attachmentLink);
 
-                if (carryInformation.getAmountOfCarries() >= APPROVE_AMOUNT_THRESHOLD
-                        || carryInformation.calculateScore() >= APPROVE_SCORE_THRESHOLD) {
-                    Message message = messageEvent.getApi()
-                            .getTextChannelById(approvingChannelId)
-                            .get()
+                if ((carryInformation.getAmountOfCarries() >= APPROVE_AMOUNT_THRESHOLD
+                        || carryInformation.calculateScore() >= APPROVE_SCORE_THRESHOLD)
+                        && approvingChannel.isPresent()) {
+                    Message message = approvingChannel.get()
                             .sendMessage(ApplicationService.getInstance()
                                             .getEmbed(carryInformation.getTime())
                                             .setTitle("Accept carry-log?")
@@ -207,7 +262,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                                             "(https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")")).join());
                         }
                         catch (CompletionException completionException) {
-                            completionException.printStackTrace();
+                            logger.error("Error when sending log message.", completionException);
                         }
                     }
 

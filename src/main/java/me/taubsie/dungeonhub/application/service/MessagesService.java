@@ -116,7 +116,7 @@ public class MessagesService implements StartupListener {
         }
 
         if(!embeds.isEmpty()) {
-            embeds.get(embeds.size() - 1).setFooter(ApplicationService.getPriceFooter());
+            embeds.get(embeds.size() - 1).setFooter(ApplicationService.getInstance().getPriceFooter());
         }
 
         return embeds;
