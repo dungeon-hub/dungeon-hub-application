@@ -114,10 +114,11 @@ public class ProfileModerationService {
     private void sendDm(User user, String message, @Nullable String unbanForm) {
         try {
             if (unbanForm == null) {
-                user.openPrivateChannel().join().sendMessage(message).join();
+                user.openPrivateChannel().thenAccept(privateChannel -> privateChannel
+                        .sendMessage(message));
             } else {
-                user.openPrivateChannel().join()
-                        .sendMessage(message, ActionRow.of(Button.link(unbanForm, "Appeal"))).join();
+                user.openPrivateChannel().thenAccept(privateChannel -> privateChannel
+                        .sendMessage(message, ActionRow.of(Button.link(unbanForm, "Appeal"))));
             }
         }
         catch (CompletionException completionException) {

@@ -10,6 +10,7 @@ import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
+import org.javacord.api.entity.message.MessageUpdater;
 import org.javacord.api.entity.message.component.*;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
@@ -17,7 +18,6 @@ import org.javacord.api.entity.user.User;
 import org.javacord.api.event.message.CertainMessageEvent;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.event.message.MessageEditEvent;
-import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 import org.javacord.api.listener.message.MessageCreateListener;
 import org.javacord.api.listener.message.MessageEditListener;
 import org.slf4j.Logger;
@@ -124,6 +124,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 .build();
     }
 
+    //TODO threads threads threads
     private void sendPlayerDataEmbed(String ign, ServerTextChannel channel) {
         EmbedBuilder playerDataEmbed;
         try {
@@ -148,8 +149,17 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                     .thenAccept(message -> message.addButtonClickListener(event ->
                             event.getButtonInteractionWithCustomId("reload_playerdata")
                                     .ifPresent(buttonInteraction -> {
-                                        InteractionOriginalResponseUpdater updater = buttonInteraction
-                                                .respondLater().join();
+                                        buttonInteraction.createOriginalMessageUpdater()
+                                                .removeAllComponents()
+                                                .removeAllEmbeds()
+                                                .addEmbed(ApplicationService.getInstance()
+                                                        .getEmbed()
+                                                        .setDescription("Loading..."))
+                                                .update().join();
+
+                                        //TODO maybe also update username to use?
+
+                                        MessageUpdater updater = message.createUpdater();
 
                                         try {
                                             EmbedBuilder embed =
@@ -163,12 +173,21 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                                             getSkyCryptButton(ign)
                                                     ).build());
                                         }
-                                        catch (FailedToLoadEmbedException ignored) {
-                                            //ignored
+                                        catch (FailedToLoadEmbedException failedToLoadAgain) {
+                                            updater.removeAllEmbeds()
+                                                    .addEmbed(failedToLoadAgain.getEmbed());
+
+                                            updater.removeAllComponents()
+                                                    .addComponents(new ActionRowBuilder().addComponents(
+                                                            getSkyCryptButton(ign),
+                                                            new ButtonBuilder().setStyle(ButtonStyle.SECONDARY)
+                                                                    .setLabel("Reload")
+                                                                    .setCustomId("reload_playerdata")
+                                                                    .build()
+                                                    ).build());
                                         }
 
-                                        //TODO please please please make sure that this method updates the original message and does NOT post a new one
-                                        updater.update();
+                                        updater.applyChanges();
                                     })
                     ));
         }
@@ -205,7 +224,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
             Optional<TextChannel> approvingChannel = messageEvent.getApi()
                     .getTextChannelById(approvingChannelId);
 
-            for(CarryInformation carryInformation : DungeonHubConnection.getInstance().getFromLogQueue(channelId)) {
+            for (CarryInformation carryInformation : DungeonHubConnection.getInstance().getFromLogQueue(channelId)) {
                 carryInformation.setAttachmentLink(attachmentLink);
 
                 if ((carryInformation.getAmountOfCarries() >= APPROVE_AMOUNT_THRESHOLD

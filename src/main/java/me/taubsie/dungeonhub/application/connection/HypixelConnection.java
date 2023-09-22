@@ -13,6 +13,7 @@ import net.hypixel.api.http.HypixelHttpClient;
 import net.hypixel.api.http.HypixelHttpResponse;
 import net.hypixel.api.http.RateLimit;
 import net.hypixel.api.reply.PlayerReply;
+import net.hypixel.api.reply.StatusReply;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -333,5 +334,11 @@ public class HypixelConnection implements HypixelHttpClient {
             logger.error("Auction request threw an error.", ioException);
             return Stream.empty();
         }
+    }
+
+    public StatusReply.Session getOnlineStatus(String ign) {
+        UUID uuid = DungeonHubConnection.getInstance().getUUIDByName(ign);
+
+        return hypixelApi.getStatus(uuid).join().getSession();
     }
 }
