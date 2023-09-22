@@ -1,8 +1,8 @@
 package me.taubsie.dungeonhub.application.messages;
 
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
-import me.taubsie.dungeonhub.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.StrikeData;
 import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.server.Server;
@@ -37,7 +37,7 @@ public class AllStrikesMessage extends PageableMessage {
 
             updater.removeAllEmbeds()
                     .addEmbed(ApplicationService.getInstance().formatStrikes(strikeData,
-                            BotStarter.getInstance().getBot().getUserById(userId).join(), currentPage));
+                            DiscordConnection.getInstance().getBot().getUserById(userId).join(), currentPage));
         });
     }
 }

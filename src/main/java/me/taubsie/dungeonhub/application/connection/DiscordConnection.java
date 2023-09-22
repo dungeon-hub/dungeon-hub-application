@@ -1,4 +1,4 @@
-package me.taubsie.dungeonhub.application.start;
+package me.taubsie.dungeonhub.application.connection;
 
 import lombok.Getter;
 import me.taubsie.dungeonhub.application.service.ApplicationClassLoaderService;

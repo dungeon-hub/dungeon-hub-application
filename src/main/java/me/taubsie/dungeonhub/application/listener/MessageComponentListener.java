@@ -1,6 +1,7 @@
 package me.taubsie.dungeonhub.application.listener;
 
 import me.taubsie.dungeonhub.application.classes.ServerProperty;
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.ChannelNotFoundException;
@@ -10,7 +11,6 @@ import me.taubsie.dungeonhub.application.exceptions.UnknownCommandException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.application.service.PermissionService;
-import me.taubsie.dungeonhub.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.TextChannel;
@@ -53,6 +53,8 @@ public class MessageComponentListener implements MessageComponentCreateListener 
             case "deny" -> deny(messageComponentCreateEvent.getMessageComponentInteraction(), server.get());
             case "accept_log" -> acceptLog(messageComponentCreateEvent.getMessageComponentInteraction(), server.get());
 
+            case "reload_playerdata", "show_flagged_banned", "show_excluded" -> {}
+
             default -> ApplicationService.getInstance()
                     .respondWithError(messageComponentCreateEvent.getInteraction(), new UnknownCommandException());
         }
@@ -67,7 +69,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
             return;
         }
 
-        CarryInformation carryInformation = BotStarter.getInstance().getCarryInformation().get(channel.get().getId());
+        CarryInformation carryInformation = DiscordConnection.getInstance().getCarryInformation().get(channel.get().getId());
 
         if (carryInformation == null) {
             messageComponentInteraction.createImmediateResponder()
@@ -93,7 +95,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                 .respond()
                 .join();
 
-        BotStarter.getInstance().getCarryInformation().remove(channel.get().getId());
+        DiscordConnection.getInstance().getCarryInformation().remove(channel.get().getId());
 
         messageComponentInteraction.getMessage().delete().join();
     }
@@ -107,7 +109,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
             return;
         }
 
-        CarryInformation carryInformation = BotStarter.getInstance().getCarryInformation().get(channel.get().getId());
+        CarryInformation carryInformation = DiscordConnection.getInstance().getCarryInformation().get(channel.get().getId());
 
         if (carryInformation == null) {
             messageComponentInteraction.createImmediateResponder()
@@ -124,7 +126,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
             return;
         }
 
-        BotStarter.getInstance().getCarryInformation().remove(channel.get().getId());
+        DiscordConnection.getInstance().getCarryInformation().remove(channel.get().getId());
 
         messageComponentInteraction.respondLater(true)
                 .thenAccept(updater -> {

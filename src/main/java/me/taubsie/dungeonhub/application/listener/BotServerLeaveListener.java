@@ -1,8 +1,8 @@
 package me.taubsie.dungeonhub.application.listener;
 
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.ServerService;
-import me.taubsie.dungeonhub.application.start.BotStarter;
 import org.javacord.api.entity.Nameable;
 import org.javacord.api.event.server.ServerLeaveEvent;
 import org.javacord.api.listener.server.ServerLeaveListener;
@@ -15,7 +15,7 @@ public class BotServerLeaveListener implements ServerLeaveListener {
 
     @Override
     public void onServerLeave(ServerLeaveEvent serverLeaveEvent) {
-        BotStarter.getInstance().resetBotAppearance();
+        DiscordConnection.getInstance().resetBotAppearance();
 
         String ownerName = serverLeaveEvent.getServer().getOwner().map(Nameable::getName).orElse("no-name");
         logger.info("I just left server '{}' by '{}' ({}).",

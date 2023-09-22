@@ -2,11 +2,11 @@ package me.taubsie.dungeonhub.application.service;
 
 import com.google.gson.JsonObject;
 import me.taubsie.dungeonhub.application.command.Command;
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.HypixelConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException;
-import me.taubsie.dungeonhub.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.*;
 import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import org.javacord.api.DiscordApi;
@@ -167,7 +167,7 @@ public class ApplicationService {
                 .limit(10)
                 .forEach(strike -> {
                     String striker = Optional.ofNullable(strike.getStriker())
-                            .map(strikerId -> BotStarter.getInstance().getBot().getUserById(strikerId))
+                            .map(strikerId -> DiscordConnection.getInstance().getBot().getUserById(strikerId))
                             .map(CompletableFuture::join)
                             .map(User::getDiscriminatedName)
                             .orElse("CONSOLE");
@@ -189,7 +189,7 @@ public class ApplicationService {
                 .setTitle("Strike " +
                         (strikeData.getId() != null
                                 ? "#" + strikeData.getId()
-                                : "for " + BotStarter.getInstance().getBot().getUserById(strikeData.getUser()).join()
+                                : "for " + DiscordConnection.getInstance().getBot().getUserById(strikeData.getUser()).join()
                                 .getDiscriminatedName()));
 
         embedBuilder.addField("User", "<@" + strikeData.getUser() + ">");
@@ -205,7 +205,7 @@ public class ApplicationService {
         EmbedBuilder embedBuilder = getEmbed(strikeData.getStrikeTime())
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setTitle("You were striked on server `"
-                        + BotStarter.getInstance().getBot().getServerById(strikeData.getServer())
+                        + DiscordConnection.getInstance().getBot().getServerById(strikeData.getServer())
                         .map(Nameable::getName).orElse("unknown")
                         + "`");
 
@@ -222,10 +222,10 @@ public class ApplicationService {
                 .setTitle("Strike " +
                         (strikeData.getId() != null
                                 ? "#" + strikeData.getId()
-                                : "for " + BotStarter.getInstance().getBot().getUserById(strikeData.getUser()).join()
+                                : "for " + DiscordConnection.getInstance().getBot().getUserById(strikeData.getUser()).join()
                                 .getDiscriminatedName())
                         + " on server `"
-                        + BotStarter.getInstance().getBot().getServerById(strikeData.getServer())
+                        + DiscordConnection.getInstance().getBot().getServerById(strikeData.getServer())
                         .map(Nameable::getName).orElse("unknown")
                         + "`");
 

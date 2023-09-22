@@ -1,8 +1,8 @@
 package me.taubsie.dungeonhub.application.listener;
 
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.ServerService;
-import me.taubsie.dungeonhub.application.start.BotStarter;
 import org.javacord.api.entity.Nameable;
 import org.javacord.api.event.server.ServerJoinEvent;
 import org.javacord.api.listener.server.ServerJoinListener;
@@ -15,7 +15,7 @@ public class BotServerJoinListener implements ServerJoinListener {
 
     @Override
     public void onServerJoin(ServerJoinEvent serverJoinEvent) {
-        BotStarter.getInstance().resetBotAppearance();
+        DiscordConnection.getInstance().resetBotAppearance();
 
         String ownerName = serverJoinEvent.getServer().getOwner().map(Nameable::getName).orElse("no-name");
         logger.info("I just joined server '{}' by '{}' ({}).",

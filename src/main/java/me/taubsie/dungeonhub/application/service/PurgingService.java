@@ -2,10 +2,10 @@ package me.taubsie.dungeonhub.application.service;
 
 import me.taubsie.dungeonhub.application.classes.PurgeData;
 import me.taubsie.dungeonhub.application.classes.PurgeType;
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.enums.RoleConversion;
-import me.taubsie.dungeonhub.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.OldCarryRole;
 import me.taubsie.dungeonhub.common.OnStart;
 import me.taubsie.dungeonhub.common.ProgramOrigin;
@@ -57,8 +57,8 @@ public class PurgingService implements StartupListener {
         List<PurgeData> currentWave = purgeDataList.stream().limit(5).toList();
 
         currentWave.forEach(purgeData -> {
-            Optional<Server> server = BotStarter.getInstance().getBot().getServerById(purgeData.serverId());
-            User user = BotStarter.getInstance().getBot().getUserById(purgeData.userId()).join();
+            Optional<Server> server = DiscordConnection.getInstance().getBot().getServerById(purgeData.serverId());
+            User user = DiscordConnection.getInstance().getBot().getUserById(purgeData.userId()).join();
 
             if(server.isEmpty()) {
                 logger.error("Server isn't a valid server for purging anymore!");

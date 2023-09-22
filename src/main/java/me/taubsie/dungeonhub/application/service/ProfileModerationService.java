@@ -147,7 +147,7 @@ public class ProfileModerationService {
     }
 
     private void dmBannedPerson(Server server, User user) {
-        if(isBanDisabled(server.getId())) {
+        if (isBanDisabled(server.getId())) {
             return;
         }
 
@@ -187,7 +187,7 @@ public class ProfileModerationService {
                                 + " got flagged because of a bad username:\n"
                                 + username));
 
-        if(isBanDisabled(server.getId())) {
+        if (isBanDisabled(server.getId())) {
             return;
         }
 

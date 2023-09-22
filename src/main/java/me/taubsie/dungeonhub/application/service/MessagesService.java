@@ -1,8 +1,8 @@
 package me.taubsie.dungeonhub.application.service;
 
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
-import me.taubsie.dungeonhub.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.*;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
@@ -97,7 +97,7 @@ public class MessagesService implements StartupListener {
                 ));
 
         carryTiersPerChannel
-                .forEach((key, value) -> BotStarter.getInstance().getBot()
+                .forEach((key, value) -> DiscordConnection.getInstance().getBot()
                         .getServerTextChannelById(key)
                         .ifPresent(serverTextChannel -> refreshPriceMessageInChannel(
                                 serverTextChannel,

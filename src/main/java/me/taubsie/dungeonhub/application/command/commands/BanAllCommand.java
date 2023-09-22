@@ -2,11 +2,11 @@ package me.taubsie.dungeonhub.application.command.commands;
 
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.ProfileModerationService;
-import me.taubsie.dungeonhub.application.start.BotStarter;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.user.User;
@@ -40,7 +40,7 @@ public class BanAllCommand extends Command {
                 userId = userId.strip();
 
                 try {
-                    User user = BotStarter.getInstance()
+                    User user = DiscordConnection.getInstance()
                             .getBot()
                             .getUserById(userId)
                             .join();

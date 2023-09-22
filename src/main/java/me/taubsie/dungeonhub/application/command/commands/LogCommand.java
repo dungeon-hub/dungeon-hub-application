@@ -2,12 +2,12 @@ package me.taubsie.dungeonhub.application.command.commands;
 
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
-import me.taubsie.dungeonhub.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.CarryDifficulty;
 import me.taubsie.dungeonhub.common.CarryInformation;
 import me.taubsie.dungeonhub.common.CarryTier;
@@ -49,7 +49,7 @@ public class LogCommand extends Command {
             };
         }
 
-        if(BotStarter.getInstance().getCarryInformation().containsKey(channel.getId())) {
+        if(DiscordConnection.getInstance().getCarryInformation().containsKey(channel.getId())) {
             //TODO custom class
             throw new CommandExecutionException() {
                 @Override
@@ -106,7 +106,7 @@ public class LogCommand extends Command {
                         Button.danger("discard", "Cancel")))
                 .respond().join();
 
-        BotStarter.getInstance().getCarryInformation().put(channel.getId(), carryInformation);
+        DiscordConnection.getInstance().getCarryInformation().put(channel.getId(), carryInformation);
     }
 
     @Override

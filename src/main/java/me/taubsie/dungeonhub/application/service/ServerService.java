@@ -2,7 +2,7 @@ package me.taubsie.dungeonhub.application.service;
 
 import me.taubsie.dungeonhub.application.classes.ServerData;
 import me.taubsie.dungeonhub.application.classes.ServerProperty;
-import me.taubsie.dungeonhub.application.start.BotStarter;
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.common.DungeonHubService;
 import me.taubsie.dungeonhub.common.OnStart;
 import me.taubsie.dungeonhub.common.ProgramOrigin;
@@ -47,7 +47,7 @@ public class ServerService implements StartupListener {
     private void loadServers() {
         serverData.clear();
 
-        BotStarter.getInstance()
+        DiscordConnection.getInstance()
                 .getBot()
                 .getServers()
                 .forEach(server -> loadServerData(server.getId()));

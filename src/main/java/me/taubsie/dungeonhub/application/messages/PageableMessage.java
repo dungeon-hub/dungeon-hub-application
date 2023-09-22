@@ -1,7 +1,7 @@
 package me.taubsie.dungeonhub.application.messages;
 
 import lombok.Getter;
-import me.taubsie.dungeonhub.application.start.BotStarter;
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.component.*;
 import org.javacord.api.entity.server.Server;
@@ -71,7 +71,7 @@ public abstract class PageableMessage {
     public abstract void updatePage(ComponentInteractionOriginalMessageUpdater updater, int currentPage);
 
     public Optional<Message> getMessage() {
-        return BotStarter.getInstance().getBot()
+        return DiscordConnection.getInstance().getBot()
                 .getTextChannelById(channel)
                 .map(textChannel -> textChannel.getMessageById(messageId))
                 .map(CompletableFuture::join);

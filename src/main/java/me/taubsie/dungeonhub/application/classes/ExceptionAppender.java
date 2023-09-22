@@ -1,8 +1,8 @@
 package me.taubsie.dungeonhub.application.classes;
 
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
-import me.taubsie.dungeonhub.application.start.BotStarter;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Core;
 import org.apache.logging.log4j.core.Filter;
@@ -43,7 +43,7 @@ public class ExceptionAppender extends AbstractAppender {
         }
 
         ApplicationService.getInstance()
-                .getBotOwner(BotStarter.getInstance().getBot())
+                .getBotOwner(DiscordConnection.getInstance().getBot())
                 .openPrivateChannel()
                 .join()
                 .sendMessage(embed);

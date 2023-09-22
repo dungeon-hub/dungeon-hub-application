@@ -1,10 +1,10 @@
 package me.taubsie.dungeonhub.application.service;
 
 import me.taubsie.dungeonhub.application.classes.Leaderboard;
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.messages.LeaderboardMessage;
-import me.taubsie.dungeonhub.application.start.BotStarter;
 import me.taubsie.dungeonhub.common.*;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
@@ -114,7 +114,7 @@ public class LeaderboardService implements StartupListener {
 
         for (CarryType carryType : DungeonHubConnection.getInstance().loadCarryTypes()) {
             Optional<ServerTextChannel> leaderboardChannel = carryType.getLeaderboardChannel()
-                    .flatMap(id -> BotStarter.getInstance().getBot().getServerTextChannelById(id));
+                    .flatMap(id -> DiscordConnection.getInstance().getBot().getServerTextChannelById(id));
 
             if (leaderboardChannel.isEmpty()) {
                 continue;
