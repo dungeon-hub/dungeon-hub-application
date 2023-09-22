@@ -35,7 +35,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("me.taubsie.dungeonhub.application.start.BotStarter")
+    mainClass.set("me.taubsie.dungeonhub.application.connection.DiscordConnection")
 }
 
 java {

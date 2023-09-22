@@ -9,7 +9,6 @@
         <outputRelativeToContentRoot value="true" />
         <module name="dungeon-hub-server" />
         <module name="dungeon-hub-common" />
-        <module name="dungeon-hub-application" />
       </profile>
       <profile name="Gradle Imported" enabled="true">
         <outputRelativeToContentRoot value="true" />

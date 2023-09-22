@@ -30,11 +30,11 @@ import java.util.Map;
  * @since 1.0.0
  */
 @OnStart(priority = 1)
-public class BotStarter implements StartupListener, ProgramOrigin {
-    private static final Logger logger = LoggerFactory.getLogger(BotStarter.class);
+public class DiscordConnection implements StartupListener, ProgramOrigin {
+    private static final Logger logger = LoggerFactory.getLogger(DiscordConnection.class);
     private static final String LINE = "--------------------";
 
-    private static BotStarter instance;
+    private static DiscordConnection instance;
     @Getter
     private final Map<Long, CarryInformation> carryInformation = new HashMap<>();
     @Getter
@@ -47,7 +47,7 @@ public class BotStarter implements StartupListener, ProgramOrigin {
      */
     public static void main(String[] args) {
         ApplicationClassLoaderService.getInstance().loadStartupListeners();
-        ApplicationClassLoaderService.getInstance().executeStartup(BotStarter.getInstance());
+        ApplicationClassLoaderService.getInstance().executeStartup(DiscordConnection.getInstance());
     }
 
     /**
@@ -55,9 +55,9 @@ public class BotStarter implements StartupListener, ProgramOrigin {
      *
      * @return the current instance of this class.
      */
-    public static BotStarter getInstance() {
+    public static DiscordConnection getInstance() {
         if(instance == null) {
-            instance = new BotStarter();
+            instance = new DiscordConnection();
         }
 
         return instance;
@@ -95,8 +95,9 @@ public class BotStarter implements StartupListener, ProgramOrigin {
 
         message.add("Im on servers:");
         message.addAll(bot.getServers().stream()
-                .map(server -> String.format("%s by %s (%d)",
+                .map(server -> String.format("%s with id '%d' by %s (%d)",
                         server.getName(),
+                        server.getId(),
                         server.getOwner().map(User::getDiscriminatedName).orElse("no-name"),
                         server.getOwnerId()))
                 .toList());
