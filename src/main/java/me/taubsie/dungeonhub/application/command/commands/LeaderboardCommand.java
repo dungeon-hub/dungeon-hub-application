@@ -30,7 +30,7 @@ public class LeaderboardCommand extends Command {
             throw new InvalidOptionException("carry-type");
         }
 
-        ScoreType scoreType = getEnumOption("leaderboard-type", ScoreType.class, ScoreType.DEFAULT);
+        ScoreType scoreType = getEnumOption("score-type", ScoreType.class, ScoreType.DEFAULT);
 
         String leaderboardTitle = LeaderboardService.getInstance().getLeaderboardTitle(carryType.get(), scoreType);
 
