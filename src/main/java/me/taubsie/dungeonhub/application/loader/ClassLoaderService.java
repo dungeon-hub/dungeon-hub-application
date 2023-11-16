@@ -1,30 +1,38 @@
-package me.taubsie.dungeonhub.application.service;
+package me.taubsie.dungeonhub.application.loader;
 
+import com.google.common.reflect.ClassPath;
+import com.google.errorprone.annotations.DoNotCall;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.listener.Listener;
-import me.taubsie.dungeonhub.common.ClassLoaderService;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.interaction.ApplicationCommand;
 import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandBuilder;
 import org.javacord.api.listener.GloballyAttachableListener;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
-public class ApplicationClassLoaderService extends ClassLoaderService {
-    private static ApplicationClassLoaderService instance;
+public class ClassLoaderService {
+    private static final Map<StartupListener, OnStart> startupListeners = new HashMap<>();
+    private static final Logger logger = LoggerFactory.getLogger(ClassLoaderService.class);
+    private static ClassLoaderService instance;
     private final Map<SlashCommandBuilder, Command> commandMap = new HashMap<>();
     private final Map<SlashCommand, Command> slashCommandMap = new HashMap<>();
 
-    private ApplicationClassLoaderService() {
+    private ClassLoaderService() {
         try {
-            for (Map.Entry<Class<Command>, CommandParameters> commandEntry :
+            for(Map.Entry<Class<Command>, CommandParameters> commandEntry :
                     getClassesInPackage(readPackage(getClass()),
                             Command.class,
                             CommandParameters.class).entrySet()) {
@@ -34,18 +42,136 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
 
                 commandMap.put(slashCommandBuilder, command);
             }
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
-                 NoSuchMethodException | ClassCastException exception) {
+        }
+        catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+               NoSuchMethodException | ClassCastException exception) {
             exception.printStackTrace();
         }
     }
 
-    public static ApplicationClassLoaderService getInstance() {
+    public static ClassLoaderService getInstance() {
         if (instance == null) {
-            instance = new ApplicationClassLoaderService();
+            instance = new ClassLoaderService();
         }
 
         return instance;
+    }
+
+    public <T extends StartupListener> void addStartupListener(T listener, OnStart onStart) {
+        startupListeners.put(listener, onStart);
+    }
+
+    public void loadStartupListeners() {
+        for(Map.Entry<Class<StartupListener>, OnStart> entry : getClassesInPackage(readPackage(getClass()),
+                StartupListener.class,
+                OnStart.class).entrySet()) {
+            try {
+                addStartupListener(getListenerInstance(entry.getKey()), entry.getValue());
+            }
+            catch (InvocationTargetException | InstantiationException | IllegalAccessException |
+                   NoSuchMethodException exception) {
+                exception.printStackTrace();
+                logger.error("Couldn't get instance of given listener \"" + entry.getKey().toString() + "\", " +
+                        "causing it to not be executed on startup.", exception);
+            }
+        }
+    }
+
+    private StartupListener getListenerInstance(Class<StartupListener> clazz) throws NoSuchMethodException,
+            InvocationTargetException,
+            IllegalAccessException, InstantiationException {
+        try {
+            if (Modifier.isStatic(clazz.getDeclaredMethod("getInstance").getModifiers())
+                    && clazz.getDeclaredMethod("getInstance").invoke(null) instanceof StartupListener currentInstance) {
+                return currentInstance;
+            } else {
+                throw new NoSuchMethodException();
+            }
+        }
+        catch (NoSuchMethodException noSuchMethodException) {
+            return clazz.getDeclaredConstructor().newInstance();
+        }
+    }
+
+    public List<StartupListener> getSortedListeners() {
+        return startupListeners
+                .entrySet()
+                .stream()
+                .sorted(Comparator.comparingInt(value -> value.getValue().priority()))
+                .map(Map.Entry::getKey)
+                .toList();
+    }
+
+    public void executeStartup() {
+        for(StartupListener startupListener : getSortedListeners()) {
+            startupListener.preStart();
+        }
+
+        for(StartupListener startupListener : getSortedListeners()) {
+            startupListener.onStart();
+        }
+
+        for(StartupListener startupListener : getSortedListeners()) {
+            startupListener.postStart();
+        }
+    }
+
+    /**
+     * @return the first two entries seperated with a dot in the package name
+     */
+    public @NotNull String readPackage(@NotNull Class<?> clazz) {
+        String fullName = clazz.getPackageName();
+        String packageNameAfterFirstDot = fullName.substring(fullName.indexOf('.') + 1);
+        return fullName.substring(0, fullName.indexOf('.') + 1) + packageNameAfterFirstDot.substring(0,
+                packageNameAfterFirstDot.indexOf('.'));
+    }
+
+    public Set<Class<?>> getClassesInPackage(String packageName) {
+        Set<Class<?>> classes = new HashSet<>();
+
+        try {
+            classes.addAll(
+                    ClassPath.from(ClassLoader.getSystemClassLoader())
+                            .getAllClasses()
+                            .stream()
+                            .filter(classInfo -> classInfo.getPackageName().startsWith(packageName))
+                            .map(ClassPath.ClassInfo::load)
+                            .collect(Collectors.toSet())
+            );
+        }
+        catch (IOException ioException) {
+            ioException.printStackTrace();
+        }
+
+        return classes;
+    }
+
+    @DoNotCall("possibly unsafe")
+    public <T, A extends Annotation> Map<Class<T>, A>
+    getClassesInPackage(String packageName, Class<T> clazz, Class<A> annotation) {
+        Map<Class<T>, A> classes = new HashMap<>();
+
+        try {
+            //noinspection unchecked
+            ClassPath.from(ClassLoader.getSystemClassLoader())
+                    .getAllClasses()
+                    .stream()
+                    .filter(classInfo -> classInfo.getPackageName().startsWith(packageName))
+                    .map(ClassPath.ClassInfo::load)
+                    .filter(cls -> cls.isAnnotationPresent(annotation)
+                            && cls.getAnnotation(annotation) != null
+                            && clazz.isAssignableFrom(cls))
+                    .filter(cls -> !Modifier.isAbstract(cls.getModifiers())
+                            && !Modifier.isInterface(cls.getModifiers()))
+                    // might want to look into if this can be done without unsafe casts -> unchecked inspection
+                    // had no issues with it yet, so it probably is fine, but the noinspection isn't perfect
+                    .forEach(cls -> classes.put((Class<T>) cls, cls.getAnnotation(annotation)));
+        }
+        catch (IOException ioException) {
+            ioException.printStackTrace();
+        }
+
+        return classes;
     }
 
     public Optional<Map.Entry<SlashCommand, Command>> getCommandData(String commandName, Server server) {
@@ -98,14 +224,15 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
     }
 
     public void loadListeners(DiscordApi bot) {
-        for (Class<GloballyAttachableListener> listenerClass :
+        for(Class<GloballyAttachableListener> listenerClass :
                 getClassesInPackage(readPackage(getClass()),
                         GloballyAttachableListener.class,
                         Listener.class).keySet()) {
             try {
                 bot.addListener(listenerClass.getDeclaredConstructor().newInstance());
-            } catch (InvocationTargetException | InstantiationException | IllegalAccessException |
-                     NoSuchMethodException exception) {
+            }
+            catch (InvocationTargetException | InstantiationException | IllegalAccessException |
+                   NoSuchMethodException exception) {
                 exception.printStackTrace();
             }
         }
@@ -120,7 +247,7 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
                 .forEach(entry ->
                         {
                             long[] serverIds = entry.getValue().getEnabledServers();
-                            for (long id : serverIds) {
+                            for(long id : serverIds) {
                                 Set<SlashCommandBuilder> resultSet = serverCommandBuilders.containsKey(id)
                                         ? serverCommandBuilders.get(id)
                                         : new HashSet<>();
@@ -131,14 +258,14 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
                         }
                 );
 
-        for (Map.Entry<Long, Set<SlashCommandBuilder>> entry : serverCommandBuilders.entrySet()) {
+        for(Map.Entry<Long, Set<SlashCommandBuilder>> entry : serverCommandBuilders.entrySet()) {
             try {
                 Optional<Server> server = bot.getServerById(entry.getKey());
 
                 if (server.isPresent()) {
                     Set<ApplicationCommand> serverCommands = bot.bulkOverwriteServerApplicationCommands(server.get(),
                             entry.getValue()).join();
-                    for (ApplicationCommand applicationCommand : serverCommands) {
+                    for(ApplicationCommand applicationCommand : serverCommands) {
                         if (applicationCommand instanceof SlashCommand slashCommand) {
                             Command command =
                                     commandMap.values().stream().filter(command1 -> command1.getCommandName().equalsIgnoreCase(applicationCommand.getName())).findFirst().orElse(null);
@@ -146,7 +273,8 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
                         }
                     }
                 }
-            } catch (CompletionException completionException) {
+            }
+            catch (CompletionException completionException) {
                 completionException.printStackTrace();
             }
         }
@@ -159,7 +287,7 @@ public class ApplicationClassLoaderService extends ClassLoaderService {
                         .map(Map.Entry::getKey)
                         .collect(Collectors.toSet())).join();
 
-        for (ApplicationCommand applicationCommand : globalCommands) {
+        for(ApplicationCommand applicationCommand : globalCommands) {
             if (applicationCommand instanceof SlashCommand slashCommand) {
                 Command command =
                         commandMap.values().stream().filter(command1 -> command1.getCommandName().equalsIgnoreCase(applicationCommand.getName())).findFirst().orElse(null);

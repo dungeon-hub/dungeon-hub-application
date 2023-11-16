@@ -2,7 +2,7 @@ package me.taubsie.dungeonhub.application.classes;
 
 import me.taubsie.dungeonhub.application.enums.IdList;
 import me.taubsie.dungeonhub.application.service.ServerService;
-import me.taubsie.dungeonhub.common.config.Nameable;
+import me.taubsie.dungeonhub.common.Nameable;
 
 import java.util.Arrays;
 import java.util.Optional;

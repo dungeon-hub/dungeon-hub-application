@@ -3,14 +3,18 @@ package me.taubsie.dungeonhub.application.command.commands;
 import me.taubsie.dungeonhub.application.classes.ServerProperty;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.exceptions.MissingPermissionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.application.service.PermissionService;
-import me.taubsie.dungeonhub.common.CarryType;
+import me.taubsie.dungeonhub.common.enums.ScoreType;
+import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
+import me.taubsie.dungeonhub.common.model.score.ScoreModel;
+import me.taubsie.dungeonhub.common.model.score.ScoreUpdateModel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -23,6 +27,7 @@ import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -57,8 +62,8 @@ public class ManageScoreCommand extends Command {
         SlashCommandInteractionOption subCommand = addRemoveOption.get();
         boolean removed = subCommand.getName().equalsIgnoreCase("remove");
 
-        Optional<CarryType> carryType = DungeonHubConnection.getInstance()
-                .loadCarryType(server.getId(), getStringOption(subCommand, "carry-type"));
+        Optional<CarryTypeModel> carryType = CarryTypeConnection.getInstance(server.getId())
+                .getByIdentifier(getStringOption(subCommand, "carry-type"));
 
         if (carryType.isEmpty()) {
             throw new InvalidOptionException("carry-type");
@@ -69,8 +74,17 @@ public class ManageScoreCommand extends Command {
         Long amount = getLongOption(subCommand, "amount");
 
         respondLater(new CompletableFuture<EmbedBuilder>().completeAsync(() -> {
-            long updatedScore = DungeonHubConnection.getInstance().modifyScore(user.getId(), carryType.get(), removed ? -amount :
-                    amount);
+            long score = removed ? -amount : amount;
+
+            List<ScoreModel> updatedScores = ScoreConnection.getInstance(carryType.get())
+                    .updateScores(new ScoreUpdateModel(user.getId(), score))
+                    .orElse(new ArrayList<>());
+
+            long updatedScore = updatedScores.stream()
+                    .filter(scoreModel -> scoreModel.getScoreType() == ScoreType.DEFAULT)
+                    .map(ScoreModel::getScoreAmount)
+                    .findFirst()
+                    .orElse(0L);
 
             Optional<ServerTextChannel> logs = ServerProperty.SCORE_LOGS_CHANNEL
                     .getValue(server.getId())
@@ -91,7 +105,8 @@ public class ManageScoreCommand extends Command {
                     .getEmbed()
                     .setColor(EmbedColor.INFORMATION.getColor())
                     .setTitle("Score-Management")
-                    .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + ", the user " + user.getMentionTag() + " now has " + updatedScore + " " + carryType.get().getDisplayName() + "-score.\nYou " + (removed ? "removed" : "added") + " " + amount + " of that score.");
+                    .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() +
+                            ", the user " + user.getMentionTag() + " now has " + updatedScore + " " + carryType.get().getDisplayName() + "-score.\nYou " + (removed ? "removed" : "added") + " " + amount + " of that score.");
         }));
     }
 
@@ -113,7 +128,8 @@ public class ManageScoreCommand extends Command {
                 .setRequired(true)
                 .build();
 
-        List<SlashCommandOption> manageScoreSubOptions = Arrays.asList(userOption, CarryTypeCommand.getCarryTypeOption(), amountOption);
+        List<SlashCommandOption> manageScoreSubOptions = Arrays.asList(userOption,
+                CarryTypeCommand.getCarryTypeOption(), amountOption);
 
         SlashCommandOption addCommand = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)

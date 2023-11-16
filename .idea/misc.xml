@@ -6,7 +6,7 @@
       <item index="1" class="java.lang.String" itemvalue="me.taubsie.carrylogs.application.listener.Listener" />
       <item index="2" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.application.command.CommandParameters" />
       <item index="3" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.application.listener.Listener" />
-      <item index="4" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.common.OnStart" />
+      <item index="4" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.application.loader.OnStart" />
       <item index="5" class="java.lang.String" itemvalue="org.apache.logging.log4j.core.config.plugins.Plugin" />
       <item index="6" class="java.lang.String" itemvalue="org.apache.logging.log4j.core.config.plugins.PluginFactory" />
     </list>
@@ -27,6 +27,10 @@
         <option value="$PROJECT_DIR$/../dungeon-hub-server/pom.xml" />
       </list>
     </option>
+    <option name="workspaceImportForciblyTurnedOn" value="true" />
+  </component>
+  <component name="PWA">
+    <option name="wasEnabledAtLeastOnce" value="true" />
   </component>
   <component name="ProjectResources">
     <resource url="https://maven.apache.org/ASSEMBLY/2.2.0" location="$PROJECT_DIR$/src/main/resources/assembly/distribution.xml" />

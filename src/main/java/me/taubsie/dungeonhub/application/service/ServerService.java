@@ -3,10 +3,9 @@ package me.taubsie.dungeonhub.application.service;
 import me.taubsie.dungeonhub.application.classes.ServerData;
 import me.taubsie.dungeonhub.application.classes.ServerProperty;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
+import me.taubsie.dungeonhub.application.loader.OnStart;
+import me.taubsie.dungeonhub.application.loader.StartupListener;
 import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.OnStart;
-import me.taubsie.dungeonhub.common.ProgramOrigin;
-import me.taubsie.dungeonhub.common.StartupListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Time;
 import java.util.*;
+import java.util.function.Predicate;
 
 @OnStart
 public class ServerService implements StartupListener {
@@ -26,22 +26,24 @@ public class ServerService implements StartupListener {
     private final Set<ServerData> serverData = new HashSet<>();
     private Timer timer;
 
+    private ServerService() {
+        try {
+            Files.createDirectory(Path.of(getServerFolder()));
+        }
+        catch (FileAlreadyExistsException ignored) {
+            //Ignored since I just want to be sure that the folder always exists.
+        }
+        catch (IOException ioException) {
+            logger.error(null, ioException);
+        }
+    }
+
     public static ServerService getInstance() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new ServerService();
         }
 
         return instance;
-    }
-
-    private ServerService() {
-        try {
-            Files.createDirectory(Path.of(getServerFolder()));
-        } catch(FileAlreadyExistsException ignored) {
-            //Ignored since I just want to be sure that the folder always exists.
-        } catch(IOException ioException) {
-            ioException.printStackTrace();
-        }
     }
 
     private void loadServers() {
@@ -54,7 +56,7 @@ public class ServerService implements StartupListener {
     }
 
     private void resetTimer() {
-        if(timer != null) {
+        if (timer != null) {
             timer.cancel();
         }
 
@@ -87,6 +89,16 @@ public class ServerService implements StartupListener {
                 .findAny();
     }
 
+    public Set<ServerData> getAllServers() {
+        return serverData;
+    }
+
+    public List<ServerData> getServersWhere(Predicate<ServerData> function) {
+        return serverData.stream()
+                .filter(function)
+                .toList();
+    }
+
     public Optional<String> getActualServerProperty(long id, ServerProperty serverProperty) {
         return getServerData(id)
                 .map(data -> data.getConfig(serverProperty))
@@ -95,7 +107,7 @@ public class ServerService implements StartupListener {
 
     public boolean canUse(long id, @Nullable ServerProperty serverProperty) {
         //TODO finish implementation (if needed here)
-        if(serverProperty == null) {
+        if (serverProperty == null) {
             return false;
         }
 
@@ -105,7 +117,7 @@ public class ServerService implements StartupListener {
     }
 
     @Override
-    public void onStart(ProgramOrigin programOrigin) {
+    public void onStart() {
         loadServers();
 
         resetTimer();

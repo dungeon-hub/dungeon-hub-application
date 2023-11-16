@@ -2,14 +2,17 @@ package me.taubsie.dungeonhub.application.command.commands;
 
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidSubCommandException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
-import me.taubsie.dungeonhub.common.CarryDifficulty;
-import me.taubsie.dungeonhub.common.CarryTier;
-import me.taubsie.dungeonhub.common.CarryType;
+import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
+import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyUpdateModel;
+import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
+import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -21,8 +24,22 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 import java.util.List;
 import java.util.Optional;
 
-@CommandParameters(name = "carry-difficulty", description = "Set up the carry difficulties for this server.", enabledForPermissions = PermissionType.ADMINISTRATOR)
+@CommandParameters(name = "carry-difficulty", description = "Set up the carry difficulties for this server.",
+        enabledForPermissions = PermissionType.ADMINISTRATOR)
 public class CarryDifficultyCommand extends Command {
+    public static final String FIELD_NAME = "carry-difficulty";
+
+    public static SlashCommandOption getCarryDifficultyOption() {
+        return new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName(FIELD_NAME)
+                .setDescription("The identifier of the carry difficulty")
+                .setRequired(true)
+                .setMaxLength(30)
+                .setAutocompletable(true)
+                .build();
+    }
+
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         SlashCommandInteractionOption subCommand = getOptionAtIndex(0);
@@ -46,41 +63,23 @@ public class CarryDifficultyCommand extends Command {
     }
 
     public void get(SlashCommandInteractionOption subCommand) {
-        Optional<CarryType> carryType = DungeonHubConnection.getInstance().loadCarryType(getServer().getId(),
-                getStringOption(subCommand, "carry-type"));
+        CarryTypeModel carryType = getCarryType(getServer().getId(),
+                getStringOption(subCommand, CarryTypeCommand.FIELD_NAME));
 
-        if (carryType.isEmpty()) {
-            //TODO custom exception class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Carry type not found.";
-                }
-            };
-        }
+        CarryTierModel carryTier = getCarryTier(carryType,
+                getStringOption(subCommand, CarryTierCommand.FIELD_NAME));
 
-        Optional<CarryTier> carryTier = DungeonHubConnection.getInstance()
-                .loadCarryTier(carryType.get(), getStringOption(subCommand, CarryTier.FIELD_NAME));
+        CarryDifficultyModel carryDifficulty = getCarryDifficulty(carryTier,
+                getStringOption(subCommand, FIELD_NAME));
 
-        if (carryTier.isEmpty()) {
-            throw new InvalidOptionException(CarryTier.FIELD_NAME, "That carry tier doesn't exist!");
-        }
-
-        Optional<CarryDifficulty> carryDifficulty = DungeonHubConnection.getInstance()
-                .loadCarryDifficulty(carryTier.get(), getStringOption(subCommand, "carry-difficulty"));
-
-        if (carryDifficulty.isEmpty()) {
-            throw new InvalidOptionException("carry-difficulty", "That carry difficulty doesn't exist!");
-        }
-
-        respondEphemeral(ApplicationService.getInstance().getCarryDifficultyEmbed(carryDifficulty.get()));
+        respondEphemeral(ApplicationService.getInstance().getCarryDifficultyEmbed(carryDifficulty));
     }
 
     public void edit(SlashCommandInteractionOption subCommand) {
         Server server = getServer();
 
-        Optional<CarryType> carryType = DungeonHubConnection.getInstance()
-                .loadCarryType(server.getId(), getStringOption(subCommand, "carry-type"));
+        Optional<CarryTypeModel> carryType = CarryTypeConnection.getInstance(server.getId())
+                .getByIdentifier(getStringOption(subCommand, CarryTypeCommand.FIELD_NAME));
 
         if (carryType.isEmpty()) {
             //TODO custom class
@@ -92,15 +91,15 @@ public class CarryDifficultyCommand extends Command {
             };
         }
 
-        Optional<CarryTier> carryTier = DungeonHubConnection.getInstance()
-                .loadCarryTier(carryType.get(), getStringOption(subCommand, CarryTier.FIELD_NAME));
+        Optional<CarryTierModel> carryTier = CarryTierConnection.getInstance(carryType.get())
+                .getByIdentifier(getStringOption(subCommand, CarryTierCommand.FIELD_NAME));
 
         if (carryTier.isEmpty()) {
-            throw new InvalidOptionException(CarryTier.FIELD_NAME, "That carry tier doesn't exist");
+            throw new InvalidOptionException(CarryTierCommand.FIELD_NAME, "That carry tier doesn't exist");
         }
 
-        Optional<CarryDifficulty> carryDifficulty = DungeonHubConnection.getInstance()
-                .loadCarryDifficulty(carryTier.get(), getStringOption(subCommand, "carry-difficulty"));
+        Optional<CarryDifficultyModel> carryDifficulty = CarryDifficultyConnection.getInstance(carryTier.get())
+                .getByIdentifier(getStringOption(subCommand, FIELD_NAME));
 
         if (carryDifficulty.isEmpty()) {
             throw new InvalidOptionException("carry.difficulty", "That carry difficulty doesn't exist");
@@ -124,15 +123,18 @@ public class CarryDifficultyCommand extends Command {
             };
         }
 
-        displayName.ifPresent(s -> carryDifficulty.get().setDisplayName(s));
-        price.ifPresent(p -> carryDifficulty.get().setPrice(Math.toIntExact(p)));
-        score.ifPresent(s -> carryDifficulty.get().setScore(Math.toIntExact(s)));
-        bulkAmount.ifPresent(ba -> carryDifficulty.get().setBulkAmount(Math.toIntExact(ba)));
-        bulkPrice.ifPresent(bp -> carryDifficulty.get().setBulkPrice(Math.toIntExact(bp)));
-        thumbnailUrl.ifPresent(s -> carryDifficulty.get().setThumbnailUrl(s));
-        priceName.ifPresent(s -> carryDifficulty.get().setPriceName(s));
+        CarryDifficultyUpdateModel updateModel = new CarryDifficultyUpdateModel();
 
-        Optional<CarryDifficulty> updatedCarryDifficulty = DungeonHubConnection.getInstance().updateCarryDifficulty(carryDifficulty.get());
+        displayName.ifPresent(updateModel::setDisplayName);
+        price.ifPresent(p -> updateModel.setPrice(Math.toIntExact(p)));
+        score.ifPresent(s -> updateModel.setScore(Math.toIntExact(s)));
+        bulkAmount.ifPresent(ba -> updateModel.setBulkAmount(Math.toIntExact(ba)));
+        bulkPrice.ifPresent(bp -> updateModel.setBulkPrice(Math.toIntExact(bp)));
+        thumbnailUrl.ifPresent(updateModel::setThumbnailUrl);
+        priceName.ifPresent(updateModel::setPriceName);
+
+        Optional<CarryDifficultyModel> updatedCarryDifficulty = CarryDifficultyConnection.getInstance(carryTier.get())
+                .updateCarryDifficulty(carryDifficulty.get().getId(), updateModel);
 
         if (updatedCarryDifficulty.isEmpty()) {
             //TODO custom class
@@ -163,7 +165,8 @@ public class CarryDifficultyCommand extends Command {
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("get")
                 .setDescription("Get information about a carry difficulty")
-                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), CarryTierCommand.getCarryTierOption(), getCarryDifficultyOption()))
+                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), CarryTierCommand.getCarryTierOption(),
+                        getCarryDifficultyOption()))
                 .build();
     }
 
@@ -239,7 +242,8 @@ public class CarryDifficultyCommand extends Command {
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("reset")
                 .setDescription("Reset a carry difficulty")
-                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), CarryTierCommand.getCarryTierOption(), getCarryDifficultyOption()))
+                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), CarryTierCommand.getCarryTierOption(),
+                        getCarryDifficultyOption()))
                 .build();
     }
 
@@ -248,7 +252,8 @@ public class CarryDifficultyCommand extends Command {
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("delete")
                 .setDescription("Delete a carry difficulty")
-                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), CarryTierCommand.getCarryTierOption(), getCarryDifficultyOption()))
+                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), CarryTierCommand.getCarryTierOption(),
+                        getCarryDifficultyOption()))
                 .build();
     }
 
@@ -273,18 +278,8 @@ public class CarryDifficultyCommand extends Command {
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("create")
                 .setDescription("Create a new carry difficulty")
-                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), CarryTierCommand.getCarryTierOption(), identifierOption, displayNameOption))
-                .build();
-    }
-
-    public static SlashCommandOption getCarryDifficultyOption() {
-        return new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.STRING)
-                .setName("carry-difficulty")
-                .setDescription("The identifier of the carry difficulty")
-                .setRequired(true)
-                .setMaxLength(30)
-                .setAutocompletable(true)
+                .setOptions(List.of(CarryTypeCommand.getCarryTypeOption(), CarryTierCommand.getCarryTierOption(),
+                        identifierOption, displayNameOption))
                 .build();
     }
 }

@@ -1,14 +1,30 @@
 package me.taubsie.dungeonhub.application.service;
 
 import com.google.gson.JsonObject;
+import com.google.zxing.*;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.common.HybridBinarizer;
+import com.google.zxing.qrcode.QRCodeReader;
+import com.google.zxing.qrcode.QRCodeWriter;
+import lombok.extern.slf4j.Slf4j;
 import me.taubsie.dungeonhub.application.command.Command;
+import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.HypixelConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException;
+import me.taubsie.dungeonhub.application.loader.ClassLoaderService;
 import me.taubsie.dungeonhub.common.*;
-import me.taubsie.dungeonhub.common.config.ConfigProperty;
+import me.taubsie.dungeonhub.common.enums.ScoreType;
+import me.taubsie.dungeonhub.common.model.carry.CarryModel;
+import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
+import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel;
+import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
+import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
+import me.taubsie.dungeonhub.common.model.score.ScoreModel;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.Nameable;
@@ -18,17 +34,23 @@ import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
-import org.javacord.api.interaction.Interaction;
+import org.javacord.api.interaction.InteractionBase;
 import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
+import org.jetbrains.annotations.NotNull;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+@Slf4j
 public class ApplicationService {
     private static ApplicationService instance;
 
@@ -40,16 +62,24 @@ public class ApplicationService {
         return instance;
     }
 
-    public EmbedBuilder getEmbed() {
-        return getEmbed(Instant.now());
+    public String getServerLink() {
+        return "discord.gg/dungeons";
     }
 
     public String getFooter() {
-        return "discord.gg/dungeons • made by @taubsie";
+        return getServerLink() + " • made by @taubsie";
+    }
+
+    public String getUnstableFooter() {
+        return getServerLink() + " • THIS FEATURE IS UNSTABLE • please report bugs to @taubsie";
     }
 
     public String getPriceFooter() {
-        return "discord.gg/dungeons • also see /calc-price • made by @taubsie";
+        return getServerLink() + " • also see /calc-price • made by @taubsie";
+    }
+
+    public EmbedBuilder getEmbed() {
+        return getEmbed(Instant.now());
     }
 
     public EmbedBuilder getEmbedWithoutTimestamp() {
@@ -112,44 +142,66 @@ public class ApplicationService {
         return embed.setTitle("Error").setColor(EmbedColor.NEGATIVE.getColor());
     }
 
-    public void respondWithError(Interaction interaction,
+    public void respondWithError(InteractionBase interactionBase,
                                  CommandExecutionException commandExecutionException) {
-        interaction.createImmediateResponder()
+        interactionBase.createImmediateResponder()
                 .setFlags(MessageFlag.EPHEMERAL)
-                .addEmbed(getErrorEmbed().setDescription(commandExecutionException.getMessage()))
+                .addEmbed(getErrorEmbed()
+                        .setDescription(commandExecutionException.getMessage()))
                 .respond();
     }
 
     public Optional<Command> getCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
-        return ApplicationClassLoaderService.getInstance().getCommand(
+        return ClassLoaderService.getInstance().getCommand(
                 slashCommandCreateEvent.getSlashCommandInteraction().getCommandName(),
                 slashCommandCreateEvent.getSlashCommandInteraction().getServer().orElse(null)
         );
     }
 
-    public EmbedBuilder loadEmbedFromCarryInformation(CarryInformation carryInformation, EmbedBuilder embedBuilder) {
+    public EmbedBuilder loadEmbedFromCarry(CarryModel carry, EmbedBuilder embedBuilder) {
         embedBuilder.setColor(EmbedColor.INFORMATION.getColor())
                 .addInlineField("Number of carries",
-                        String.valueOf(carryInformation.getAmountOfCarries()))
+                        String.valueOf(carry.amount()))
                 .addInlineField("Type of carry",
-                        carryInformation.getCarryTier().getDisplayName() + " - " + carryInformation.getCarryDifficulty().getDisplayName())
-                .addInlineField("Player", "<@" + carryInformation.getPlayer() + ">")
-                .addInlineField("Carrier", "<@" + carryInformation.getCarrier() + ">");
+                        carry.carryDifficulty().getCarryTier().getDisplayName() + " - " + carry.carryDifficulty().getDisplayName())
+                .addInlineField("Player", "<@" + carry.player() + ">")
+                .addInlineField("Carrier", "<@" + carry.carrier() + ">");
 
-        if (carryInformation.getApprover() != null) {
-            embedBuilder.addInlineField("Approved by", "<@" + carryInformation.getApprover() + ">");
+        if (carry.approver() != null) {
+            embedBuilder.addInlineField("Approved by", "<@" + carry.approver() + ">");
         }
 
-        if (carryInformation.getAttachmentLink() != null) {
+        if (carry.attachmentLink() != null) {
             embedBuilder.addInlineField("Transcript-Link", "[Click to open]" +
-                    "(https://tickettool.xyz/direct?url=" + carryInformation.getAttachmentLink() + ")");
+                    "(https://tickettool.xyz/direct?url=" + carry.attachmentLink() + ")");
         }
 
         return embedBuilder;
     }
 
-    public EmbedBuilder loadEmbedFromCarryInformation(CarryInformation carryInformation) {
-        return loadEmbedFromCarryInformation(carryInformation, getEmbed(carryInformation.getTime()));
+    public EmbedBuilder loadEmbedFromCarryQueue(CarryQueueModel carryQueue, EmbedBuilder embedBuilder) {
+        embedBuilder.setColor(EmbedColor.INFORMATION.getColor())
+                .addInlineField("Number of carries",
+                        String.valueOf(carryQueue.getAmount()))
+                .addInlineField("Type of carry",
+                        carryQueue.getCarryTier().getDisplayName() + " - " + carryQueue.getCarryDifficulty().getDisplayName())
+                .addInlineField("Player", "<@" + carryQueue.getPlayer() + ">")
+                .addInlineField("Carrier", "<@" + carryQueue.getCarrier() + ">");
+
+        if (carryQueue.getAttachmentLink() != null) {
+            embedBuilder.addInlineField("Transcript-Link", "[Click to open]" +
+                    "(https://tickettool.xyz/direct?url=" + carryQueue.getAttachmentLink() + ")");
+        }
+
+        return embedBuilder;
+    }
+
+    public EmbedBuilder loadEmbedFromCarry(CarryModel carry) {
+        return loadEmbedFromCarry(carry, getEmbed(carry.time()));
+    }
+
+    public EmbedBuilder loadEmbedFromCarryQueue(@NotNull CarryQueueModel carryQueue) {
+        return loadEmbedFromCarryQueue(carryQueue, getEmbed(carryQueue.getTime()));
     }
 
     public EmbedBuilder formatStrikes(List<StrikeData> strikeData, User user, int page) {
@@ -189,8 +241,9 @@ public class ApplicationService {
                 .setTitle("Strike " +
                         (strikeData.getId() != null
                                 ? "#" + strikeData.getId()
-                                : "for " + DiscordConnection.getInstance().getBot().getUserById(strikeData.getUser()).join()
-                                .getDiscriminatedName()));
+                                :
+                                "for " + DiscordConnection.getInstance().getBot().getUserById(strikeData.getUser()).join()
+                                        .getDiscriminatedName()));
 
         embedBuilder.addField("User", "<@" + strikeData.getUser() + ">");
         embedBuilder.addField("Striker", strikeData.getStriker() != null ? "<@" + strikeData.getStriker() + ">" :
@@ -222,8 +275,9 @@ public class ApplicationService {
                 .setTitle("Strike " +
                         (strikeData.getId() != null
                                 ? "#" + strikeData.getId()
-                                : "for " + DiscordConnection.getInstance().getBot().getUserById(strikeData.getUser()).join()
-                                .getDiscriminatedName())
+                                :
+                                "for " + DiscordConnection.getInstance().getBot().getUserById(strikeData.getUser()).join()
+                                        .getDiscriminatedName())
                         + " on server `"
                         + DiscordConnection.getInstance().getBot().getServerById(strikeData.getServer())
                         .map(Nameable::getName).orElse("unknown")
@@ -246,7 +300,7 @@ public class ApplicationService {
                 .setColor(EmbedColor.NEGATIVE.getColor());
     }
 
-    public EmbedBuilder getScoreCountMessage(User userToCheck, User user, Server server, List<ScoreValue> scoreCount) {
+    public EmbedBuilder getScoreCountMessage(User userToCheck, User user, Server server, List<ScoreModel> scoreCount) {
         if (scoreCount.isEmpty()) {
             return getNoCarryTypeFoundEmbed();
         }
@@ -259,17 +313,17 @@ public class ApplicationService {
 
         Map<ScoreType, List<String>> scoreDescriptions = new EnumMap<>(ScoreType.class);
 
-        scoreCount.forEach(scoreValue -> {
-            if (scoreValue.scoreType() == ScoreType.EVENT && !scoreValue.carryType().isEventActive()) {
+        scoreCount.forEach(scoreModel -> {
+            if (scoreModel.getScoreType() == ScoreType.EVENT && !scoreModel.getCarryType().isEventActive()) {
                 return;
             }
 
-            String description = scoreValue.carryType().getDisplayName() + ": " + scoreValue.amount();
+            String description = scoreModel.getCarryType().getDisplayName() + ": " + scoreModel.getScoreAmount();
 
-            if (scoreDescriptions.containsKey(scoreValue.scoreType())) {
-                scoreDescriptions.get(scoreValue.scoreType()).add(description);
+            if (scoreDescriptions.containsKey(scoreModel.getScoreType())) {
+                scoreDescriptions.get(scoreModel.getScoreType()).add(description);
             } else {
-                scoreDescriptions.put(scoreValue.scoreType(), new ArrayList<>(List.of(description)));
+                scoreDescriptions.put(scoreModel.getScoreType(), new ArrayList<>(List.of(description)));
             }
         });
 
@@ -298,7 +352,8 @@ public class ApplicationService {
     public EmbedBuilder getPlayerDataEmbed(String ign) throws FailedToLoadEmbedException {
         Map<String, String> skycryptData = HypixelConnection.getInstance().getSkyCryptData(ign);
 
-        String description = skycryptData.getOrDefault("description", "Couldn't load SkyCrypt data. Please try again later.");
+        String description = skycryptData.getOrDefault("description", "Couldn't load SkyCrypt data. Please try again " +
+                "later.");
 
         EmbedBuilder embed = ApplicationService.getInstance()
                 .getEmbed()
@@ -325,7 +380,7 @@ public class ApplicationService {
 
         embed.addInlineField("Flagged", "Please remember to run `/lookup`.");
 
-        if(!skycryptData.containsKey("description") || !skycryptData.containsKey("title")) {
+        if (!skycryptData.containsKey("description") || !skycryptData.containsKey("title")) {
             throw new FailedToLoadEmbedException(embed);
         }
 
@@ -353,7 +408,7 @@ public class ApplicationService {
                         .toList()));
     }
 
-    public EmbedBuilder getCarryTypeEmbed(CarryType carryType) {
+    public EmbedBuilder getCarryTypeEmbed(CarryTypeModel carryType) {
         EmbedBuilder embed = getEmbed()
                 .setColor(EmbedColor.DEFAULT.getColor())
                 .addInlineField("Identifier", carryType.getIdentifier())
@@ -367,7 +422,7 @@ public class ApplicationService {
         return embed;
     }
 
-    public EmbedBuilder getCarryTierEmbed(CarryTier carryTier) {
+    public EmbedBuilder getCarryTierEmbed(CarryTierModel carryTier) {
         EmbedBuilder embed = getEmbed()
                 .setColor(EmbedColor.DEFAULT.getColor())
                 .addInlineField("Identifier", carryTier.getIdentifier())
@@ -386,7 +441,7 @@ public class ApplicationService {
         return embed;
     }
 
-    public EmbedBuilder getCarryDifficultyEmbed(CarryDifficulty carryDifficulty) {
+    public EmbedBuilder getCarryDifficultyEmbed(CarryDifficultyModel carryDifficulty) {
         EmbedBuilder embed = getEmbed()
                 .setColor(EmbedColor.DEFAULT.getColor())
                 .addInlineField("Identifier", carryDifficulty.getIdentifier())
@@ -395,7 +450,8 @@ public class ApplicationService {
                         carryDifficulty.getCarryType().getDisplayName() + " (" + carryDifficulty.getCarryType().getIdentifier() + ")")
                 .addInlineField("Carry Tier",
                         carryDifficulty.getCarryTier().getDisplayName() + " (" + carryDifficulty.getCarryTier().getIdentifier() + ")")
-                .addInlineField("Price", carryDifficulty.getPrice() + " (" + makeNumberReadable(carryDifficulty.getPrice()) + ")")
+                .addInlineField("Price",
+                        carryDifficulty.getPrice() + " (" + makeNumberReadable(carryDifficulty.getPrice()) + ")")
                 .addInlineField("Score", String.valueOf(carryDifficulty.getScore()));
 
         carryDifficulty.getBulkAmount()
@@ -406,5 +462,40 @@ public class ApplicationService {
         carryDifficulty.getActualPriceName().ifPresent(s -> embed.addInlineField("Price Title", s));
 
         return embed;
+    }
+
+    public BufferedImage generateQRCodeImage(String barcodeText) throws WriterException {
+        QRCodeWriter barcodeWriter = new QRCodeWriter();
+
+        Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
+        hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+        hints.put(EncodeHintType.MARGIN, 1);
+
+        BitMatrix bitMatrix = barcodeWriter.encode(barcodeText, BarcodeFormat.QR_CODE, 200, 200, hints);
+
+        return MatrixToImageWriter.toBufferedImage(bitMatrix);
+    }
+
+    public String readQRCodeImage(BufferedImage bufferedImage) throws ChecksumException, NotFoundException,
+            FormatException {
+        BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(
+                new BufferedImageLuminanceSource(bufferedImage)
+        ));
+
+        QRCodeReader qrCodeReader = new QRCodeReader();
+
+        return qrCodeReader.decode(binaryBitmap).getText();
+    }
+
+    public byte[] readImageData(BufferedImage bufferedImage) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            ImageIO.write(bufferedImage, "png", outputStream);
+        }
+        catch (IOException ioException) {
+            log.error(null, ioException);
+            return new byte[0];
+        }
+        return outputStream.toByteArray();
     }
 }

@@ -10,7 +10,7 @@ import org.javacord.api.interaction.SlashCommandOption;
 import java.util.List;
 
 //TODO implement
-@CommandParameters(name = "rolecheck", description = "See for which roles you have all requirements.")
+@CommandParameters(name = "role-check", description = "See for which roles you have all requirements.")
 public class RolecheckCommand extends Command {
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {

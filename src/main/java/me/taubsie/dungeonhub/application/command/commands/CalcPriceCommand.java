@@ -3,12 +3,16 @@ package me.taubsie.dungeonhub.application.command.commands;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ServerConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
-import me.taubsie.dungeonhub.common.CarryDifficulty;
-import me.taubsie.dungeonhub.common.CarryTier;
+import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
+import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.channel.Categorizable;
 import org.javacord.api.entity.channel.Channel;
@@ -26,7 +30,8 @@ import java.util.Optional;
 @CommandParameters(name = "calc-price",
         description = "Calculate the price for some amount of carries.")
 public class CalcPriceCommand extends Command {
-    public static long calculatePrice(CarryDifficulty carryDifficulty, long amount) {
+    //TODO move to service
+    public static long calculatePrice(CarryDifficultyModel carryDifficulty, long amount) {
         Optional<Integer> bulkPrice = carryDifficulty.getBulkPrice();
         Optional<Integer> bulkAmount = carryDifficulty.getBulkAmount();
 
@@ -43,19 +48,19 @@ public class CalcPriceCommand extends Command {
 
         long amount = getLongOption("amount");
 
-        Optional<CarryTier> carryTier = slashCommandCreateEvent.getSlashCommandInteraction().getChannel()
+        Optional<CarryTierModel> carryTier = slashCommandCreateEvent.getSlashCommandInteraction().getChannel()
                 .flatMap(Channel::asCategorizable)
                 .flatMap(Categorizable::getCategory)
                 .map(DiscordEntity::getId)
-                .flatMap(id -> DungeonHubConnection.getInstance().getCarryTierFromCategory(server.getId(), id));
+                .flatMap(id -> ServerConnection.getInstance().getCarryTierFromCategory(server.getId(), id));
 
         try {
-            Optional<CarryTier> previousCarryTier = carryTier;
+            Optional<CarryTierModel> previousCarryTier = carryTier;
 
-            carryTier = DungeonHubConnection.getInstance()
-                    .loadCarryType(server.getId(), getStringOption("carry-type"))
-                    .flatMap(carryType -> DungeonHubConnection.getInstance().loadCarryTier(carryType,
-                            getStringOption("carry-tier")))
+            carryTier = CarryTypeConnection.getInstance(server.getId())
+                    .getByIdentifier(getStringOption("carry-type"))
+                    .flatMap(carryType -> CarryTierConnection.getInstance(carryType)
+                            .getByIdentifier(getStringOption("carry-tier")))
                     .or(() -> previousCarryTier);
         }
         catch (CommandExecutionException commandExecutionException) {
@@ -67,8 +72,8 @@ public class CalcPriceCommand extends Command {
                     "carry type and carry tier.");
         }
 
-        Optional<CarryDifficulty> carryDifficulty = DungeonHubConnection.getInstance()
-                .loadCarryDifficulty(carryTier.get(), getStringOption("carry-difficulty"));
+        Optional<CarryDifficultyModel> carryDifficulty = CarryDifficultyConnection.getInstance(carryTier.get())
+                .getByIdentifier(getStringOption("carry-difficulty"));
 
         if (carryDifficulty.isEmpty()) {
             throw new InvalidOptionException("carry-difficulty");
@@ -93,11 +98,12 @@ public class CalcPriceCommand extends Command {
                 .getEmbed()
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setTitle("Carry-Price")
-                .addInlineField("Type", carryTier.get().getDisplayName() + " | " + carryDifficulty.get().getDisplayName())
+                .addInlineField("Type",
+                        carryTier.get().getDisplayName() + " | " + carryDifficulty.get().getDisplayName())
                 .addInlineField("Amount", String.valueOf(amount))
                 .addInlineField("Price", priceText);
 
-        carryDifficulty.flatMap(CarryDifficulty::getThumbnailUrl).ifPresent(embed::setThumbnail);
+        carryDifficulty.flatMap(CarryDifficultyModel::getThumbnailUrl).ifPresent(embed::setThumbnail);
 
         respond(embed);
     }

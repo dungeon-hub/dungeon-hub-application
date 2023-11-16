@@ -1,13 +1,10 @@
 package me.taubsie.dungeonhub.application.connection;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
 import me.nullicorn.nedit.NBTReader;
 import me.nullicorn.nedit.type.NBTCompound;
+import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadException;
-import me.taubsie.dungeonhub.common.config.ConfigProperty;
 import net.hypixel.api.HypixelAPI;
 import net.hypixel.api.http.HypixelHttpClient;
 import net.hypixel.api.http.HypixelHttpResponse;
@@ -38,10 +35,15 @@ public class HypixelConnection implements HypixelHttpClient {
     private static final Logger logger = LoggerFactory.getLogger(HypixelConnection.class);
 
     private static final long AUCTION_REFRESH_TIME = 1000L * 60;
+    private static final int[] requiredXp = {50, 125, 235, 395, 625, 955, 1425, 2095, 3045, 4385, 6275, 8940, 12700,
+            17960, 25340, 35640, 50040, 70040, 97640, 135640, 188140, 259640, 356640, 488640, 668640, 911640, 1239640,
+            1684640, 2284640, 3084640, 4149640, 5559640, 7459640, 9959640, 13259640, 17559640, 23159640, 30359640,
+            39559640, 51559640, 66559640, 85559640, 109559640, 139559640, 177559640, 225559640, 285559640, 360559640,
+            453559640, 569809640};
+
     private static HypixelConnection instance;
     private final OkHttpClient httpClient;
     private final HypixelAPI hypixelApi;
-
     private final List<JsonObject> talismen = new ArrayList<>();
     private final List<JsonObject> auctions = new ArrayList<>();
 
@@ -171,7 +173,8 @@ public class HypixelConnection implements HypixelHttpClient {
                         case "og:title" -> result.put("title", meta.attr("content"));
                         case "og:image" -> result.put("icon", meta.attr("content"));
                         case "og:description" -> result.put("description", meta.attr("content"));
-                        default -> {}
+                        default -> {
+                        }
                     }
                 }
             }
@@ -337,8 +340,68 @@ public class HypixelConnection implements HypixelHttpClient {
     }
 
     public StatusReply.Session getOnlineStatus(String ign) {
-        UUID uuid = DungeonHubConnection.getInstance().getUUIDByName(ign);
+        UUID uuid = MojangConnection.getInstance().getUUIDByName(ign);
 
         return hypixelApi.getStatus(uuid).join().getSession();
+    }
+
+    //This is a request on the Hypixel API, and therefore unneccessary calls should be avoided
+    public int getCataLevelByUUID(UUID uuid) {
+        JsonArray profiles = getProfiles(uuid);
+        if (profiles == null) return 0;
+
+        //Highest cata xp of all profiles
+        double highestXP = 0;
+
+        for(int i = 0; i < profiles.size(); i++) {
+            try {
+                double thisXP = profiles.get(i).getAsJsonObject()
+                        .getAsJsonObject("members")
+                        .get(uuid.toString().replace("-", ""))
+                        .getAsJsonObject()
+                        .getAsJsonObject("dungeons")
+                        .getAsJsonObject("dungeon_types")
+                        .getAsJsonObject("catacombs")
+                        .get("experience")
+                        .getAsDouble();
+                highestXP = Math.max(highestXP, thisXP);
+                // null if profile hasn't entered dungeons
+            }
+            catch (NullPointerException ignored) {
+                //TODO this happens if the profile hasn't entered dungeons. Custom exception?
+            }
+        }
+
+        return cataXPToLevel(highestXP);
+    }
+
+    public JsonArray getProfiles(UUID uuid) {
+        Request request = new Request.Builder()
+                .url("https://api.hypixel.net/skyblock/profiles?key=" + ConfigProperty.HYPIXEL_API_KEY.getValue() +
+                        "&uuid=" + uuid)
+                .get()
+                .build();
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful() || response.body() == null) {
+                logger.error("Unsuccessful profile request for UUID {}", uuid);
+                return null;
+            }
+
+            return JsonParser.parseString(response.body().string()).getAsJsonObject().getAsJsonArray("profiles");
+        }
+        catch (IOException ioException) {
+            logger.error("Profile request for UUID threw an error.", ioException);
+        }
+
+        return null;
+    }
+
+    private int cataXPToLevel(double xp) {
+        for(int i = 0; i < requiredXp.length; i++) {
+            if (requiredXp[i] > xp) return i;
+        }
+
+        // 50 and everything higher is returned as 50
+        return 50;
     }
 }

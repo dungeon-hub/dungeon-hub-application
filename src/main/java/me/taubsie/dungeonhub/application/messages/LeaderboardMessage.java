@@ -1,16 +1,18 @@
 package me.taubsie.dungeonhub.application.messages;
 
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
 import me.taubsie.dungeonhub.application.service.LeaderboardService;
-import me.taubsie.dungeonhub.common.CarryType;
-import me.taubsie.dungeonhub.common.ScoreType;
+import me.taubsie.dungeonhub.common.enums.ScoreType;
+import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
+import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
 import org.javacord.api.interaction.callback.ComponentInteractionOriginalMessageUpdater;
 
 public class LeaderboardMessage extends PageableMessage {
-    private final CarryType carryType;
+    private final CarryTypeModel carryType;
     private final ScoreType scoreType;
 
-    public LeaderboardMessage(int currentPage, long channel, long message, CarryType carryType, ScoreType scoreType) {
+    public LeaderboardMessage(int currentPage, long channel, long message, CarryTypeModel carryType,
+                              ScoreType scoreType) {
         super(currentPage, channel, message);
         this.carryType = carryType;
         this.scoreType = scoreType;
@@ -18,7 +20,10 @@ public class LeaderboardMessage extends PageableMessage {
 
     @Override
     public int getMaxPage() {
-        return DungeonHubConnection.getInstance().getMaxLeaderboardPage(carryType, scoreType);
+        return ScoreConnection.getInstance(carryType)
+                .loadLeaderboard(scoreType, 0)
+                .map(LeaderboardModel::getTotalPages)
+                .orElse(0);
     }
 
     @Override
@@ -27,9 +32,9 @@ public class LeaderboardMessage extends PageableMessage {
                 .addEmbed(
                         LeaderboardService.getInstance().getLeaderboardEmbed(
                                 LeaderboardService.getInstance().getLeaderboardTitle(carryType, scoreType),
-                                DungeonHubConnection.getInstance().getLeaderboardData(carryType, scoreType, currentPage),
-                                currentPage,
-                                getMaxPage()
+                                ScoreConnection.getInstance(carryType)
+                                        .loadLeaderboard(scoreType, currentPage, null)
+                                        .orElse(null)
                         )
                 ).update();
     }

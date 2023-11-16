@@ -1,9 +1,13 @@
 package me.taubsie.dungeonhub.application.service;
 
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ServerConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
-import me.taubsie.dungeonhub.common.*;
+import me.taubsie.dungeonhub.application.loader.OnStart;
+import me.taubsie.dungeonhub.application.loader.StartupListener;
+import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
+import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -27,8 +31,12 @@ public class MessagesService implements StartupListener {
         return instance;
     }
 
-    public Optional<EmbedBuilder> getPriceEmbed(CarryTier carryTier) {
-        List<CarryDifficulty> carryDifficulties = DungeonHubConnection.getInstance().loadCarryDifficulties(carryTier);
+    public Optional<EmbedBuilder> getPriceEmbed(CarryTierModel carryTier) {
+        List<CarryDifficultyModel> carryDifficulties =
+                CarryDifficultyConnection.getInstance(carryTier)
+                        .getAllCarryDifficulties().stream()
+                        .flatMap(Collection::stream)
+                        .toList();
 
         if (carryDifficulties.isEmpty()) {
             return Optional.empty();
@@ -76,16 +84,28 @@ public class MessagesService implements StartupListener {
         return Optional.of(embed);
     }
 
+    public void refreshPriceMessages(long serverId) {
+        refreshPriceMessages(ServerConnection.getInstance()
+                .getAllCarryTiers(serverId)
+                .orElse(new ArrayList<>())
+                .stream());
+    }
+
     public void refreshPriceMessages(Server server) {
-        refreshPriceMessages(DungeonHubConnection.getInstance().loadCarryTiers(server).stream());
+        refreshPriceMessages(ServerConnection.getInstance()
+                .getAllCarryTiers(server.getId())
+                .orElse(new ArrayList<>())
+                .stream());
     }
 
     private void refreshPriceMessages() {
-        refreshPriceMessages(DungeonHubConnection.getInstance().loadCarryTiers().stream());
+        ServerService.getInstance()
+                .getAllServers()
+                .forEach(serverData -> refreshPriceMessages(serverData.getId()));
     }
 
-    private void refreshPriceMessages(Stream<CarryTier> carryTiers) {
-        Map<Long, List<CarryTier>> carryTiersPerChannel = carryTiers
+    private void refreshPriceMessages(Stream<CarryTierModel> carryTiers) {
+        Map<Long, List<CarryTierModel>> carryTiersPerChannel = carryTiers
                 .filter(carryTier -> carryTier.getPriceChannel().isPresent())
                 .collect(Collectors.toMap(
                         carryTier -> carryTier.getPriceChannel().get(),
@@ -115,7 +135,7 @@ public class MessagesService implements StartupListener {
             embed.setFooter(null);
         }
 
-        if(!embeds.isEmpty()) {
+        if (!embeds.isEmpty()) {
             embeds.get(embeds.size() - 1).setFooter(ApplicationService.getInstance().getPriceFooter());
         }
 
@@ -138,7 +158,7 @@ public class MessagesService implements StartupListener {
     }
 
     @Override
-    public void postStart(ProgramOrigin programOrigin) {
+    public void postStart() {
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {

@@ -1,9 +1,16 @@
 package me.taubsie.dungeonhub.application.command;
 
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
 import me.taubsie.dungeonhub.application.exceptions.*;
-import me.taubsie.dungeonhub.application.service.ApplicationClassLoaderService;
+import me.taubsie.dungeonhub.application.loader.ClassLoaderService;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
-import me.taubsie.dungeonhub.common.config.Nameable;
+import me.taubsie.dungeonhub.common.Nameable;
+import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
+import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
+import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
+import org.javacord.api.entity.Attachment;
 import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.channel.ServerChannel;
 import org.javacord.api.entity.channel.TextChannel;
@@ -99,7 +106,7 @@ public abstract class Command {
     }
 
     private Optional<CommandParameters> getCommandParameters() {
-        return ApplicationClassLoaderService.getInstance().getCommandParameters(getClass());
+        return ClassLoaderService.getInstance().getCommandParameters(getClass());
     }
 
     private boolean hasPermissions(User user) {
@@ -180,6 +187,10 @@ public abstract class Command {
         return getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
     }
 
+    public final Attachment getAttachmentOption(String name) {
+        return getAttachmentOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
+    }
+
     public final <T extends Enum<T> & Nameable> T getEnumOption(@NotNull String name, @NotNull Class<T> enumClass,
                                                                 T defaultValue) {
         try {
@@ -235,8 +246,20 @@ public abstract class Command {
         return stringValue.get();
     }
 
+    public final Attachment getAttachmentOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
+                                                String name) {
+        Optional<Attachment> attachmentValue = getOption(slashCommandCreateEvent, name).getAttachmentValue();
+
+        if (attachmentValue.isEmpty()) {
+            throw new InvalidOptionException(name);
+        }
+
+        return attachmentValue.get();
+    }
+
     public final Optional<Boolean> getOptionalBooleanOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
-        return slashCommandCreateEvent.getOptionByName(name).flatMap(SlashCommandInteractionOption::getBooleanValue);
+        return slashCommandCreateEvent.getOptionByName(name)
+                .flatMap(SlashCommandInteractionOption::getBooleanValue);
     }
 
     public final Boolean getBooleanOption(String name) {
@@ -312,6 +335,17 @@ public abstract class Command {
         return userValue.get();
     }
 
+    public final SlashCommandInteractionOption getOption(String name) {
+        Optional<SlashCommandInteractionOption> interactionOption =
+                slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName(name);
+
+        if (interactionOption.isEmpty()) {
+            throw new InvalidOptionException(name);
+        }
+
+        return interactionOption.get();
+    }
+
     public final SlashCommandInteractionOption getOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
                                                          String name) {
         Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByName(name);
@@ -326,5 +360,23 @@ public abstract class Command {
     public final void respondWithError(CommandExecutionException commandExecutionException) {
         ApplicationService.getInstance().respondWithError(slashCommandCreateEvent.getInteraction(),
                 commandExecutionException);
+    }
+
+    public final CarryTypeModel getCarryType(long server, String identifier) {
+        return CarryTypeConnection.getInstance(server)
+                .getByIdentifier(identifier)
+                .orElseThrow(CarryTypeNotFoundException::new);
+    }
+
+    public final CarryTierModel getCarryTier(CarryTypeModel carryTypeModel, String identifier) {
+        return CarryTierConnection.getInstance(carryTypeModel)
+                .getByIdentifier(identifier)
+                .orElseThrow(CarryTierNotFoundException::new);
+    }
+
+    public final CarryDifficultyModel getCarryDifficulty(CarryTierModel carryTierModel, String identifier) {
+        return CarryDifficultyConnection.getInstance(carryTierModel)
+                .getByIdentifier(identifier)
+                .orElseThrow(CarryDifficultyNotFoundException::new);
     }
 }

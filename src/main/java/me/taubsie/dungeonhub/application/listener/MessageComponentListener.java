@@ -1,17 +1,19 @@
 package me.taubsie.dungeonhub.application.listener;
 
 import me.taubsie.dungeonhub.application.classes.ServerProperty;
-import me.taubsie.dungeonhub.application.connection.DiscordConnection;
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
-import me.taubsie.dungeonhub.application.exceptions.ChannelNotFoundException;
-import me.taubsie.dungeonhub.application.exceptions.MissingPermissionException;
-import me.taubsie.dungeonhub.application.exceptions.MustBeServerException;
-import me.taubsie.dungeonhub.application.exceptions.UnknownCommandException;
+import me.taubsie.dungeonhub.application.exceptions.*;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.application.service.PermissionService;
-import me.taubsie.dungeonhub.common.CarryInformation;
+import me.taubsie.dungeonhub.common.enums.QueueStep;
+import me.taubsie.dungeonhub.common.enums.ScoreType;
+import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel;
+import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueUpdateModel;
+import me.taubsie.dungeonhub.common.model.score.LoggedCarryModel;
+import me.taubsie.dungeonhub.common.model.score.ScoreModel;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
@@ -19,14 +21,16 @@ import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.MessageComponentCreateEvent;
-import org.javacord.api.interaction.Interaction;
 import org.javacord.api.interaction.MessageComponentInteraction;
 import org.javacord.api.listener.interaction.MessageComponentCreateListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
+import java.util.stream.Stream;
 
 /**
  * @author Taubsie
@@ -53,7 +57,10 @@ public class MessageComponentListener implements MessageComponentCreateListener 
             case "deny" -> deny(messageComponentCreateEvent.getMessageComponentInteraction(), server.get());
             case "accept_log" -> acceptLog(messageComponentCreateEvent.getMessageComponentInteraction(), server.get());
 
-            case "reload_playerdata", "show_flagged_banned", "show_excluded" -> {}
+            case "reload_playerdata", "show_flagged_banned", "show_excluded" -> {
+                // This is here so that the default block doesn't get executed and the lambda expressions that are set
+                // on creation work
+            }
 
             default -> ApplicationService.getInstance()
                     .respondWithError(messageComponentCreateEvent.getInteraction(), new UnknownCommandException());
@@ -64,27 +71,30 @@ public class MessageComponentListener implements MessageComponentCreateListener 
         Optional<TextChannel> channel = messageComponentInteraction.getChannel();
 
         if (channel.isEmpty()) {
-            ApplicationService.getInstance().respondWithError((Interaction) messageComponentInteraction,
+            ApplicationService.getInstance().respondWithError(messageComponentInteraction,
                     new ChannelNotFoundException());
             return;
         }
 
-        CarryInformation carryInformation = DiscordConnection.getInstance().getCarryInformation().get(channel.get().getId());
+        Optional<CarryQueueModel> carryQueue = QueueConnection.getInstance()
+                .getCarryQueueByRelatedId(channel.get().getId())
+                .map(Collection::stream)
+                .flatMap(Stream::findFirst);
 
-        if (carryInformation == null) {
+        if (carryQueue.isEmpty()) {
             messageComponentInteraction.createImmediateResponder()
-                    .setContent("Carry Information isn't in cache anymore. Please log this again!")
+                    .setContent("Carry isn't in queue anymore. Please log this again!")
                     .setFlags(MessageFlag.EPHEMERAL)
                     .respond()
                     .join();
 
-            messageComponentInteraction.getMessage().delete("Carry Information not in cache, carrier took too long");
+            messageComponentInteraction.getMessage().delete("Carry not in queue - weird...");
             return;
         }
 
         if (!PermissionService.getInstance().mayManageServices(messageComponentInteraction.getUser(), server)
-                && carryInformation.getCarrier() != messageComponentInteraction.getUser().getId()) {
-            ApplicationService.getInstance().respondWithError((Interaction) messageComponentInteraction,
+                && carryQueue.get().getCarrier() != messageComponentInteraction.getUser().getId()) {
+            ApplicationService.getInstance().respondWithError(messageComponentInteraction,
                     new MissingPermissionException());
             return;
         }
@@ -95,7 +105,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                 .respond()
                 .join();
 
-        DiscordConnection.getInstance().getCarryInformation().remove(channel.get().getId());
+        QueueConnection.getInstance().deleteQueue(carryQueue.get().getId());
 
         messageComponentInteraction.getMessage().delete().join();
     }
@@ -104,33 +114,47 @@ public class MessageComponentListener implements MessageComponentCreateListener 
         Optional<TextChannel> channel = messageComponentInteraction.getChannel();
 
         if (channel.isEmpty()) {
-            ApplicationService.getInstance().respondWithError((Interaction) messageComponentInteraction,
+            ApplicationService.getInstance().respondWithError(messageComponentInteraction,
                     new ChannelNotFoundException());
             return;
         }
 
-        CarryInformation carryInformation = DiscordConnection.getInstance().getCarryInformation().get(channel.get().getId());
+        Optional<CarryQueueModel> carryQueue = QueueConnection.getInstance()
+                .getCarryQueueByRelatedId(channel.get().getId())
+                .map(Collection::stream)
+                .flatMap(Stream::findFirst);
 
-        if (carryInformation == null) {
-            messageComponentInteraction.createImmediateResponder()
-                    .setContent("Carry Information isn't loaded. Please discard and log this again!")
-                    .setFlags(MessageFlag.EPHEMERAL)
-                    .respond()
-                    .join();
+        if (carryQueue.isEmpty()) {
+            ApplicationService.getInstance().respondWithError(messageComponentInteraction,
+                    new CommandExecutionException() {
+                        @Override
+                        public String getMessage() {
+                            return "Carry isn't in queue anymore. Please discard and log this again!";
+                        }
+                    });
             return;
         }
 
-        if (carryInformation.getCarrier() != messageComponentInteraction.getUser().getId()) {
-            ApplicationService.getInstance().respondWithError((Interaction) messageComponentInteraction,
+        if (carryQueue.get().getCarrier() != messageComponentInteraction.getUser().getId()) {
+            ApplicationService.getInstance().respondWithError(messageComponentInteraction,
                     new MissingPermissionException());
             return;
         }
 
-        DiscordConnection.getInstance().getCarryInformation().remove(channel.get().getId());
+        CarryQueueUpdateModel updateModel = new CarryQueueUpdateModel()
+                .setQueueStep(QueueStep.TRANSCRIPT);
 
         messageComponentInteraction.respondLater(true)
                 .thenAccept(updater -> {
-                    DungeonHubConnection.getInstance().addToLogQueue(channel.get().getId(), carryInformation);
+                    Optional<CarryQueueModel> carryQueueModel = QueueConnection.getInstance()
+                            .updateQueue(carryQueue.get().getId(), updateModel);
+
+                    if (carryQueueModel.isEmpty()) {
+                        updater.setContent("Couldn't log this ticket. Please contact an administrator.").update();
+                        logger.error("Error logging ticket '{}'.", channel.get().getId());
+
+                        return;
+                    }
 
                     updater.setContent(
                             "**Thank you for your service. Your carry will be sent to the staff team for " +
@@ -141,7 +165,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
 
                     channel.get().sendMessage(
                             ApplicationService.getInstance()
-                                    .loadEmbedFromCarryInformation(carryInformation)
+                                    .loadEmbedFromCarryQueue(carryQueueModel.get())
                                     .setDescription("This will get sent when the ticket is deleted.\n" +
                                             "If the client doesn't want any more carries, please delete this ticket.")
                                     .setTitle("Carry logged")
@@ -156,16 +180,17 @@ public class MessageComponentListener implements MessageComponentCreateListener 
 
         Message message = messageComponentInteraction.getMessage();
 
-        for(CarryInformation carryInformation :
-                DungeonHubConnection.getInstance().getFromLogApprovingQueue(message.getId())) {
-            User carrier = messageComponentInteraction.getApi().getUserById(carryInformation.getCarrier()).join();
+        for(CarryQueueModel queueModel : QueueConnection.getInstance()
+                .getCarryQueuesByQueueStep(QueueStep.APPROVING)
+                .orElse(new HashSet<>())) {
+            User carrier = messageComponentInteraction.getApi().getUserById(queueModel.getCarrier()).join();
 
             try {
                 PrivateChannel privateChannel = carrier.openPrivateChannel().join();
 
                 privateChannel.sendMessage("Your log was denied by " + messageComponentInteraction.getUser().getMentionTag() + ".",
                         ApplicationService.getInstance()
-                                .loadEmbedFromCarryInformation(carryInformation)
+                                .loadEmbedFromCarryQueue(queueModel)
                                 .setColor(EmbedColor.NEGATIVE.getColor())
                                 .setTitle("Information"));
             }
@@ -178,16 +203,16 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                     .flatMap(server::getTextChannelById)
                     .ifPresent(serverTextChannel -> serverTextChannel.sendMessage(
                             ApplicationService.getInstance()
-                                    .loadEmbedFromCarryInformation(carryInformation)
+                                    .loadEmbedFromCarryQueue(queueModel)
                                     .setColor(EmbedColor.NEGATIVE.getColor())
                                     .setTitle("Carry denied")
                                     .addInlineField("Denied by", messageComponentInteraction.getUser().getMentionTag())
                     ));
 
-            logger.debug("Carry denied: {}", carryInformation);
-        }
+            logger.debug("Carry denied: {}", queueModel);
 
-        DungeonHubConnection.getInstance().removeFromApprovingQueue(message.getId());
+            QueueConnection.getInstance().deleteQueue(queueModel.getId());
+        }
 
         message.delete();
     }
@@ -196,14 +221,27 @@ public class MessageComponentListener implements MessageComponentCreateListener 
         messageComponentInteraction.acknowledge();
         Message message = messageComponentInteraction.getMessage();
 
-        for(CarryInformation carryInformation :
-                DungeonHubConnection.getInstance().getFromLogApprovingQueue(message.getId())) {
-            carryInformation.setApprover(messageComponentInteraction.getUser().getId());
+        for(CarryQueueModel queueModel : QueueConnection.getInstance()
+                .getCarryQueueByRelatedIdAndQueueStep(message.getId(), QueueStep.APPROVING)
+                .orElse(new HashSet<>())) {
+            CarryQueueUpdateModel updateModel = new CarryQueueUpdateModel()
+                    .setApprover(messageComponentInteraction.getUser().getId());
 
-            long updatedScore = DungeonHubConnection.getInstance().logCarry(carryInformation);
-            long gainedScore = carryInformation.calculateScore();
+            Long updatedScore = QueueConnection.getInstance()
+                    .logQueue(queueModel.getId(), updateModel)
+                    .stream()
+                    .map(LoggedCarryModel::scoreModels)
+                    .flatMap(Collection::stream)
+                    .filter(scoreModel -> scoreModel.getScoreType().equals(ScoreType.DEFAULT))
+                    .findFirst()
+                    .map(ScoreModel::getScoreAmount)
+                    .orElseGet(() -> ScoreConnection.getInstance(queueModel.getCarryType())
+                            .getScore(queueModel.getCarrier())
+                            .map(ScoreModel::getScoreAmount)
+                            .orElse(0L));
+            long gainedScore = queueModel.calculateScore();
 
-            User carrier = messageComponentInteraction.getApi().getUserById(carryInformation.getCarrier()).join();
+            User carrier = messageComponentInteraction.getApi().getUserById(queueModel.getCarrier()).join();
 
             try {
                 PrivateChannel privateChannel = carrier.openPrivateChannel().join();
@@ -214,7 +252,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                                 "**Score gained:** " + gainedScore +
                                 "\n**Your Updated Score:** " + updatedScore,
                         ApplicationService.getInstance()
-                                .loadEmbedFromCarryInformation(carryInformation)
+                                .loadEmbedFromCarryQueue(queueModel)
                                 .setTitle("Information")
                 );
             }
@@ -223,12 +261,12 @@ public class MessageComponentListener implements MessageComponentCreateListener 
             }
 
             try {
-                carryInformation.getCarryType()
+                queueModel.getCarryType()
                         .getLogChannel()
                         .flatMap(server::getTextChannelById)
                         .ifPresent(serverTextChannel -> serverTextChannel.sendMessage(
                                 ApplicationService.getInstance()
-                                        .loadEmbedFromCarryInformation(carryInformation)
+                                        .loadEmbedFromCarryQueue(queueModel)
                                         .setTitle("Carry accepted.")
                                         .setColor(EmbedColor.POSITIVE.getColor())
                         ));
@@ -237,12 +275,10 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                 //ignored since it's not required to be logged
             }
 
-            logger.debug("Carry logged: {}", carryInformation);
+            logger.debug("Carry logged: {}", queueModel);
         }
 
         LeaderboardService.getInstance().refreshLeaderboard();
-
-        DungeonHubConnection.getInstance().removeFromApprovingQueue(message.getId());
 
         message.delete();
     }

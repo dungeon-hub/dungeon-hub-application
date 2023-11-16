@@ -1,9 +1,9 @@
 package me.taubsie.dungeonhub.application.classes;
 
+import lombok.Getter;
 import me.taubsie.dungeonhub.application.service.LeaderboardService;
+import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
-
-import java.util.Map;
 
 /**
  * This class holds the data for a simple leaderboard without pages.
@@ -11,22 +11,19 @@ import java.util.Map;
  */
 public class Leaderboard {
     private final String title;
-    private final Map<Long, Long> scoreData;
+    @Getter
+    private final LeaderboardModel leaderboardModel;
 
-    public Leaderboard(String title, Map<Long, Long> scoreData) {
+    public Leaderboard(String title, LeaderboardModel leaderboardModel) {
         this.title = title;
-        this.scoreData = scoreData;
+        this.leaderboardModel = leaderboardModel;
     }
 
     public String getLeaderboardTitle() {
         return title;
     }
 
-    public Map<Long, Long> getScoreData() {
-        return scoreData;
-    }
-
     public EmbedBuilder getEmbed() {
-        return LeaderboardService.getInstance().getLeaderboardEmbed(title, scoreData, 1);
+        return LeaderboardService.getInstance().getLeaderboardEmbed(title, leaderboardModel);
     }
 }

@@ -78,8 +78,7 @@ public class RefreshCommand extends Command {
                                 .respondLater(true)
                                         .join();
 
-                DungeonHubConnection.getInstance()
-                        .reloadToken();
+                DungeonHubConnection.getInstance().refreshToken();
 
                 updater.addEmbed(getEmbed()
                         .setColor(EmbedColor.POSITIVE.getColor())

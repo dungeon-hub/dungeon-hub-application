@@ -2,7 +2,7 @@ package me.taubsie.dungeonhub.application.classes;
 
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.enums.RoleConversion;
-import me.taubsie.dungeonhub.common.config.Nameable;
+import me.taubsie.dungeonhub.common.Nameable;
 
 import java.util.List;
 import java.util.Map;

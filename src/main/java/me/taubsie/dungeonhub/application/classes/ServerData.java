@@ -1,8 +1,9 @@
 package me.taubsie.dungeonhub.application.classes;
 
+import lombok.Getter;
 import me.taubsie.dungeonhub.application.service.ServerService;
 import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.config.ConfigFile;
+import me.taubsie.dungeonhub.application.config.ConfigFile;
 
 import java.io.File;
 import java.util.Arrays;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
  * @see ServerService
  * @see ServerProperty
  */
+@Getter
 public class ServerData extends ConfigFile<ServerProperty> {
     private final long id;
 
@@ -24,10 +26,6 @@ public class ServerData extends ConfigFile<ServerProperty> {
         this.id = id;
 
         reloadConfig();
-    }
-
-    public long getId() {
-        return id;
     }
 
     @Override

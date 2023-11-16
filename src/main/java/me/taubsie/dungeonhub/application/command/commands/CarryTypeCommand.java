@@ -2,12 +2,14 @@ package me.taubsie.dungeonhub.application.command.commands;
 
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidSubCommandException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
-import me.taubsie.dungeonhub.common.CarryType;
+import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeCreationModel;
+import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
+import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeUpdateModel;
 import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.channel.ChannelType;
 import org.javacord.api.entity.channel.ServerChannel;
@@ -19,14 +21,25 @@ import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @CommandParameters(name = "carry-type", description = "Set up the carry types for this server.",
         enabledForPermissions = PermissionType.ADMINISTRATOR)
 public class CarryTypeCommand extends Command {
+    public static final String FIELD_NAME = "carry-type";
+
+    public static SlashCommandOption getCarryTypeOption() {
+        return new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName(FIELD_NAME)
+                .setDescription("The identifier of the carry type")
+                .setRequired(true)
+                .setMaxLength(30)
+                .setAutocompletable(true)
+                .build();
+    }
+
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         SlashCommandInteractionOption subCommand = getOptionAtIndex(0);
@@ -49,23 +62,23 @@ public class CarryTypeCommand extends Command {
                 .replace(" ", "_");
         String displayName = getStringOption(subCommand, "display-name");
 
-        if (DungeonHubConnection.getInstance().isCarryTypeExistant(server.getId(), identifier)) {
+        if (CarryTypeConnection.getInstance(server.getId()).getByIdentifier(identifier).isPresent()) {
             throw new InvalidOptionException("identifier", "That carry type already exists!");
         }
 
-        Map<String, String> optionals = new HashMap<>();
+        CarryTypeCreationModel creationModel = new CarryTypeCreationModel(identifier, displayName);
 
         getOptionalChannelOption(subCommand, "log-channel")
-                .ifPresent(channel -> optionals.put("logChannel", channel.getIdAsString()));
+                .ifPresent(channel -> creationModel.setLogChannel(channel.getId()));
         getOptionalChannelOption(subCommand, "leaderboard-channel")
-                .ifPresent(channel -> optionals.put("leaderboardChannel", channel.getIdAsString()));
+                .ifPresent(channel -> creationModel.setLeaderboardChannel(channel.getId()));
         getOptionalBooleanOption(subCommand, "event-active")
-                .ifPresent(bool -> optionals.put("eventActive", String.valueOf(bool)));
+                .ifPresent(creationModel::setEventActive);
 
-        Optional<CarryType> carryType = DungeonHubConnection.getInstance()
-                .addNewCarryType(server.getId(), identifier, displayName, optionals);
+        Optional<CarryTypeModel> carryTypeModel = CarryTypeConnection.getInstance(server.getId())
+                .addNewCarryType(creationModel);
 
-        if(carryType.isEmpty()) {
+        if (carryTypeModel.isEmpty()) {
             //TODO custom class?
             throw new CommandExecutionException() {
                 @Override
@@ -76,15 +89,15 @@ public class CarryTypeCommand extends Command {
         }
 
         respond(ApplicationService.getInstance()
-                .getCarryTypeEmbed(carryType.get())
+                .getCarryTypeEmbed(carryTypeModel.get())
                 .setTitle("Carry Type created"));
     }
 
     public void delete(SlashCommandInteractionOption subCommand) {
-        String identifier = getStringOption(subCommand, "carry-type");
+        String identifier = getStringOption(subCommand, FIELD_NAME);
 
-        Optional<CarryType> carryType = DungeonHubConnection.getInstance()
-                .loadCarryType(getServer().getId(), identifier);
+        Optional<CarryTypeModel> carryType = CarryTypeConnection.getInstance(getServer().getId())
+                .getByIdentifier(identifier);
 
         if (carryType.isEmpty()) {
             //TODO custom class
@@ -96,7 +109,8 @@ public class CarryTypeCommand extends Command {
             };
         }
 
-        Optional<CarryType> deletedCarryType = DungeonHubConnection.getInstance().removeCarryType(carryType.get());
+        Optional<CarryTypeModel> deletedCarryType = CarryTypeConnection.getInstance(carryType.get().getServer().getId())
+                .deleteCarryType(carryType.get());
 
         if (deletedCarryType.isEmpty()) {
             //TODO custom class
@@ -114,8 +128,8 @@ public class CarryTypeCommand extends Command {
     }
 
     public void edit(SlashCommandInteractionOption editCommand) {
-        Optional<CarryType> carryType = DungeonHubConnection.getInstance()
-                .loadCarryType(getServer().getId(), getStringOption(editCommand, "carry-type"));
+        Optional<CarryTypeModel> carryType = CarryTypeConnection.getInstance(getServer().getId())
+                .getByIdentifier(getStringOption(editCommand, FIELD_NAME));
 
         if (carryType.isEmpty()) {
             //TODO custom class
@@ -132,7 +146,7 @@ public class CarryTypeCommand extends Command {
         Optional<ServerChannel> leaderboardChannel = getOptionalChannelOption(editCommand, "leaderboard-channel");
         Optional<Boolean> eventActive = getOptionalBooleanOption(editCommand, "event-active");
 
-        if(displayName.isEmpty() && logChannel.isEmpty() && leaderboardChannel.isEmpty() && eventActive.isEmpty()) {
+        if (displayName.isEmpty() && logChannel.isEmpty() && leaderboardChannel.isEmpty() && eventActive.isEmpty()) {
             //TODO custom class
             throw new CommandExecutionException() {
                 @Override
@@ -142,14 +156,17 @@ public class CarryTypeCommand extends Command {
             };
         }
 
-        displayName.ifPresent(s -> carryType.get().setDisplayName(s));
-        logChannel.map(DiscordEntity::getId).ifPresent(id -> carryType.get().setLogChannel(id));
-        leaderboardChannel.map(DiscordEntity::getId).ifPresent(id -> carryType.get().setLeaderboardChannel(id));
-        eventActive.ifPresent(active -> carryType.get().setEventActive(active));
+        CarryTypeUpdateModel updateModel = new CarryTypeUpdateModel();
 
-        Optional<CarryType> updatedCarryType = DungeonHubConnection.getInstance().updateCarryType(carryType.get());
+        displayName.ifPresent(updateModel::setDisplayName);
+        logChannel.map(DiscordEntity::getId).ifPresent(updateModel::setLogChannel);
+        leaderboardChannel.map(DiscordEntity::getId).ifPresent(updateModel::setLeaderboardChannel);
+        eventActive.ifPresent(updateModel::setEventActive);
 
-        if(updatedCarryType.isEmpty()) {
+        Optional<CarryTypeModel> updatedCarryType = CarryTypeConnection.getInstance(getServer().getId())
+                .updateCarryType(carryType.get().getId(), updateModel);
+
+        if (updatedCarryType.isEmpty()) {
             //TODO custom class
             throw new CommandExecutionException() {
                 @Override
@@ -165,8 +182,8 @@ public class CarryTypeCommand extends Command {
     }
 
     public void reset(SlashCommandInteractionOption resetCommand) {
-        Optional<CarryType> carryType = DungeonHubConnection.getInstance()
-                .loadCarryType(getServer().getId(), getStringOption(resetCommand, "carry-type"));
+        Optional<CarryTypeModel> carryType = CarryTypeConnection.getInstance(getServer().getId())
+                .getByIdentifier(getStringOption(resetCommand, FIELD_NAME));
 
         if (carryType.isEmpty()) {
             //TODO custom class
@@ -181,7 +198,7 @@ public class CarryTypeCommand extends Command {
         Boolean logChannel = getBooleanOption(resetCommand, "log-channel");
         Boolean leaderboardChannel = getBooleanOption(resetCommand, "leaderboard-channel");
 
-        if(!logChannel && !leaderboardChannel) {
+        if (Boolean.FALSE.equals(logChannel) && Boolean.FALSE.equals(leaderboardChannel)) {
             //TODO custom class
             throw new CommandExecutionException() {
                 @Override
@@ -191,17 +208,20 @@ public class CarryTypeCommand extends Command {
             };
         }
 
-        if(logChannel) {
-            carryType.get().setLogChannel(-1L);
+        CarryTypeUpdateModel updateModel = new CarryTypeUpdateModel();
+
+        if (Boolean.TRUE.equals(logChannel)) {
+            updateModel.setLogChannel(-1L);
         }
 
-        if(leaderboardChannel) {
-            carryType.get().setLeaderboardChannel(-1L);
+        if (Boolean.TRUE.equals(leaderboardChannel)) {
+            updateModel.setLeaderboardChannel(-1L);
         }
 
-        Optional<CarryType> updatedCarryType = DungeonHubConnection.getInstance().updateCarryType(carryType.get());
+        Optional<CarryTypeModel> updatedCarryType = CarryTypeConnection.getInstance(getServer().getId())
+                .updateCarryType(carryType.get().getId(), updateModel);
 
-        if(updatedCarryType.isEmpty()) {
+        if (updatedCarryType.isEmpty()) {
             //TODO custom class
             throw new CommandExecutionException() {
                 @Override
@@ -217,7 +237,8 @@ public class CarryTypeCommand extends Command {
     }
 
     public void get(SlashCommandInteractionOption subCommand) {
-        Optional<CarryType> carryType = DungeonHubConnection.getInstance().loadCarryType(getServer().getId(), getStringOption(subCommand, "carry-type"));
+        Optional<CarryTypeModel> carryType = CarryTypeConnection.getInstance(getServer().getId())
+                .getByIdentifier(getStringOption(subCommand, FIELD_NAME));
 
         if (carryType.isEmpty()) {
             //TODO custom exception class
@@ -281,7 +302,8 @@ public class CarryTypeCommand extends Command {
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("create")
                 .setDescription("Create a new carry type")
-                .setOptions(List.of(identifierOption, displayNameOption, logChannelOption, leaderboardChannelOption, eventActiveOption))
+                .setOptions(List.of(identifierOption, displayNameOption, logChannelOption, leaderboardChannelOption,
+                        eventActiveOption))
                 .build();
     }
 
@@ -338,7 +360,8 @@ public class CarryTypeCommand extends Command {
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("edit")
                 .setDescription("Edit a carry type")
-                .setOptions(List.of(getCarryTypeOption(), displayNameOption, logChannelOption, leaderboardChannelOption, eventActiveOption))
+                .setOptions(List.of(getCarryTypeOption(), displayNameOption, logChannelOption,
+                        leaderboardChannelOption, eventActiveOption))
                 .build();
     }
 
@@ -362,17 +385,6 @@ public class CarryTypeCommand extends Command {
                 .setName("reset")
                 .setDescription("Reset properties of a carry type")
                 .setOptions(List.of(getCarryTypeOption(), logChannelOption, leaderboardChannelOption))
-                .build();
-    }
-
-    public static SlashCommandOption getCarryTypeOption() {
-        return new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.STRING)
-                .setName("carry-type")
-                .setDescription("The identifier of the carry type")
-                .setRequired(true)
-                .setMaxLength(30)
-                .setAutocompletable(true)
                 .build();
     }
 }

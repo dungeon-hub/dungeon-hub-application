@@ -1,13 +1,11 @@
 package me.taubsie.dungeonhub.application.connection;
 
 import lombok.Getter;
-import me.taubsie.dungeonhub.application.service.ApplicationClassLoaderService;
+import me.taubsie.dungeonhub.application.loader.ClassLoaderService;
+import me.taubsie.dungeonhub.application.loader.OnStart;
+import me.taubsie.dungeonhub.application.loader.StartupListener;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.common.CarryInformation;
-import me.taubsie.dungeonhub.common.OnStart;
-import me.taubsie.dungeonhub.common.ProgramOrigin;
-import me.taubsie.dungeonhub.common.StartupListener;
-import me.taubsie.dungeonhub.common.config.ConfigType;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.activity.ActivityType;
 import org.javacord.api.entity.server.Server;
@@ -30,14 +28,13 @@ import java.util.Map;
  * @since 1.0.0
  */
 @OnStart(priority = 1)
-public class DiscordConnection implements StartupListener, ProgramOrigin {
+@Getter
+public class DiscordConnection implements StartupListener {
     private static final Logger logger = LoggerFactory.getLogger(DiscordConnection.class);
     private static final String LINE = "--------------------";
 
     private static DiscordConnection instance;
-    @Getter
     private final Map<Long, CarryInformation> carryInformation = new HashMap<>();
-    @Getter
     private DiscordApi bot;
 
     /**
@@ -46,8 +43,8 @@ public class DiscordConnection implements StartupListener, ProgramOrigin {
      * @param args The command-line parameters passed by the JVM.
      */
     public static void main(String[] args) {
-        ApplicationClassLoaderService.getInstance().loadStartupListeners();
-        ApplicationClassLoaderService.getInstance().executeStartup(DiscordConnection.getInstance());
+        ClassLoaderService.getInstance().loadStartupListeners();
+        ClassLoaderService.getInstance().executeStartup();
     }
 
     /**
@@ -56,7 +53,7 @@ public class DiscordConnection implements StartupListener, ProgramOrigin {
      * @return the current instance of this class.
      */
     public static DiscordConnection getInstance() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new DiscordConnection();
         }
 
@@ -64,21 +61,28 @@ public class DiscordConnection implements StartupListener, ProgramOrigin {
     }
 
     /**
+     * Returns a line for command-line output.
+     *
+     * @return a line for command-line output.
+     */
+    public static String getLine() {
+        return LINE;
+    }
+
+    /**
      * Method by the {@link StartupListener} interface, this is automatically executed on program launch.
      * This implementation starts the discord-bot.
-     *
-     * @param programOrigin The origin from which the program was executed, this is needed for {@link #getConfigType()}.
      */
     @Override
-    public void onStart(ProgramOrigin programOrigin) {
+    public void onStart() {
         bot = ApplicationService.getInstance().getApiBuilder().login().join();
 
         resetBotAppearance();
 
-        ApplicationClassLoaderService.getInstance().loadListeners(bot);
+        ClassLoaderService.getInstance().loadListeners(bot);
 
-        ApplicationClassLoaderService.getInstance().loadGlobalSlashCommands(bot);
-        ApplicationClassLoaderService.getInstance().loadServerSlashCommands(bot);
+        ClassLoaderService.getInstance().loadGlobalSlashCommands(bot);
+        ClassLoaderService.getInstance().loadServerSlashCommands(bot);
 
         logger.info(getLine());
         getServerListMessage().forEach(logger::info);
@@ -106,15 +110,6 @@ public class DiscordConnection implements StartupListener, ProgramOrigin {
     }
 
     /**
-     * Returns a line for command-line output.
-     *
-     * @return a line for command-line output.
-     */
-    public static String getLine() {
-        return LINE;
-    }
-
-    /**
      * This resets the activity shown on the bot back to the default.
      */
     private void resetBotActivity() {
@@ -138,15 +133,5 @@ public class DiscordConnection implements StartupListener, ProgramOrigin {
     public void resetBotAppearance() {
         resetBotActivity();
         resetBotStatus();
-    }
-
-    /**
-     * Returns the config-type of this program origin.
-     *
-     * @return the config-type of this program origin.
-     */
-    @Override
-    public ConfigType getConfigType() {
-        return ConfigType.APPLICATION;
     }
 }

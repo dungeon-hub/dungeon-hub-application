@@ -4,6 +4,7 @@ import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.connection.HypixelConnection;
+import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
@@ -29,7 +30,7 @@ public class LinkCommand extends Command {
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         String ign = getStringOption("ign");
 
-        UUID uuid = DungeonHubConnection.getInstance().getUUIDByName(ign);
+        UUID uuid = MojangConnection.getInstance().getUUIDByName(ign);
 
         Optional<String> hypixelName = HypixelConnection.getInstance().getHypixelLinkedDiscord(uuid);
 

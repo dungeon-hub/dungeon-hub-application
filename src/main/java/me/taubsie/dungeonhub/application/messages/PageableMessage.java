@@ -77,17 +77,19 @@ public abstract class PageableMessage {
                 .map(CompletableFuture::join);
     }
 
+    //TODO rework with 0-based counting
     private void applyListener(Message message) {
         message.addMessageComponentCreateListener(event -> {
             String customId = event.getMessageComponentInteraction().getCustomId();
 
-            int currentMaxPage = getMaxPage();
+            //TODO test
+            int currentMaxPage = getMaxPage() - 1;
 
             int newPage = switch(customId.toLowerCase()) {
                 case BACK -> Math.max(1, (currentPage - 1));
                 case FORWARD -> Math.min(currentMaxPage, (currentPage + 1));
-                case LAST -> getMaxPage();
-                default -> 1;
+                case LAST -> currentMaxPage;
+                default -> 0;
             };
 
             ComponentInteractionOriginalMessageUpdater componentInteractionOriginalMessageUpdater =
@@ -95,7 +97,7 @@ public abstract class PageableMessage {
 
             componentInteractionOriginalMessageUpdater
                     .removeAllComponents()
-                    .addComponents(getComponents(newPage == 1, newPage == currentMaxPage));
+                    .addComponents(getComponents(newPage == 0, newPage == currentMaxPage));
 
             currentPage = newPage;
 

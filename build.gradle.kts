@@ -31,7 +31,10 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.20.0")
     implementation("net.hypixel:hypixel-api-core:4.3")
     implementation("me.nullicorn:Nedit:2.2.0")
-    annotationProcessor("org.projectlombok:lombok:1.18.26")
+    implementation("com.google.zxing:javase:3.5.2")
+
+    annotationProcessor("org.projectlombok:lombok:1.18.28")
+    annotationProcessor("org.apache.logging.log4j:log4j-core:2.20.0")
 }
 
 application {

@@ -7,9 +7,8 @@ import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.enums.RoleConversion;
 import me.taubsie.dungeonhub.common.OldCarryRole;
-import me.taubsie.dungeonhub.common.OnStart;
-import me.taubsie.dungeonhub.common.ProgramOrigin;
-import me.taubsie.dungeonhub.common.StartupListener;
+import me.taubsie.dungeonhub.application.loader.OnStart;
+import me.taubsie.dungeonhub.application.loader.StartupListener;
 import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
@@ -39,7 +38,7 @@ public class PurgingService implements StartupListener {
     //TODO also try limiting the amount of requests of the same purge type and maybe also to the same user
 
     @Override
-    public void onStart(ProgramOrigin programOrigin) {
+    public void onStart() {
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {

@@ -4,13 +4,17 @@ import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
-import me.taubsie.dungeonhub.application.enums.EmbedColor;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ServerConnection;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
-import me.taubsie.dungeonhub.common.CarryDifficulty;
-import me.taubsie.dungeonhub.common.CarryInformation;
-import me.taubsie.dungeonhub.common.CarryTier;
+import me.taubsie.dungeonhub.common.enums.QueueStep;
+import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
+import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueCreationModel;
+import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel;
+import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import org.javacord.api.entity.channel.Categorizable;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
@@ -34,12 +38,12 @@ public class LogCommand extends Command {
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         TextChannel channel = getChannel();
 
-        Optional<CarryTier> carryTier = channel.asCategorizable()
+        Optional<CarryTierModel> carryTier = channel.asCategorizable()
                 .flatMap(Categorizable::getCategory)
-                .flatMap(channelCategory -> DungeonHubConnection.getInstance()
+                .flatMap(channelCategory -> ServerConnection.getInstance()
                         .getCarryTierFromCategory(getServer().getId(), channelCategory.getId()));
 
-        if(carryTier.isEmpty()) {
+        if (carryTier.isEmpty()) {
             //TODO custom class
             throw new CommandExecutionException() {
                 @Override
@@ -49,7 +53,7 @@ public class LogCommand extends Command {
             };
         }
 
-        if(DiscordConnection.getInstance().getCarryInformation().containsKey(channel.getId())) {
+        if (DiscordConnection.getInstance().getCarryInformation().containsKey(channel.getId())) {
             //TODO custom class
             throw new CommandExecutionException() {
                 @Override
@@ -61,16 +65,17 @@ public class LogCommand extends Command {
 
         Long amountOfCarries = getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), "amount");
 
-        Optional<CarryDifficulty> carryDifficulty = DungeonHubConnection.getInstance()
-                .loadCarryDifficulty(carryTier.get(), getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-difficulty"));
+        Optional<CarryDifficultyModel> carryDifficulty = CarryDifficultyConnection.getInstance(carryTier.get())
+                .getByIdentifier(getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(),
+                        "carry-difficulty"));
 
-        if(carryDifficulty.isEmpty()) {
+        if (carryDifficulty.isEmpty()) {
             throw new InvalidOptionException("carry-difficulty", carryDifficulty + " is no valid type.");
         }
 
         Optional<Message> firstMessage = channel.getMessagesAsStream().reduce((message, message2) -> message2);
 
-        if(firstMessage.isEmpty() || firstMessage.get().getMentionedUsers().isEmpty()) {
+        if (firstMessage.isEmpty() || firstMessage.get().getMentionedUsers().isEmpty()) {
             throw new CommandExecutionException() {
                 @Override
                 public String getMessage() {
@@ -83,30 +88,36 @@ public class LogCommand extends Command {
         User carried = firstMessage.get().getMentionedUsers().get(0);
         User carrier = slashCommandCreateEvent.getSlashCommandInteraction().getUser();
 
-        CarryInformation carryInformation = new CarryInformation(
-                time,
-                amountOfCarries,
-                carryDifficulty.get(),
-                carried.getId(),
-                carrier.getId()
-        );
+        CarryQueueCreationModel creationModel = new CarryQueueCreationModel()
+                .setQueueStep(QueueStep.CONFIRMATION)
+                .setTime(time)
+                .setAmount(amountOfCarries)
+                .setPlayer(carried.getId())
+                .setCarrier(carrier.getId())
+                .setRelationId(channel.getId());
 
-        //TODO method in ApplicationService
+        Optional<CarryQueueModel> carryQueueModel = QueueConnection.getInstance()
+                .addNewQueue(carryDifficulty.get(), creationModel);
+
+        if (carryQueueModel.isEmpty()) {
+            slashCommandCreateEvent.getSlashCommandInteraction()
+                    .createImmediateResponder()
+                    .addEmbed(
+                            ApplicationService.getInstance()
+                                    .getErrorEmbed()
+                                    .setTitle("Unable to log this. Please contact an administrator of this bot.")
+                    ).respond();
+            return;
+        }
+
         slashCommandCreateEvent.getSlashCommandInteraction()
                 .createImmediateResponder()
                 .addEmbed(ApplicationService.getInstance()
-                        .getEmbed(time)
-                        .setTitle("Are you sure that you want to log this?")
-                        .setColor(EmbedColor.INFORMATION.getColor())
-                        .addInlineField("Number of carries", String.valueOf(amountOfCarries))
-                        .addInlineField("Type of carry", carryDifficulty.get().getCarryTier().getDisplayName() + " - " + carryDifficulty.get().getDisplayName())
-                        .addInlineField("Player", carried.getMentionTag())
-                        .addInlineField("Carrier", carrier.getMentionTag()))
+                        .loadEmbedFromCarryQueue(carryQueueModel.get())
+                        .setTitle("Are you sure that you want to log this?"))
                 .addComponents(ActionRow.of(Button.success("send_log", "Confirm"),
                         Button.danger("discard", "Cancel")))
                 .respond().join();
-
-        DiscordConnection.getInstance().getCarryInformation().put(channel.getId(), carryInformation);
     }
 
     @Override
