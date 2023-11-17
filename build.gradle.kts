@@ -24,6 +24,7 @@ dependencies {
     implementation("org.projectlombok:lombok:1.18.28")
     implementation("org.javacord:javacord:3.8.0")
     implementation("me.taubsie:dungeon-hub-common:1.0.0")
+    implementation("me.taubsie:discord-html-transcripts:1.0.0")
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
     implementation("org.jsoup:jsoup:1.15.3")
     implementation("net.codebox:homoglyph:1.2.1")
