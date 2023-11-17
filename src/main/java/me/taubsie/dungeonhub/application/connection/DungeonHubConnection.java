@@ -14,6 +14,7 @@ import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.security.user.UserLoginModel;
 import me.taubsie.dungeonhub.common.model.security.user.UserLoginVerificationModel;
+import me.taubsie.dungeonhub.common.model.security.user.UserTokenRefreshModel;
 import okhttp3.*;
 import okio.Buffer;
 import org.jetbrains.annotations.NotNull;
@@ -52,7 +53,7 @@ public class DungeonHubConnection {
                 .writeTimeout(Duration.ofSeconds(30))
                 .build();
 
-        loadToken();
+        this.loginVerification = loadToken();
 
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -72,14 +73,15 @@ public class DungeonHubConnection {
 
     public synchronized String getApiToken() {
         if (loginVerification.jwtToken().validUntil()
-                .isBefore(Instant.now().minus(Math.round(TOKEN_REFRESH_BEFORE_INVALID / (1000 * 60 * 2F)), ChronoUnit.MINUTES))) {
+                .isBefore(Instant.now().minus(Math.round(TOKEN_REFRESH_BEFORE_INVALID / (1000 * 60 * 2F)),
+                        ChronoUnit.MINUTES))) {
             refreshToken();
         }
 
         return loginVerification.jwtToken().token();
     }
 
-    public synchronized void loadToken() {
+    public synchronized UserLoginVerificationModel loadToken() {
         String username = ConfigProperty.API_USER.getValue();
         String password = ConfigProperty.API_PASSWORD.getValue();
 
@@ -95,19 +97,21 @@ public class DungeonHubConnection {
                 .post(requestBody)
                 .build();
 
-        loginVerification = executeRequest(request, UserLoginVerificationModel::fromJson).orElseThrow();
+        UserLoginVerificationModel userLoginVerificationModel = executeRequest(request,
+                UserLoginVerificationModel::fromJson).orElseThrow();
+
+        return userLoginVerificationModel;
     }
 
     public synchronized void refreshToken() {
-        /*if(loginVerification.refreshToken().validUntil()
-                .isBefore(Instant.now().minus(TOKEN_REFRESH_BEFORE_INVALID / (1000 * 60), ChronoUnit.MINUTES))) {*/
-            loadToken();
-            /*return;
+        if (loginVerification == null || loginVerification.refreshToken().validUntil()
+                .isBefore(Instant.now().minus(TOKEN_REFRESH_BEFORE_INVALID / (1000 * 60), ChronoUnit.MINUTES))) {
+            this.loginVerification = loadToken();
+            return;
         }
 
-        String refreshToken = loginVerification.refreshToken().token();
-
-        UserTokenRefreshModel userTokenRefreshModel = new UserTokenRefreshModel(refreshToken);
+        UserTokenRefreshModel userTokenRefreshModel =
+                new UserTokenRefreshModel(loginVerification.refreshToken().token());
 
         RequestBody requestBody = RequestBody.create(
                 userTokenRefreshModel.toJson(),
@@ -119,7 +123,8 @@ public class DungeonHubConnection {
                 .post(requestBody)
                 .build();
 
-        loginVerification = executeRequest(request, UserLoginVerificationModel::fromJson).orElseThrow();*/
+        this.loginVerification = executeRequest(request, UserLoginVerificationModel::fromJson)
+                .orElseGet(this::loadToken);
     }
 
     public <T> Optional<T> executeRequest(Request request, Function<String, T> function) {
