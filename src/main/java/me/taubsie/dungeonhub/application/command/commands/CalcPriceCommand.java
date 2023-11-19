@@ -2,7 +2,6 @@ package me.taubsie.dungeonhub.application.command.commands;
 
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
@@ -32,14 +31,18 @@ import java.util.Optional;
 public class CalcPriceCommand extends Command {
     //TODO move to service
     public static long calculatePrice(CarryDifficultyModel carryDifficulty, long amount) {
+        return calculatePricePerCarry(carryDifficulty, amount) * amount;
+    }
+
+    public static long calculatePricePerCarry(CarryDifficultyModel carryDifficulty, long amount) {
         Optional<Integer> bulkPrice = carryDifficulty.getBulkPrice();
         Optional<Integer> bulkAmount = carryDifficulty.getBulkAmount();
 
         if (bulkPrice.isPresent() && bulkAmount.isPresent() && bulkAmount.get() <= amount) {
-            return bulkPrice.get() * amount;
+            return bulkPrice.get();
         }
 
-        return carryDifficulty.getPrice() * amount;
+        return carryDifficulty.getPrice();
     }
 
     @Override
@@ -80,6 +83,7 @@ public class CalcPriceCommand extends Command {
         }
 
         long price = calculatePrice(carryDifficulty.get(), amount);
+        long pricePerCarry = calculatePricePerCarry(carryDifficulty.get(), amount);
 
         if (price < 0) {
             throw new CommandExecutionException() {
@@ -94,6 +98,10 @@ public class CalcPriceCommand extends Command {
                 ? ApplicationService.getInstance().makeNumberReadable(price) + " coins"
                 : "Free";
 
+        String pricePerCarryText = price != 0
+                ? ApplicationService.getInstance().makeNumberReadable(pricePerCarry) + " coins"
+                : "Free";
+
         EmbedBuilder embed = ApplicationService.getInstance()
                 .getEmbed()
                 .setColor(EmbedColor.INFORMATION.getColor())
@@ -101,7 +109,8 @@ public class CalcPriceCommand extends Command {
                 .addInlineField("Type",
                         carryTier.get().getDisplayName() + " | " + carryDifficulty.get().getDisplayName())
                 .addInlineField("Amount", String.valueOf(amount))
-                .addInlineField("Price", priceText);
+                .addInlineField("Price", priceText)
+                .addInlineField("Price per Carry", pricePerCarryText);
 
         carryDifficulty.flatMap(CarryDifficultyModel::getThumbnailUrl).ifPresent(embed::setThumbnail);
 
