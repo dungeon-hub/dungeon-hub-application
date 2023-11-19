@@ -11,7 +11,6 @@ import net.hypixel.api.http.HypixelHttpResponse;
 import net.hypixel.api.http.RateLimit;
 import net.hypixel.api.reply.PlayerReply;
 import net.hypixel.api.reply.StatusReply;
-import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -215,7 +214,6 @@ public class HypixelConnection implements HypixelHttpClient {
         talismen.addAll(newTalismenData);
     }
 
-    //TODO isn't this the same as getUserDiscord() ?
     public Optional<String> getHypixelLinkedDiscord(UUID uuid) {
         PlayerReply playerReply = hypixelApi.getPlayerByUuid(uuid).join();
 
@@ -224,39 +222,6 @@ public class HypixelConnection implements HypixelHttpClient {
                 .map(jsonObject -> jsonObject.getAsJsonObject("links"))
                 .map(jsonObject -> jsonObject.getAsJsonPrimitive("DISCORD"))
                 .map(JsonPrimitive::getAsString);
-    }
-
-    private Optional<String> getUserDiscord(UUID uuid) {
-        String baseUrl = "https://api.hypixel.net/player";
-
-        HttpUrl url = HttpUrl.get(baseUrl)
-                .newBuilder()
-                .addQueryParameter("uuid", uuid.toString())
-                .build();
-
-        Request request = new Request.Builder()
-                .addHeader("API-Key", ConfigProperty.HYPIXEL_API_KEY.getValue())
-                .url(url)
-                .get()
-                .build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (response.isSuccessful() && response.body() != null) {
-                JsonObject baseObject = JsonParser.parseString(response.body().string()).getAsJsonObject();
-
-                if (baseObject.getAsJsonPrimitive("success").getAsBoolean()) {
-                    return Optional.ofNullable(baseObject.getAsJsonObject("player"))
-                            .map(playerObject -> playerObject.getAsJsonObject("socialMedia"))
-                            .map(socialObject -> socialObject.getAsJsonObject("links"))
-                            .map(linksObject -> linksObject.getAsJsonPrimitive("DISCORD").getAsString());
-                }
-            }
-        }
-        catch (IOException ioException) {
-            logger.error("Error when requesting discord user for uuid {}.", uuid, ioException);
-        }
-
-        return Optional.empty();
     }
 
     //TODO test if the retry code even works

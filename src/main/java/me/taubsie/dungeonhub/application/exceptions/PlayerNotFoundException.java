@@ -1,15 +1,27 @@
 package me.taubsie.dungeonhub.application.exceptions;
 
-public class PlayerNotFoundException extends CommandExecutionException {
-    private final String ign;
+import java.util.UUID;
 
-    public PlayerNotFoundException(String ign) {
-        this.ign = ign;
+public class PlayerNotFoundException extends CommandExecutionException {
+    private final UUID uuid;
+    private final String name;
+
+    public PlayerNotFoundException(String name) {
+        this.uuid = null;
+        this.name = name;
+    }
+
+    public PlayerNotFoundException(UUID uuid) {
+        this.uuid = uuid;
+        this.name = null;
     }
 
 
     @Override
     public String getMessage() {
-        return "Player with name " + ign + " not found!";
+        if(uuid != null) {
+            return "Player with UUID " + uuid + " not found!";
+        }
+        return "Player with name " + name + " not found!";
     }
 }

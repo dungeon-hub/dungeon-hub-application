@@ -2,13 +2,15 @@ package me.taubsie.dungeonhub.application.command.commands;
 
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.connection.HypixelConnection;
 import me.taubsie.dungeonhub.application.connection.MojangConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
+import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
+import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -34,7 +36,7 @@ public class LinkCommand extends Command {
 
         Optional<String> hypixelName = HypixelConnection.getInstance().getHypixelLinkedDiscord(uuid);
 
-        if(hypixelName.isEmpty()) {
+        if (hypixelName.isEmpty()) {
             //TODO custom exception
             throw new CommandExecutionException() {
                 @Override
@@ -47,17 +49,26 @@ public class LinkCommand extends Command {
         User user = getUser();
         String username = user.getDiscriminator().equals("0") ? user.getName() : user.getDiscriminatedName();
 
-        if(!hypixelName.get().equalsIgnoreCase(username)) {
+        if (!hypixelName.get().equalsIgnoreCase(username)) {
             throw new InvalidOptionException("ign",
                     "Please add the correct discord-account to your hypixel social menu.");
         }
 
-        //TODO database access
+        DiscordUserUpdateModel updateModel = new DiscordUserUpdateModel(uuid);
+
+        DiscordUserModel userModel = DiscordUserConnection.getInstance().updateUser(user.getId(), updateModel)
+                .orElseThrow(() -> new CommandExecutionException() {
+                    @Override
+                    public String getMessage() {
+                        return "Couldn't update your user data.";
+                    }
+                });
+
         respondLater(new CompletableFuture<EmbedBuilder>().completeAsync(() -> ApplicationService.getInstance()
-                        .getEmbed()
-                        .setTitle("Linked successfully")
-                        .setDescription("||Is what I would say if I had database access||")
-                        .setColor(EmbedColor.POSITIVE.getColor())));
+                .getEmbed()
+                .setTitle("Linked successfully")
+                .setDescription("Your UUID is now `" + userModel.getMinecraftId() + "`")
+                .setColor(EmbedColor.POSITIVE.getColor())));
     }
 
     @Override

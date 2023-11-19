@@ -3,7 +3,6 @@ package me.taubsie.dungeonhub.application.command.commands;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ServerConnection;

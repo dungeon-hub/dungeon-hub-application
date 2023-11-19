@@ -13,17 +13,20 @@ import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.HypixelConnection;
+import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException;
 import me.taubsie.dungeonhub.application.loader.ClassLoaderService;
-import me.taubsie.dungeonhub.common.*;
+import me.taubsie.dungeonhub.common.DungeonHubService;
+import me.taubsie.dungeonhub.common.StrikeData;
 import me.taubsie.dungeonhub.common.enums.ScoreType;
 import me.taubsie.dungeonhub.common.model.carry.CarryModel;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
+import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
@@ -497,5 +500,20 @@ public class ApplicationService {
             return new byte[0];
         }
         return outputStream.toByteArray();
+    }
+
+    public String loadUsernameByPlayerInformation(User user, String nameSchema, DiscordUserModel discordUserModel) {
+        Map<String, String> replacements = new HashMap<>();
+
+        replacements.put("discord.name", user.getName());
+        replacements.put("minecraft.name",
+                MojangConnection.getInstance().getNameByUUID(discordUserModel.getMinecraftId()));
+        replacements.put("skyblock.catacombs.level", "40");
+
+        for(Map.Entry<String, String> entry : replacements.entrySet()) {
+            nameSchema = nameSchema.replace("{" + entry.getKey() + "}", entry.getValue());
+        }
+
+        return nameSchema;
     }
 }

@@ -20,7 +20,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
-@CommandParameters(name = "ban-all", description = "Uses the profile moderation to ban all given users.", enabledForPermissions = PermissionType.BAN_MEMBERS)
+@CommandParameters(name = "ban-all", description = "Uses the profile moderation to ban all given users.",
+        enabledForPermissions = PermissionType.BAN_MEMBERS)
 public class BanAllCommand extends Command {
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
@@ -31,7 +32,7 @@ public class BanAllCommand extends Command {
         String[] userArray = users.split(",");
         List<String> errors = new ArrayList<>();
 
-        if(userArray.length < 1) {
+        if (userArray.length < 1) {
             throw new InvalidOptionException("users", "Please provide a comma-separated list of users to ban.");
         }
 
@@ -47,21 +48,21 @@ public class BanAllCommand extends Command {
 
                     ProfileModerationService.getInstance().handleUserBan(getServer(), user, executor, reason);
                 }
-                catch(CompletionException completionException) {
+                catch (CompletionException completionException) {
                     errors.add(userId);
                 }
             }
 
-            if(errors.isEmpty()) {
+            if (errors.isEmpty()) {
                 return ApplicationService.getInstance()
                         .getEmbed()
                         .setColor(EmbedColor.POSITIVE.getColor())
-                        .setDescription("Successfully banned all " + userArray.length + " users.");
+                        .setDescription("Successfully banned " + (userArray.length > 1 ? "all " : "") + userArray.length + " user" + (userArray.length > 1 ? "s." : "."));
             } else {
                 return ApplicationService.getInstance()
                         .getEmbed()
                         .setColor(EmbedColor.NEGATIVE.getColor())
-                        .setDescription("Couldn't ban the following users:\n" + String.join(", ", errors));
+                        .setDescription("Couldn't ban the following user(s):\n" + String.join(", ", errors));
             }
         }));
     }
