@@ -292,8 +292,13 @@ public abstract class Command {
         return channelValue.get();
     }
 
+    public final Optional<Role> getOptionalRoleOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+        return slashCommandCreateEvent.getOptionByName(name)
+                .flatMap(SlashCommandInteractionOption::getRoleValue);
+    }
+
     public final Role getRoleOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
-        Optional<Role> roleValue = getOption(slashCommandCreateEvent, name).getRoleValue();
+        Optional<Role> roleValue = getOptionalRoleOption(slashCommandCreateEvent, name);
 
         if (roleValue.isEmpty()) {
             throw new InvalidOptionException(name);
