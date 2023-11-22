@@ -20,8 +20,8 @@ public class PlayerNotFoundException extends CommandExecutionException {
     @Override
     public String getMessage() {
         if(uuid != null) {
-            return "Player with UUID " + uuid + " not found!";
+            return "Player with UUID \"" + uuid + "\" not found!";
         }
-        return "Player with name " + name + " not found!";
+        return "Player with name \"" + name + "\" not found!";
     }
 }

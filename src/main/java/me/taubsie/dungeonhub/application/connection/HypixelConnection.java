@@ -342,8 +342,8 @@ public class HypixelConnection implements HypixelHttpClient {
 
     public JsonArray getProfiles(UUID uuid) {
         Request request = new Request.Builder()
-                .url("https://api.hypixel.net/skyblock/profiles?key=" + ConfigProperty.HYPIXEL_API_KEY.getValue() +
-                        "&uuid=" + uuid)
+                .addHeader("API-Key", ConfigProperty.HYPIXEL_API_KEY.getValue())
+                .url("https://api.hypixel.net/skyblock/profiles?uuid=" + uuid)
                 .get()
                 .build();
         try (Response response = httpClient.newCall(request).execute()) {

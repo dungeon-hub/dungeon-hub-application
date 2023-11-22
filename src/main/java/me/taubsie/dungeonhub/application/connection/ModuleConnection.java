@@ -8,6 +8,7 @@ import okhttp3.MediaType;
 import okhttp3.Request;
 import org.slf4j.Logger;
 
+import java.lang.reflect.Type;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -20,12 +21,14 @@ public interface ModuleConnection {
         return DungeonHubService.getInstance().getGson();
     }
 
-    //TODO remove?
     default <T> T fromJson(String json, Class<T> clazz) {
         return getGson().fromJson(json, clazz);
     }
 
-    //TODO remove?
+    default <T> T fromJson(String json, Type typeOfT) {
+        return getGson().fromJson(json, typeOfT);
+    }
+
     default <T> String toJson(T entity) {
         return getGson().toJson(entity);
     }

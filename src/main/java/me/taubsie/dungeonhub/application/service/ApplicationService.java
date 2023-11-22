@@ -13,7 +13,6 @@ import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.HypixelConnection;
-import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException;
@@ -26,13 +25,17 @@ import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
+import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.Nameable;
 import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.entity.message.MessageFlag;
+import org.javacord.api.entity.message.component.ActionRowBuilder;
+import org.javacord.api.entity.message.component.HighLevelComponent;
+import org.javacord.api.entity.message.component.TextInputBuilder;
+import org.javacord.api.entity.message.component.TextInputStyle;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -55,6 +58,7 @@ import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 public class ApplicationService {
+    private static final int MAX_MINECRAFT_USERNAME_LENGTH = 16;
     private static ApplicationService instance;
 
     public static ApplicationService getInstance() {
@@ -145,12 +149,19 @@ public class ApplicationService {
         return embed.setTitle("Error").setColor(EmbedColor.NEGATIVE.getColor());
     }
 
+    public EmbedBuilder getErrorEmbed(CommandExecutionException commandExecutionException) {
+        return getErrorEmbed().setDescription(commandExecutionException.getMessage());
+    }
+
+    public EmbedBuilder getErrorEmbed(EmbedBuilder embed, CommandExecutionException commandExecutionException) {
+        return getErrorEmbed(embed).setDescription(commandExecutionException.getMessage());
+    }
+
     public void respondWithError(InteractionBase interactionBase,
                                  CommandExecutionException commandExecutionException) {
         interactionBase.createImmediateResponder()
                 .setFlags(MessageFlag.EPHEMERAL)
-                .addEmbed(getErrorEmbed()
-                        .setDescription(commandExecutionException.getMessage()))
+                .addEmbed(getErrorEmbed(commandExecutionException))
                 .respond();
     }
 
@@ -159,6 +170,19 @@ public class ApplicationService {
                 slashCommandCreateEvent.getSlashCommandInteraction().getCommandName(),
                 slashCommandCreateEvent.getSlashCommandInteraction().getServer().orElse(null)
         );
+    }
+
+    public EmbedBuilder loadEmbedFromDiscordRole(DiscordRoleModel discordRoleModel) {
+        EmbedBuilder embed = getEmbed();
+
+        embed.addInlineField("Role", "<@&" + discordRoleModel.getId() + ">");
+        embed.addInlineField("Name schema", discordRoleModel.getNameSchema() != null ?
+                discordRoleModel.getNameSchema() : "none");
+        embed.addInlineField("Role group", discordRoleModel.getRoleGroup() != null ?
+                "<@&" + discordRoleModel.getRoleGroup() + ">" : "none");
+        embed.addInlineField("Verified role", discordRoleModel.isVerifiedRole() ? "yes" : "no");
+
+        return embed;
     }
 
     public EmbedBuilder loadEmbedFromCarry(CarryModel carry, EmbedBuilder embedBuilder) {
@@ -502,18 +526,14 @@ public class ApplicationService {
         return outputStream.toByteArray();
     }
 
-    public String loadUsernameByPlayerInformation(User user, String nameSchema, DiscordUserModel discordUserModel) {
-        Map<String, String> replacements = new HashMap<>();
-
-        replacements.put("discord.name", user.getName());
-        replacements.put("minecraft.name",
-                MojangConnection.getInstance().getNameByUUID(discordUserModel.getMinecraftId()));
-        replacements.put("skyblock.catacombs.level", "40");
-
-        for(Map.Entry<String, String> entry : replacements.entrySet()) {
-            nameSchema = nameSchema.replace("{" + entry.getKey() + "}", entry.getValue());
-        }
-
-        return nameSchema;
+    public HighLevelComponent getLinkModalComponent() {
+        return new ActionRowBuilder().addComponents(
+                new TextInputBuilder(TextInputStyle.SHORT, "ign", "Ingame-Name")
+                        .setMaximumLength(16)
+                        .setMinimumLength(3)
+                        .setPlaceholder("For example: Taubsie")
+                        .setRequired(true)
+                        .build()
+        ).build();
     }
 }
