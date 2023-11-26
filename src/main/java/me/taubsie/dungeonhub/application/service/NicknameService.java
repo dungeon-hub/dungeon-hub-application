@@ -68,26 +68,17 @@ public class NicknameService {
         user.getMutualServers().forEach(server -> updateNickname(user, server));
     }
 
-    public void updateNickname(User user, Server server) {
-        ServerUpdater serverUpdater = server.createUpdater();
-
-        updateNickname(user, server, serverUpdater);
-
-        serverUpdater.update();
-    }
-
-    public void updateNickname(User user, Server server, ServerUpdater serverUpdater) throws NoNameSchemaException,
+    public void updateNickname(User user, Server server) throws NoNameSchemaException,
             NotLinkedException {
         DiscordUserModel discordUserModel = DiscordUserConnection.getInstance()
                 .getById(user.getId())
                 .filter(discordUserModel1 -> discordUserModel1.getMinecraftId() != null)
                 .orElseThrow(NotLinkedException::new);
 
-        updateNickname(user, discordUserModel, server, serverUpdater);
+        updateNickname(user, discordUserModel, server);
     }
 
-    public void updateNickname(User user, DiscordUserModel discordUserModel, Server server,
-                               ServerUpdater serverUpdater) throws NoNameSchemaException {
+    public void updateNickname(User user, DiscordUserModel discordUserModel, Server server) throws NoNameSchemaException {
         Map<Long, DiscordRoleModel> discordRoles = DiscordRoleConnection.getInstance(server.getId())
                 .getAllRoles()
                 .orElse(new ArrayList<>()).stream()
@@ -108,7 +99,7 @@ public class NicknameService {
 
         String nickname = loadUsernameByPlayerInformation(nameSchema, new PlayerInformation(user, discordUserModel));
 
-        serverUpdater.setNickname(user, nickname);
+        server.updateNickname(user, nickname);
     }
 
     public String loadUsernameByPlayerInformation(String nameSchema, PlayerInformation playerInformation) {

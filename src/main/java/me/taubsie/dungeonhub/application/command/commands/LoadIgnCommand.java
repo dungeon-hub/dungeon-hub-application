@@ -6,9 +6,11 @@ import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.HypixelConnection;
 import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
+import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaException;
 import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.NicknameService;
+import me.taubsie.dungeonhub.application.service.RolesService;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -63,7 +65,14 @@ public class LoadIgnCommand extends Command {
 
             DiscordUserConnection.getInstance().updateUser(user.getId(), updateModel);
 
-            NicknameService.getInstance().updateNickname(user);
+            RolesService.getInstance().updateRoles(user);
+
+            try {
+                NicknameService.getInstance().updateNickname(user);
+            }
+            catch (NoNameSchemaException ignored) {
+                //this just means there shouldn't be a nickname, then just ignore that
+            }
         });
 
         currentWave.stream().map(Map.Entry::getKey).forEach(users::remove);
