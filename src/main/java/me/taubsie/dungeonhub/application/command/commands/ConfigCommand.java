@@ -50,7 +50,6 @@ public class ConfigCommand extends Command {
         if(get) {
             getConfig(property.get());
         } else {
-            //TODO maybe enable if user is bot owner
             if(!property.get().isEnabled(getServer().getId()) && !getUser().isBotOwnerOrTeamMember()) {
                 throw new InvalidOptionException("property", "This property is disabled on this server.");
             }

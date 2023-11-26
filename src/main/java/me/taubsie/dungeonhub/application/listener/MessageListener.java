@@ -1,5 +1,7 @@
 package me.taubsie.dungeonhub.application.listener;
 
+import me.taubsie.dungeonhub.application.connection.MojangConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
@@ -11,6 +13,7 @@ import me.taubsie.dungeonhub.common.DungeonHubService;
 import me.taubsie.dungeonhub.common.enums.QueueStep;
 import me.taubsie.dungeonhub.common.enums.ScoreType;
 import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueUpdateModel;
+import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import me.taubsie.dungeonhub.common.model.score.LoggedCarryModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
 import org.javacord.api.entity.channel.PrivateChannel;
@@ -94,10 +97,13 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 return;
             }
 
-            //TODO load usernames from linked player information
-            Optional<String> ignOptional = Arrays.stream(lines)
-                    .filter(s -> s.startsWith("IGN: "))
-                    .findFirst()
+            Optional<String> ignOptional = DiscordUserConnection.getInstance()
+                    .getLinkedById(user.getId())
+                    .map(DiscordUserModel::getMinecraftId)
+                    .map(uuid -> MojangConnection.getInstance().getNameByUUID(uuid))
+                    .or(() -> Arrays.stream(lines)
+                            .filter(s -> s.startsWith("IGN: "))
+                            .findFirst())
                     .or(() -> user.getNickname(server.get()));
 
             if (ignOptional.isEmpty()) {
@@ -267,18 +273,17 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                     .findFirst()
                                     .map(ScoreModel::getScoreAmount)
                                     .orElseGet(() -> ScoreConnection.getInstance(queueModel.getCarryType())
-                                            .getScore(queueModel.getCarrier())
+                                            .getScore(queueModel.getCarrier().getId())
                                             .map(ScoreModel::getScoreAmount)
                                             .orElse(0L));
 
-                            User carrier = messageEvent.getApi().getUserById(queueModel.getCarrier()).join();
+                            User carrier = messageEvent.getApi().getUserById(queueModel.getCarrier().getId()).join();
 
                             if (carrier != null && carrier.openPrivateChannel().join() != null) {
                                 carrier.openPrivateChannel().join();
                                 Optional<PrivateChannel> privateChannelOptional = carrier.getPrivateChannel();
                                 long gainedScore = queueModel.calculateScore();
 
-                                //TODO
                                 try {
                                     privateChannelOptional.ifPresent(privateChannel -> privateChannel
                                             .sendMessage("Your carry was logged!\n\n" +
@@ -294,7 +299,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                                                     queueModel.getCarryTier().getDisplayName() + " - "
                                                                             + queueModel.getCarryDifficulty().getDisplayName())
                                                             .addInlineField("Player",
-                                                                    messageEvent.getApi().getUserById(queueModel.getPlayer()).join().getMentionTag())
+                                                                    messageEvent.getApi().getUserById(queueModel.getPlayer().getId()).join().getMentionTag())
                                                             .addInlineField("Carrier", carrier.getMentionTag())
                                                             .addInlineField("Transcript-Link", "[Click to open]" +
                                                                     "(https://tickettool.xyz/direct?url=" + queueModel.getAttachmentLink() + ")")).join());
@@ -323,9 +328,9 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                                 .addInlineField("Type of carry",
                                                         queueModel.getCarryTier().getDisplayName() + " - " + queueModel.getCarryDifficulty().getDisplayName())
                                                 .addInlineField("Player",
-                                                        messageEvent.getApi().getUserById(queueModel.getPlayer()).join().getMentionTag())
+                                                        messageEvent.getApi().getUserById(queueModel.getPlayer().getId()).join().getMentionTag())
                                                 .addInlineField("Carrier",
-                                                        messageEvent.getApi().getUserById(queueModel.getCarrier()).join().getMentionTag())
+                                                        messageEvent.getApi().getUserById(queueModel.getCarrier().getId()).join().getMentionTag())
                                                 .addInlineField("Transcript-Link", "[Click to open]" +
                                                         "(https://tickettool" +
                                                         ".xyz/direct?url=" + queueModel.getAttachmentLink() +

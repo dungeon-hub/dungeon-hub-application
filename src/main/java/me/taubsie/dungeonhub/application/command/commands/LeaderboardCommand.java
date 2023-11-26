@@ -48,7 +48,6 @@ public class LeaderboardCommand extends Command {
 
         String leaderboardTitle = LeaderboardService.getInstance().getLeaderboardTitle(carryType.get(), scoreType);
 
-        //TODO use respondLater() and CompletableFuture
         slashCommandCreateEvent.getSlashCommandInteraction()
                 .respondLater()
                 .thenAccept(responseUpdater -> {

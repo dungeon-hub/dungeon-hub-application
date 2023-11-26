@@ -11,9 +11,9 @@ import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
-import org.javacord.api.entity.server.ServerUpdater;
 import org.javacord.api.entity.user.User;
 
+import java.io.Serial;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -39,11 +39,12 @@ public class NicknameService {
 
         if (hypixelName.isEmpty()) {
             throw new InvalidOptionException("ign",
-                    "Please add the correct discord-account to your hypixel social menu.");
+                    "Please add the correct discord-account to your hypixel social menu.\n" +
+                            "To learn more about how to do this, use `/help verification`.");
         }
 
-        if(!hypixelName.get().equalsIgnoreCase(username)) {
-            throw new HypixelLinkedToOtherException();
+        if (!hypixelName.get().equalsIgnoreCase(username)) {
+            throw new HypixelLinkedToOtherException(ign);
         }
 
         DiscordUserUpdateModel updateModel = new DiscordUserUpdateModel(uuid);
@@ -51,6 +52,9 @@ public class NicknameService {
         DiscordUserModel userModel = DiscordUserConnection.getInstance()
                 .updateUser(user.getId(), updateModel)
                 .orElseThrow(() -> new CommandExecutionException() {
+                    @Serial
+                    private static final long serialVersionUID = -5892641193269486024L;
+
                     @Override
                     public String getMessage() {
                         return "Couldn't update your user data.";

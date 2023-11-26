@@ -45,7 +45,6 @@ public abstract class ConfigFile<T extends Nameable> implements StartupListener 
         }
     }
 
-    //TODO reduce complexity
     protected void reloadConfig() {
         File file = getConfigFile();
 

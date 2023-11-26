@@ -93,7 +93,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
         }
 
         if (!PermissionService.getInstance().mayManageServices(messageComponentInteraction.getUser(), server)
-                && carryQueue.get().getCarrier() != messageComponentInteraction.getUser().getId()) {
+                && carryQueue.get().getCarrier().getId() != messageComponentInteraction.getUser().getId()) {
             ApplicationService.getInstance().respondWithError(messageComponentInteraction,
                     new MissingPermissionException());
             return;
@@ -135,7 +135,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
             return;
         }
 
-        if (carryQueue.get().getCarrier() != messageComponentInteraction.getUser().getId()) {
+        if (carryQueue.get().getCarrier().getId() != messageComponentInteraction.getUser().getId()) {
             ApplicationService.getInstance().respondWithError(messageComponentInteraction,
                     new MissingPermissionException());
             return;
@@ -183,7 +183,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
         for(CarryQueueModel queueModel : QueueConnection.getInstance()
                 .getCarryQueuesByQueueStep(QueueStep.APPROVING)
                 .orElse(new HashSet<>())) {
-            User carrier = messageComponentInteraction.getApi().getUserById(queueModel.getCarrier()).join();
+            User carrier = messageComponentInteraction.getApi().getUserById(queueModel.getCarrier().getId()).join();
 
             try {
                 PrivateChannel privateChannel = carrier.openPrivateChannel().join();
@@ -236,12 +236,12 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                     .findFirst()
                     .map(ScoreModel::getScoreAmount)
                     .orElseGet(() -> ScoreConnection.getInstance(queueModel.getCarryType())
-                            .getScore(queueModel.getCarrier())
+                            .getScore(queueModel.getCarrier().getId())
                             .map(ScoreModel::getScoreAmount)
                             .orElse(0L));
             long gainedScore = queueModel.calculateScore();
 
-            User carrier = messageComponentInteraction.getApi().getUserById(queueModel.getCarrier()).join();
+            User carrier = messageComponentInteraction.getApi().getUserById(queueModel.getCarrier().getId()).join();
 
             try {
                 PrivateChannel privateChannel = carrier.openPrivateChannel().join();

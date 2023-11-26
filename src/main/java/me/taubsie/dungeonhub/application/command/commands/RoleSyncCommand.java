@@ -3,6 +3,7 @@ package me.taubsie.dungeonhub.application.command.commands;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
+import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.enums.RoleConversion;
 import me.taubsie.dungeonhub.application.exceptions.MissingPermissionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
@@ -13,7 +14,6 @@ import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 
-import java.awt.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -32,11 +32,12 @@ public class RoleSyncCommand extends Command {
 
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
-        if(!slashCommandCreateEvent.getSlashCommandInteraction().getUser().isBotOwnerOrTeamMember()) {
+        if (!slashCommandCreateEvent.getSlashCommandInteraction().getUser().isBotOwnerOrTeamMember()) {
             throw new MissingPermissionException();
         }
 
-        InteractionOriginalResponseUpdater responseUpdater = slashCommandCreateEvent.getSlashCommandInteraction().respondLater().join();
+        InteractionOriginalResponseUpdater responseUpdater =
+                slashCommandCreateEvent.getSlashCommandInteraction().respondLater().join();
         Server server = getServer();
 
         Map<Long, List<OldCarryRole>> roleList = Arrays.stream(RoleConversion.getCarryRoles())
@@ -56,7 +57,7 @@ public class RoleSyncCommand extends Command {
         DungeonHubConnection.getInstance().addMultipleRoles(roleList);
 
         responseUpdater.addEmbed(ApplicationService.getInstance().getEmbed()
-                        .setColor(new Color(255, 255, 255 /*TODO change color*/))
+                        .setColor(EmbedColor.INFORMATION.getColor())
                         .setTitle("Role-Sync")
                         .setDescription("Changed the internal roles of " + roleList.size() + " users."))
                 .update();

@@ -1,6 +1,5 @@
 package me.taubsie.dungeonhub.application.service;
 
-import com.google.gson.JsonObject;
 import com.google.zxing.*;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -191,8 +190,8 @@ public class ApplicationService {
                         String.valueOf(carry.amount()))
                 .addInlineField("Type of carry",
                         carry.carryDifficulty().getCarryTier().getDisplayName() + " - " + carry.carryDifficulty().getDisplayName())
-                .addInlineField("Player", "<@" + carry.player() + ">")
-                .addInlineField("Carrier", "<@" + carry.carrier() + ">");
+                .addInlineField("Player", "<@" + carry.player().getId() + ">")
+                .addInlineField("Carrier", "<@" + carry.carrier().getId() + ">");
 
         if (carry.approver() != null) {
             embedBuilder.addInlineField("Approved by", "<@" + carry.approver() + ">");
@@ -212,8 +211,8 @@ public class ApplicationService {
                         String.valueOf(carryQueue.getAmount()))
                 .addInlineField("Type of carry",
                         carryQueue.getCarryTier().getDisplayName() + " - " + carryQueue.getCarryDifficulty().getDisplayName())
-                .addInlineField("Player", "<@" + carryQueue.getPlayer() + ">")
-                .addInlineField("Carrier", "<@" + carryQueue.getCarrier() + ">");
+                .addInlineField("Player", "<@" + carryQueue.getPlayer().getId() + ">")
+                .addInlineField("Carrier", "<@" + carryQueue.getCarrier().getId() + ">");
 
         if (carryQueue.getAttachmentLink() != null) {
             embedBuilder.addInlineField("Transcript-Link", "[Click to open]" +
@@ -414,27 +413,6 @@ public class ApplicationService {
         return embed;
     }
 
-    //TODO remove json object, maybe only work on strings if possible -> connection service as an api only
-    public EmbedBuilder loadAuctionsMessage(List<JsonObject> auctionData, int page) {
-        if (auctionData.isEmpty()) {
-            return getEmbed()
-                    .setColor(EmbedColor.NEGATIVE.getColor())
-                    .setTitle("No auctions found! Try again later.");
-        }
-
-        return getEmbed()
-                .setColor(EmbedColor.POSITIVE.getColor())
-                .setTitle("Auctions:")
-                .setDescription(String.join("\n", auctionData.stream()
-                        .skip(DungeonHubService.getInstance().getOffsetFromPageNumber(page))
-                        .limit(10)
-                        .map(jsonObject -> "`/viewauction "
-                                + jsonObject.getAsJsonPrimitive("uuid").getAsString()
-                                + "` - "
-                                + jsonObject.getAsJsonPrimitive("item_name").getAsString())
-                        .toList()));
-    }
-
     public EmbedBuilder getCarryTypeEmbed(CarryTypeModel carryType) {
         EmbedBuilder embed = getEmbed()
                 .setColor(EmbedColor.DEFAULT.getColor())
@@ -529,7 +507,7 @@ public class ApplicationService {
     public HighLevelComponent getLinkModalComponent() {
         return new ActionRowBuilder().addComponents(
                 new TextInputBuilder(TextInputStyle.SHORT, "ign", "Ingame-Name")
-                        .setMaximumLength(16)
+                        .setMaximumLength(MAX_MINECRAFT_USERNAME_LENGTH)
                         .setMinimumLength(3)
                         .setPlaceholder("For example: Taubsie")
                         .setRequired(true)

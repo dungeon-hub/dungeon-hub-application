@@ -73,7 +73,6 @@ public abstract class Command {
 
     public final void respondLater(CompletableFuture<EmbedBuilder> embedBuilderFuture,
                                    HighLevelComponent... highLevelComponents) {
-        //TODO maybe update in 2 steps, first add the components and then add the embed
         InteractionOriginalResponseUpdater updater = slashCommandCreateEvent.getSlashCommandInteraction()
                 .respondLater()
                 .join();

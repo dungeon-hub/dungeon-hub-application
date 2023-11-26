@@ -84,7 +84,7 @@ public class LeaderboardService implements StartupListener {
     }
 
     public String getPlayerScore(ScoreModel score) {
-        return "<@" + score.getId() + "> - " + score.getScoreAmount() + " Score";
+        return "<@" + score.getCarrier().getId() + "> - " + score.getScoreAmount() + " Score";
     }
 
     public EmbedBuilder getEmptyLeaderboardEmbed(String title) {

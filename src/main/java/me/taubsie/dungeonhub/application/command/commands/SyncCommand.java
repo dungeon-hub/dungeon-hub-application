@@ -12,7 +12,6 @@ import me.taubsie.dungeonhub.application.service.RolesService;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
-import org.javacord.api.entity.server.ServerUpdater;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 
@@ -43,14 +42,11 @@ public class SyncCommand extends Command {
         CompletableFuture<EmbedBuilder> completableFuture = new CompletableFuture<>();
         respondLater(completableFuture);
 
-        ServerUpdater serverUpdater = server.createUpdater();
-        serverUpdater.setAuditLogReason("/sync by <@" + user.getId() + ">");
-
         boolean nameChanged = true;
 
-        RolesService.getInstance().updateRoles(user, server, serverUpdater);
+        RolesService.getInstance().updateRoles(user, server);
         try {
-            NicknameService.getInstance().updateNickname(user, discordUserModel.get(), server, serverUpdater);
+            NicknameService.getInstance().updateNickname(user, discordUserModel.get(), server);
         }
         catch (NoNameSchemaException noNameSchemaException) {
             nameChanged = false;
@@ -59,10 +55,6 @@ public class SyncCommand extends Command {
             completableFuture.complete(ApplicationService.getInstance()
                     .getErrorEmbed(notLinkedException));
             return;
-        }
-
-        try {
-            serverUpdater.update().join();
         }
         catch (CompletionException completionException) {
             //ignored since probably missing permission
