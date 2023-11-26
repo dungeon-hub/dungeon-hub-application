@@ -29,22 +29,6 @@ import java.util.Optional;
 @CommandParameters(name = "calc-price",
         description = "Calculate the price for some amount of carries.")
 public class CalcPriceCommand extends Command {
-    //TODO move to service
-    public static long calculatePrice(CarryDifficultyModel carryDifficulty, long amount) {
-        return calculatePricePerCarry(carryDifficulty, amount) * amount;
-    }
-
-    public static long calculatePricePerCarry(CarryDifficultyModel carryDifficulty, long amount) {
-        Optional<Integer> bulkPrice = carryDifficulty.getBulkPrice();
-        Optional<Integer> bulkAmount = carryDifficulty.getBulkAmount();
-
-        if (bulkPrice.isPresent() && bulkAmount.isPresent() && bulkAmount.get() <= amount) {
-            return bulkPrice.get();
-        }
-
-        return carryDifficulty.getPrice();
-    }
-
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         Server server = getServer();
@@ -82,8 +66,8 @@ public class CalcPriceCommand extends Command {
             throw new InvalidOptionException("carry-difficulty");
         }
 
-        long price = calculatePrice(carryDifficulty.get(), amount);
-        long pricePerCarry = calculatePricePerCarry(carryDifficulty.get(), amount);
+        long price = ApplicationService.getInstance().calculatePrice(carryDifficulty.get(), amount);
+        long pricePerCarry = ApplicationService.getInstance().calculatePricePerCarry(carryDifficulty.get(), amount);
 
         if (price < 0) {
             throw new CommandExecutionException() {

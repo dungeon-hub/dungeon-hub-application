@@ -514,4 +514,19 @@ public class ApplicationService {
                         .build()
         ).build();
     }
+
+    public long calculatePrice(CarryDifficultyModel carryDifficulty, long amount) {
+        return calculatePricePerCarry(carryDifficulty, amount) * amount;
+    }
+
+    public long calculatePricePerCarry(CarryDifficultyModel carryDifficulty, long amount) {
+        Optional<Integer> bulkPrice = carryDifficulty.getBulkPrice();
+        Optional<Integer> bulkAmount = carryDifficulty.getBulkAmount();
+
+        if (bulkPrice.isPresent() && bulkAmount.isPresent() && bulkAmount.get() <= amount) {
+            return bulkPrice.get();
+        }
+
+        return carryDifficulty.getPrice();
+    }
 }
