@@ -5,7 +5,7 @@ import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ServerConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
@@ -39,7 +39,7 @@ public class LogCommand extends Command {
 
         Optional<CarryTierModel> carryTier = channel.asCategorizable()
                 .flatMap(Categorizable::getCategory)
-                .flatMap(channelCategory -> ServerConnection.getInstance()
+                .flatMap(channelCategory -> DiscordServerConnection.getInstance()
                         .getCarryTierFromCategory(getServer().getId(), channelCategory.getId()));
 
         if (carryTier.isEmpty()) {

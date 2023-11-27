@@ -2,7 +2,7 @@ package me.taubsie.dungeonhub.application.service;
 
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ServerConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.loader.OnStart;
 import me.taubsie.dungeonhub.application.loader.StartupListener;
@@ -85,14 +85,14 @@ public class MessagesService implements StartupListener {
     }
 
     public void refreshPriceMessages(long serverId) {
-        refreshPriceMessages(ServerConnection.getInstance()
+        refreshPriceMessages(DiscordServerConnection.getInstance()
                 .getAllCarryTiers(serverId)
                 .orElse(new ArrayList<>())
                 .stream());
     }
 
     public void refreshPriceMessages(Server server) {
-        refreshPriceMessages(ServerConnection.getInstance()
+        refreshPriceMessages(DiscordServerConnection.getInstance()
                 .getAllCarryTiers(server.getId())
                 .orElse(new ArrayList<>())
                 .stream());

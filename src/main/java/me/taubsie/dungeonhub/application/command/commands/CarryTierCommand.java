@@ -5,7 +5,7 @@ import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ServerConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidSubCommandException;
@@ -88,7 +88,7 @@ public class CarryTierCommand extends Command {
                 .ifPresent(creationModel::setDescriptiveName);
         getOptionalChannelOption(subCommand, "category")
                 .flatMap(Channel::asChannelCategory)
-                .filter(channelCategory -> ServerConnection.getInstance()
+                .filter(channelCategory -> DiscordServerConnection.getInstance()
                         .getCarryTierFromCategory(server.getId(), channelCategory.getId()).isEmpty())
                 .map(DiscordEntity::getId)
                 .ifPresent(creationModel::setCategory);
@@ -238,7 +238,7 @@ public class CarryTierCommand extends Command {
 
         if (category.isPresent()) {
             Optional<CarryTierModel> categoryCarryTier =
-                    ServerConnection.getInstance()
+                    DiscordServerConnection.getInstance()
                             .getCarryTierFromCategory(server.getId(), category.get().getId());
             if (categoryCarryTier.isPresent()) {
                 respondEphemeral(ApplicationService.getInstance()

@@ -2,11 +2,11 @@ package me.taubsie.dungeonhub.application.command.commands;
 
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ServerConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
-import me.taubsie.dungeonhub.common.model.server.ServerModel;
+import me.taubsie.dungeonhub.common.model.server.DiscordServerModel;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -30,8 +30,8 @@ public class ScoreCommand extends Command {
             userToCheck = getUser();
         }
 
-        List<ScoreModel> scores = ServerConnection.getInstance()
-                .getScores(new ServerModel(getServer().getId()), userToCheck.getId())
+        List<ScoreModel> scores = DiscordServerConnection.getInstance()
+                .getScores(new DiscordServerModel(getServer().getId()), userToCheck.getId())
                 .orElse(new ArrayList<>());
 
         slashCommandCreateEvent

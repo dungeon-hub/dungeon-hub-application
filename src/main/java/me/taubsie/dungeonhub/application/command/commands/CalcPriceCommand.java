@@ -5,7 +5,7 @@ import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ServerConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
@@ -39,7 +39,7 @@ public class CalcPriceCommand extends Command {
                 .flatMap(Channel::asCategorizable)
                 .flatMap(Categorizable::getCategory)
                 .map(DiscordEntity::getId)
-                .flatMap(id -> ServerConnection.getInstance().getCarryTierFromCategory(server.getId(), id));
+                .flatMap(id -> DiscordServerConnection.getInstance().getCarryTierFromCategory(server.getId(), id));
 
         try {
             Optional<CarryTierModel> previousCarryTier = carryTier;

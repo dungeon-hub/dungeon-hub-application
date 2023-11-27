@@ -4,7 +4,7 @@ import me.taubsie.dungeonhub.application.classes.Leaderboard;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ServerConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.loader.OnStart;
 import me.taubsie.dungeonhub.application.loader.StartupListener;
@@ -14,7 +14,7 @@ import me.taubsie.dungeonhub.common.enums.ScoreType;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
-import me.taubsie.dungeonhub.common.model.server.ServerModel;
+import me.taubsie.dungeonhub.common.model.server.DiscordServerModel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -141,7 +141,7 @@ public class LeaderboardService implements StartupListener {
 
         Map<ServerTextChannel, List<Leaderboard>> leaderboards = new HashMap<>();
 
-        for(ServerModel serverModel : ServerConnection.getInstance().loadAllServers().orElse(new ArrayList<>())) {
+        for(DiscordServerModel serverModel : DiscordServerConnection.getInstance().loadAllServers().orElse(new ArrayList<>())) {
             for(CarryTypeModel carryType :
                     CarryTypeConnection.getInstance(serverModel.getId()).getAllCarryTypes().orElse(List.of())) {
                 Optional<ServerTextChannel> leaderboardChannel = carryType.getLeaderboardChannel()

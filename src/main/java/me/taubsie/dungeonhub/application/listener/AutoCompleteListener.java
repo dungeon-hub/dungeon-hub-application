@@ -3,11 +3,10 @@ package me.taubsie.dungeonhub.application.listener;
 import me.taubsie.dungeonhub.application.command.commands.CarryDifficultyCommand;
 import me.taubsie.dungeonhub.application.command.commands.CarryTierCommand;
 import me.taubsie.dungeonhub.application.command.commands.CarryTypeCommand;
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ServerConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.channel.Categorizable;
@@ -122,7 +121,7 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
                             .flatMap(Channel::asCategorizable)
                             .flatMap(Categorizable::getCategory)
                             .map(DiscordEntity::getId)
-                            .flatMap(category -> ServerConnection.getInstance()
+                            .flatMap(category -> DiscordServerConnection.getInstance()
                                     .getCarryTierFromCategory(server.getId(), category));
 
                     if (carryTier.isPresent()) {

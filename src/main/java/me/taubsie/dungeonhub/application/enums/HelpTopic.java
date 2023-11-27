@@ -2,7 +2,7 @@ package me.taubsie.dungeonhub.application.enums;
 
 import lombok.Getter;
 import me.taubsie.dungeonhub.application.classes.HelpDisplay;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ServerConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.exceptions.MustBeServerException;
 import me.taubsie.dungeonhub.common.Nameable;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
@@ -26,7 +26,7 @@ public enum HelpTopic implements Nameable {
 
                 Map<CarryTypeModel, Map<String, Integer>> fields = new HashMap<>();
 
-                List<CarryDifficultyModel> carryDifficulties = ServerConnection.getInstance()
+                List<CarryDifficultyModel> carryDifficulties = DiscordServerConnection.getInstance()
                         .getAllCarryDifficulties(server.getId())
                         .orElse(new ArrayList<>());
 

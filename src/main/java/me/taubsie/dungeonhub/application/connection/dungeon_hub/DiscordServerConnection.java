@@ -5,7 +5,7 @@ import me.taubsie.dungeonhub.common.DungeonHubService;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
-import me.taubsie.dungeonhub.common.model.server.ServerModel;
+import me.taubsie.dungeonhub.common.model.server.DiscordServerModel;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import org.slf4j.Logger;
@@ -14,13 +14,13 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Optional;
 
-public class ServerConnection implements ModuleConnection {
-    private static final Logger logger = LoggerFactory.getLogger(ServerConnection.class);
-    private static ServerConnection instance;
+public class DiscordServerConnection implements ModuleConnection {
+    private static final Logger logger = LoggerFactory.getLogger(DiscordServerConnection.class);
+    private static DiscordServerConnection instance;
 
-    public static ServerConnection getInstance() {
+    public static DiscordServerConnection getInstance() {
         if (instance == null) {
-            instance = new ServerConnection();
+            instance = new DiscordServerConnection();
         }
 
         return instance;
@@ -36,14 +36,14 @@ public class ServerConnection implements ModuleConnection {
         return logger;
     }
 
-    public Optional<ServerModel> findServerById(long id) {
+    public Optional<DiscordServerModel> findServerById(long id) {
         HttpUrl url = getApiUrl(id).build();
 
         Request request = getApiRequest(url)
                 .get()
                 .build();
 
-        return executeRequest(request, ServerModel::fromJson);
+        return executeRequest(request, DiscordServerModel::fromJson);
     }
 
     public Optional<List<CarryTierModel>> getAllCarryTiers(long serverId) {
@@ -68,7 +68,7 @@ public class ServerConnection implements ModuleConnection {
                 DungeonHubService.getInstance().getCarryDifficultyListType()));
     }
 
-    public Optional<List<ServerModel>> loadAllServers() {
+    public Optional<List<DiscordServerModel>> loadAllServers() {
         HttpUrl url = getApiUrl("all").build();
 
         Request request = getApiRequest(url)
@@ -90,7 +90,7 @@ public class ServerConnection implements ModuleConnection {
         return executeRequest(request, CarryTierModel::fromJson);
     }
 
-    public Optional<List<ScoreModel>> getScores(ServerModel serverModel, long id) {
+    public Optional<List<ScoreModel>> getScores(DiscordServerModel serverModel, long id) {
         HttpUrl url = getApiUrl(serverModel.getId() + "/score/" + id).build();
 
         Request request = getApiRequest(url)
