@@ -2,9 +2,9 @@ package me.taubsie.dungeonhub.application.command.commands;
 
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
-import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
+import me.taubsie.dungeonhub.application.enums.KnownStaticResource;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import org.javacord.api.entity.Attachment;
 import org.javacord.api.entity.message.component.ActionRowBuilder;
@@ -17,6 +17,7 @@ import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,11 +33,35 @@ public class CdnCommand extends Command {
 
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
-        SlashCommandInteractionOption addOption = getOption("add");
+        SlashCommandInteractionOption firstOption =
+                getOptionAtIndex(slashCommandCreateEvent.getSlashCommandInteraction(), 0);
 
-        Attachment fileOption = getAttachmentOption(addOption, "file");
+        if (firstOption.getName().equalsIgnoreCase("static")) {
+            KnownStaticResource resource = getEnumOption(firstOption, "file", KnownStaticResource.class);
 
-        Optional<String> nameOption = getOptionalStringOption(addOption, "name");
+            String url = ContentConnection.getInstance().getApiUrl(resource.getPath()).toString();
+
+            respondEphemeral(ApplicationService.getInstance()
+                            .getEmbed()
+                            .setColor(EmbedColor.POSITIVE.getColor())
+                            .setTitle("Static resource")
+                            .addInlineField("Name", resource.getDisplayName())
+                            .addInlineField("File name", resource.getName())
+                            .addField("Full URL", url)
+                            .setImage(url),
+                    new ActionRowBuilder().addComponents(
+                            new ButtonBuilder().setStyle(ButtonStyle.LINK)
+                                    .setUrl(url)
+                                    .setLabel("Open")
+                                    .build()
+                    ).build());
+
+            return;
+        }
+
+        Attachment fileOption = getAttachmentOption(firstOption, "file");
+
+        Optional<String> nameOption = getOptionalStringOption(firstOption, "name");
 
         slashCommandCreateEvent.getSlashCommandInteraction()
                 .respondLater(true)
@@ -53,7 +78,7 @@ public class CdnCommand extends Command {
 
                     EmbedBuilder embedBuilder;
                     if (fileUrl.isPresent()) {
-                        String url = ConfigProperty.CDN_URL + fileUrl.get();
+                        String url = ContentConnection.getInstance().getApiUrl(fileUrl.get()).toString();
 
                         embedBuilder = ApplicationService.getInstance()
                                 .getEmbed()
@@ -105,6 +130,21 @@ public class CdnCommand extends Command {
                 .setOptions(List.of(attachmentOption, nameOption))
                 .build();
 
-        return List.of(addOption);
+        SlashCommandOptionBuilder fileOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.STRING)
+                .setName("file")
+                .setDescription("The static file to get.")
+                .setRequired(true);
+
+        Arrays.stream(KnownStaticResource.values()).forEach(ressource -> fileOption.addChoice(ressource.getDisplayName(), ressource.name()));
+
+        SlashCommandOption staticOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("static")
+                .setDescription("Show the list of static files of the CDN.")
+                .setOptions(List.of(fileOption.build()))
+                .build();
+
+        return List.of(addOption, staticOption);
     }
 }

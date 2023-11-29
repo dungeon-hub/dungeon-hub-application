@@ -88,6 +88,15 @@ public abstract class Command {
                 .respond();
     }
 
+    public final void respondEphemeral(EmbedBuilder embedBuilder, HighLevelComponent... highLevelComponents) {
+        slashCommandCreateEvent.getSlashCommandInteraction()
+                .createImmediateResponder()
+                .setFlags(MessageFlag.EPHEMERAL)
+                .addEmbed(embedBuilder)
+                .addComponents(highLevelComponents)
+                .respond();
+    }
+
     public final void respondLaterEphemeral(CompletableFuture<EmbedBuilder> embedBuilderFuture) {
         InteractionOriginalResponseUpdater updater = slashCommandCreateEvent.getSlashCommandInteraction()
                 .respondLater(true)
@@ -231,6 +240,30 @@ public abstract class Command {
         }
     }
 
+    public final <T extends Enum<T> & Nameable> T getEnumOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, @NotNull String name, @NotNull Class<T> enumClass) {
+        try {
+            String value = getStringOption(slashCommandCreateEvent, name);
+
+            Optional<T> possibleMatch = Arrays.stream(enumClass.getEnumConstants())
+                    .filter(t -> t.getName().equalsIgnoreCase(value))
+                    .findFirst();
+
+            return possibleMatch
+                    .orElseGet(() -> T.valueOf(enumClass, value));
+        }
+        catch (IllegalArgumentException illegalArgumentException) {
+            String message = String.format(
+                    "Please enter a valid %s (%s)",
+                    name,
+                    Arrays.stream(enumClass.getEnumConstants())
+                            .map(Nameable::getDisplayName)
+                            .collect(Collectors.joining(", "))
+            );
+
+            throw new InvalidOptionException(name, message);
+        }
+    }
+
     public final Optional<String> getOptionalStringOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         return slashCommandCreateEvent.getOptionByName(name).flatMap(SlashCommandInteractionOption::getStringValue);
     }
@@ -291,7 +324,8 @@ public abstract class Command {
         return channelValue.get();
     }
 
-    public final Optional<Role> getOptionalRoleOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
+    public final Optional<Role> getOptionalRoleOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
+                                                      String name) {
         return slashCommandCreateEvent.getOptionByName(name)
                 .flatMap(SlashCommandInteractionOption::getRoleValue);
     }
