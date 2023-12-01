@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.command.commands;
 
+import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.classes.HelpDisplay;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
@@ -26,7 +27,7 @@ public class HelpCommand extends Command {
         try {
             HelpTopic helpTopic = getEnumOption("topic", HelpTopic.class);
 
-            CompletableFuture<EmbedBuilder> completableFuture = new CompletableFuture<>();
+            CompletableFuture<DelayedResponse> completableFuture = new CompletableFuture<>();
             respondLater(completableFuture);
 
             completableFuture.completeAsync(() -> {
@@ -45,7 +46,7 @@ public class HelpCommand extends Command {
                 embed.setColor(helpDisplay.embedColor().getColor());
                 helpDisplay.fields().forEach(embed::addField);
 
-                return embed;
+                return DelayedResponse.fromEmbed(embed);
             });
         }
         catch (InvalidOptionException ignored) {

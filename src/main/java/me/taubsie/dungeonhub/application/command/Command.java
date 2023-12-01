@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.command;
 
+import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
@@ -71,15 +72,6 @@ public abstract class Command {
                 .respond();
     }
 
-    public final void respondLater(CompletableFuture<EmbedBuilder> embedBuilderFuture,
-                                   HighLevelComponent... highLevelComponents) {
-        InteractionOriginalResponseUpdater updater = slashCommandCreateEvent.getSlashCommandInteraction()
-                .respondLater()
-                .join();
-
-        embedBuilderFuture.thenAccept(embedBuilder -> updater.addEmbed(embedBuilder).addComponents(highLevelComponents).update());
-    }
-
     public final void respondEphemeral(EmbedBuilder embedBuilder) {
         slashCommandCreateEvent.getSlashCommandInteraction()
                 .createImmediateResponder()
@@ -97,12 +89,27 @@ public abstract class Command {
                 .respond();
     }
 
-    public final void respondLaterEphemeral(CompletableFuture<EmbedBuilder> embedBuilderFuture) {
+    public final void respondLater(@NotNull CompletableFuture<DelayedResponse> delayedResponseFuture) {
+        InteractionOriginalResponseUpdater updater = slashCommandCreateEvent.getSlashCommandInteraction()
+                .respondLater()
+                .join();
+
+        delayedResponseFuture
+                .thenAccept(delayedResponse -> updater.setContent(delayedResponse.getContent())
+                        .addEmbeds(delayedResponse.getEmbed())
+                        .addComponents(delayedResponse.getHighLevelComponents())
+                        .update());
+    }
+
+    public final void respondLaterEphemeral(@NotNull CompletableFuture<DelayedResponse> delayedResponseFuture) {
         InteractionOriginalResponseUpdater updater = slashCommandCreateEvent.getSlashCommandInteraction()
                 .respondLater(true)
                 .join();
 
-        embedBuilderFuture.thenAccept(embedBuilder -> updater.addEmbed(embedBuilder).update());
+        delayedResponseFuture.thenAccept(delayedResponse -> updater.setContent(delayedResponse.getContent())
+                .addEmbeds(delayedResponse.getEmbed())
+                .addComponents(delayedResponse.getHighLevelComponents())
+                .update());
     }
 
     public List<SlashCommandOption> getSlashCommandOptions() {

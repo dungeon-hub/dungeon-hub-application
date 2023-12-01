@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.command.commands;
 
+import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
@@ -7,7 +8,6 @@ import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.NicknameService;
 import me.taubsie.dungeonhub.application.service.RolesService;
-import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandOption;
 
@@ -21,7 +21,7 @@ public class LinkCommand extends Command {
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         String ign = getStringOption("ign");
 
-        CompletableFuture<EmbedBuilder> completableFuture = new CompletableFuture<>();
+        CompletableFuture<DelayedResponse> completableFuture = new CompletableFuture<>();
         respondLater(completableFuture);
 
         UUID linkedId;
@@ -29,15 +29,17 @@ public class LinkCommand extends Command {
             linkedId = NicknameService.getInstance().linkToIgn(ign, getUser());
         }
         catch (CommandExecutionException commandExecutionException) {
-            completableFuture.complete(ApplicationService.getInstance().getErrorEmbed(commandExecutionException));
+            completableFuture.complete(DelayedResponse.fromException(commandExecutionException));
             return;
         }
 
-        completableFuture.completeAsync(() -> ApplicationService.getInstance()
-                .getEmbed()
-                .setTitle("Linked successfully")
-                .setDescription("Your UUID is now `" + linkedId + "`")
-                .setColor(EmbedColor.POSITIVE.getColor()));
+        completableFuture.completeAsync(() -> DelayedResponse.fromEmbed(
+                ApplicationService.getInstance()
+                        .getEmbed()
+                        .setTitle("Linked successfully")
+                        .setDescription("Your UUID is now `" + linkedId + "`")
+                        .setColor(EmbedColor.POSITIVE.getColor()))
+        );
 
         RolesService.getInstance().updateRoles(getUser());
     }

@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.command.commands;
 
+import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
@@ -10,7 +11,6 @@ import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.RolesService;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel;
-import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 
@@ -21,7 +21,7 @@ public class UnlinkCommand extends Command {
     @Override
     @SuppressWarnings("java:S2201") // This is just used for updating the user info...
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
-        CompletableFuture<EmbedBuilder> completableFuture = new CompletableFuture<>();
+        CompletableFuture<DelayedResponse> completableFuture = new CompletableFuture<>();
         respondLater(completableFuture);
 
         User user = getUser();
@@ -42,13 +42,15 @@ public class UnlinkCommand extends Command {
                         }
                     });
 
-            completableFuture.completeAsync(() -> ApplicationService.getInstance()
-                    .getEmbed()
-                    .setDescription("Unlinked successfully from UUID `" + oldUserModel.getMinecraftId() + "`.")
-                    .setColor(EmbedColor.POSITIVE.getColor()));
+            completableFuture.completeAsync(() -> DelayedResponse.fromEmbed(
+                    ApplicationService.getInstance()
+                            .getEmbed()
+                            .setDescription("Unlinked successfully from UUID `" + oldUserModel.getMinecraftId() + "`.")
+                            .setColor(EmbedColor.POSITIVE.getColor()))
+            );
         }
         catch (CommandExecutionException commandExecutionException) {
-            completableFuture.complete(ApplicationService.getInstance().getErrorEmbed(commandExecutionException));
+            completableFuture.complete(DelayedResponse.fromException(commandExecutionException));
             return;
         }
 

@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.command.commands;
 
+import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.classes.ServerProperty;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
@@ -17,7 +18,6 @@ import me.taubsie.dungeonhub.common.model.score.ScoreModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreUpdateModel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.MessageFlag;
-import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -73,7 +73,7 @@ public class ManageScoreCommand extends Command {
 
         Long amount = getLongOption(subCommand, "amount");
 
-        respondLater(new CompletableFuture<EmbedBuilder>().completeAsync(() -> {
+        respondLater(new CompletableFuture<DelayedResponse>().completeAsync(() -> {
             long score = removed ? -amount : amount;
 
             List<ScoreModel> updatedScores = ScoreConnection.getInstance(carryType.get())
@@ -100,13 +100,15 @@ public class ManageScoreCommand extends Command {
 
             LeaderboardService.getInstance().refreshLeaderboard();
 
-            return ApplicationService
-                    .getInstance()
-                    .getEmbed()
-                    .setColor(EmbedColor.INFORMATION.getColor())
-                    .setTitle("Score-Management")
-                    .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() +
-                            ", the user " + user.getMentionTag() + " now has " + updatedScore + " " + carryType.get().getDisplayName() + "-score.\nYou " + (removed ? "removed" : "added") + " " + amount + " of that score.");
+            return DelayedResponse.fromEmbed(
+                    ApplicationService
+                            .getInstance()
+                            .getEmbed()
+                            .setColor(EmbedColor.INFORMATION.getColor())
+                            .setTitle("Score-Management")
+                            .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() +
+                                    ", the user " + user.getMentionTag() + " now has " + updatedScore + " " + carryType.get().getDisplayName() + "-score.\nYou " + (removed ? "removed" : "added") + " " + amount + " of that score.")
+            );
         }));
     }
 

@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.command.commands;
 
+import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
@@ -13,7 +14,6 @@ import me.taubsie.dungeonhub.application.service.NicknameService;
 import me.taubsie.dungeonhub.application.service.RolesService;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel;
-import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -115,7 +115,7 @@ public class LoadIgnCommand extends Command {
             return;
         }
 
-        CompletableFuture<EmbedBuilder> completableFuture = new CompletableFuture<>();
+        CompletableFuture<DelayedResponse> completableFuture = new CompletableFuture<>();
 
         respondLaterEphemeral(completableFuture);
 
@@ -148,10 +148,13 @@ public class LoadIgnCommand extends Command {
                             }
                         }));
 
-        completableFuture.complete(ApplicationService.getInstance()
-                .getEmbed()
-                .setDescription(users.entrySet().stream()
-                        .map(entry -> "<@" + entry.getKey() + ">: `" + entry.getValue() + "`")
-                        .collect(Collectors.joining("\n"))));
+        completableFuture.complete(
+                DelayedResponse.fromEmbed(
+                        ApplicationService.getInstance()
+                                .getEmbed()
+                                .setDescription(users.entrySet().stream()
+                                        .map(entry -> "<@" + entry.getKey() + ">: `" + entry.getValue() + "`")
+                                        .collect(Collectors.joining("\n"))))
+        );
     }
 }
