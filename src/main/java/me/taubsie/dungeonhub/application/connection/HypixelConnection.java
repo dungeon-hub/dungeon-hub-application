@@ -1,8 +1,6 @@
 package me.taubsie.dungeonhub.application.connection;
 
 import com.google.gson.*;
-import me.nullicorn.nedit.NBTReader;
-import me.nullicorn.nedit.type.NBTCompound;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadException;
 import net.hypixel.api.HypixelAPI;
@@ -24,16 +22,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.sql.Time;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
 
 public class HypixelConnection implements HypixelHttpClient {
     private static final Logger logger = LoggerFactory.getLogger(HypixelConnection.class);
 
-    private static final long AUCTION_REFRESH_TIME = 1000L * 60;
     private static final int[] requiredXp = {50, 125, 235, 395, 625, 955, 1425, 2095, 3045, 4385, 6275, 8940, 12700,
             17960, 25340, 35640, 50040, 70040, 97640, 135640, 188140, 259640, 356640, 488640, 668640, 911640, 1239640,
             1684640, 2284640, 3084640, 4149640, 5559640, 7459640, 9959640, 13259640, 17559640, 23159640, 30359640,
@@ -43,8 +38,6 @@ public class HypixelConnection implements HypixelHttpClient {
     private static HypixelConnection instance;
     private final OkHttpClient httpClient;
     private final HypixelAPI hypixelApi;
-    private final List<JsonObject> talismen = new ArrayList<>();
-    private final List<JsonObject> auctions = new ArrayList<>();
 
     private HypixelConnection() {
         httpClient = new OkHttpClient.Builder()
@@ -56,14 +49,6 @@ public class HypixelConnection implements HypixelHttpClient {
                 .build();
 
         hypixelApi = new HypixelAPI(this);
-
-        new Timer().scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                reloadTalismen();
-                reloadAuctions();
-            }
-        }, new Time(System.currentTimeMillis()), AUCTION_REFRESH_TIME);
     }
 
     public static HypixelConnection getInstance() {
@@ -189,31 +174,6 @@ public class HypixelConnection implements HypixelHttpClient {
         return result;
     }
 
-
-    public List<JsonObject> getTalismen(boolean bin) {
-        Stream<JsonObject> talismenData = talismen.stream();
-
-        if (bin) {
-            talismenData = talismenData.filter(jsonObject -> jsonObject.getAsJsonPrimitive("bin").getAsBoolean());
-        }
-
-        return talismenData.toList();
-    }
-
-    private void reloadAuctions() {
-        auctions.clear();
-
-        auctions.addAll(loadAuctions(0).join());
-    }
-
-    private void reloadTalismen() {
-        List<JsonObject> newTalismenData = reloadTalismen(0, 0).toList();
-
-        talismen.clear();
-
-        talismen.addAll(newTalismenData);
-    }
-
     public Optional<String> getHypixelLinkedDiscord(UUID uuid) {
         PlayerReply playerReply = hypixelApi.getPlayerByUuid(uuid).join();
 
@@ -243,65 +203,6 @@ public class HypixelConnection implements HypixelHttpClient {
 
                     return jsonObjects;
                 });
-    }
-
-    //TODO remove complexity
-    private Stream<JsonObject> reloadTalismen(int page, int retry) {
-        String baseUrl = "https://api.hypixel.net/skyblock/auctions?page=";
-
-        Request request = new Request.Builder()
-                .url(baseUrl + page)
-                .get()
-                .build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful() || response.body() == null) {
-                if (retry < 3) {
-                    return reloadTalismen(page, retry + 1);
-                }
-
-                if (response.code() != 404) {
-                    logger.error("Unsuccessful auctions request: {}", response.code());
-                }
-
-                return Stream.empty();
-            }
-
-            JsonObject baseObject = JsonParser.parseString(response.body().string()).getAsJsonObject();
-            List<JsonObject> result = new ArrayList<>();
-
-            for(JsonElement jsonElement : baseObject.getAsJsonArray("auctions").asList()) {
-                JsonObject auctionObject = jsonElement.getAsJsonObject();
-                if (auctionObject.getAsJsonPrimitive("category").getAsString().equalsIgnoreCase("accessories")) {
-                    NBTCompound nbtData =
-                            NBTReader.readBase64(auctionObject.getAsJsonPrimitive("item_bytes").getAsString());
-
-                    nbtData = nbtData.getList("i").getCompound(0);
-
-                    nbtData = nbtData.getCompound("tag");
-
-                    nbtData = nbtData.getCompound("ExtraAttributes");
-
-                    if (nbtData.containsKey("rarity_upgrades")) {
-                        result.add(auctionObject);
-                    }
-                }
-            }
-
-            if (baseObject.getAsJsonPrimitive("totalPages").getAsInt() <= page + 1) {
-                return result.stream();
-            }
-
-            return Stream.concat(result.stream(), reloadTalismen(++page, 0));
-        }
-        catch (IOException ioException) {
-            if (retry < 3) {
-                return reloadTalismen(page, retry + 1);
-            }
-
-            logger.error("Auction request threw an error.", ioException);
-            return Stream.empty();
-        }
     }
 
     public StatusReply.Session getOnlineStatus(String ign) {
