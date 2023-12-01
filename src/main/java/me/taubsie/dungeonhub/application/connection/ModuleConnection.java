@@ -1,45 +1,12 @@
 package me.taubsie.dungeonhub.application.connection;
 
-import com.google.gson.Gson;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
-import me.taubsie.dungeonhub.common.DungeonHubService;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.Request;
-import org.slf4j.Logger;
 
-import java.lang.reflect.Type;
-import java.util.Optional;
-import java.util.function.Function;
-
-public interface ModuleConnection {
+public interface ModuleConnection extends Connection {
     String getModuleApiPrefix();
-
-    Logger getLogger();
-
-    default Gson getGson() {
-        return DungeonHubService.getInstance().getGson();
-    }
-
-    default <T> T fromJson(String json, Class<T> clazz) {
-        return getGson().fromJson(json, clazz);
-    }
-
-    default <T> T fromJson(String json, Type typeOfT) {
-        return getGson().fromJson(json, typeOfT);
-    }
-
-    default <T> String toJson(T entity) {
-        return getGson().toJson(entity);
-    }
-
-    default String getApiPrefix() {
-        return "api/v1/";
-    }
-
-    default MediaType getJsonMediaType() {
-        return MediaType.parse("application/json; charset=utf-8");
-    }
 
     default Request.Builder getApiRequest(String uri) {
         return getApiRequest(getApiUrl(uri).build());
@@ -71,11 +38,7 @@ public interface ModuleConnection {
                 .newBuilder();
     }
 
-    default <T> Optional<T> executeRequest(Request request, Function<String, T> function) {
-        return DungeonHubConnection.getInstance().executeRequest(request, function);
-    }
-
-    default Optional<String> executeRequest(Request request) {
-        return DungeonHubConnection.getInstance().executeRequest(request);
+    default String getApiPrefix() {
+        return "api/v1/";
     }
 }
