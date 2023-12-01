@@ -1,7 +1,5 @@
 package me.taubsie.dungeonhub.application.connection;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import lombok.AccessLevel;
 import lombok.Getter;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
@@ -179,54 +177,6 @@ public class DungeonHubConnection {
         catch (IOException | NullPointerException exception) {
             return null;
         }
-    }
-
-    public String[] isFlagged(String user, boolean discord) {
-        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "user")
-                .newBuilder()
-                .addQueryParameter("user", user)
-                .addQueryParameter("type", discord ? "discord" : "uuid")
-                .build();
-
-        Request request = new Request.Builder()
-                .url(httpUrl)
-                .addHeader(AUTHORIZATION, ConfigProperty.SAFETY_API_KEY.getValue())
-                .get()
-                .build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            ResponseBody responseBody = response.body();
-            if (!response.isSuccessful() || responseBody == null) {
-                return new String[0];
-            }
-
-            String body = responseBody.string();
-            JsonObject responseObject = JsonParser.parseString(body).getAsJsonObject();
-            responseObject = responseObject.getAsJsonObject("data");
-
-            if (responseObject.has("scammer")) {
-                return new String[]{
-                        "Scammer",
-                        responseObject
-                                .getAsJsonObject("scammer")
-                                .getAsJsonPrimitive("reason")
-                                .getAsString()
-                };
-            } else if (responseObject.has("ratter")) {
-                return new String[]{
-                        "Ratter",
-                        responseObject
-                                .getAsJsonObject("ratter")
-                                .getAsJsonPrimitive("reason")
-                                .getAsString()
-                };
-            }
-        }
-        catch (IOException ioException) {
-            logger.error(null, ioException);
-        }
-
-        return new String[0];
     }
 
     public Request.Builder getApiRequest(String uri) {

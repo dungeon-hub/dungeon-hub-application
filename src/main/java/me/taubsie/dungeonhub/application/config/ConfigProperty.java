@@ -10,14 +10,22 @@ import java.util.stream.Collectors;
 
 @Getter
 public enum ConfigProperty implements Nameable {
+    DISCORD_BOT_TOKEN("discord-bot.token"),
+
+    //Internal API
     API_URL("api.url"),
     API_USER("api.user"),
     API_PASSWORD("api.password"),
     CDN_URL("cdn.public-url"),
-    DISCORD_BOT_TOKEN("discord-bot.token"),
+
+    //External APIs
+    HYPIXEL_API_KEY("hypixel-api.key"),
+
     SAFETY_API_KEY("safety-api.key"),
     SAFETY_API_URL("safety-api.url"),
-    HYPIXEL_API_KEY("hypixel-api.key");
+
+    JERRY_API_KEY("jerry.key"),
+    JERRY_API_URL("jerry.url");
 
     final String name;
 

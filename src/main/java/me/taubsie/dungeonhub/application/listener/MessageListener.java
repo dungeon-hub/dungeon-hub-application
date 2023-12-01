@@ -139,7 +139,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
     private void sendPlayerDataEmbed(String ign, ServerTextChannel channel) {
         EmbedBuilder playerDataEmbed;
         try {
-            playerDataEmbed = ApplicationService.getInstance().getPlayerDataEmbed(ign);
+            playerDataEmbed = ApplicationService.getInstance().getPlayerDataEmbed(ign, null);
 
             channel.sendMessage(playerDataEmbed,
                     new ActionRowBuilder().addComponents(
@@ -174,7 +174,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
                                         try {
                                             EmbedBuilder embed =
-                                                    ApplicationService.getInstance().getPlayerDataEmbed(ign);
+                                                    ApplicationService.getInstance().getPlayerDataEmbed(ign, null);
 
                                             updater.removeAllEmbeds()
                                                     .addEmbed(embed);

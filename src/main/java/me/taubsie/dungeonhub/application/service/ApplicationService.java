@@ -8,10 +8,13 @@ import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
 import com.google.zxing.qrcode.QRCodeWriter;
 import lombok.extern.slf4j.Slf4j;
+import me.taubsie.dungeonhub.application.classes.FlagResponse;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
+import me.taubsie.dungeonhub.application.connection.FlaggingConnection;
 import me.taubsie.dungeonhub.application.connection.HypixelConnection;
+import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException;
@@ -375,7 +378,7 @@ public class ApplicationService {
     //TODO maybe make it possible to update the embed in 2 intervals, since the mojang+safety+jerry api takes long,
     // as well as the skycrypt api takes long too
     //probably first load skycrypt, then the rest?
-    public EmbedBuilder getPlayerDataEmbed(String ign) throws FailedToLoadEmbedException {
+    public EmbedBuilder getPlayerDataEmbed(String ign, Long discordId) throws FailedToLoadEmbedException {
         Map<String, String> skycryptData = HypixelConnection.getInstance().getSkyCryptData(ign);
 
         String description = skycryptData.getOrDefault("description", "Couldn't load SkyCrypt data. Please try again " +
@@ -389,28 +392,44 @@ public class ApplicationService {
                 .setUrl("https://sky.shiiyu.moe/stats/" + ign)
                 .setThumbnail(skycryptData.getOrDefault("icon", null));
 
-        /*String uuid = ConnectionService.getInstance()
-                .getUUIDByName(ign);
+        UUID uuid = MojangConnection.getInstance().getUUIDByName(ign);
 
-        if(uuid != null) {
-            String[] flagged = ConnectionService.getInstance()
-                    .isFlagged(uuid, false);
+        List<FlagResponse> flagResponses = FlaggingConnection.getInstance().isFlagged(uuid, discordId)
+                .stream()
+                .filter(flagResponse -> flagResponse.uuid() != null || flagResponse.discord() != null)
+                .filter(flagResponse -> (flagResponse.uuid() != null && flagResponse.uuid().flagged())
+                        || (flagResponse.discord() != null && flagResponse.discord().flagged()))
+                .toList();
 
-            if(flagged.length == 0) {
-                embed.addInlineField("Flagged", "User is not flagged.");
-            } else {
-                embed.addInlineField("Flagged", "User is flagged, this means it is not safe to interact with them.\n"
-                        + String.join(": ", flagged));
-            }
-        }*/
-
-        embed.addInlineField("Flagged", "Please remember to run `/lookup`.");
+        if (!flagResponses.isEmpty()) {
+            embed.addField("Flagged", "**This user is flagged, which means it's not safe to interact with them.**\n"
+                            + formatFlagDetails(flagResponses))
+                    .setColor(EmbedColor.NEGATIVE.getColor());
+        } else {
+            embed.setColor(EmbedColor.POSITIVE.getColor());
+        }
 
         if (!skycryptData.containsKey("description") || !skycryptData.containsKey("title")) {
             throw new FailedToLoadEmbedException(embed);
         }
 
         return embed;
+    }
+
+    public String formatFlagDetails(List<FlagResponse> flagged) {
+        List<String> result = new ArrayList<>();
+
+        for(FlagResponse flagResponse : flagged) {
+            if (flagResponse.discord() != null && flagResponse.discord().flagged()) {
+                result.add("- " + flagResponse.name() + " (by discord): " + flagResponse.discord().format());
+            }
+
+            if (flagResponse.uuid() != null && flagResponse.uuid().flagged()) {
+                result.add("- " + flagResponse.name() + " (by UUID): " + flagResponse.uuid().format());
+            }
+        }
+
+        return String.join("\n", result);
     }
 
     public EmbedBuilder getCarryTypeEmbed(CarryTypeModel carryType) {
