@@ -31,7 +31,7 @@ import java.util.Map;
 @Getter
 public class DiscordConnection implements StartupListener {
     private static final Logger logger = LoggerFactory.getLogger(DiscordConnection.class);
-    private static final String LINE = "--------------------";
+    private static final String LINE = "----------------------------------------";
 
     private static DiscordConnection instance;
     private final Map<Long, CarryInformation> carryInformation = new HashMap<>();
