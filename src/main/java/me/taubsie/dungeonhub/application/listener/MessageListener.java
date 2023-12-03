@@ -7,6 +7,7 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.enums.IdList;
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException;
+import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.common.DungeonHubService;
@@ -145,6 +146,13 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                     new ActionRowBuilder().addComponents(
                             getSkyCryptButton(ign)
                     ).build());
+        }
+        catch (PlayerNotFoundException playerNotFoundException) {
+            playerDataEmbed = ApplicationService.getInstance().getErrorEmbed(playerNotFoundException);
+
+            //TODO load scammer data from discord?
+
+            channel.sendMessage(playerDataEmbed);
         }
         catch (FailedToLoadEmbedException failedToLoadEmbedException) {
             playerDataEmbed = failedToLoadEmbedException.getEmbed();
@@ -324,7 +332,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                                 .setTitle("Carry accepted.")
                                                 .setColor(EmbedColor.POSITIVE.getColor())
                                                 .addInlineField("Number of carries",
-                                                        String.valueOf(queueModel.getTime()))
+                                                        String.valueOf(queueModel.getAmount()))
                                                 .addInlineField("Type of carry",
                                                         queueModel.getCarryTier().getDisplayName() + " - " + queueModel.getCarryDifficulty().getDisplayName())
                                                 .addInlineField("Player",
