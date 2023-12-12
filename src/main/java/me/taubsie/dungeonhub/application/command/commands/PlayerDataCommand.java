@@ -38,7 +38,7 @@ public class PlayerDataCommand extends Command {
 
                 delayedResponseBuilder.setHighLevelComponents(new ActionRowBuilder().addComponents(
                         new ButtonBuilder().setStyle(ButtonStyle.LINK)
-                                .setUrl("https://sky.shiiyu.moe/stats/" + ign)
+                                .setUrl("https://cupcake.shiiyu.moe/stats/" + ign)
                                 .setLabel("SkyCrypt")
                                 .build()
                 ).build());

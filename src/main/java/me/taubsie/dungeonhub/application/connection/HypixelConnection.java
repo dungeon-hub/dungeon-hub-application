@@ -1,6 +1,8 @@
 package me.taubsie.dungeonhub.application.connection;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadException;
 import net.hypixel.api.HypixelAPI;
@@ -122,7 +124,7 @@ public class HypixelConnection implements HypixelHttpClient {
 
     public Map<String, String> getSkyCryptData(String ign) {
         Map<String, String> result = new HashMap<>();
-        String url = "https://sky.shiiyu.moe/stats/" + ign;
+        String url = "https://cupcake.shiiyu.moe/stats/" + ign;
 
         Request request = new Request.Builder()
                 .url(url)
