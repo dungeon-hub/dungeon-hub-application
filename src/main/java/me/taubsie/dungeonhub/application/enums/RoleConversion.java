@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.enums;
 
+import lombok.Getter;
 import me.taubsie.dungeonhub.application.classes.ServerProperty;
 import me.taubsie.dungeonhub.common.OldCarryRole;
 import org.javacord.api.entity.permission.Role;
@@ -25,6 +26,7 @@ public enum RoleConversion {
     KUUDRA_INFERNAL_ROLE(OldCarryRole.INFERNAL, ServerProperty.KUUDRA_INFERNAL_ROLE);
 
     private final OldCarryRole oldCarryRole;
+    @Getter
     private final ServerProperty serverProperty;
 
     RoleConversion(OldCarryRole oldCarryRole, ServerProperty serverProperty) {
@@ -34,10 +36,6 @@ public enum RoleConversion {
 
     public OldCarryRole getCarryRole() {
         return oldCarryRole;
-    }
-
-    public ServerProperty getServerProperty() {
-        return serverProperty;
     }
 
     public static RoleConversion[] getSlayerCarryRoles() {

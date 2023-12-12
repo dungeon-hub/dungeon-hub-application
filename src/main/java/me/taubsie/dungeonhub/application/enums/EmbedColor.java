@@ -1,7 +1,10 @@
 package me.taubsie.dungeonhub.application.enums;
 
+import lombok.Getter;
+
 import java.awt.*;
 
+@Getter
 public enum EmbedColor {
     POSITIVE(new Color(0, 255, 0)),
     NEGATIVE(new Color(255, 0, 0)),
@@ -12,9 +15,5 @@ public enum EmbedColor {
 
     EmbedColor(Color color) {
         this.color = color;
-    }
-
-    public Color getColor() {
-        return color;
     }
 }

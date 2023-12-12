@@ -110,7 +110,7 @@ public class QueueConnection implements ModuleConnection {
         return executeRequest(request, CarryQueueModel::fromJson);
     }
 
-    public void deleteQueue(Long id) {
+    public boolean deleteQueue(Long id) {
         HttpUrl url = getApiUrl(id)
                 .build();
 
@@ -118,7 +118,7 @@ public class QueueConnection implements ModuleConnection {
                 .delete()
                 .build();
 
-        executeRequest(request);
+        return executeRequest(request).isPresent();
     }
 
     public Optional<LoggedCarryModel> logQueue(Long id, CarryQueueUpdateModel updateModel) {

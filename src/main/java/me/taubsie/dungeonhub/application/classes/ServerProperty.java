@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.classes;
 
+import lombok.Getter;
 import me.taubsie.dungeonhub.application.enums.IdList;
 import me.taubsie.dungeonhub.application.service.ServerService;
 import me.taubsie.dungeonhub.common.Nameable;
@@ -47,7 +48,9 @@ public enum ServerProperty implements Nameable {
     KUUDRA_INFERNAL_ROLE("id_kuudra_infernal_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED});
 
     private final String name;
+    @Getter
     private final ServerPropertyType propertyType;
+    @Getter
     private final boolean enabled;
     private final ServerProperty[] relatedProperties;
 
@@ -89,10 +92,6 @@ public enum ServerProperty implements Nameable {
         return name;
     }
 
-    public ServerPropertyType getPropertyType() {
-        return propertyType;
-    }
-
     public Optional<String> getValue(long serverId) {
         return ServerService.getInstance().getActualServerProperty(serverId, this);
     }
@@ -108,9 +107,5 @@ public enum ServerProperty implements Nameable {
                 .allMatch(s -> s.equalsIgnoreCase("true"))
                 && Arrays.stream(relatedProperties)
                 .allMatch(serverProperty -> serverProperty.isEnabled(serverId));
-    }
-
-    public boolean isEnabled() {
-        return enabled;
     }
 }

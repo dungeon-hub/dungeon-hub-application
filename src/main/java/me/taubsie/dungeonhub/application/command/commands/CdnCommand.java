@@ -5,12 +5,15 @@ import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.enums.KnownStaticResource;
+import me.taubsie.dungeonhub.application.exceptions.MissingPermissionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
+import me.taubsie.dungeonhub.application.service.PermissionService;
 import org.javacord.api.entity.Attachment;
 import org.javacord.api.entity.message.component.ActionRowBuilder;
 import org.javacord.api.entity.message.component.ButtonBuilder;
 import org.javacord.api.entity.message.component.ButtonStyle;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -33,6 +36,12 @@ public class CdnCommand extends Command {
 
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
+        User user = getUser();
+
+        if (!PermissionService.getInstance().mayUseCdn(user)) {
+            throw new MissingPermissionException();
+        }
+
         SlashCommandInteractionOption firstOption =
                 getOptionAtIndex(slashCommandCreateEvent.getSlashCommandInteraction(), 0);
 

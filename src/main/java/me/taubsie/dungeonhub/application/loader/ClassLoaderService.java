@@ -45,7 +45,7 @@ public class ClassLoaderService {
         }
         catch (InstantiationException | IllegalAccessException | InvocationTargetException |
                NoSuchMethodException | ClassCastException exception) {
-            exception.printStackTrace();
+            logger.error(null, exception);
         }
     }
 
@@ -70,7 +70,6 @@ public class ClassLoaderService {
             }
             catch (InvocationTargetException | InstantiationException | IllegalAccessException |
                    NoSuchMethodException exception) {
-                exception.printStackTrace();
                 logger.error("Couldn't get instance of given listener \"" + entry.getKey().toString() + "\", " +
                         "causing it to not be executed on startup.", exception);
             }
@@ -140,7 +139,7 @@ public class ClassLoaderService {
             );
         }
         catch (IOException ioException) {
-            ioException.printStackTrace();
+            logger.error(null, ioException);
         }
 
         return classes;
@@ -168,7 +167,7 @@ public class ClassLoaderService {
                     .forEach(cls -> classes.put((Class<T>) cls, cls.getAnnotation(annotation)));
         }
         catch (IOException ioException) {
-            ioException.printStackTrace();
+            logger.error(null, ioException);
         }
 
         return classes;
@@ -233,7 +232,7 @@ public class ClassLoaderService {
             }
             catch (InvocationTargetException | InstantiationException | IllegalAccessException |
                    NoSuchMethodException exception) {
-                exception.printStackTrace();
+                logger.error(null, exception);
             }
         }
     }
@@ -275,7 +274,7 @@ public class ClassLoaderService {
                 }
             }
             catch (CompletionException completionException) {
-                completionException.printStackTrace();
+                logger.error(null, completionException);
             }
         }
     }

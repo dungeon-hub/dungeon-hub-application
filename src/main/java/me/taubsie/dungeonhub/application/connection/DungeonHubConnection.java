@@ -95,10 +95,7 @@ public class DungeonHubConnection {
                 .post(requestBody)
                 .build();
 
-        UserLoginVerificationModel userLoginVerificationModel = executeRequest(request,
-                UserLoginVerificationModel::fromJson).orElseThrow();
-
-        return userLoginVerificationModel;
+        return executeRequest(request, UserLoginVerificationModel::fromJson).orElseThrow();
     }
 
     public synchronized void refreshToken() {
