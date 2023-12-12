@@ -60,7 +60,7 @@ public class PermissionService {
                 .getValue(server.getId())
                 .flatMap(server::getRoleById)
                 .map(role -> role.hasUser(user))
-                .flatMap(bool -> bool ? Optional.of(true) : Optional.empty())
+                .flatMap(bool -> Boolean.TRUE.equals(bool) ? Optional.of(true) : Optional.empty())
                 .orElseGet(() -> server.getAllowedPermissions(user).contains(PermissionType.ADMINISTRATOR));
     }
 

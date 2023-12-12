@@ -3,7 +3,7 @@ package me.taubsie.dungeonhub.application.exceptions;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 
 public class FailedToLoadEmbedException extends FailedToLoadException {
-    private final EmbedBuilder embedBuilder;
+    private final transient EmbedBuilder embedBuilder;
 
     public FailedToLoadEmbedException(EmbedBuilder embedBuilder) {
         super("Failed to load the embed data.");

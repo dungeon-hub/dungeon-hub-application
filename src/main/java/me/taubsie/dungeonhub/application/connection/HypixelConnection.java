@@ -184,27 +184,6 @@ public class HypixelConnection implements HypixelHttpClient {
                 .map(JsonPrimitive::getAsString);
     }
 
-    //TODO test if the retry code even works
-    //TODO use this instead of reloadTalismen()
-    private CompletableFuture<Set<JsonObject>> loadAuctions(int page) {
-        return hypixelApi.getSkyBlockAuctions(page)
-                .thenApply(reply -> {
-                    Set<JsonObject> jsonObjects = new HashSet<>();
-
-                    for(JsonElement jsonElement : reply.getAuctions().asList()) {
-                        if (jsonElement.isJsonObject()) {
-                            jsonObjects.add(jsonElement.getAsJsonObject());
-                        }
-                    }
-
-                    if (reply.hasNextPage()) {
-                        jsonObjects.addAll(loadAuctions(page + 1).join());
-                    }
-
-                    return jsonObjects;
-                });
-    }
-
     public StatusReply.Session getOnlineStatus(String ign) {
         UUID uuid = MojangConnection.getInstance().getUUIDByName(ign);
 
