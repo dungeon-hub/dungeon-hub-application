@@ -26,14 +26,8 @@ import java.util.Optional;
 
 @CommandParameters(name = "cdn", description = "Manage the CDN", enabledForUsers = {356134481452597250L,
         531094512819240960L, 564353701003657216L, 574048571364605992L, 1116284449190064220L, 795048346955677748L,
-        884589309037011015L, 346292488837005334L},
-        enabledInDms = true)
+        884589309037011015L, 346292488837005334L}, enabledInDms = true)
 public class CdnCommand extends Command {
-    @Override
-    public long[] getEnabledServers() {
-        return new long[]{693263712626278553L, 1023684107877761196L};
-    }
-
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         User user = getUser();
@@ -48,7 +42,7 @@ public class CdnCommand extends Command {
         if (firstOption.getName().equalsIgnoreCase("static")) {
             KnownStaticResource resource = getEnumOption(firstOption, "file", KnownStaticResource.class);
 
-            String url = ContentConnection.getInstance().getApiUrl(resource.getPath()).toString();
+            String url = ContentConnection.getInstance().getStaticUrl(resource.getPath()).toString();
 
             respondEphemeral(ApplicationService.getInstance()
                             .getEmbed()
@@ -87,7 +81,7 @@ public class CdnCommand extends Command {
 
                     EmbedBuilder embedBuilder;
                     if (fileUrl.isPresent()) {
-                        String url = ContentConnection.getInstance().getApiUrl(fileUrl.get()).toString();
+                        String url = ContentConnection.getInstance().getCdnUrl(fileUrl.get()).toString();
 
                         embedBuilder = ApplicationService.getInstance()
                                 .getEmbed()

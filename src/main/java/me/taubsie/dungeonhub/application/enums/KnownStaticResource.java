@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.enums;
 
+import lombok.Getter;
 import me.taubsie.dungeonhub.common.Nameable;
 
 //TODO add more
@@ -11,23 +12,24 @@ public enum KnownStaticResource implements Nameable {
     BLAZE("blaze.png", "Blaze"),
     ENDERMAN("enderman.png", "Enderman"),
     MAGMA_CUBE("magma_cube.png", "Magma cube"),
+    WITHER("wither.webp", "Wither"),
 
     BONZO("bonzo.png", "Bonzo"),
     SCARF("scarf.png", "Scarf"),
     PROFESSOR("professor.png", "Professor"),
+    THORN("thorn.png", "Thorn"),
+    LIVID("livid.png", "Livid"),
+    SADAN("sadan.png", "Sadan"),
 
-    RED_SKULL("red_skull.png", "Redstone skull");
+    REDSTONE_KEY("redstone_key.png", "Redstone Key");
 
+    @Getter
     final String path;
     final String displayName;
 
     KnownStaticResource(String path, String displayName) {
         this.path = path;
         this.displayName = displayName;
-    }
-
-    public String getPath() {
-        return "static/" + path;
     }
 
     @Override

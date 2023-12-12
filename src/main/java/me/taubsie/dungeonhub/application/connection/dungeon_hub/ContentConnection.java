@@ -21,17 +21,23 @@ public class ContentConnection {
     }
 
     private HttpUrl.Builder getApiUrl() {
-        String prefix = ConfigProperty.CDN_URL.getValue();
-        if(prefix == null) {
-            prefix = ConfigProperty.API_URL + "cdn";
-        } else {
-            prefix = prefix.substring(0, prefix.length() - 1);
-        }
-
-        return HttpUrl.get(prefix).newBuilder();
+        return HttpUrl.get(ConfigProperty.API_URL + "cdn/").newBuilder();
     }
 
     public HttpUrl.Builder getApiUrl(String uri) {
+        return HttpUrl.get(ConfigProperty.API_URL + "cdn/" + uri).newBuilder();
+    }
+
+    public HttpUrl.Builder getStaticUrl(String uri) {
+        String prefix = ConfigProperty.STATIC_URL.getValue();
+        if(prefix == null) {
+            return getCdnUrl("static/" + uri);
+        }
+
+        return HttpUrl.get(prefix + uri).newBuilder();
+    }
+
+    public HttpUrl.Builder getCdnUrl(String uri) {
         String prefix = ConfigProperty.CDN_URL.getValue();
         if(prefix == null) {
             prefix = ConfigProperty.API_URL + "cdn/";

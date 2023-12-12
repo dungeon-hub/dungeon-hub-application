@@ -72,7 +72,7 @@ public class ApplicationService {
     }
 
     public String getServerLink() {
-        return "discord.gg/dungeons";
+        return "discord.dungeon-hub.net";
     }
 
     public String getFooter() {
