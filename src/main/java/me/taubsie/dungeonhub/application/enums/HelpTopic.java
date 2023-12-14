@@ -2,6 +2,7 @@ package me.taubsie.dungeonhub.application.enums;
 
 import lombok.Getter;
 import me.taubsie.dungeonhub.application.classes.HelpDisplay;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.exceptions.MustBeServerException;
 import me.taubsie.dungeonhub.common.Nameable;
@@ -125,10 +126,10 @@ public enum HelpTopic implements Nameable {
                     embedFields.put(field.getKey().getDisplayName(), value);
                 }
 
-                return new HelpDisplay(description, EmbedColor.DEFAULT, embedFields);
+                return new HelpDisplay(description, null, EmbedColor.DEFAULT, embedFields);
             }),
     VERIFICATION("verification", "How to verify",
-            (user, server) -> HelpDisplay.fromDescription(
+            (user, server) -> HelpDisplay.fromDescriptionAndAttachment(
                     "To link your Minecraft account to your Discord account:\n" +
                             "## 1. On Hypixel\n" +
                             "- Join any lobby using `/lobby`\n" +
@@ -143,7 +144,8 @@ public enum HelpTopic implements Nameable {
                             "on Hypixel. If you have an issue with verification and only recently changed your " +
                             "settings, wait a few minutes and try again!\n" +
                             "\n" +
-                            "For a video example, click [here](https://www.youtube.com/watch?v=dQw4w9WgXcQ)."
+                            "You should find a video example below.",
+                    ContentConnection.getInstance().getStaticUrl(KnownStaticResource.VERIFICATION_EXAMPLE.getPath()).build().url()
             ));
 
     final String name;
