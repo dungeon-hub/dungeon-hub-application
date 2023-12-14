@@ -8,6 +8,7 @@ import me.taubsie.dungeonhub.application.exceptions.MustBeServerException;
 import me.taubsie.dungeonhub.common.Nameable;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
+import okhttp3.HttpUrl;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.jetbrains.annotations.Nullable;
@@ -126,10 +127,10 @@ public enum HelpTopic implements Nameable {
                     embedFields.put(field.getKey().getDisplayName(), value);
                 }
 
-                return new HelpDisplay(description, null, EmbedColor.DEFAULT, embedFields);
+                return new HelpDisplay(description, EmbedColor.DEFAULT, embedFields);
             }),
     VERIFICATION("verification", "How to verify",
-            (user, server) -> HelpDisplay.fromDescriptionAndAttachment(
+            (user, server) -> HelpDisplay.fromDescription(
                     "To link your Minecraft account to your Discord account:\n" +
                             "## 1. On Hypixel\n" +
                             "- Join any lobby using `/lobby`\n" +
@@ -144,8 +145,11 @@ public enum HelpTopic implements Nameable {
                             "on Hypixel. If you have an issue with verification and only recently changed your " +
                             "settings, wait a few minutes and try again!\n" +
                             "\n" +
-                            "You should find a video example below.",
-                    ContentConnection.getInstance().getStaticUrl(KnownStaticResource.VERIFICATION_EXAMPLE.getPath()).build().url()
+                            "You can find a video example [here]("
+                            //+ ContentConnection.getInstance().getStaticUrl(KnownStaticResource.VERIFICATION_EXAMPLE
+                            // .getPath()).build().url()
+                            + HttpUrl.get("https://static.dungeon-hub.net/verification-example.mp4")
+                            + ")."
             ));
 
     final String name;
