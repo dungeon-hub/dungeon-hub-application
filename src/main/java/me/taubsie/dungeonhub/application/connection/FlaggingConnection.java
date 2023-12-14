@@ -45,8 +45,7 @@ public class FlaggingConnection implements Connection {
     }
 
     public Optional<FlagDetail> isSafetyFlagged(UUID uuid) {
-        //TODO remove v1/ prefix from config property
-        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "user")
+        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "v1/user")
                 .newBuilder()
                 .addQueryParameter("user", uuid.toString())
                 .addQueryParameter("type", "uuid")
@@ -63,8 +62,7 @@ public class FlaggingConnection implements Connection {
     }
 
     public Optional<FlagDetail> isSafetyFlagged(Long id) {
-        //TODO remove v1/ prefix from config property
-        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "user")
+        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "v1/user")
                 .newBuilder()
                 .addQueryParameter("user", String.valueOf(id))
                 .addQueryParameter("type", "discord")
