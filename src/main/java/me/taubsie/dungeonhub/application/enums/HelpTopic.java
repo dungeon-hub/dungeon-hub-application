@@ -8,7 +8,6 @@ import me.taubsie.dungeonhub.application.exceptions.MustBeServerException;
 import me.taubsie.dungeonhub.common.Nameable;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
-import okhttp3.HttpUrl;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +43,7 @@ public enum HelpTopic implements Nameable {
 
                 Map<CarryTypeModel, List<CarryDifficultyModel>> carryDifficultiesByCarryType = new HashMap<>();
 
-                for(CarryDifficultyModel carryDifficulty : carryDifficulties) {
+                for (CarryDifficultyModel carryDifficulty : carryDifficulties) {
                     if (carryDifficultiesByCarryType.containsKey(carryDifficulty.getCarryType())) {
                         carryDifficultiesByCarryType.get(carryDifficulty.getCarryType()).add(carryDifficulty);
                     } else {
@@ -53,13 +52,13 @@ public enum HelpTopic implements Nameable {
                     }
                 }
 
-                for(Map.Entry<CarryTypeModel, List<CarryDifficultyModel>> entry :
+                for (Map.Entry<CarryTypeModel, List<CarryDifficultyModel>> entry :
                         carryDifficultiesByCarryType.entrySet()) {
                     if (entry.getValue().isEmpty()) {
                         continue;
                     }
 
-                    for(CarryDifficultyModel carryDifficulty : entry.getValue()) {
+                    for (CarryDifficultyModel carryDifficulty : entry.getValue()) {
                         boolean hasMultipleWithSameName = entry.getValue().stream()
                                 .filter(otherDifficulty -> otherDifficulty.getDisplayName().equalsIgnoreCase(carryDifficulty.getDisplayName()))
                                 .count() >= 2;
@@ -116,7 +115,7 @@ public enum HelpTopic implements Nameable {
 
                 Map<String, String> embedFields = new HashMap<>();
 
-                for(Map.Entry<CarryTypeModel, Map<String, Integer>> field : fields.entrySet()) {
+                for (Map.Entry<CarryTypeModel, Map<String, Integer>> field : fields.entrySet()) {
                     String value = String.join("\n", field.getValue()
                             .entrySet().stream()
                             .sorted(Map.Entry.<String, Integer>comparingByValue()
@@ -146,10 +145,7 @@ public enum HelpTopic implements Nameable {
                             "settings, wait a few minutes and try again!\n" +
                             "\n" +
                             "You can find a video example [here]("
-                            //TODO switch over to this once changed code is committed
-                            //+ ContentConnection.getInstance().getStaticUrl(KnownStaticResource.VERIFICATION_EXAMPLE
-                            // .getPath()).build().url()
-                            + HttpUrl.get("https://static.dungeon-hub.net/verification-example.mp4")
+                            + ContentConnection.getInstance().getStaticUrl(KnownStaticResource.VERIFICATION_EXAMPLE.getPath()).build().url()
                             + ")."
             ));
 
