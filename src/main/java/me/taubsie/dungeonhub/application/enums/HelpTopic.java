@@ -146,6 +146,7 @@ public enum HelpTopic implements Nameable {
                             "settings, wait a few minutes and try again!\n" +
                             "\n" +
                             "You can find a video example [here]("
+                            //TODO switch over to this once changed code is committed
                             //+ ContentConnection.getInstance().getStaticUrl(KnownStaticResource.VERIFICATION_EXAMPLE
                             // .getPath()).build().url()
                             + HttpUrl.get("https://static.dungeon-hub.net/verification-example.mp4")
