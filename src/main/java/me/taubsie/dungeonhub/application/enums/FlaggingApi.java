@@ -6,6 +6,8 @@ import me.taubsie.dungeonhub.application.classes.FlagResponse;
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -17,8 +19,15 @@ public enum FlaggingApi {
     JERRY(
             "Jerry",
             uuid -> FlaggingConnection.getInstance().isJerryFlagged(uuid),
-            aLong -> FlaggingConnection.getInstance().isJerryFlagged(aLong)
+            discordId -> FlaggingConnection.getInstance().isJerryFlagged(discordId)
+    ),
+    HYPIXEL_SAFETY(
+            "Hypixel Safety",
+            uuid -> FlaggingConnection.getInstance().isSafetyFlagged(uuid),
+            discordId -> FlaggingConnection.getInstance().isSafetyFlagged(discordId)
     );
+
+    private static final Logger logger = LoggerFactory.getLogger(FlaggingApi.class);
 
     @Getter
     final String name;
@@ -61,6 +70,8 @@ public enum FlaggingApi {
             );
         }
         catch (CompletionException completionException) {
+            logger.error(null, completionException);
+
             throw new CommandExecutionException() {
                 @Override
                 public String getMessage() {

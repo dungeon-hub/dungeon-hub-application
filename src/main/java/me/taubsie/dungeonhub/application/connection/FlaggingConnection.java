@@ -1,23 +1,16 @@
 package me.taubsie.dungeonhub.application.connection;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import me.taubsie.dungeonhub.application.classes.FlagDetail;
 import me.taubsie.dungeonhub.application.classes.FlagResponse;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.enums.FlaggingApi;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public class FlaggingConnection implements Connection {
     private static final Logger logger = LoggerFactory.getLogger(FlaggingConnection.class);
@@ -49,6 +42,79 @@ public class FlaggingConnection implements Connection {
                 .parallel()
                 .map(flaggingApi -> flaggingApi.execute(uuid, id))
                 .toList();
+    }
+
+    public Optional<FlagDetail> isSafetyFlagged(UUID uuid) {
+        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "user")
+                .newBuilder()
+                .addQueryParameter("user", uuid.toString())
+                .addQueryParameter("type", "uuid")
+                .build();
+
+        Request request = new Request.Builder()
+                .url(httpUrl)
+                .addHeader("Authorization", ConfigProperty.SAFETY_API_KEY.getValue())
+                .get()
+                .build();
+
+        return executeRequest(request, s -> fromJson(s, JsonObject.class))
+                .map(this::fromSafetyResponse);
+    }
+
+    public Optional<FlagDetail> isSafetyFlagged(Long id) {
+        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "user")
+                .newBuilder()
+                .addQueryParameter("user", String.valueOf(id))
+                .addQueryParameter("type", "discord")
+                .build();
+
+        Request request = new Request.Builder()
+                .url(httpUrl)
+                .addHeader("Authorization", ConfigProperty.SAFETY_API_KEY.getValue())
+                .get()
+                .build();
+
+        return executeRequest(request, s -> fromJson(s, JsonObject.class))
+                .map(this::fromSafetyResponse);
+    }
+
+    public FlagDetail fromSafetyResponse(JsonObject rootObject) {
+        JsonObject dataObject = rootObject.getAsJsonObject("data");
+
+        boolean flagged = dataObject.has("ratter") || dataObject.has("scammer");
+
+        FlagDetail.FlagDetailBuilder builder = FlagDetail.builder()
+                .flagged(flagged);
+
+        JsonObject detailObject = null;
+        if (dataObject.has("ratter")) {
+            detailObject = dataObject.getAsJsonObject("ratter");
+        } else if (dataObject.has("scammer")) {
+            detailObject = dataObject.getAsJsonObject("scammer");
+        }
+
+        if (detailObject != null) {
+            builder.reason(detailObject.getAsJsonPrimitive("reason").getAsString());
+
+            if (detailObject.has("evidence")) {
+                List<String> evidences = new ArrayList<>();
+                detailObject.getAsJsonArray("evidence")
+                        .forEach(jsonElement -> evidences.add(jsonElement.getAsString()));
+
+                builder.evidence(String.join(", ", evidences));
+            }
+
+            if (detailObject.has("moderator")) {
+                try {
+                    builder.staff(detailObject.getAsJsonPrimitive("moderator").getAsLong());
+                }
+                catch (NumberFormatException ignored) {
+                    //ignored since this basically only applies if the id isn't a number, meaning this shouldn't be set
+                }
+            }
+        }
+
+        return builder.build();
     }
 
     public Optional<FlagDetail> isJerryFlagged(UUID uuid) {
@@ -108,53 +174,5 @@ public class FlaggingConnection implements Connection {
         }
 
         return builder.build();
-    }
-
-    public String[] isFlagged(String user, boolean discord) {
-        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "user")
-                .newBuilder()
-                .addQueryParameter("user", user)
-                .addQueryParameter("type", discord ? "discord" : "uuid")
-                .build();
-
-        Request request = new Request.Builder()
-                .url(httpUrl)
-                .addHeader("Authorization", ConfigProperty.SAFETY_API_KEY.getValue())
-                .get()
-                .build();
-
-        try (Response response = DungeonHubConnection.getInstance().getHttpClient().newCall(request).execute()) {
-            ResponseBody responseBody = response.body();
-            if (!response.isSuccessful() || responseBody == null) {
-                return new String[0];
-            }
-
-            String body = responseBody.string();
-            JsonObject responseObject = JsonParser.parseString(body).getAsJsonObject();
-            responseObject = responseObject.getAsJsonObject("data");
-
-            if (responseObject.has("scammer")) {
-                return new String[]{
-                        "Scammer",
-                        responseObject
-                                .getAsJsonObject("scammer")
-                                .getAsJsonPrimitive("reason")
-                                .getAsString()
-                };
-            } else if (responseObject.has("ratter")) {
-                return new String[]{
-                        "Ratter",
-                        responseObject
-                                .getAsJsonObject("ratter")
-                                .getAsJsonPrimitive("reason")
-                                .getAsString()
-                };
-            }
-        }
-        catch (IOException ioException) {
-            logger.error(null, ioException);
-        }
-
-        return new String[0];
     }
 }
