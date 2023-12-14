@@ -46,7 +46,7 @@ public class HelpCommand extends Command {
                 embed.setColor(helpDisplay.embedColor().getColor());
                 helpDisplay.fields().forEach(embed::addField);
 
-                return DelayedResponse.fromEmbed(embed);
+                return DelayedResponse.fromEmbedWithAttachment(embed, helpDisplay.attachmentUrl());
             });
         }
         catch (InvalidOptionException ignored) {

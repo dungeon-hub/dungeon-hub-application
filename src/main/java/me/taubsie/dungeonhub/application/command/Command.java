@@ -95,10 +95,15 @@ public abstract class Command {
                 .join();
 
         delayedResponseFuture
-                .thenAccept(delayedResponse -> updater.setContent(delayedResponse.getContent())
-                        .addEmbeds(delayedResponse.getEmbed())
-                        .addComponents(delayedResponse.getHighLevelComponents())
-                        .update());
+                .thenAccept(delayedResponse -> {
+                    updater.setContent(delayedResponse.getContent())
+                            .addEmbeds(delayedResponse.getEmbed())
+                            .addComponents(delayedResponse.getHighLevelComponents());
+
+                    delayedResponse.getAttachmentUrl().ifPresent(updater::addAttachment);
+
+                    updater.update();
+                });
     }
 
     public final void respondLaterEphemeral(@NotNull CompletableFuture<DelayedResponse> delayedResponseFuture) {
@@ -106,10 +111,16 @@ public abstract class Command {
                 .respondLater(true)
                 .join();
 
-        delayedResponseFuture.thenAccept(delayedResponse -> updater.setContent(delayedResponse.getContent())
-                .addEmbeds(delayedResponse.getEmbed())
-                .addComponents(delayedResponse.getHighLevelComponents())
-                .update());
+        delayedResponseFuture
+                .thenAccept(delayedResponse -> {
+                    updater.setContent(delayedResponse.getContent())
+                            .addEmbeds(delayedResponse.getEmbed())
+                            .addComponents(delayedResponse.getHighLevelComponents());
+
+                    delayedResponse.getAttachmentUrl().ifPresent(updater::addAttachment);
+
+                    updater.update();
+                });
     }
 
     public List<SlashCommandOption> getSlashCommandOptions() {
