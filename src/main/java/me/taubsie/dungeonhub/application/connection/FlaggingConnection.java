@@ -45,6 +45,7 @@ public class FlaggingConnection implements Connection {
     }
 
     public Optional<FlagDetail> isSafetyFlagged(UUID uuid) {
+        //TODO remove v1/ prefix from config property
         HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "user")
                 .newBuilder()
                 .addQueryParameter("user", uuid.toString())
@@ -62,6 +63,7 @@ public class FlaggingConnection implements Connection {
     }
 
     public Optional<FlagDetail> isSafetyFlagged(Long id) {
+        //TODO remove v1/ prefix from config property
         HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "user")
                 .newBuilder()
                 .addQueryParameter("user", String.valueOf(id))
