@@ -21,7 +21,9 @@ public enum KnownStaticResource implements Nameable {
     LIVID("livid.png", "Livid"),
     SADAN("sadan.png", "Sadan"),
 
-    REDSTONE_KEY("redstone_key.png", "Redstone Key");
+    REDSTONE_KEY("redstone_key.png", "Redstone Key"),
+
+    VERIFICATION_EXAMPLE("verification-example.mp4", "Verification Example");
 
     @Getter
     final String path;
