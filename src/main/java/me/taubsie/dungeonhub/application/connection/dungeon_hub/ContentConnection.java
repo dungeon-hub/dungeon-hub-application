@@ -30,7 +30,7 @@ public class ContentConnection {
 
     public HttpUrl.Builder getStaticUrl(String uri) {
         String prefix = ConfigProperty.STATIC_URL.getValue();
-        if(prefix == null) {
+        if(prefix == null || prefix.isBlank()) {
             return getCdnUrl("static/" + uri);
         }
 
@@ -39,7 +39,7 @@ public class ContentConnection {
 
     public HttpUrl.Builder getCdnUrl(String uri) {
         String prefix = ConfigProperty.CDN_URL.getValue();
-        if(prefix == null) {
+        if(prefix == null || prefix.isBlank()) {
             prefix = ConfigProperty.API_URL + "cdn/";
         }
 
