@@ -389,7 +389,7 @@ public class ApplicationService {
                 .setColor(EmbedColor.INFORMATION.getColor())
                 .setDescription(description)
                 .setTitle(skycryptData.getOrDefault("title", ign))
-                .setUrl("https://cupcake.shiiyu.moe/stats/" + ign)
+                .setUrl("https://sky.shiiyu.moe/stats/" + ign)
                 .setThumbnail(skycryptData.getOrDefault("icon", null));
 
         UUID uuid = MojangConnection.getInstance().getUUIDByName(ign);
