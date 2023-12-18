@@ -8,6 +8,7 @@ import me.taubsie.dungeonhub.common.Nameable;
 public enum KnownStaticResource implements Nameable {
     ICON_GIF("favicon.gif", "Icon (GIF)"),
     ICON("favicon.ico", "Icon"),
+    BANNER("banner.png", "Banner"),
 
     BLAZE("blaze.png", "Blaze"),
     ENDERMAN("enderman.png", "Enderman"),
