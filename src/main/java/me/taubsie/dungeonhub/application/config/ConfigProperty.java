@@ -22,6 +22,8 @@ public enum ConfigProperty implements Nameable {
     //External APIs
     HYPIXEL_API_KEY("hypixel-api.key"),
 
+    SKYCRYPT_API_URL("skycrypt-api.url"),
+
     SAFETY_API_KEY("safety-api.key"),
     SAFETY_API_URL("safety-api.url"),
 

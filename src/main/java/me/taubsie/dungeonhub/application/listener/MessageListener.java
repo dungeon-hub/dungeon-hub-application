@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.listener;
 
+import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection;
@@ -131,7 +132,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
     private Button getSkyCryptButton(String ign) {
         return new ButtonBuilder().setStyle(ButtonStyle.LINK)
-                .setUrl("https://sky.shiiyu.moe/stats/" + ign)
+                .setUrl(ConfigProperty.SKYCRYPT_API_URL + "stats/" + ign)
                 .setLabel("SkyCrypt")
                 .build();
     }

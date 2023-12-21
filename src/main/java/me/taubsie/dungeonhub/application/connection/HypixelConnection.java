@@ -124,7 +124,7 @@ public class HypixelConnection implements HypixelHttpClient {
 
     public Map<String, String> getSkyCryptData(String ign) {
         Map<String, String> result = new HashMap<>();
-        String url = "https://sky.shiiyu.moe/stats/" + ign;
+        String url = ConfigProperty.SKYCRYPT_API_URL + "stats/" + ign;
 
         Request request = new Request.Builder()
                 .url(url)

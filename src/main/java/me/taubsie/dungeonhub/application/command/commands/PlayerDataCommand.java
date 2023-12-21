@@ -3,6 +3,7 @@ package me.taubsie.dungeonhub.application.command.commands;
 import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
+import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException;
@@ -38,7 +39,7 @@ public class PlayerDataCommand extends Command {
 
                 delayedResponseBuilder.setHighLevelComponents(new ActionRowBuilder().addComponents(
                         new ButtonBuilder().setStyle(ButtonStyle.LINK)
-                                .setUrl("https://sky.shiiyu.moe/stats/" + ign)
+                                .setUrl(ConfigProperty.SKYCRYPT_API_URL + "stats/" + ign)
                                 .setLabel("SkyCrypt")
                                 .build()
                 ).build());
