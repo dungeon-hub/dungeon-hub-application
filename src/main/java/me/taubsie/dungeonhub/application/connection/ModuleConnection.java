@@ -32,7 +32,7 @@ public interface ModuleConnection extends Connection {
     default HttpUrl.Builder getApiUrl(String uri) {
         String prefix = (getModuleApiPrefix() == null || getModuleApiPrefix().isBlank())
                 ? ""
-                : getModuleApiPrefix() + "/";
+                : getModuleApiPrefix() + (uri == null || uri.isBlank() ? "" : "/");
 
         return HttpUrl.get(ConfigProperty.API_URL + getApiPrefix() + prefix + uri)
                 .newBuilder();
