@@ -202,7 +202,7 @@ public class ApplicationService {
 
         if (carry.attachmentLink() != null) {
             embedBuilder.addInlineField("Transcript-Link", "[Click to open]" +
-                    "(https://tickettool.xyz/direct?url=" + carry.attachmentLink() + ")");
+                    "(" + carry.attachmentLink() + ")");
         }
 
         return embedBuilder;
@@ -219,7 +219,7 @@ public class ApplicationService {
 
         if (carryQueue.getAttachmentLink() != null) {
             embedBuilder.addInlineField("Transcript-Link", "[Click to open]" +
-                    "(https://tickettool.xyz/direct?url=" + carryQueue.getAttachmentLink() + ")");
+                    "(" + carryQueue.getAttachmentLink() + ")");
         }
 
         return embedBuilder;

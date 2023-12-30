@@ -2,6 +2,7 @@ package me.taubsie.dungeonhub.application.listener;
 
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.connection.MojangConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
@@ -22,6 +23,7 @@ import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
+import org.javacord.api.entity.message.MessageAttachment;
 import org.javacord.api.entity.message.MessageUpdater;
 import org.javacord.api.entity.message.component.*;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -234,10 +236,34 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
             }
 
             long channelId = Long.parseLong(splitContent[1]);
-            final String attachmentLink = splitContent[2];
+            final String attachmentLink;
 
-            if (attachmentLink.equals("{transcript_url}")) {
+            if (splitContent[2].equals("{transcript_url}")) {
                 return;
+            }
+
+            if (splitContent[2].equalsIgnoreCase("deprecated")) {
+                //TODO upload attachment of file to cdn and use that as a link
+                List<MessageAttachment> attachments = messageEvent.getMessageAttachments();
+
+                if (attachments.size() != 1) {
+                    return;
+                }
+
+                MessageAttachment attachment = attachments.get(0);
+
+                byte[] attachmentContent = attachment.asByteArray().join();
+
+                Optional<String> attachmentUrl = ContentConnection.getInstance().uploadFile(attachmentContent, "{uuid}.html");
+
+                if (attachmentUrl.isEmpty()) {
+                    logger.error("Couldn't upload content of attachment on message {}.", messageEvent.getMessage().getId());
+                    return;
+                }
+
+                attachmentLink = ContentConnection.getInstance().getCdnUrl(attachmentUrl.get()).toString();
+            } else {
+                attachmentLink = "https://tickettool.xyz/direct?url=" + splitContent[2];
             }
 
             long approvingChannelId = IdList.APPROVING_CHANNEL.getLocalId(server.getId());
@@ -311,7 +337,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                                                     messageEvent.getApi().getUserById(queueModel.getPlayer().getId()).join().getMentionTag())
                                                             .addInlineField("Carrier", carrier.getMentionTag())
                                                             .addInlineField("Transcript-Link", "[Click to open]" +
-                                                                    "(https://tickettool.xyz/direct?url=" + queueModel.getAttachmentLink() + ")")).join());
+                                                                    "(" + queueModel.getAttachmentLink() + ")")).join());
                                 }
                                 catch (CompletionException completionException) {
                                     logger.error("Error when sending log message.", completionException);
@@ -341,9 +367,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                                                 .addInlineField("Carrier",
                                                         messageEvent.getApi().getUserById(queueModel.getCarrier().getId()).join().getMentionTag())
                                                 .addInlineField("Transcript-Link", "[Click to open]" +
-                                                        "(https://tickettool" +
-                                                        ".xyz/direct?url=" + queueModel.getAttachmentLink() +
-                                                        ")"));
+                                                        "(" + queueModel.getAttachmentLink() + ")"));
                             }
 
                             QueueConnection.getInstance().deleteQueue(queueModel.getId());
