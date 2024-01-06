@@ -3,8 +3,8 @@ package me.taubsie.dungeonhub.application.service;
 import me.taubsie.dungeonhub.application.classes.Leaderboard;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.loader.OnStart;
 import me.taubsie.dungeonhub.application.loader.StartupListener;
@@ -159,12 +159,12 @@ public class LeaderboardService implements StartupListener {
                     if (leaderboards.containsKey(leaderboardChannel.get())) {
                         leaderboards.get(leaderboardChannel.get()).add(new Leaderboard(
                                 getLeaderboardTitle(carryType, scoreType),
-                                ScoreConnection.getInstance(carryType).loadLeaderboard(scoreType, 1).orElse(null)
+                                ScoreConnection.getInstance(carryType).loadLeaderboard(scoreType, 0).orElse(null)
                         ));
                     } else {
                         leaderboards.put(leaderboardChannel.get(), new ArrayList<>(List.of(new Leaderboard(
                                 getLeaderboardTitle(carryType, scoreType),
-                                ScoreConnection.getInstance(carryType).loadLeaderboard(scoreType, 1).orElse(null)
+                                ScoreConnection.getInstance(carryType).loadLeaderboard(scoreType, 0).orElse(null)
                         ))));
                     }
                 }
