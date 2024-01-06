@@ -227,9 +227,14 @@ public class MessageComponentListener implements MessageComponentCreateListener 
             CarryQueueUpdateModel updateModel = new CarryQueueUpdateModel()
                     .setApprover(messageComponentInteraction.getUser().getId());
 
-            Long updatedScore = QueueConnection.getInstance()
-                    .logQueue(queueModel.getId(), updateModel)
-                    .stream()
+            Optional<LoggedCarryModel> loggedCarryModel = QueueConnection.getInstance()
+                    .logQueue(queueModel.getId(), updateModel);
+
+            if(loggedCarryModel.isEmpty()) {
+                return;
+            }
+
+            Long updatedScore = loggedCarryModel.stream()
                     .map(LoggedCarryModel::scoreModels)
                     .flatMap(Collection::stream)
                     .filter(scoreModel -> scoreModel.getScoreType().equals(ScoreType.DEFAULT))
@@ -261,12 +266,13 @@ public class MessageComponentListener implements MessageComponentCreateListener 
             }
 
             try {
-                queueModel.getCarryType()
+                loggedCarryModel.get().carryModel()
+                        .getCarryType()
                         .getLogChannel()
                         .flatMap(server::getTextChannelById)
                         .ifPresent(serverTextChannel -> serverTextChannel.sendMessage(
                                 ApplicationService.getInstance()
-                                        .loadEmbedFromCarryQueue(queueModel)
+                                        .loadEmbedFromCarry(loggedCarryModel.get().carryModel())
                                         .setTitle("Carry accepted.")
                                         .setColor(EmbedColor.POSITIVE.getColor())
                         ));
