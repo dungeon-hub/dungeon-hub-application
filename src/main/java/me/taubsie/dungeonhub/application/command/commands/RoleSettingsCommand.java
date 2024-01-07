@@ -9,7 +9,6 @@ import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleCreationModel;
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleUpdateModel;
-import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -35,15 +34,13 @@ public class RoleSettingsCommand extends Command {
         Role role = getRoleOption(slashCommandCreateEvent.getSlashCommandInteraction(), "role");
         Optional<String> nameSchema = getOptionalStringOption(slashCommandCreateEvent.getSlashCommandInteraction(),
                 "name-schema");
-        Optional<Role> roleGroup = getOptionalRoleOption(slashCommandCreateEvent.getSlashCommandInteraction(),
-                "role-group");
         Optional<Boolean> verifiedRole = getOptionalBooleanOption(slashCommandCreateEvent.getSlashCommandInteraction(),
                 "verified-role");
 
         Optional<DiscordRoleModel> currentRole =
                 DiscordRoleConnection.getInstance(server.getId()).getById(role.getId());
 
-        if (nameSchema.isEmpty() && roleGroup.isEmpty() && verifiedRole.isEmpty()) {
+        if (nameSchema.isEmpty() && verifiedRole.isEmpty()) {
             if (currentRole.isEmpty()) {
                 respondEphemeral(ApplicationService.getInstance()
                         .getErrorEmbed(new NoOptionFoundException()));
@@ -54,22 +51,16 @@ public class RoleSettingsCommand extends Command {
             return;
         }
 
-        if (roleGroup.isPresent() && DiscordRoleConnection.getInstance(server.getId()).getById(roleGroup.get().getId()).isEmpty()) {
-            DiscordRoleConnection.getInstance(server.getId()).addNewRole(new DiscordRoleCreationModel(roleGroup.get().getId(), null, null, false));
-        }
-
         Optional<DiscordRoleModel> modifiedRole = currentRole.isPresent()
                 ? DiscordRoleConnection.getInstance(server.getId()).updateRole(role.getId(),
                 new DiscordRoleUpdateModel(
                         nameSchema.orElse(null),
-                        roleGroup.map(DiscordEntity::getId).orElse(null),
                         verifiedRole.orElse(null)
                 ))
                 : DiscordRoleConnection.getInstance(server.getId()).addNewRole(
                 new DiscordRoleCreationModel(
                         role.getId(),
                         nameSchema.orElse(null),
-                        roleGroup.map(DiscordEntity::getId).orElse(null),
                         verifiedRole.orElse(false)
                 ));
 
@@ -102,13 +93,6 @@ public class RoleSettingsCommand extends Command {
                 .setRequired(false)
                 .build();
 
-        SlashCommandOption roleGroupOption = new SlashCommandOptionBuilder()
-                .setType(SlashCommandOptionType.ROLE)
-                .setName("role-group")
-                .setDescription("Set the role which will be added to anyone with the given role.")
-                .setRequired(false)
-                .build();
-
         SlashCommandOption verifiedRoleOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.BOOLEAN)
                 .setName("verified-role")
@@ -116,6 +100,6 @@ public class RoleSettingsCommand extends Command {
                 .setRequired(false)
                 .build();
 
-        return List.of(roleOption, nameSchemaOption, roleGroupOption, verifiedRoleOption);
+        return List.of(roleOption, nameSchemaOption, verifiedRoleOption);
     }
 }

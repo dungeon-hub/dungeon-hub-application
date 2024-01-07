@@ -180,8 +180,6 @@ public class ApplicationService {
         embed.addInlineField("Role", "<@&" + discordRoleModel.getId() + ">");
         embed.addInlineField("Name schema", discordRoleModel.getNameSchema() != null ?
                 discordRoleModel.getNameSchema() : "none");
-        embed.addInlineField("Role group", discordRoleModel.getRoleGroup() != null ?
-                "<@&" + discordRoleModel.getRoleGroup() + ">" : "none");
         embed.addInlineField("Verified role", discordRoleModel.isVerifiedRole() ? "yes" : "no");
 
         return embed;

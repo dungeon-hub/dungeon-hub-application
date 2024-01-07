@@ -1,9 +1,10 @@
 package me.taubsie.dungeonhub.application.service;
 
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleGroupConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
-import org.javacord.api.entity.DiscordEntity;
+import me.taubsie.dungeonhub.common.model.discord_role_group.DiscordRoleGroupModel;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -56,40 +57,53 @@ public class RolesService {
         }
 
         int lastRoles = 0;
-        while(lastRoles != discordRoles.size()) {
+        while (lastRoles != discordRoles.size()) {
             lastRoles = discordRoles.size();
-            discordRoles = applyRoleGroup(serverRoles, server, discordRoles);
+            discordRoles = applyRoleGroups(server, discordRoles);
         }
 
         return List.copyOf(discordRoles);
     }
 
-    public Set<Role> applyRoleGroup(Map<Long, DiscordRoleModel> serverRoles, Server server, Set<Role> roles) {
-        List.copyOf(roles).stream()
-                .map(DiscordEntity::getId)
-                .filter(serverRoles::containsKey)
-                .map(serverRoles::get)
-                .map(DiscordRoleModel::getRoleGroup)
-                .filter(Objects::nonNull)
+    public Set<Role> applyRoleGroups(Server server, Set<Role> roles) {
+        List<DiscordRoleGroupModel> roleGroups = DiscordRoleGroupConnection.getInstance(server.getId())
+                .getAll()
+                .orElse(new ArrayList<>());
+
+        int lastRoles = 0;
+        while (lastRoles != roles.size()) {
+            lastRoles = roles.size();
+
+            roles = applyRoleGroups(server, roles, roleGroups);
+        }
+
+        return roles;
+    }
+
+    public Set<Role> applyRoleGroups(Server server, Set<Role> roles, List<DiscordRoleGroupModel> roleGroups) {
+        roleGroups.stream()
+                .filter(discordRoleGroupModel -> roles.stream().anyMatch(role -> role.getId() == discordRoleGroupModel.getDiscordRole().getId()))
+                .map(DiscordRoleGroupModel::getRoleGroup)
+                .map(DiscordRoleModel::getId)
                 .map(server::getRoleById)
                 .flatMap(Optional::stream)
                 .forEach(roles::add);
 
-        Map<Long, List<DiscordRoleModel>> roleModels = List.copyOf(serverRoles.values()).stream()
-                .filter(discordRoleModel -> discordRoleModel.getRoleGroup() != null)
+        Map<Long, List<DiscordRoleModel>> roleModels = List.copyOf(roleGroups).stream()
                 .collect(Collectors.toMap(
-                        DiscordRoleModel::getRoleGroup,
-                        discordRoleModel -> new ArrayList<>(List.of(discordRoleModel)),
+                        discordRoleGroupModel -> discordRoleGroupModel.getRoleGroup().getId(),
+                        discordRoleGroupModel -> new ArrayList<>(List.of(discordRoleGroupModel.getDiscordRole())),
                         (o, o2) -> {
                             o.addAll(o2);
                             return o;
-                        }));
+                        }
+                ));
 
         int rolesBefore = 0;
-        while(rolesBefore != roles.size()) {
+        while (rolesBefore != roles.size()) {
             rolesBefore = roles.size();
 
-            for(Map.Entry<Long, List<DiscordRoleModel>> entry : roleModels.entrySet()) {
+            for (Map.Entry<Long, List<DiscordRoleModel>> entry : roleModels.entrySet()) {
                 if (roles.stream().anyMatch(role -> role.getId() == entry.getKey())
                         && entry.getValue().stream()
                         .allMatch(discordRoleModel -> roles.stream()
