@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
     <Appenders>
+        <ExceptionAppender name="ExceptionAppender" />
+
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout charset="UTF-8">
                 <pattern>[%d{dd.MM.yyyy HH:mm:ss}] %-5level> %msg%n</pattern>
@@ -10,7 +12,7 @@
         <Routing name="Routing">
             <Routes pattern="$${sys:user.home}">
                 <Route>
-                    <File name="File" fileName="${sys:user.home}/carrylogs/logs/${date:yyyy_MM_dd-HH_mm_ss}.txt"
+                    <File name="File" fileName="${sys:user.home}/dungeon-hub/logs/application/${date:yyyy_MM_dd-HH_mm_ss}.txt"
                           immediateFlush="false" append="false">
                         <PatternLayout charset="UTF-8">
                             <pattern>[%d{dd.MM.yyyy HH:mm:ss}] %-5level> %msg%n</pattern>
@@ -25,6 +27,7 @@
         <Root level="debug">
             <AppenderRef ref="Console" level="info"/>
             <AppenderRef ref="Routing" level="debug"/>
+            <AppenderRef ref="ExceptionAppender" level="warn"/>
         </Root>
     </Loggers>
 </Configuration>

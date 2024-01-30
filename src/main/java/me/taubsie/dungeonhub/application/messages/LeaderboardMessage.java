@@ -1,0 +1,41 @@
+package me.taubsie.dungeonhub.application.messages;
+
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
+import me.taubsie.dungeonhub.application.service.LeaderboardService;
+import me.taubsie.dungeonhub.common.enums.ScoreType;
+import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
+import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
+import org.javacord.api.interaction.callback.ComponentInteractionOriginalMessageUpdater;
+
+public class LeaderboardMessage extends PageableMessage {
+    private final CarryTypeModel carryType;
+    private final ScoreType scoreType;
+
+    public LeaderboardMessage(int currentPage, long channel, long message, CarryTypeModel carryType,
+                              ScoreType scoreType) {
+        super(currentPage, channel, message);
+        this.carryType = carryType;
+        this.scoreType = scoreType;
+    }
+
+    @Override
+    public int getMaxPage() {
+        return ScoreConnection.getInstance(carryType)
+                .loadLeaderboard(scoreType, 0)
+                .map(LeaderboardModel::getTotalPages)
+                .orElse(0);
+    }
+
+    @Override
+    public void updatePage(ComponentInteractionOriginalMessageUpdater updater, int currentPage) {
+        updater.removeAllEmbeds()
+                .addEmbed(
+                        LeaderboardService.getInstance().getLeaderboardEmbed(
+                                LeaderboardService.getInstance().getLeaderboardTitle(carryType, scoreType),
+                                ScoreConnection.getInstance(carryType)
+                                        .loadLeaderboard(scoreType, currentPage, null)
+                                        .orElse(null)
+                        )
+                ).update();
+    }
+}
