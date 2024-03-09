@@ -18,7 +18,7 @@ public interface ModuleConnection extends Connection {
         return new Request.Builder()
                 .url(httpUrl)
                 .addHeader("Content-Type", mediaType.toString())
-                .addHeader("Authorization", "Bearer " + DungeonHubConnection.getInstance().getApiToken());
+                .addHeader("Authorization", "Bearer " + AuthorizationConnection.getInstance().getApiToken());
     }
 
     default HttpUrl.Builder getApiUrl() {
