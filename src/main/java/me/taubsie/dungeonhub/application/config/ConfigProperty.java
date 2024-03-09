@@ -14,10 +14,12 @@ public enum ConfigProperty implements Nameable {
 
     //Internal API
     API_URL("api.url"),
-    API_USER("api.user"),
-    API_PASSWORD("api.password"),
     CDN_URL("cdn.public-url"),
     STATIC_URL("cdn.static-url"),
+
+    AUTH_LOGIN_URL("auth.login_url"),
+    AUTH_CLIENT_ID("auth.client_id"),
+    AUTH_CLIENT_SECRET("auth.client_secret"),
 
     //External APIs
     HYPIXEL_API_KEY("hypixel-api.key"),
