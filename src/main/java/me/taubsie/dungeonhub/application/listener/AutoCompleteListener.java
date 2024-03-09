@@ -3,10 +3,8 @@ package me.taubsie.dungeonhub.application.listener;
 import me.taubsie.dungeonhub.application.command.commands.CarryDifficultyCommand;
 import me.taubsie.dungeonhub.application.command.commands.CarryTierCommand;
 import me.taubsie.dungeonhub.application.command.commands.CarryTypeCommand;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
+import me.taubsie.dungeonhub.application.command.commands.PurgeCommand;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.*;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.channel.Categorizable;
@@ -43,6 +41,41 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
                                 .toList()
                 );
                 return;
+            }
+
+            if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase(PurgeCommand.FIELD_NAME)) {
+                List<SlashCommandInteractionOption> allOptions = autocompleteCreateEvent.getAutocompleteInteraction()
+                        .getOptions().stream()
+                        .flatMap(option -> option.isSubcommandOrGroup() ? option.getOptions().stream() :
+                                Stream.of(option))
+                        .flatMap(option -> option.isSubcommandOrGroup() ? option.getOptions().stream() :
+                                Stream.of(option))
+                        .toList();
+
+                Optional<SlashCommandInteractionOption> carryTypeOption = allOptions.stream()
+                        .filter(option -> option.getName().equalsIgnoreCase(CarryTypeCommand.FIELD_NAME))
+                        .findFirst();
+
+                if (carryTypeOption.isPresent()) {
+                    Optional<String> carryTypeIdentifier =
+                            carryTypeOption.flatMap(SlashCommandInteractionOption::getStringValue);
+
+                    if (carryTypeIdentifier.isPresent()) {
+                        autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(
+                                CarryTypeConnection.getInstance(server.getId())
+                                        .getByIdentifier(carryTypeIdentifier.get())
+                                        .flatMap(carryType -> PurgeTypeConnection.getInstance(carryType).getAllPurgeTypes())
+                                        .orElse(List.of())
+                                        .stream()
+                                        .map(purgeType -> SlashCommandOptionChoice.create(purgeType.getDisplayName(),
+                                                purgeType.getIdentifier()))
+                                        .toList()
+                        );
+                        return;
+                    }
+                }
+
+                throw new NoSuchElementException();
             }
 
             if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase(

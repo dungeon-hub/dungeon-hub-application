@@ -54,6 +54,16 @@ public class ScoreConnection implements ModuleConnection {
         return executeRequest(request, ScoreModel::fromJson);
     }
 
+    public Optional<List<ScoreModel>> getScores() {
+        HttpUrl url = getApiUrl("all").build();
+
+        Request request = getApiRequest(url)
+                .get()
+                .build();
+
+        return executeRequest(request, s -> fromJson(s, DungeonHubService.getInstance().getScoreModelListType()));
+    }
+
     public Optional<List<ScoreModel>> getScores(long id) {
         HttpUrl url = getApiUrl("all")
                 .addQueryParameter("id", String.valueOf(id))
@@ -63,8 +73,7 @@ public class ScoreConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> getGson().fromJson(s,
-                DungeonHubService.getInstance().getScoreModelListType()));
+        return executeRequest(request, s -> fromJson(s, DungeonHubService.getInstance().getScoreModelListType()));
     }
 
     public Optional<ScoreModel> getScore(long id) {
