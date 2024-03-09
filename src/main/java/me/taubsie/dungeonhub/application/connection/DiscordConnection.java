@@ -5,7 +5,6 @@ import me.taubsie.dungeonhub.application.loader.ClassLoaderService;
 import me.taubsie.dungeonhub.application.loader.OnStart;
 import me.taubsie.dungeonhub.application.loader.StartupListener;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
-import me.taubsie.dungeonhub.common.CarryInformation;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.activity.ActivityType;
 import org.javacord.api.entity.server.Server;
@@ -15,9 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This is the main-class for the application.
@@ -34,7 +31,6 @@ public class DiscordConnection implements StartupListener {
     private static final String LINE = "----------------------------------------";
 
     private static DiscordConnection instance;
-    private final Map<Long, CarryInformation> carryInformation = new HashMap<>();
     private DiscordApi bot;
 
     /**

@@ -1,15 +1,12 @@
 package me.taubsie.dungeonhub.application.service;
 
 import me.taubsie.dungeonhub.application.classes.PurgeData;
-import me.taubsie.dungeonhub.application.classes.PurgeType;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
-import me.taubsie.dungeonhub.application.enums.RoleConversion;
-import me.taubsie.dungeonhub.common.OldCarryRole;
 import me.taubsie.dungeonhub.application.loader.OnStart;
 import me.taubsie.dungeonhub.application.loader.StartupListener;
-import org.javacord.api.entity.DiscordEntity;
+import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
+import me.taubsie.dungeonhub.common.model.purge_type.PurgeTypeModel;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -27,7 +24,7 @@ public class PurgingService implements StartupListener {
     private final List<PurgeData> purgeDataList = new ArrayList<>();
 
     public static PurgingService getInstance() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new PurgingService();
         }
 
@@ -56,10 +53,10 @@ public class PurgingService implements StartupListener {
         List<PurgeData> currentWave = purgeDataList.stream().limit(5).toList();
 
         currentWave.forEach(purgeData -> {
-            Optional<Server> server = DiscordConnection.getInstance().getBot().getServerById(purgeData.serverId());
+            Optional<Server> server = DiscordConnection.getInstance().getBot().getServerById(purgeData.purgeType().getCarryType().getServer().getId());
             User user = DiscordConnection.getInstance().getBot().getUserById(purgeData.userId()).join();
 
-            if(server.isEmpty()) {
+            if (server.isEmpty()) {
                 logger.error("Server isn't a valid server for purging anymore!");
                 return;
             }
@@ -67,10 +64,7 @@ public class PurgingService implements StartupListener {
             List<String> rolesRemoved = removeRoles(purgeData.rolesToRemove(), server.get(), user,
                     purgeData.purgeType(), purgeData.purgeThreshold());
 
-            List<OldCarryRole> roleList = getUserRoles(user, server.get());
-            DungeonHubConnection.getInstance().addRoles(user.getId(), roleList);
-
-            if(!rolesRemoved.isEmpty()) {
+            if (!rolesRemoved.isEmpty()) {
                 try {
                     user.openPrivateChannel()
                             .thenAccept(privateChannel -> privateChannel.sendMessage(ApplicationService.getInstance()
@@ -82,7 +76,7 @@ public class PurgingService implements StartupListener {
                                     .addField("Roles removed", String.join(System.lineSeparator(), rolesRemoved))
                                     .setTitle("Inactivity Purge")));
                 }
-                catch(CompletionException completionException) {
+                catch (CompletionException completionException) {
                     logger.error("Unable to DM carrier about purge.", completionException);
                 }
             }
@@ -91,25 +85,20 @@ public class PurgingService implements StartupListener {
         purgeDataList.removeAll(currentWave);
     }
 
-    private List<String> removeRoles(List<RoleConversion> rolesToRemove, Server server, User user, PurgeType purgeType,
+    private List<String> removeRoles(List<DiscordRoleModel> rolesToRemove, Server server, User user, PurgeTypeModel purgeType,
                                      long purgeThreshold) {
         List<String> rolesRemoved = new ArrayList<>();
 
-        for(RoleConversion carryRole : rolesToRemove) {
-            Optional<Role> role = Optional.ofNullable(server)
-                    .map(DiscordEntity::getId)
-                    .flatMap(serverId -> carryRole.getServerProperty().getValue(serverId))
-                    .flatMap(server::getRoleById);
+        for (DiscordRoleModel discordRole : rolesToRemove) {
+            Optional<Role> role = server.getRoleById(discordRole.getId());
 
-            String roleName = carryRole.getCarryRole().name();
-
-            if(role.isEmpty()) {
-                logger.error("Role {} not found on server {}.", roleName, server != null ? server.getId() : "null");
+            if (role.isEmpty()) {
+                logger.error("Role {} not found on server {}.", discordRole.getId(), server.getId());
                 continue;
             }
 
-            if(role.get().hasUser(user)) {
-                if(rolesRemoved.isEmpty()) {
+            if (role.get().hasUser(user)) {
+                if (rolesRemoved.isEmpty()) {
                     role.get().removeUser(user,
                             "Purge of type \"" + purgeType.getDisplayName() + "\" with threshold " + purgeThreshold + ".");
                 } else {
@@ -121,10 +110,6 @@ public class PurgingService implements StartupListener {
         }
 
         return rolesRemoved;
-    }
-
-    private List<OldCarryRole> getUserRoles(User user, Server server) {
-        return RoleConversion.getCarryRoles(user.getRoles(server), server.getId()).stream().map(RoleConversion::getCarryRole).toList();
     }
 
     public void addPurgeData(PurgeData purgeData) {

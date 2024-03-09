@@ -2,7 +2,7 @@ package me.taubsie.dungeonhub.application.command.commands;
 
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
+import me.taubsie.dungeonhub.application.connection.AuthorizationConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.exceptions.MissingPermissionException;
@@ -32,14 +32,14 @@ public class RefreshCommand extends Command {
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         String option = getStringOption("type");
 
-        switch(option.toLowerCase()) {
+        switch (option.toLowerCase()) {
             case "leaderboard" -> {
                 InteractionOriginalResponseUpdater updater = slashCommandCreateEvent
                         .getSlashCommandInteraction()
                         .respondLater(true)
                         .join();
 
-                if(!LeaderboardService.getInstance().refreshLeaderboard()) {
+                if (!LeaderboardService.getInstance().refreshLeaderboard()) {
                     updater.addEmbed(getEmbed()
                                     .setColor(EmbedColor.NEGATIVE.getColor())
                                     .setDescription("Leaderboard refresh is on cooldown.\n" +
@@ -69,20 +69,20 @@ public class RefreshCommand extends Command {
                         .update();
             }
             case "backend" -> {
-                if(!getUser().isBotOwnerOrTeamMember()) {
+                if (!getUser().isBotOwnerOrTeamMember()) {
                     throw new MissingPermissionException();
                 }
 
                 InteractionOriginalResponseUpdater updater = slashCommandCreateEvent
                         .getSlashCommandInteraction()
-                                .respondLater(true)
-                                        .join();
+                        .respondLater(true)
+                        .join();
 
-                DungeonHubConnection.getInstance().refreshToken();
+                AuthorizationConnection.getInstance().loadToken();
 
                 updater.addEmbed(getEmbed()
-                        .setColor(EmbedColor.POSITIVE.getColor())
-                        .setDescription("Token should have been reloaded!"))
+                                .setColor(EmbedColor.POSITIVE.getColor())
+                                .setDescription("Token should have been reloaded!"))
                         .update();
             }
 

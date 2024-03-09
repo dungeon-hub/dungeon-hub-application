@@ -1,30 +1,21 @@
 package me.taubsie.dungeonhub.application.connection;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
 import me.taubsie.dungeonhub.application.exceptions.NotFoundException;
 import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.OldCarryRole;
 import me.taubsie.dungeonhub.common.StrikeData;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
-import me.taubsie.dungeonhub.common.model.security.user.UserLoginModel;
-import me.taubsie.dungeonhub.common.model.security.user.UserLoginVerificationModel;
-import me.taubsie.dungeonhub.common.model.security.user.UserTokenRefreshModel;
 import okhttp3.*;
 import okio.Buffer;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.Time;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 @Getter
@@ -32,15 +23,10 @@ public class DungeonHubConnection {
     private static final Logger logger = LoggerFactory.getLogger(DungeonHubConnection.class);
     private static final String API_PREFIX = "api/v1/";
     private static final String AUTHORIZATION = "Authorization";
-    private static final long TOKEN_REFRESH_TIME = 1000L * 60 * 55;
-    private static final long TOKEN_REFRESH_BEFORE_INVALID = (1000L * 60 * 60) - TOKEN_REFRESH_TIME;
 
     private static DungeonHubConnection instance;
 
     private final OkHttpClient httpClient;
-
-    @Getter(AccessLevel.NONE)
-    private UserLoginVerificationModel loginVerification;
 
     private DungeonHubConnection() {
         httpClient = new OkHttpClient.Builder()
@@ -50,15 +36,6 @@ public class DungeonHubConnection {
                 .callTimeout(Duration.ofSeconds(30))
                 .writeTimeout(Duration.ofSeconds(30))
                 .build();
-
-        this.loginVerification = loadToken();
-
-        new Timer().scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                refreshToken();
-            }
-        }, new Time(System.currentTimeMillis() + TOKEN_REFRESH_TIME), TOKEN_REFRESH_TIME);
     }
 
     public static synchronized DungeonHubConnection getInstance() {
@@ -67,59 +44,6 @@ public class DungeonHubConnection {
         }
 
         return instance;
-    }
-
-    public synchronized String getApiToken() {
-        if (loginVerification.jwtToken().validUntil()
-                .isBefore(Instant.now().minus(Math.round(TOKEN_REFRESH_BEFORE_INVALID / (1000 * 60 * 2F)),
-                        ChronoUnit.MINUTES))) {
-            refreshToken();
-        }
-
-        return loginVerification.jwtToken().token();
-    }
-
-    public synchronized UserLoginVerificationModel loadToken() {
-        String username = ConfigProperty.API_USER.getValue();
-        String password = ConfigProperty.API_PASSWORD.getValue();
-
-        UserLoginModel userLoginModel = new UserLoginModel(username, password);
-
-        RequestBody requestBody = RequestBody.create(
-                userLoginModel.toJson(),
-                MediaType.parse("application/json; charset=utf-8")
-        );
-
-        Request request = new Request.Builder()
-                .url(ConfigProperty.API_URL + API_PREFIX + "user/login")
-                .post(requestBody)
-                .build();
-
-        return executeRequest(request, UserLoginVerificationModel::fromJson).orElseThrow();
-    }
-
-    public synchronized void refreshToken() {
-        if (loginVerification == null || loginVerification.refreshToken().validUntil()
-                .isBefore(Instant.now().minus(TOKEN_REFRESH_BEFORE_INVALID / (1000 * 60), ChronoUnit.MINUTES))) {
-            this.loginVerification = loadToken();
-            return;
-        }
-
-        UserTokenRefreshModel userTokenRefreshModel =
-                new UserTokenRefreshModel(loginVerification.refreshToken().token());
-
-        RequestBody requestBody = RequestBody.create(
-                userTokenRefreshModel.toJson(),
-                MediaType.parse("application/json; charset=utf-8")
-        );
-
-        Request request = new Request.Builder()
-                .url(ConfigProperty.API_URL + API_PREFIX + "user/refresh")
-                .post(requestBody)
-                .build();
-
-        this.loginVerification = executeRequest(request, UserLoginVerificationModel::fromJson)
-                .orElseGet(this::loadToken);
     }
 
     public <T> Optional<T> executeRequest(Request request, Function<String, T> function) {
@@ -152,6 +76,8 @@ public class DungeonHubConnection {
                         body,
                         response.code(),
                         response.body() != null ? response.body().string() : null);
+
+                System.out.println(AuthorizationConnection.getInstance().getApiToken());
             }
         }
         catch (IOException ioException) {
@@ -186,85 +112,12 @@ public class DungeonHubConnection {
         return new Request.Builder()
                 .url(httpUrl)
                 .addHeader("Content-Type", mediaType.toString())
-                .addHeader(AUTHORIZATION, "Bearer " + getApiToken());
+                .addHeader(AUTHORIZATION, "Bearer " + AuthorizationConnection.getInstance().getApiToken());
     }
 
     public HttpUrl.Builder getApiUrl(String uri) {
         return HttpUrl.get(ConfigProperty.API_URL + API_PREFIX + uri)
                 .newBuilder();
-    }
-
-    public void addMultipleRoles(Map<Long, List<OldCarryRole>> roleList) {
-        RequestBody requestBody = new FormBody.Builder()
-                .add("roles", DungeonHubService.getInstance().getGson().toJson(roleList))
-                .build();
-
-        Request request = getApiRequest("roles")
-                .put(requestBody)
-                .build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                logger.error("Error when trying to add roles.");
-            }
-        }
-        catch (IOException ioException) {
-            logger.error(null, ioException);
-        }
-    }
-
-    public void addRoles(long id, List<OldCarryRole> roles) {
-        RequestBody requestBody = new FormBody.Builder()
-                .add("id", String.valueOf(id))
-                .add("roles", DungeonHubService.getInstance().getGson().toJson(roles))
-                .build();
-
-        Request request = getApiRequest("role")
-                .put(requestBody)
-                .build();
-
-        httpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException ioException) {
-                logger.error(null, ioException);
-            }
-
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) {
-                if (!response.isSuccessful()) {
-                    logger.error("Error when trying to add roles for user {}.", id);
-                }
-            }
-        });
-    }
-
-    public Map<Long, Long> getPurgeableUsers(long amount, long serverId, String type) {
-        Optional<CarryTypeModel> carryType = CarryTypeConnection.getInstance(serverId).getByIdentifier(type);
-
-        if (carryType.isEmpty()) {
-            logger.error("Error when trying to load carry type {} for purge!", type);
-            return new HashMap<>();
-        }
-
-        Request request = getApiRequest("purge/" + carryType.get().getId() + "/" + amount)
-                .get()
-                .build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (response.isSuccessful()) {
-                if (response.body() != null) {
-                    return DungeonHubService.getInstance().getGson().fromJson(response.body().string(),
-                            DungeonHubService.getInstance().getLongLongMapType());
-                }
-            } else {
-                logger.error("Error when trying to load purgable users.");
-            }
-        }
-        catch (IOException ioException) {
-            logger.error(null, ioException);
-        }
-
-        return new HashMap<>();
     }
 
     public StrikeData loadStrikeDataFromId(long serverId, long id) throws NotFoundException {
