@@ -3,19 +3,15 @@ package me.taubsie.dungeonhub.application.connection;
 import lombok.AccessLevel;
 import lombok.Getter;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
 import me.taubsie.dungeonhub.application.exceptions.NotFoundException;
 import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.OldCarryRole;
 import me.taubsie.dungeonhub.common.StrikeData;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.security.user.UserLoginModel;
 import me.taubsie.dungeonhub.common.model.security.user.UserLoginVerificationModel;
 import me.taubsie.dungeonhub.common.model.security.user.UserTokenRefreshModel;
 import okhttp3.*;
 import okio.Buffer;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -192,79 +188,6 @@ public class DungeonHubConnection {
     public HttpUrl.Builder getApiUrl(String uri) {
         return HttpUrl.get(ConfigProperty.API_URL + API_PREFIX + uri)
                 .newBuilder();
-    }
-
-    public void addMultipleRoles(Map<Long, List<OldCarryRole>> roleList) {
-        RequestBody requestBody = new FormBody.Builder()
-                .add("roles", DungeonHubService.getInstance().getGson().toJson(roleList))
-                .build();
-
-        Request request = getApiRequest("roles")
-                .put(requestBody)
-                .build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                logger.error("Error when trying to add roles.");
-            }
-        }
-        catch (IOException ioException) {
-            logger.error(null, ioException);
-        }
-    }
-
-    public void addRoles(long id, List<OldCarryRole> roles) {
-        RequestBody requestBody = new FormBody.Builder()
-                .add("id", String.valueOf(id))
-                .add("roles", DungeonHubService.getInstance().getGson().toJson(roles))
-                .build();
-
-        Request request = getApiRequest("role")
-                .put(requestBody)
-                .build();
-
-        httpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException ioException) {
-                logger.error(null, ioException);
-            }
-
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) {
-                if (!response.isSuccessful()) {
-                    logger.error("Error when trying to add roles for user {}.", id);
-                }
-            }
-        });
-    }
-
-    public Map<Long, Long> getPurgeableUsers(long amount, long serverId, String type) {
-        Optional<CarryTypeModel> carryType = CarryTypeConnection.getInstance(serverId).getByIdentifier(type);
-
-        if (carryType.isEmpty()) {
-            logger.error("Error when trying to load carry type {} for purge!", type);
-            return new HashMap<>();
-        }
-
-        Request request = getApiRequest("purge/" + carryType.get().getId() + "/" + amount)
-                .get()
-                .build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (response.isSuccessful()) {
-                if (response.body() != null) {
-                    return DungeonHubService.getInstance().getGson().fromJson(response.body().string(),
-                            DungeonHubService.getInstance().getLongLongMapType());
-                }
-            } else {
-                logger.error("Error when trying to load purgable users.");
-            }
-        }
-        catch (IOException ioException) {
-            logger.error(null, ioException);
-        }
-
-        return new HashMap<>();
     }
 
     public StrikeData loadStrikeDataFromId(long serverId, long id) throws NotFoundException {
