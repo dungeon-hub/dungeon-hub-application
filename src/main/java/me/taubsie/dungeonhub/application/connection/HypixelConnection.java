@@ -1,6 +1,7 @@
 package me.taubsie.dungeonhub.application.connection;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
@@ -241,6 +242,20 @@ public class HypixelConnection implements HypixelHttpClient {
         }
 
         return null;
+    }
+
+    public int getSkyblockLevelByUUID(UUID uuid) {
+        JsonArray profiles = getProfiles(uuid);
+
+        return profiles.asList().stream()
+                .map(JsonElement::getAsJsonObject)
+                .map(jsonObject -> jsonObject.getAsJsonObject("members"))
+                .map(jsonObject -> jsonObject.getAsJsonObject(uuid.toString().replace("-", "")))
+                .map(jsonObject -> jsonObject.getAsJsonObject("leveling"))
+                .map(jsonObject -> jsonObject.getAsJsonPrimitive("experience"))
+                .mapToInt(JsonPrimitive::getAsInt)
+                .map(operand -> operand / 100)
+                .max().orElse(0);
     }
 
     private int cataXPToLevel(double xp) {
