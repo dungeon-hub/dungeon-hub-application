@@ -51,15 +51,7 @@ public class NicknameService {
 
         DiscordUserModel userModel = DiscordUserConnection.getInstance()
                 .updateUser(user.getId(), updateModel)
-                .orElseThrow(() -> new CommandExecutionException() {
-                    @Serial
-                    private static final long serialVersionUID = -5892641193269486024L;
-
-                    @Override
-                    public String getMessage() {
-                        return "Couldn't update your user data.";
-                    }
-                });
+                .orElseThrow(() -> new CommandExecutionException("Couldn't update your user data."));
 
         return userModel.getMinecraftId();
     }

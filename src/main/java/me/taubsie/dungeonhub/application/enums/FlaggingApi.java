@@ -72,12 +72,7 @@ public enum FlaggingApi {
         catch (CompletionException completionException) {
             logger.error(null, completionException);
 
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Couldn't load scammer data.";
-                }
-            };
+            throw new CommandExecutionException("Couldn't load scammer data.");
         }
     }
 }
