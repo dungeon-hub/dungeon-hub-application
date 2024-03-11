@@ -23,7 +23,4 @@ public class CommandExecutionException extends ProgramException
     public CommandExecutionException(Throwable cause) {
         super(cause);
     }
-
-    @Override
-    public String getMessage() { return super.getMessage(); }
 }
