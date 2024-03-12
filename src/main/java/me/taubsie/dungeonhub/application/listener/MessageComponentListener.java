@@ -126,12 +126,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
 
         if (carryQueue.isEmpty()) {
             ApplicationService.getInstance().respondWithError(messageComponentInteraction,
-                    new CommandExecutionException() {
-                        @Override
-                        public String getMessage() {
-                            return "Carry isn't in queue anymore. Please discard and log this again!";
-                        }
-                    });
+                    new CommandExecutionException("Carry isn't in queue anymore. Please discard and log this again!"));
             return;
         }
 

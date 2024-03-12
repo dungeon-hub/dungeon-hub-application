@@ -44,12 +44,7 @@ public class LogCommand extends Command {
 
         if (carryTier.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Please use this in a carry-ticket. If this is one, tell the administrators to do `/setup`!";
-                }
-            };
+            throw new CommandExecutionException("Please use this in a carry-ticket. If this is one, tell the administrators to do `/setup`!");
         }
 
         if (QueueConnection.getInstance()
@@ -57,12 +52,7 @@ public class LogCommand extends Command {
                 .flatMap(Collection::stream)
                 .findFirst().isPresent()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Someone is already logging this carry, please wait a bit.";
-                }
-            };
+            throw new CommandExecutionException("Someone is already logging this carry, please wait a bit.");
         }
 
         Long amountOfCarries = getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), "amount");
@@ -78,12 +68,7 @@ public class LogCommand extends Command {
         Optional<Message> firstMessage = channel.getMessagesAsStream().reduce((message, message2) -> message2);
 
         if (firstMessage.isEmpty() || firstMessage.get().getMentionedUsers().isEmpty()) {
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Couldn't retrieve bot message, so this ticket can't be logged. Please report this.";
-                }
-            };
+            throw new CommandExecutionException("Couldn't retrieve bot message, so this ticket can't be logged. Please report this.");
         }
 
         Instant time = Instant.now();

@@ -80,12 +80,7 @@ public class CarryTypeCommand extends Command {
 
         if (carryTypeModel.isEmpty()) {
             //TODO custom class?
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Couldn't add that carry type.";
-                }
-            };
+            throw new CommandExecutionException("Couldn't add that carry type.");
         }
 
         respond(ApplicationService.getInstance()
@@ -101,12 +96,7 @@ public class CarryTypeCommand extends Command {
 
         if (carryType.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "That carry type doesn't exists!";
-                }
-            };
+            throw new CommandExecutionException("That carry type doesn't exists!");
         }
 
         Optional<CarryTypeModel> deletedCarryType = CarryTypeConnection.getInstance(carryType.get().getServer().getId())
@@ -114,12 +104,7 @@ public class CarryTypeCommand extends Command {
 
         if (deletedCarryType.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Carry type couldn't be deleted!";
-                }
-            };
+            throw new CommandExecutionException("Carry type couldn't be deleted!");
         }
 
         respond(ApplicationService.getInstance()
@@ -133,12 +118,7 @@ public class CarryTypeCommand extends Command {
 
         if (carryType.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "That carry type doesn't exists!";
-                }
-            };
+            throw new CommandExecutionException("That carry type doesn't exists!");
         }
 
         Optional<String> displayName = getOptionalStringOption(editCommand, "display-name");
@@ -148,12 +128,7 @@ public class CarryTypeCommand extends Command {
 
         if (displayName.isEmpty() && logChannel.isEmpty() && leaderboardChannel.isEmpty() && eventActive.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Please provide something you want to edit.";
-                }
-            };
+            throw new CommandExecutionException("Please provide something you want to edit.");
         }
 
         CarryTypeUpdateModel updateModel = new CarryTypeUpdateModel();
@@ -168,12 +143,7 @@ public class CarryTypeCommand extends Command {
 
         if (updatedCarryType.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Couldn't update carry type.";
-                }
-            };
+            throw new CommandExecutionException("Couldn't update carry type.");
         }
 
         respond(ApplicationService.getInstance()
@@ -187,12 +157,7 @@ public class CarryTypeCommand extends Command {
 
         if (carryType.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "That carry type doesn't exists!";
-                }
-            };
+            throw new CommandExecutionException("That carry type doesn't exists!");
         }
 
         Boolean logChannel = getBooleanOption(resetCommand, "log-channel");
@@ -200,12 +165,7 @@ public class CarryTypeCommand extends Command {
 
         if (Boolean.FALSE.equals(logChannel) && Boolean.FALSE.equals(leaderboardChannel)) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Please provide something you want to reset.";
-                }
-            };
+            throw new CommandExecutionException("Please provide something you want to reset.");
         }
 
         CarryTypeUpdateModel updateModel = new CarryTypeUpdateModel();
@@ -223,12 +183,7 @@ public class CarryTypeCommand extends Command {
 
         if (updatedCarryType.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Couldn't update carry type.";
-                }
-            };
+            throw new CommandExecutionException("Couldn't update carry type.");
         }
 
         respond(ApplicationService.getInstance()
@@ -242,12 +197,7 @@ public class CarryTypeCommand extends Command {
 
         if (carryType.isEmpty()) {
             //TODO custom exception class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Carry type not found.";
-                }
-            };
+            throw new CommandExecutionException("Carry type not found.");
         }
 
         respondEphemeral(ApplicationService.getInstance().getCarryTypeEmbed(carryType.get()));

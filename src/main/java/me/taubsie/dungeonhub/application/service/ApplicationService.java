@@ -75,16 +75,37 @@ public class ApplicationService {
         return "discord.dungeon-hub.net";
     }
 
+    /**
+     * Returns the default footer used for most embeds.
+     * Warning is suppressed, since the escape needs to be made due to some systems having an issue showing the unicode representation through discord.
+     *
+     * @return the default footer used for most embeds.
+     */
+    @SuppressWarnings("UnnecessaryUnicodeEscape")
     public String getFooter() {
-        return getServerLink() + " • made by @taubsie";
+        return getServerLink() + " \u2022 made by @taubsie";
     }
 
+    /**
+     * Returns the footer used for embeds of unstable or new features.
+     * Warning is suppressed, since the escape needs to be made due to some systems having an issue showing the unicode representation through discord.
+     *
+     * @return the footer used for embeds of unstable or new features.
+     */
+    @SuppressWarnings("UnnecessaryUnicodeEscape")
     public String getUnstableFooter() {
-        return getServerLink() + " • THIS FEATURE IS UNSTABLE • please report bugs to @taubsie";
+        return getServerLink() + " \u2022 THIS FEATURE IS UNSTABLE \u2022 please report bugs to @taubsie";
     }
 
+    /**
+     * Returns the footer used for price message embeds.
+     * Warning is suppressed, since the escape needs to be made due to some systems having an issue showing the unicode representation through discord.
+     *
+     * @return the footer used for price message embeds.
+     */
+    @SuppressWarnings("UnnecessaryUnicodeEscape")
     public String getPriceFooter() {
-        return getServerLink() + " • also see /calc-price • made by @taubsie";
+        return getServerLink() + " \u2022 also see /calc-price \u2022 made by @taubsie";
     }
 
     public EmbedBuilder getEmbed() {

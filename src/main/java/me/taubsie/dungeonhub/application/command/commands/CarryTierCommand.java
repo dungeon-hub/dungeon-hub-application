@@ -107,12 +107,7 @@ public class CarryTierCommand extends Command {
 
         if (carryTier.isEmpty()) {
             //TODO custom class?
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Couldn't add that carry tier.";
-                }
-            };
+            throw new CommandExecutionException("Couldn't add that carry tier.");
         }
 
         respond(ApplicationService.getInstance()
@@ -129,12 +124,7 @@ public class CarryTierCommand extends Command {
 
         if (carryType.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "That carry type doesn't exists!";
-                }
-            };
+            throw new CommandExecutionException("That carry type doesn't exists!");
         }
 
         Optional<CarryTierModel> carryTier = CarryTierConnection.getInstance(carryType.get())
@@ -146,24 +136,14 @@ public class CarryTierCommand extends Command {
 
         if (!carryTier.get().getCarryType().equals(carryType.get())) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Well this is weird.. Something doesn't really add up!";
-                }
-            };
+            throw new CommandExecutionException("Well this is weird.. Something doesn't really add up!");
         }
 
         Optional<CarryTierModel> deletedCarryTier = DungeonHubConnection.getInstance().removeCarryTier(carryTier.get());
 
         if (deletedCarryTier.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Carry tier couldn't be deleted!";
-                }
-            };
+            throw new CommandExecutionException();
         }
 
         respond(ApplicationService.getInstance()
@@ -177,12 +157,7 @@ public class CarryTierCommand extends Command {
 
         if (carryType.isEmpty()) {
             //TODO custom exception class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Carry type not found.";
-                }
-            };
+            throw new CommandExecutionException("Carry type not found.");
         }
 
         Optional<CarryTierModel> carryTier = CarryTierConnection.getInstance(carryType.get())
@@ -203,12 +178,7 @@ public class CarryTierCommand extends Command {
 
         if (carryType.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "That carry type doesn't exists!";
-                }
-            };
+            throw new CommandExecutionException("That carry type doesn't exists!");
         }
 
         Optional<CarryTierModel> carryTier = CarryTierConnection.getInstance(carryType.get())
@@ -228,12 +198,7 @@ public class CarryTierCommand extends Command {
 
         if (displayName.isEmpty() && category.isEmpty() && priceChannel.isEmpty() && descriptiveName.isEmpty() && thumbnailUrl.isEmpty() && priceTitle.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Please provide something you want to edit.";
-                }
-            };
+            throw new CommandExecutionException("Please provide something you want to edit.");
         }
 
         if (category.isPresent()) {
@@ -262,12 +227,7 @@ public class CarryTierCommand extends Command {
 
         if (updatedCarryTier.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Couldn't update carry tier.";
-                }
-            };
+            throw new CommandExecutionException("Couldn't update carry tier.");
         }
 
         respond(ApplicationService.getInstance()
@@ -281,12 +241,7 @@ public class CarryTierCommand extends Command {
 
         if (carryType.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "That carry type doesn't exists!";
-                }
-            };
+            throw new CommandExecutionException("That carry type doesn't exists!");
         }
 
         Optional<CarryTierModel> carryTier = CarryTierConnection.getInstance(carryType.get())
@@ -304,12 +259,7 @@ public class CarryTierCommand extends Command {
 
         if (!category && !priceChannel && !descriptiveName && !thumbnailUrl && !priceTitle) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Please provide something you want to reset.";
-                }
-            };
+            throw new CommandExecutionException("Please provide something you want to reset.");
         }
 
         CarryTierUpdateModel updateModel = CarryTierUpdateModel.fromCarryTier(carryTier.get());
@@ -339,12 +289,7 @@ public class CarryTierCommand extends Command {
 
         if (updatedCarryTier.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Couldn't update carry tier.";
-                }
-            };
+            throw new CommandExecutionException("Couldn't update carry tier.");
         }
 
         respond(ApplicationService.getInstance()

@@ -96,12 +96,7 @@ public class ConfigCommand extends Command {
         Optional<ServerData> serverData = ServerService.getInstance().getServerData(getServer().getId());
 
         if(serverData.isEmpty()) {
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Couldn't load the server data from storage.";
-                }
-            };
+            throw new CommandExecutionException("Couldn't load the server data from storage.");
         }
 
         serverData.get().setConfig(property, value);
