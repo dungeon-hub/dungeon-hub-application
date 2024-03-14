@@ -39,17 +39,12 @@ import java.util.Optional;
 public class StrikesCommand extends Command {
     @Override
     protected void executeCommand(@NotNull SlashCommandCreateEvent slashCommandCreateEvent) {
-        try {
-            User target = getTarget(slashCommandCreateEvent);
+        User target = getTarget(slashCommandCreateEvent);
 
-            slashCommandCreateEvent.getSlashCommandInteraction().respondLater(true).thenAccept(responseUpdater -> {
-                Message message = getMessage(responseUpdater, target);
-                new StrikeMessage(1, message.getChannel().getId(), message.getId(), target.getId());
-            });
-        }
-        catch (InvalidOptionException invalidOptionException) {
-            sendNoPermission();
-        }
+        slashCommandCreateEvent.getSlashCommandInteraction().respondLater(true).thenAccept(responseUpdater -> {
+            Message message = getMessage(responseUpdater, target);
+            new StrikeMessage(1, message.getChannel().getId(), message.getId(), target.getId());
+        });
     }
 
     @Override
@@ -60,24 +55,6 @@ public class StrikesCommand extends Command {
         userOption.setDescription("The user to get the strikes of.");
         userOption.setRequired(false);
         return Collections.singletonList(userOption.build());
-    }
-
-    /**
-     * Sends an ephemeral response indicating that the user does not have permission to view strikes of other people.
-     *
-     * <p>The {@code sendNoPermission} method is responsible for sending an ephemeral response to the user when they
-     * do not have the required permissions to view strikes of other people. It utilizes the {@link ApplicationService}
-     * to obtain an embed with a red color and sets the description to indicate the lack of permissions.</p>
-     *
-     * @see ApplicationService
-     */
-    private void sendNoPermission() {
-        ApplicationService service = ApplicationService.getInstance();
-
-        String description = "You don't have the permission to see the strikes of other people.";
-        EmbedBuilder response = service.getEmbed().setColor(Color.RED).setDescription(description);
-
-        respondEphemeral(response);
     }
 
     /**
