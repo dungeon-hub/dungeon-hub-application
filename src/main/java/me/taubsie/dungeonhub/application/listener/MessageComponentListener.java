@@ -120,9 +120,10 @@ public class MessageComponentListener implements MessageComponentCreateListener 
         }
 
         Optional<CarryQueueModel> carryQueue = QueueConnection.getInstance()
-                .getCarryQueueByRelatedId(channel.get().getId())
-                .map(Collection::stream)
-                .flatMap(Stream::findFirst);
+                .getCarryQueuesByQueueStep(QueueStep.CONFIRMATION).stream()
+                .flatMap(Collection::stream)
+                .filter(carryQueueModel -> carryQueueModel.getRelationId() == channel.get().getId())
+                .findFirst();
 
         if (carryQueue.isEmpty()) {
             ApplicationService.getInstance().respondWithError(messageComponentInteraction,
