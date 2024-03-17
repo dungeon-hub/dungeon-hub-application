@@ -5,8 +5,11 @@ import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.loader.OnStart;
 import me.taubsie.dungeonhub.application.loader.StartupListener;
+import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
 import me.taubsie.dungeonhub.common.model.purge_type.PurgeTypeModel;
+import me.taubsie.dungeonhub.common.model.server.DiscordServerModel;
+import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -22,13 +25,13 @@ public class PurgingService implements StartupListener {
     private static final Logger logger = LoggerFactory.getLogger(PurgingService.class);
     private static PurgingService instance;
     private final List<PurgeData> purgeDataList = new ArrayList<>();
+    private final List<Long> purgeEnabled = new ArrayList<>();
 
     public static PurgingService getInstance() {
-        if (instance == null) {
+        return Objects.requireNonNullElseGet(instance, () -> {
             instance = new PurgingService();
-        }
-
-        return instance;
+            return instance;
+        });
     }
 
     //TODO probably increase time to prevent it getting stuck and to have too many open threads.
@@ -44,6 +47,12 @@ public class PurgingService implements StartupListener {
         }, new Time(System.currentTimeMillis() + 500L), 3000L);
     }
 
+    public void enablePurge(Long serverId) {
+        if(!purgeEnabled.contains(serverId)) {
+            purgeEnabled.add(serverId);
+        }
+    }
+
     /**
      * This method is private to prevent it from being run from outside this service.
      * That is done so that the amount of threads created is limited, to prevent the server this is currently hosted
@@ -51,6 +60,13 @@ public class PurgingService implements StartupListener {
      */
     private void purgeWave() {
         List<PurgeData> currentWave = purgeDataList.stream().limit(5).toList();
+                .filter(entry -> entry.getValue().stream().allMatch(purgeData -> purgeEnabled.contains(purgeData.purgeType().getCarryType().getServer().getId())))
+                .limit(5)
+                .toList();
+
+        purgeEnabled.removeIf(aLong -> purgeDataMap.values().stream()
+                .flatMap(Collection::stream)
+                .noneMatch(purgeData -> purgeData.purgeType().getCarryType().getServer().getId() == aLong));
 
         currentWave.forEach(purgeData -> {
             Optional<Server> server = DiscordConnection.getInstance().getBot().getServerById(purgeData.purgeType().getCarryType().getServer().getId());
