@@ -5,11 +5,8 @@ import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.loader.OnStart;
 import me.taubsie.dungeonhub.application.loader.StartupListener;
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
 import me.taubsie.dungeonhub.common.model.purge_type.PurgeTypeModel;
-import me.taubsie.dungeonhub.common.model.server.DiscordServerModel;
-import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -48,7 +45,7 @@ public class PurgingService implements StartupListener {
     }
 
     public void enablePurge(Long serverId) {
-        if(!purgeEnabled.contains(serverId)) {
+        if (!purgeEnabled.contains(serverId)) {
             purgeEnabled.add(serverId);
         }
     }
@@ -59,13 +56,12 @@ public class PurgingService implements StartupListener {
      * on from reaching the vm's thread limit.
      */
     private void purgeWave() {
-        List<PurgeData> currentWave = purgeDataList.stream().limit(5).toList();
-                .filter(entry -> entry.getValue().stream().allMatch(purgeData -> purgeEnabled.contains(purgeData.purgeType().getCarryType().getServer().getId())))
+        List<PurgeData> currentWave = purgeDataList.stream()
+                .filter(purgeData -> purgeEnabled.contains(purgeData.purgeType().getCarryType().getServer().getId()))
                 .limit(5)
                 .toList();
 
-        purgeEnabled.removeIf(aLong -> purgeDataMap.values().stream()
-                .flatMap(Collection::stream)
+        purgeEnabled.removeIf(aLong -> purgeDataList.stream()
                 .noneMatch(purgeData -> purgeData.purgeType().getCarryType().getServer().getId() == aLong));
 
         currentWave.forEach(purgeData -> {
