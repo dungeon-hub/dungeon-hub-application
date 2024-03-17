@@ -24,7 +24,7 @@ import java.util.concurrent.CompletionException;
 public class PurgingService implements StartupListener {
     private static final Logger logger = LoggerFactory.getLogger(PurgingService.class);
     private static PurgingService instance;
-    private final Map<Long, List<PurgeData>> purgeDataMap = new HashMap<>();
+    private final List<PurgeData> purgeDataList = new ArrayList<>();
     private final List<Long> purgeEnabled = new ArrayList<>();
 
     public static PurgingService getInstance() {
@@ -59,7 +59,7 @@ public class PurgingService implements StartupListener {
      * on from reaching the vm's thread limit.
      */
     private void purgeWave() {
-        List<Map.Entry<Long, List<PurgeData>>> currentWave = purgeDataMap.entrySet().stream()
+        List<PurgeData> currentWave = purgeDataList.stream().limit(5).toList();
                 .filter(entry -> entry.getValue().stream().allMatch(purgeData -> purgeEnabled.contains(purgeData.purgeType().getCarryType().getServer().getId())))
                 .limit(5)
                 .toList();
@@ -68,48 +68,37 @@ public class PurgingService implements StartupListener {
                 .flatMap(Collection::stream)
                 .noneMatch(purgeData -> purgeData.purgeType().getCarryType().getServer().getId() == aLong));
 
-        currentWave.forEach(entry -> {
-            long serverId = entry.getValue().stream().map(PurgeData::purgeType).map(PurgeTypeModel::getCarryType).map(CarryTypeModel::getServer).mapToLong(DiscordServerModel::getId).findFirst().orElseThrow();
-
-            Optional<Server> server = DiscordConnection.getInstance().getBot().getServerById(serverId);
-            User user = DiscordConnection.getInstance().getBot().getUserById(entry.getKey()).join();
+        currentWave.forEach(purgeData -> {
+            Optional<Server> server = DiscordConnection.getInstance().getBot().getServerById(purgeData.purgeType().getCarryType().getServer().getId());
+            User user = DiscordConnection.getInstance().getBot().getUserById(purgeData.userId()).join();
 
             if (server.isEmpty()) {
                 logger.error("Server isn't a valid server for purging anymore!");
                 return;
             }
 
-            List<EmbedBuilder> embedsToSend = new ArrayList<>();
+            List<String> rolesRemoved = removeRoles(purgeData.rolesToRemove(), server.get(), user,
+                    purgeData.purgeType(), purgeData.purgeThreshold());
 
-            entry.getValue().forEach(purgeData -> {
-                List<String> rolesRemoved = removeRoles(purgeData.rolesToRemove(), server.get(), user,
-                        purgeData.purgeType(), purgeData.purgeThreshold());
-
-                if (!rolesRemoved.isEmpty()) {
-                    embedsToSend.add(
-                            ApplicationService.getInstance()
+            if (!rolesRemoved.isEmpty()) {
+                try {
+                    user.openPrivateChannel()
+                            .thenAccept(privateChannel -> privateChannel.sendMessage(ApplicationService.getInstance()
                                     .getEmbed()
                                     .setColor(EmbedColor.NEGATIVE.getColor())
                                     .setDescription("Your " + purgeData.purgeType().getDisplayName() + "-carry roles on `" + server.get().getName()
                                             + "` were removed since you only reached " + purgeData.score() + "/"
                                             + purgeData.purgeThreshold() + " score.")
                                     .addField("Roles removed", String.join(System.lineSeparator(), rolesRemoved))
-                                    .setTitle("Inactivity Purge")
-                    );
-                }
-            });
-
-            if(!embedsToSend.isEmpty()) {
-                try {
-                    user.openPrivateChannel().thenAccept(privateChannel -> privateChannel.sendMessage(embedsToSend));
+                                    .setTitle("Inactivity Purge")));
                 }
                 catch (CompletionException completionException) {
                     logger.error("Unable to DM carrier about purge.", completionException);
                 }
             }
-
-            purgeDataMap.remove(entry.getKey());
         });
+
+        purgeDataList.removeAll(currentWave);
     }
 
     private List<String> removeRoles(List<DiscordRoleModel> rolesToRemove, Server server, User user, PurgeTypeModel purgeType,
@@ -140,12 +129,6 @@ public class PurgingService implements StartupListener {
     }
 
     public void addPurgeData(PurgeData purgeData) {
-        if(purgeDataMap.containsKey(purgeData.userId())) {
-            purgeDataMap.get(purgeData.userId()).add(purgeData);
-        } else {
-            List<PurgeData> purgeDataList = new ArrayList<>();
-            purgeDataList.add(purgeData);
-            purgeDataMap.put(purgeData.userId(), purgeDataList);
-        }
+        purgeDataList.add(purgeData);
     }
 }
