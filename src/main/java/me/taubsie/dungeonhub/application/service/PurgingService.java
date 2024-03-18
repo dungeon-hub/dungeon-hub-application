@@ -51,13 +51,13 @@ public class PurgingService implements StartupListener {
     }
 
     public long getProgress(long serverId) {
-        if(!purgeEnabled.contains(serverId)) {
-            return -1L;
-        }
-
         return purgeDataList.stream()
                 .filter(purgeData -> purgeData.purgeType().getCarryType().getServer().getId() == serverId)
                 .count();
+    }
+
+    public boolean isPurgeActive(long serverId) {
+        return purgeEnabled.contains(serverId);
     }
 
     /**

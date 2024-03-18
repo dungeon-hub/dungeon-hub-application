@@ -21,6 +21,7 @@ import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import me.taubsie.dungeonhub.common.model.purge_type.PurgeTypeModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
+import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -80,16 +81,21 @@ public class PurgeCommand extends Command {
         long progress = PurgingService.getInstance().getProgress(server.getId());
 
         if(progress <= 0) {
-            throw new CommandExecutionException("There is no active purge ongoing.");
+            throw new CommandExecutionException("There is no active purge.");
         }
 
-        respond(
-                ApplicationService.getInstance()
-                        .getEmbed()
-                        .setTitle("Current ongoing purge")
-                        .setDescription(progress + " users are left.")
-                        .setColor(EmbedColor.DEFAULT.getColor())
-        );
+        EmbedBuilder embed = ApplicationService.getInstance()
+                .getEmbed()
+                .setTitle("Current purge")
+                .setColor(EmbedColor.DEFAULT.getColor());
+
+        if(PurgingService.getInstance().isPurgeActive(server.getId())) {
+            embed.setDescription(progress + " users are left.");
+        } else {
+            embed.setDescription(progress + " users will be purged.");
+        }
+
+        respond(embed);
     }
 
     public void show(SlashCommandInteractionOption subCommand) {
