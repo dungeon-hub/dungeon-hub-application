@@ -421,7 +421,7 @@ public class ApplicationService {
                 .toList();
 
         if (!flagResponses.isEmpty()) {
-            embed.addField("Flagged", "**This user is flagged, which means it's not safe to interact with them.**\n"
+            embed.addField("Flagged", "**This user is flagged, which means it might not safe to interact with them.**\n"
                             + formatFlagDetails(flagResponses))
                     .setColor(EmbedColor.NEGATIVE.getColor());
         } else {
