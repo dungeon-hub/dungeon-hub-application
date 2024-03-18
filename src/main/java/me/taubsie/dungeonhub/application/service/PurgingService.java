@@ -50,6 +50,16 @@ public class PurgingService implements StartupListener {
         }
     }
 
+    public long getProgress(long serverId) {
+        if(!purgeEnabled.contains(serverId)) {
+            return -1L;
+        }
+
+        return purgeDataList.stream()
+                .filter(purgeData -> purgeData.purgeType().getCarryType().getServer().getId() == serverId)
+                .count();
+    }
+
     /**
      * This method is private to prevent it from being run from outside this service.
      * That is done so that the amount of threads created is limited, to prevent the server this is currently hosted

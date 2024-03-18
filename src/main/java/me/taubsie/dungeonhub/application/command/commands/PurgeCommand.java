@@ -9,6 +9,7 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnectio
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.PurgeTypeConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
+import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidSubCommandException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
@@ -68,8 +69,27 @@ public class PurgeCommand extends Command {
             case "show" -> show(subCommand);
             case "add" -> add(subCommand);
             case "start" -> start(subCommand);
+            case "progress" -> progress(subCommand);
             default -> throw new InvalidSubCommandException();
         }
+    }
+
+    public void progress(SlashCommandInteractionOption subCommand) {
+        Server server = getServer();
+
+        long progress = PurgingService.getInstance().getProgress(server.getId());
+
+        if(progress <= 0) {
+            throw new CommandExecutionException("There is no active purge ongoing.");
+        }
+
+        respond(
+                ApplicationService.getInstance()
+                        .getEmbed()
+                        .setTitle("Current ongoing purge")
+                        .setDescription(progress + " users are left.")
+                        .setColor(EmbedColor.DEFAULT.getColor())
+        );
     }
 
     public void show(SlashCommandInteractionOption subCommand) {
@@ -281,6 +301,12 @@ public class PurgeCommand extends Command {
                 .setDescription("Starts the current purge wave.")
                 .build();
 
-        return List.of(showOption, addOption, startOption);
+        SlashCommandOption progressOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("progress")
+                .setDescription("Shows you the progress of the current purge wave.")
+                .build();
+
+        return List.of(showOption, addOption, startOption, progressOption);
     }
 }
