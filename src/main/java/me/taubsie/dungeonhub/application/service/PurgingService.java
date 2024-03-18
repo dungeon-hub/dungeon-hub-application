@@ -56,6 +56,14 @@ public class PurgingService implements StartupListener {
                 .count();
     }
 
+    public long getUserProgress(long serverId) {
+        return purgeDataList.stream()
+                .filter(purgeData -> purgeData.purgeType().getCarryType().getServer().getId() == serverId)
+                .map(PurgeData::userId)
+                .distinct()
+                .count();
+    }
+
     public boolean isPurgeActive(long serverId) {
         return purgeEnabled.contains(serverId);
     }

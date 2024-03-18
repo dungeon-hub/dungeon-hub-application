@@ -79,6 +79,7 @@ public class PurgeCommand extends Command {
         Server server = getServer();
 
         long progress = PurgingService.getInstance().getProgress(server.getId());
+        long userProgress = PurgingService.getInstance().getUserProgress(server.getId());
 
         if(progress <= 0) {
             throw new CommandExecutionException("There is no active purge.");
@@ -90,9 +91,9 @@ public class PurgeCommand extends Command {
                 .setColor(EmbedColor.DEFAULT.getColor());
 
         if(PurgingService.getInstance().isPurgeActive(server.getId())) {
-            embed.setDescription(progress + " users are left.");
+            embed.setDescription(userProgress + " users are left. (" + progress + " actions)");
         } else {
-            embed.setDescription(progress + " users will be purged.");
+            embed.setDescription(userProgress + " users will be purged. (" + progress + " actions)");
         }
 
         respond(embed);
