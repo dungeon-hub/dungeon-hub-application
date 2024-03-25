@@ -276,10 +276,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
     private void logTicket(CertainMessageEvent messageEvent) {
         Server server = messageEvent.getServer().orElse(null);
 
-        if (!messageEvent.isServerMessage()
-                || server == null
-                || !(server.getId() == IdList.SERVER.getId()
-                || server.getId() == IdList.SERVER.getTestId())) {
+        if (!messageEvent.isServerMessage() || server == null) {
             return;
         }
 
