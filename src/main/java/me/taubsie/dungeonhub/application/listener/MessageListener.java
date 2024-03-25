@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.listener;
 
+import me.taubsie.dungeonhub.application.classes.ServerProperty;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection;
@@ -53,6 +54,8 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
     @Override
     public void onMessageCreate(MessageCreateEvent messageCreateEvent) {
+        addReactionToPets(messageCreateEvent);
+
         logTicket(messageCreateEvent);
 
         loadSkycryptFromTicket(messageCreateEvent);
@@ -61,6 +64,60 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
     @Override
     public void onMessageEdit(MessageEditEvent messageEditEvent) {
         logTicket(messageEditEvent);
+    }
+
+    private void addReactionToPets(MessageCreateEvent messageCreateEvent) {
+        if (messageCreateEvent.isServerMessage() && messageCreateEvent.getServer().isPresent()) {
+            long serverId = messageCreateEvent.getServer().get().getId();
+            long channelId = messageCreateEvent.getChannel().getId();
+            if ((serverId == 1023684107877761196L && channelId == 1220895875102937098L)
+                    || (serverId == 693263712626278553L && channelId == 1219427157655289908L)) {
+                if (messageCreateEvent.getMessageAttachments().isEmpty()) {
+                    if (messageCreateEvent.getMessageAuthor().isRegularUser() && messageCreateEvent.getMessage().getEmbeds().stream().flatMap(embed -> embed.getThumbnail().stream()).findFirst().isEmpty()) {
+                        return;
+                    }
+                }
+
+                String emoji = getRandomEmoji();
+
+                try {
+                    System.out.println(emoji);
+                    messageCreateEvent.addReactionToMessage(emoji).join();
+                }
+                catch (CompletionException ignored) {
+                    // ignored, just don't add a reaction then
+                }
+            }
+        }
+    }
+
+    private String[] getEmojiPool() {
+        return new String[]{
+                "Woah:1220111116651204608",
+                "woah:1220111081150615572",
+                "girlwow:1220111157742800956",
+                "catelove:1204407157848678430",
+                "ZTcool:1204406493353353256",
+                "pepega:697756021048868894",
+                "smikecate:1204406375791333426",
+                "poggorfish:694270485613117480"
+        };
+    }
+
+    private String getRandomEmoji() {
+        double bound = 101.0;
+
+        String[] emojiPool = getEmojiPool();
+
+        int random = new Random().nextInt((int) bound);
+
+        String emoji = emojiPool[(int) (random * (emojiPool.length / bound))];
+
+        if(random == 100) {
+            emoji = "swag:708383726370947132";
+        }
+
+        return emoji;
     }
 
     private void loadSkycryptFromTicket(MessageCreateEvent messageCreateEvent) {
