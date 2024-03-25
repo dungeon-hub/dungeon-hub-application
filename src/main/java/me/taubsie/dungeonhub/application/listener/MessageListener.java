@@ -229,7 +229,6 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
         if (messageEvent.getChannel().getId() == IdList.TRANSCRIPTS_CHANNEL.getLocalId(server.getId())
                 && (messageEvent.getMessageContent().startsWith("carrylog;")
                 || messageEvent.getMessageContent().startsWith("carrylogs;"))) {
-
             String[] splitContent = messageEvent.getMessageContent().split(";");
             if (splitContent.length != 3) {
                 return;
@@ -243,7 +242,6 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
             }
 
             if (splitContent[2].equalsIgnoreCase("deprecated")) {
-                //TODO upload attachment of file to cdn and use that as a link
                 List<MessageAttachment> attachments = messageEvent.getMessageAttachments();
 
                 if (attachments.size() != 1) {
