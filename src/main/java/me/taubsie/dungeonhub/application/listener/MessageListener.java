@@ -226,7 +226,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
             return;
         }
 
-        if (messageEvent.getChannel().getId() == IdList.TRANSCRIPTS_CHANNEL.getLocalId(server.getId())
+        if(ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.getId()).map(s -> s.equals(messageEvent.getChannel().getIdAsString())).orElse(false)
                 && (messageEvent.getMessageContent().startsWith("carrylog;")
                 || messageEvent.getMessageContent().startsWith("carrylogs;"))) {
             String[] splitContent = messageEvent.getMessageContent().split(";");
