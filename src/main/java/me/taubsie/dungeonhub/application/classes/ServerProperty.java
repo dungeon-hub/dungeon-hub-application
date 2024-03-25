@@ -31,6 +31,7 @@ public enum ServerProperty implements Nameable {
     SCORE_LOGS_CHANNEL("id_score_logs_channel", ServerPropertyType.CHANNEL),
     STRIKES_LOGS_CHANNEL("id_strikes_logs_channel", ServerPropertyType.CHANNEL),
     LOG_APPROVING_CHANNEL("id_log_approving_channel", ServerPropertyType.CHANNEL),
+    TRANSCRIPTS_CHANNEL("id_transcripts_channel", ServerPropertyType.CHANNEL),
 
     SCORE_MANAGEMENT_ROLE("id_score_management_score", ServerPropertyType.ROLE),
     F4_ROLE("id_f4_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),

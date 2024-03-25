@@ -283,7 +283,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
             return;
         }
 
-        if(ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.getId()).map(s -> s.equals(messageEvent.getChannel().getIdAsString())).orElse(false)
+        if(ServerProperty.TRANSCRIPTS_CHANNEL.getValue(server.getId()).map(s -> messageEvent.getChannel().getIdAsString().equals(s)).orElse(false)
                 && (messageEvent.getMessageContent().startsWith("carrylog;")
                 || messageEvent.getMessageContent().startsWith("carrylogs;"))) {
             String[] splitContent = messageEvent.getMessageContent().split(";");
@@ -321,9 +321,8 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 attachmentLink = "https://tickettool.xyz/direct?url=" + splitContent[2];
             }
 
-            long approvingChannelId = IdList.APPROVING_CHANNEL.getLocalId(server.getId());
-            Optional<TextChannel> approvingChannel = messageEvent.getApi()
-                    .getTextChannelById(approvingChannelId);
+            Optional<TextChannel> approvingChannel = ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.getId())
+                    .flatMap(s -> messageEvent.getApi().getTextChannelById(s));
 
             QueueConnection.getInstance()
                     .getCarryQueuesByQueueStep(QueueStep.TRANSCRIPT)
