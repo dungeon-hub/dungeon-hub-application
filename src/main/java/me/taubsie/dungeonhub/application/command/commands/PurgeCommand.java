@@ -70,12 +70,12 @@ public class PurgeCommand extends Command {
             case "show" -> show(subCommand);
             case "add" -> add(subCommand);
             case "start" -> start(subCommand);
-            case "progress" -> progress(subCommand);
+            case "progress" -> progress();
             default -> throw new InvalidSubCommandException();
         }
     }
 
-    public void progress(SlashCommandInteractionOption subCommand) {
+    public void progress() {
         Server server = getServer();
 
         long progress = PurgingService.getInstance().getProgress(server.getId());
