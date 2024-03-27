@@ -10,18 +10,20 @@ import org.javacord.api.interaction.callback.ComponentInteractionOriginalMessage
 public class LeaderboardMessage extends PageableMessage {
     private final CarryTypeModel carryType;
     private final ScoreType scoreType;
+    private final Long userId;
 
     public LeaderboardMessage(int currentPage, long channel, long message, CarryTypeModel carryType,
-                              ScoreType scoreType) {
+                              ScoreType scoreType, Long userId) {
         super(currentPage, channel, message);
         this.carryType = carryType;
         this.scoreType = scoreType;
+        this.userId = userId;
     }
 
     @Override
     public int getMaxPage() {
         return ScoreConnection.getInstance(carryType)
-                .loadLeaderboard(scoreType, 0)
+                .loadLeaderboard(scoreType, 0, userId)
                 .map(LeaderboardModel::getTotalPages)
                 .orElse(0);
     }
@@ -33,7 +35,7 @@ public class LeaderboardMessage extends PageableMessage {
                         LeaderboardService.getInstance().getLeaderboardEmbed(
                                 LeaderboardService.getInstance().getLeaderboardTitle(carryType, scoreType),
                                 ScoreConnection.getInstance(carryType)
-                                        .loadLeaderboard(scoreType, currentPage, null)
+                                        .loadLeaderboard(scoreType, currentPage, userId)
                                         .orElse(null)
                         )
                 ).update();

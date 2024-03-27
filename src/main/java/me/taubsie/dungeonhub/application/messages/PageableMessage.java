@@ -86,7 +86,7 @@ public abstract class PageableMessage {
             int currentMaxPage = getMaxPage() - 1;
 
             int newPage = switch(customId.toLowerCase()) {
-                case BACK -> Math.max(1, (currentPage - 1));
+                case BACK -> Math.max(0, (currentPage - 1));
                 case FORWARD -> Math.min(currentMaxPage, (currentPage + 1));
                 case LAST -> currentMaxPage;
                 default -> 0;

@@ -41,8 +41,8 @@ public class LeaderboardService implements StartupListener {
         return instance;
     }
 
-    public void registerPageListener(Message message, CarryTypeModel carryType, ScoreType scoreType) {
-        new LeaderboardMessage(1, message.getChannel().getId(), message.getId(), carryType, scoreType);
+    public void registerPageListener(Message message, CarryTypeModel carryType, ScoreType scoreType, Long userId) {
+        new LeaderboardMessage(0, message.getChannel().getId(), message.getId(), carryType, scoreType, userId);
     }
 
     public String getLeaderboardTitle(CarryTypeModel carryType, ScoreType scoreType) {

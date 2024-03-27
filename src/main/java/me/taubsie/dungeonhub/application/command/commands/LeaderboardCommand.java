@@ -62,17 +62,16 @@ public class LeaderboardCommand extends Command {
                     Message message = responseUpdater
                             .addEmbed(embed)
                             .addComponents(PageableMessage.getComponents(true,
-                                    leaderboardModel.map(LeaderboardModel::getTotalPages).orElse(0) == 0))
+                                    leaderboardModel.map(LeaderboardModel::getTotalPages).orElse(0) <= 1))
                             .update()
                             .join();
 
-                    LeaderboardService.getInstance().registerPageListener(message, carryType.get(), scoreType);
+                    LeaderboardService.getInstance().registerPageListener(message, carryType.get(), scoreType, getUser().getId());
                 });
     }
 
     @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
-
         return List.of(CarryTypeCommand.getCarryTypeOption(), getScoreTypeOption());
     }
 }
