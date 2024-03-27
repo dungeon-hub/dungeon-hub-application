@@ -177,7 +177,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
         Message message = messageComponentInteraction.getMessage();
 
         for(CarryQueueModel queueModel : QueueConnection.getInstance()
-                .getCarryQueuesByQueueStep(QueueStep.APPROVING)
+                .getCarryQueueByRelatedIdAndQueueStep(message.getId(), QueueStep.APPROVING)
                 .orElse(new HashSet<>())) {
             User carrier = messageComponentInteraction.getApi().getUserById(queueModel.getCarrier().getId()).join();
 
