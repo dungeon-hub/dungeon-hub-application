@@ -45,6 +45,10 @@ public class LeaderboardService implements StartupListener {
         new LeaderboardMessage(0, message.getChannel().getId(), message.getId(), carryType, scoreType, userId);
     }
 
+    public String getLeaderboardDescription() {
+        return "To see how score works, use `/help score`";
+    }
+
     public String getLeaderboardTitle(CarryTypeModel carryType, ScoreType scoreType) {
         return "Leaderboard | " + carryType.getDisplayName() + "-Carries" + scoreType.getLeaderboardSuffix();
     }
@@ -54,17 +58,15 @@ public class LeaderboardService implements StartupListener {
             return getEmptyLeaderboardEmbed(title);
         }
 
-        String description = "To see how score works, use /score-help";
-
         EmbedBuilder embed = ApplicationService.getInstance()
                 .getEmbed()
                 .setTitle(title)
-                .setDescription(description)
+                .setDescription(getLeaderboardDescription())
                 .setColor(EmbedColor.DEFAULT.getColor());
 
         int counter = DungeonHubService.getInstance().getOffsetFromPageNumber(leaderboardModel.getPage());
 
-        for(ScoreModel score : leaderboardModel.getScores()) {
+        for (ScoreModel score : leaderboardModel.getScores()) {
             embed.addField(
                     "#" + ++counter + " Carrier",
                     getPlayerScore(score)
@@ -92,7 +94,7 @@ public class LeaderboardService implements StartupListener {
                 .getEmbed()
                 .setTitle(title)
                 .setColor(EmbedColor.NEGATIVE.getColor())
-                .setDescription("No score has been gained yet!\n To see how score works, use /score-help");
+                .setDescription("No score has been gained yet!\n" + getLeaderboardDescription());
     }
 
     public long getNextPossibleRefresh() {
@@ -114,8 +116,26 @@ public class LeaderboardService implements StartupListener {
     private void refreshLeaderboardInChannel(ServerTextChannel channel, List<Leaderboard> leaderboards) {
         List<EmbedBuilder> embeds = new ArrayList<>();
 
-        for(Leaderboard leaderboard : leaderboards) {
-            embeds.add(leaderboard.getEmbed());
+        for (Leaderboard leaderboard : leaderboards) {
+            EmbedBuilder embed = leaderboard.getEmbed()
+                    .setFooter(null)
+                    .setTimestamp(null);
+
+            if(!leaderboard.isEmpty()) {
+                embed.setDescription(null);
+            }
+
+            embeds.add(embed);
+        }
+
+        if (!embeds.isEmpty()) {
+            if(!leaderboards.get(0).isEmpty()) {
+                embeds.get(0).setDescription(getLeaderboardDescription());
+            }
+
+            embeds.get(embeds.size() - 1)
+                    .setFooter(ApplicationService.getInstance().getFooter())
+                    .setTimestamp(Instant.now());
         }
 
         Optional<Message> messageOptional =
@@ -141,8 +161,8 @@ public class LeaderboardService implements StartupListener {
 
         Map<ServerTextChannel, List<Leaderboard>> leaderboards = new HashMap<>();
 
-        for(DiscordServerModel serverModel : DiscordServerConnection.getInstance().loadAllServers().orElse(new ArrayList<>())) {
-            for(CarryTypeModel carryType :
+        for (DiscordServerModel serverModel : DiscordServerConnection.getInstance().loadAllServers().orElse(new ArrayList<>())) {
+            for (CarryTypeModel carryType :
                     CarryTypeConnection.getInstance(serverModel.getId()).getAllCarryTypes().orElse(List.of())) {
                 Optional<ServerTextChannel> leaderboardChannel = carryType.getLeaderboardChannel()
                         .flatMap(id -> DiscordConnection.getInstance().getBot().getServerTextChannelById(id));
@@ -151,7 +171,7 @@ public class LeaderboardService implements StartupListener {
                     continue;
                 }
 
-                for(ScoreType scoreType : ScoreType.values()) {
+                for (ScoreType scoreType : ScoreType.values()) {
                     if (scoreType == ScoreType.EVENT && !carryType.isEventActive()) {
                         continue;
                     }
