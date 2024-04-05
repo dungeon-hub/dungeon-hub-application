@@ -255,6 +255,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                         ApplicationService.getInstance()
                                 .loadEmbedFromCarryQueue(queueModel)
                                 .setTitle("Information")
+                                .setColor(EmbedColor.DEFAULT.getColor())
                 );
             }
             catch (CompletionException | NullPointerException ignored) {
