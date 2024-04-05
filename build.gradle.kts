@@ -5,6 +5,7 @@
 plugins {
     `java-library`
     application
+    kotlin("jvm")
 }
 
 group = "me.taubsie"
@@ -33,17 +34,19 @@ dependencies {
     implementation("net.hypixel:hypixel-api-core:4.3")
     implementation("me.nullicorn:Nedit:2.2.0")
     implementation("com.google.zxing:javase:3.5.2")
+    implementation("dev.kord:kord-core:0.13.1")
+    implementation(kotlin("stdlib-jdk8"))
 
     annotationProcessor("org.projectlombok:lombok:1.18.28")
     annotationProcessor("org.apache.logging.log4j:log4j-core:2.20.0")
 }
 
-application {
-    mainClass.set("me.taubsie.dungeonhub.application.connection.DiscordConnection")
+kotlin {
+    jvmToolchain(17)
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
+application {
+    mainClass.set("me.taubsie.dungeonhub.application.connection.DiscordConnection")
 }
 
 tasks.withType<JavaCompile> {
