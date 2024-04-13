@@ -138,7 +138,7 @@ public class SyncCommand extends Command {
             NicknameService.getInstance().updateNickname(user, userModel, server);
         }
         catch (NoNameSchemaException noNameSchemaException) {
-            return true;
+            return false;
         }
         catch (NotLinkedException notLinkedException) {
             future.complete(DelayedResponse.fromException(notLinkedException));
@@ -146,7 +146,7 @@ public class SyncCommand extends Command {
         catch (CompletionException completionException) {
             //ignored since probably missing permission
         }
-        return false;
+        return true;
     }
 
     /**
