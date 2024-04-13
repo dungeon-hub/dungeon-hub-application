@@ -34,32 +34,33 @@ public abstract class PageableMessage {
         return getMessage().flatMap(Message::getServer);
     }
 
+    @SuppressWarnings("UnnecessaryUnicodeEscape")
     public static HighLevelComponent[] getComponents(boolean firstPage, boolean lastPage) {
         Button startButton = new ButtonBuilder()
                 .setCustomId(FIRST)
                 .setStyle(ButtonStyle.SUCCESS)
-                .setEmoji("⏪")
+                .setEmoji("\u23EA")
                 .setDisabled(firstPage)
                 .build();
 
         Button backButton = new ButtonBuilder()
                 .setCustomId(BACK)
                 .setStyle(ButtonStyle.SUCCESS)
-                .setEmoji("◀")
+                .setEmoji("\u25C0")
                 .setDisabled(firstPage)
                 .build();
 
         Button forwardButton = new ButtonBuilder()
                 .setCustomId(FORWARD)
                 .setStyle(ButtonStyle.SUCCESS)
-                .setEmoji("▶")
+                .setEmoji("\u25B6")
                 .setDisabled(lastPage)
                 .build();
 
         Button endButton = new ButtonBuilder()
                 .setCustomId(LAST)
                 .setStyle(ButtonStyle.SUCCESS)
-                .setEmoji("⏩")
+                .setEmoji("\u23E9")
                 .setDisabled(lastPage)
                 .build();
 
