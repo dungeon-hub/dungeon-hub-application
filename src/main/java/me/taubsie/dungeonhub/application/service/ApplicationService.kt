@@ -9,17 +9,19 @@ import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.QRCodeWriter
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
+import dev.kord.core.entity.Guild
 import dev.kord.core.entity.User
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
 import dev.kord.gateway.PrivilegedIntent
 import io.ktor.util.debug.*
-import lombok.extern.slf4j.Slf4j
+import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.classes.FlagResponse
 import me.taubsie.dungeonhub.application.command.Command
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
+import me.taubsie.dungeonhub.application.connection.HypixelConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
@@ -35,23 +37,19 @@ import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
 import me.taubsie.dungeonhub.common.model.score.ScoreModel
-import org.javacord.api.DiscordApi
-import org.javacord.api.DiscordApiBuilder
-import org.javacord.api.entity.Nameable
-import org.javacord.api.entity.intent.Intent
 import org.javacord.api.entity.message.MessageFlag
 import org.javacord.api.entity.message.component.ActionRowBuilder
 import org.javacord.api.entity.message.component.HighLevelComponent
 import org.javacord.api.entity.message.component.TextInputBuilder
 import org.javacord.api.entity.message.component.TextInputStyle
 import org.javacord.api.entity.message.embed.EmbedBuilder
-import org.javacord.api.entity.server.Server
-import org.javacord.api.entity.team.Team
 import org.javacord.api.event.interaction.SlashCommandCreateEvent
 import org.javacord.api.interaction.InteractionBase
 import org.javacord.api.interaction.SlashCommandOption
 import org.javacord.api.interaction.SlashCommandOptionBuilder
 import org.javacord.api.interaction.SlashCommandOptionType
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -59,15 +57,12 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.time.Instant
 import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.function.Function
-import java.util.function.Predicate
-import java.util.function.Supplier
 import javax.imageio.ImageIO
 
-@Slf4j
 class ApplicationService {
-    val serverLink: String
+    private val logger: Logger = LoggerFactory.getLogger(DiscordConnection::class.java)
+
+    private val serverLink: String
         get() = "discord.dungeon-hub.net"
 
     val footer: String
@@ -77,7 +72,7 @@ class ApplicationService {
          *
          * @return the default footer used for most embeds.
          */
-        get() = serverLink + " \u2022 made by @taubsie"
+        get() = "$serverLink • made by @taubsie"
 
     val unstableFooter: String
         /**
@@ -86,7 +81,7 @@ class ApplicationService {
          *
          * @return the footer used for embeds of unstable or new features.
          */
-        get() = serverLink + " \u2022 THIS FEATURE IS UNSTABLE \u2022 please report bugs to @taubsie"
+        get() = "$serverLink • THIS FEATURE IS UNSTABLE • please report bugs to @taubsie"
 
     val priceFooter: String
         /**
@@ -95,7 +90,7 @@ class ApplicationService {
          *
          * @return the footer used for price message embeds.
          */
-        get() = serverLink + " \u2022 also see /calc-price \u2022 made by @taubsie"
+        get() = "$serverLink • also see /calc-price • made by @taubsie"
 
     val embed: EmbedBuilder
         get() = getEmbed(Instant.now())
@@ -110,19 +105,18 @@ class ApplicationService {
             .setFooter(footer)
     }
 
-    fun getBotOwner(api: DiscordApi): User {
-        return Objects.requireNonNull(api.getCachedTeam()
-            .map<User>(Function { team: Team -> team.requestOwner().join() })
-            .orElseGet(Supplier<User> {
-                api.getOwner().map<User>(
-                    Function { obj: CompletableFuture<User?> -> obj.join() })
-                    .orElse(null)
-            })
-        )
+    suspend fun getBotOwner(kord: Kord): User? {
+        val ownerId = kord.getApplicationInfo().ownerId ?: kord.getApplicationInfo().team?.ownerUserId
+
+        if (ownerId == null) {
+            return null
+        }
+
+        return kord.getUser(ownerId)
     }
 
     fun makeDoubleReadable(number: Double): String {
-        val df: DecimalFormat = DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.US))
+        val df = DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.US))
         df.setMaximumFractionDigits(340) //340 = DecimalFormat.DOUBLE_FRACTION_DIGITS
 
         return df.format(number)
@@ -174,17 +168,11 @@ class ApplicationService {
         }
     }
 
-    val apiBuilder: DiscordApiBuilder
-        get() = DiscordApiBuilder()
-            .setToken(ConfigProperty.DISCORD_BOT_TOKEN.value)
-            .setAllNonPrivilegedIntents()
-            .addIntents(Intent.MESSAGE_CONTENT, Intent.GUILD_MEMBERS)
-
     val errorEmbed: EmbedBuilder
         get() = getErrorEmbed(embed)
 
     fun getErrorEmbed(embed: EmbedBuilder): EmbedBuilder {
-        return embed.setTitle("Error").setColor(EmbedColor.NEGATIVE.getColor())
+        return embed.setTitle("Error").setColor(EmbedColor.NEGATIVE.color)
     }
 
     fun getErrorEmbed(commandExecutionException: CommandExecutionException): EmbedBuilder {
@@ -207,8 +195,8 @@ class ApplicationService {
 
     fun getCommand(slashCommandCreateEvent: SlashCommandCreateEvent): Optional<Command> {
         return ClassLoaderService.getInstance().getCommand(
-            slashCommandCreateEvent.getSlashCommandInteraction().getCommandName(),
-            slashCommandCreateEvent.getSlashCommandInteraction().getServer().orElse(null)
+            slashCommandCreateEvent.slashCommandInteraction.commandName,
+            slashCommandCreateEvent.slashCommandInteraction.server.orElse(null)
         )
     }
 
@@ -227,7 +215,7 @@ class ApplicationService {
 
     @JvmOverloads
     fun loadEmbedFromCarry(carry: CarryModel, embedBuilder: EmbedBuilder = getEmbed(carry.time())): EmbedBuilder {
-        embedBuilder.setColor(EmbedColor.INFORMATION.getColor())
+        embedBuilder.setColor(EmbedColor.INFORMATION.color)
             .addInlineField(
                 "Number of carries",
                 carry.amount().toString()
@@ -254,7 +242,7 @@ class ApplicationService {
     }
 
     fun loadEmbedFromCarryQueue(carryQueue: CarryQueueModel, embedBuilder: EmbedBuilder): EmbedBuilder {
-        embedBuilder.setColor(EmbedColor.INFORMATION.getColor())
+        embedBuilder.setColor(EmbedColor.INFORMATION.color)
             .addInlineField(
                 "Number of carries",
                 carryQueue.amount.toString()
@@ -282,8 +270,8 @@ class ApplicationService {
 
     suspend fun formatStrikes(strikeData: List<StrikeData>, user: User, page: Int): EmbedBuilder {
         val embedBuilder = embed
-            .setColor(EmbedColor.INFORMATION.getColor())
-            .setTitle("Strikes of user " + user.discriminatedName)
+            .setColor(EmbedColor.INFORMATION.color)
+            .setTitle("Strikes of user " + user.tag)
 
         if (strikeData.isEmpty()) {
             embedBuilder.setDescription("User has no strikes!")
@@ -295,9 +283,14 @@ class ApplicationService {
             .limit(10)
             .forEach { strike: StrikeData ->
                 val striker: String = Optional.ofNullable<Long>(strike.striker)
-                    .map<dev.kord.core.entity.User> { strikerId: Long -> DiscordConnection.getInstance().bot.getUser(Snowflake(strikerId)) }
-                    .map(Function<User, String> {obj: User -> obj.nam})
-                    .map(Function<Any, String> { obj: Any -> obj.getDiscriminatedName() })
+                    .map<User> { strikerId: Long ->
+                        runBlocking {
+                            DiscordConnection.getInstance().bot.getUser(
+                                Snowflake(strikerId)
+                            )
+                        }
+                    }
+                    .map { obj: User -> obj.tag }
                     .orElse("CONSOLE")
                 val reason = Optional.ofNullable(strike.reason)
                     .map { s: String -> " because of \"$s\"" }
@@ -311,16 +304,15 @@ class ApplicationService {
         return embedBuilder
     }
 
-    fun formatStrikeLog(strikeData: StrikeData): EmbedBuilder {
+    suspend fun formatStrikeLog(strikeData: StrikeData): EmbedBuilder {
+        val title =
+            "Strike " + (if (strikeData.id != null) "#$strikeData.id" else "for " + DiscordConnection.getInstance().bot.getUser(
+                Snowflake(strikeData.user)
+            )?.tag)
+
         val embedBuilder = getEmbed(strikeData.strikeTime)
-            .setColor(EmbedColor.INFORMATION.getColor())
-            .setTitle(
-                "Strike " +
-                        (if (strikeData.id != null
-                        ) "#" + strikeData.id
-                        else "for " + DiscordConnection.getInstance().bot.getUserById(strikeData.user).join()
-                            .getDiscriminatedName())
-            )
+            .setColor(EmbedColor.INFORMATION.color)
+            .setTitle(title)
 
         embedBuilder.addField("User", "<@" + strikeData.user + ">")
         embedBuilder.addField("Striker", if (strikeData.striker != null) "<@" + strikeData.striker + ">" else "CONSOLE")
@@ -332,14 +324,14 @@ class ApplicationService {
         return embedBuilder
     }
 
-    fun formatStrikeDM(strikeData: StrikeData): EmbedBuilder {
+    suspend fun formatStrikeDM(strikeData: StrikeData): EmbedBuilder {
         val embedBuilder = getEmbed(strikeData.strikeTime)
-            .setColor(EmbedColor.INFORMATION.getColor())
+            .setColor(EmbedColor.INFORMATION.color)
             .setTitle(
-                ("You were striked on server `"
-                        + DiscordConnection.getInstance().bot.getServerById(strikeData.server)
-                    .map { obj: Nameable -> obj.name }.orElse("unknown")
-                        ).toString() + "`"
+                "You were striked on server `"
+                        + (DiscordConnection.getInstance().bot.getGuildOrNull(Snowflake(strikeData.server))?.name
+                    ?: "unknown")
+                        + "`"
             )
 
         embedBuilder.addField("You", "<@" + strikeData.user + ">")
@@ -351,20 +343,15 @@ class ApplicationService {
         return embedBuilder
     }
 
-    fun formatStrike(strikeData: StrikeData): EmbedBuilder {
+    suspend fun formatStrike(strikeData: StrikeData): EmbedBuilder {
+        val title =
+            "Strike " + (if (strikeData.id != null) "#$strikeData.id" else "for " + DiscordConnection.getInstance().bot.getUser(
+                Snowflake(strikeData.user)
+            )?.tag)
+
         val embedBuilder = getEmbed(strikeData.strikeTime)
-            .setColor(EmbedColor.INFORMATION.getColor())
-            .setTitle(
-                ("Strike " +
-                        (if (strikeData.id != null
-                        ) "#" + strikeData.id
-                        else "for " + DiscordConnection.getInstance().bot.getUserById(strikeData.user).join()
-                            .getDiscriminatedName())
-                        + " on server `"
-                        + DiscordConnection.getInstance().bot.getServerById(strikeData.server)
-                    .map { obj: Nameable -> obj.name }.orElse("unknown")
-                        ).toString() + "`"
-            )
+            .setColor(EmbedColor.INFORMATION.color)
+            .setTitle(title)
 
         embedBuilder.addField("User", "<@" + strikeData.user + ">")
         embedBuilder.addField("Striker", if (strikeData.striker != null) "<@" + strikeData.striker + ">" else "CONSOLE")
@@ -385,12 +372,12 @@ class ApplicationService {
     For more information about how to do this, contact `@taubsie` (<@356134481452597250>)!
     """.trimIndent()
             )
-            .setColor(EmbedColor.NEGATIVE.getColor())
+            .setColor(EmbedColor.NEGATIVE.color)
 
-    fun getScoreCountMessage(
+    suspend fun getScoreCountMessage(
         userToCheck: User,
         user: User,
-        server: Server?,
+        server: Guild?,
         scoreCount: List<ScoreModel>
     ): EmbedBuilder {
         if (scoreCount.isEmpty()) {
@@ -400,31 +387,31 @@ class ApplicationService {
         val embed = embed
             .setTitle(
                 if ((userToCheck.id != user.id && server != null)
-                ) userToCheck.getDisplayName(server) + "'s score:"
+                ) server.getMember(userToCheck.id).effectiveName + "'s score:"
                 else "Your score:"
             )
-            .setColor(EmbedColor.DEFAULT.getColor())
+            .setColor(EmbedColor.DEFAULT.color)
 
-        val scoreDescriptions: EnumMap<ScoreType, List<String>> = EnumMap<ScoreType, List<String>>(
+        val scoreDescriptions: EnumMap<ScoreType, MutableList<String>> = EnumMap<ScoreType, MutableList<String>>(
             ScoreType::class.java
         )
 
         scoreCount.forEach { scoreModel: ScoreModel ->
-            if (scoreModel.scoreType == ScoreType.EVENT && !scoreModel.carryType.isEventActive) {
+            if (scoreModel.scoreType == ScoreType.EVENT && !scoreModel.carryType?.isEventActive!!) {
                 return@forEach
             }
-            val description = scoreModel.carryType.displayName + ": " + scoreModel.scoreAmount
+            val description = scoreModel.carryType?.displayName + ": " + scoreModel.scoreAmount
             if (scoreDescriptions.containsKey(scoreModel.scoreType)) {
                 scoreDescriptions[scoreModel.scoreType]!!.add(description)
             } else {
-                scoreDescriptions.put(scoreModel.scoreType, ArrayList(java.util.List.of(description)))
+                scoreDescriptions[scoreModel.scoreType] = ArrayList(java.util.List.of(description))
             }
         }
 
         scoreDescriptions
             .forEach { (carryType: ScoreType, strings: List<String>?) ->
                 embed.addInlineField(
-                    carryType.getDisplayName(),
+                    carryType.displayName,
                     java.lang.String.join(System.lineSeparator(), strings)
                 )
             }
@@ -454,7 +441,7 @@ class ApplicationService {
         )
 
         val embed = instance!!.embed
-            .setColor(EmbedColor.INFORMATION.getColor())
+            .setColor(EmbedColor.INFORMATION.color)
             .setDescription(description)
             .setTitle(skycryptData.getOrDefault("title", ign))
             .setUrl(ConfigProperty.SKYCRYPT_API_URL.toString() + "stats/" + ign)
@@ -464,23 +451,23 @@ class ApplicationService {
 
         val flagResponses: List<FlagResponse> = FlaggingConnection.getInstance().isFlagged(uuid, discordId)
             .stream()
-            .filter(Predicate<FlagResponse> { flagResponse: FlagResponse -> flagResponse.uuid != null || flagResponse.discord != null })
-            .filter(Predicate<FlagResponse> { flagResponse: FlagResponse ->
-                ((flagResponse.uuid != null && flagResponse.uuid.flagged)
-                        || (flagResponse.discord != null && flagResponse.discord.flagged))
-            })
+            .filter { flagResponse: FlagResponse -> flagResponse.uuid != null || flagResponse.discord != null }
+            .filter { flagResponse: FlagResponse ->
+                ((flagResponse.uuid != null && flagResponse.uuid!!.flagged)
+                        || (flagResponse.discord != null && flagResponse.discord!!.flagged))
+            }
             .toList()
 
-        if (!flagResponses.isEmpty()) {
+        if (flagResponses.isNotEmpty()) {
             embed.addField(
                 "Flagged", """
      **This user is flagged, which means it might not safe to interact with them.**
      ${formatFlagDetails(flagResponses)}
      """.trimIndent()
             )
-                .setColor(EmbedColor.NEGATIVE.getColor())
+                .setColor(EmbedColor.NEGATIVE.color)
         } else {
-            embed.setColor(EmbedColor.POSITIVE.getColor())
+            embed.setColor(EmbedColor.POSITIVE.color)
         }
 
         if (!skycryptData.containsKey("description") || !skycryptData.containsKey("title")) {
@@ -494,12 +481,12 @@ class ApplicationService {
         val result: MutableList<String> = ArrayList()
 
         for (flagResponse in flagged) {
-            if (flagResponse.discord != null && flagResponse.discord.flagged) {
-                result.add("- " + flagResponse.name + " (by discord): " + flagResponse.discord.format())
+            if (flagResponse.discord != null && flagResponse.discord!!.flagged) {
+                result.add("- " + flagResponse.name + " (by discord): " + flagResponse.discord!!.format())
             }
 
-            if (flagResponse.uuid != null && flagResponse.uuid.flagged) {
-                result.add("- " + flagResponse.name + " (by UUID): " + flagResponse.uuid.format())
+            if (flagResponse.uuid != null && flagResponse.uuid!!.flagged) {
+                result.add("- " + flagResponse.name + " (by UUID): " + flagResponse.uuid!!.format())
             }
         }
 
@@ -508,7 +495,7 @@ class ApplicationService {
 
     fun getCarryTypeEmbed(carryType: CarryTypeModel): EmbedBuilder {
         val embed = embed
-            .setColor(EmbedColor.DEFAULT.getColor())
+            .setColor(EmbedColor.DEFAULT.color)
             .addInlineField("Identifier", carryType.identifier)
             .addInlineField("Display Name", carryType.displayName)
 
@@ -526,7 +513,7 @@ class ApplicationService {
 
     fun getCarryTierEmbed(carryTier: CarryTierModel): EmbedBuilder {
         val embed = embed
-            .setColor(EmbedColor.DEFAULT.getColor())
+            .setColor(EmbedColor.DEFAULT.color)
             .addInlineField("Identifier", carryTier.identifier)
             .addInlineField("Display Name", carryTier.displayName)
             .addInlineField("Descriptive Name", carryTier.descriptiveName)
@@ -556,7 +543,7 @@ class ApplicationService {
 
     fun getCarryDifficultyEmbed(carryDifficulty: CarryDifficultyModel): EmbedBuilder {
         val embed = embed
-            .setColor(EmbedColor.DEFAULT.getColor())
+            .setColor(EmbedColor.DEFAULT.color)
             .addInlineField("Identifier", carryDifficulty.identifier)
             .addInlineField("Display Name", carryDifficulty.displayName)
             .addInlineField(
@@ -608,7 +595,7 @@ class ApplicationService {
 
         val qrCodeReader: QRCodeReader = QRCodeReader()
 
-        return qrCodeReader.decode(binaryBitmap).getText()
+        return qrCodeReader.decode(binaryBitmap).text
     }
 
     fun readImageData(bufferedImage: BufferedImage?): ByteArray {
@@ -616,7 +603,7 @@ class ApplicationService {
         try {
             ImageIO.write(bufferedImage, "png", outputStream)
         } catch (ioException: IOException) {
-            ApplicationService.log.error(null, ioException)
+            logger.error(null, ioException)
             return ByteArray(0)
         }
         return outputStream.toByteArray()
@@ -649,7 +636,8 @@ class ApplicationService {
 
     companion object {
         private const val MAX_MINECRAFT_USERNAME_LENGTH = 16
-        @kotlin.jvm.JvmStatic
+
+        @JvmStatic
         var instance: ApplicationService? = null
             get() {
                 if (field == null) {
