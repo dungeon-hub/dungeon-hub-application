@@ -96,7 +96,7 @@ public class ProfileModerationService {
     private boolean isBanDisabled(long serverId) {
         return ServerProperty.PROFILE_MODERATION_BAN.getValue(serverId)
                 .map(s -> s.equalsIgnoreCase("false"))
-                .orElse(Boolean.FALSE);
+                .orElse(Boolean.TRUE);
     }
 
     public void handleUserBan(Server server, User user, User executor, String reason) {
