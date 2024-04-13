@@ -41,7 +41,7 @@ public class LeaderboardService implements StartupListener {
         return instance;
     }
 
-    public void registerPageListener(Message message, CarryTypeModel carryType, ScoreType scoreType, Long userId) {
+    public void registerPageListener(Message message, @Nullable CarryTypeModel carryType, ScoreType scoreType, Long userId) {
         new LeaderboardMessage(0, message.getChannel().getId(), message.getId(), carryType, scoreType, userId);
     }
 
@@ -49,7 +49,11 @@ public class LeaderboardService implements StartupListener {
         return "To see how score works, use `/help score`";
     }
 
-    public String getLeaderboardTitle(CarryTypeModel carryType, ScoreType scoreType) {
+    public String getLeaderboardTitle(@Nullable CarryTypeModel carryType, ScoreType scoreType) {
+        if(carryType == null) {
+            return "Leaderboard | Total score" + scoreType.getLeaderboardSuffix();
+        }
+
         return "Leaderboard | " + carryType.getDisplayName() + "-Carries" + scoreType.getLeaderboardSuffix();
     }
 

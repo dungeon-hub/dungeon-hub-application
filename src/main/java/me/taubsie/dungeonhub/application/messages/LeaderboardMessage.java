@@ -6,13 +6,15 @@ import me.taubsie.dungeonhub.common.enums.ScoreType;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
 import org.javacord.api.interaction.callback.ComponentInteractionOriginalMessageUpdater;
+import org.jetbrains.annotations.Nullable;
 
 public class LeaderboardMessage extends PageableMessage {
+    @Nullable
     private final CarryTypeModel carryType;
     private final ScoreType scoreType;
     private final Long userId;
 
-    public LeaderboardMessage(int currentPage, long channel, long message, CarryTypeModel carryType,
+    public LeaderboardMessage(int currentPage, long channel, long message, @Nullable CarryTypeModel carryType,
                               ScoreType scoreType, Long userId) {
         super(currentPage, channel, message);
         this.carryType = carryType;

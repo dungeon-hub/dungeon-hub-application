@@ -29,15 +29,19 @@ import java.util.Optional;
 public class CarryTypeCommand extends Command {
     public static final String FIELD_NAME = "carry-type";
 
-    public static SlashCommandOption getCarryTypeOption() {
+    public static SlashCommandOption getCarryTypeOption(boolean required) {
         return new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.STRING)
                 .setName(FIELD_NAME)
                 .setDescription("The identifier of the carry type")
-                .setRequired(true)
+                .setRequired(required)
                 .setMaxLength(30)
                 .setAutocompletable(true)
                 .build();
+    }
+
+    public static SlashCommandOption getCarryTypeOption() {
+        return getCarryTypeOption(true);
     }
 
     @Override
