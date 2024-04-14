@@ -8,7 +8,8 @@ import me.taubsie.dungeonhub.application.connection.HypixelConnection;
 import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
-import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaException;
+import me.taubsie.dungeonhub.application.enums.EmbedColor;
+import me.taubsie.dungeonhub.application.exceptions.InvalidSubCommandException;
 import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.NicknameService;
@@ -19,7 +20,6 @@ import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
-import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
@@ -35,6 +35,8 @@ import java.util.stream.Collectors;
 public class LoadIgnCommand extends Command {
     private static final Map<Long, String> fetchingUsers = Collections.synchronizedMap(new HashMap<>());
     private static final Map<Long, UUID> users = Collections.synchronizedMap(new HashMap<>());
+    private static final Set<Long> roleUsers = Collections.synchronizedSet(new HashSet<>());
+    private static final Set<Long> usernameUsers = Collections.synchronizedSet(new HashSet<>());
     private static Long serverId;
 
     static {
@@ -44,6 +46,10 @@ public class LoadIgnCommand extends Command {
                 fetchingWave();
 
                 loadingWave();
+
+                roleWave();
+
+                usernameWave();
             }
         }, new Time(System.currentTimeMillis() + 500L), 3000L);
     }
@@ -96,18 +102,29 @@ public class LoadIgnCommand extends Command {
             DiscordUserUpdateModel updateModel = new DiscordUserUpdateModel(entry.getValue());
 
             DiscordUserConnection.getInstance().updateUser(user.getId(), updateModel);
-
-            RolesService.getInstance().updateRoles(user);
-
-            try {
-                NicknameService.getInstance().updateNickname(user);
-            }
-            catch (NoNameSchemaException ignored) {
-                //this just means there shouldn't be a nickname, then just ignore that
-            }
         });
 
         currentWave.stream().map(Map.Entry::getKey).forEach(users::remove);
+    }
+
+    public static synchronized void roleWave() {
+        List<Long> currentWave = roleUsers.stream().limit(5).toList();
+
+        currentWave.stream()
+                .map(id -> DiscordConnection.getInstance().getBot().getUserById(id).join())
+                .forEach(user -> RolesService.getInstance().updateRoles(user));
+
+        currentWave.forEach(roleUsers::remove);
+    }
+
+    public static synchronized void usernameWave() {
+        List<Long> currentWave = usernameUsers.stream().limit(5).toList();
+
+        currentWave.stream()
+                .map(id -> DiscordConnection.getInstance().getBot().getUserById(id).join())
+                .forEach(user -> NicknameService.getInstance().updateNickname(user));
+
+        currentWave.forEach(usernameUsers::remove);
     }
 
     @Override
@@ -129,31 +146,61 @@ public class LoadIgnCommand extends Command {
                 .setDescription("Starts the loading.")
                 .build();
 
-        return List.of(progressOption, startOption);
+        SlashCommandOption startUsernameOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("start-usernames")
+                .setDescription("Starts the setting of usernames.")
+                .build();
+
+        SlashCommandOption startRolesOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("start-roles")
+                .setDescription("Starts the adding of roles.")
+                .build();
+
+        return List.of(progressOption, startOption, startUsernameOption, startRolesOption);
     }
 
-    @Override
-    protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
-        boolean show = slashCommandCreateEvent.getSlashCommandInteraction()
-                .getOptionByIndex(0)
-                .map(SlashCommandInteractionOption::getName)
-                .map(s -> s.equalsIgnoreCase("progress"))
-                .orElse(false);
+    private void show() {
+        respond(ApplicationService.getInstance()
+                .getEmbed()
+                .setDescription("Progress: " + fetchingUsers.size() + " users to fetch and " + users.size() + " users to load left."));
+    }
 
-        if (show) {
-            respond(ApplicationService.getInstance()
-                    .getEmbed()
-                    .setDescription("Progress: " + fetchingUsers.size() + " users to fetch and " + users.size() + " users to load left."));
-            return;
-        }
+    private void startRoles() {
+        roleUsers.addAll(
+                DiscordUserConnection.getInstance()
+                        .getAll().orElse(List.of())
+                        .stream().map(DiscordUserModel::getId).toList()
+        );
 
+        respond(ApplicationService.getInstance()
+                .getEmbed()
+                .setColor(EmbedColor.DEFAULT.getColor())
+                .setDescription("Updating roles of " + roleUsers.size() + " users."));
+    }
+
+    private void startUsernames() {
+        usernameUsers.addAll(
+                DiscordUserConnection.getInstance()
+                        .getAll().orElse(List.of())
+                        .stream().filter(discordUserModel -> discordUserModel.getMinecraftId() != null)
+                        .map(DiscordUserModel::getId)
+                        .toList()
+        );
+
+        respond(ApplicationService.getInstance()
+                .getEmbed()
+                .setColor(EmbedColor.DEFAULT.getColor())
+                .setDescription("Updating usernames of " + usernameUsers.size() + " users."));
+    }
+
+    private void start() {
         CompletableFuture<DelayedResponse> completableFuture = new CompletableFuture<>();
 
         respondLaterEphemeral(completableFuture);
 
         Server server = getServer();
-
-        serverId = server.getId();
 
         Map<Long, DiscordUserModel> discordUsers = DiscordUserConnection.getInstance()
                 .getAll()
@@ -200,5 +247,18 @@ public class LoadIgnCommand extends Command {
                                 .getEmbed()
                                 .setDescription(description))
         );
+    }
+
+    @Override
+    protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
+        serverId = getServer().getId();
+
+        switch (getOptionAtIndex(0).getName().toLowerCase()) {
+            case "progress" -> show();
+            case "start" -> start();
+            case "start-roles" -> startRoles();
+            case "start-usernames" -> startUsernames();
+            default -> throw new InvalidSubCommandException();
+        }
     }
 }
