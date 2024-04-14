@@ -155,10 +155,17 @@ public class NicknameService {
      *
      * @param user the Discord user for whom to update the nickname on all mutual servers
      * @throws NoNameSchemaException if no valid role with a non-blank name schema is found while updating the nickname
-     * @throws NullPointerException if the user is `null`
+     * @throws NullPointerException  if the user is `null`
      */
     public void updateNickname(@NotNull User user) {
-        user.getMutualServers().forEach(server -> updateNickname(user, server));
+        user.getMutualServers().forEach(server -> {
+            try {
+                updateNickname(user, server);
+            }
+            catch (NoNameSchemaException ignored) {
+                //ignored, just don't set a username
+            }
+        });
     }
 
     /**
@@ -170,8 +177,8 @@ public class NicknameService {
      * @param user   the Discord user for whom to update the nickname
      * @param server the Discord server where the nickname should be updated
      * @throws NoNameSchemaException if no valid role with a non-blank name schema is found while updating the nickname
-     * @throws NotLinkedException   if the user is not linked to a Minecraft account
-     * @throws NullPointerException if the user or server is `null`
+     * @throws NotLinkedException    if the user is not linked to a Minecraft account
+     * @throws NullPointerException  if the user or server is `null`
      */
     public void updateNickname(@NotNull User user, Server server) throws NoNameSchemaException, NotLinkedException {
         DiscordUserModel discordUserModel = DiscordUserConnection.getInstance().getById(user.getId()).filter(discordUserModel1 -> discordUserModel1.getMinecraftId() != null).orElseThrow(NotLinkedException::new);
