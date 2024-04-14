@@ -162,9 +162,17 @@ public class LoadIgnCommand extends Command {
     }
 
     private void show() {
+        List<String> progress = List.of(
+                "Users to fetch IGNs: " + fetchingUsers.size(),
+                "Users to load UUIDs from: " + users.size(),
+                "Users to assign correct roles: " + roleUsers.size(),
+                "Users to set nickname: " + usernameUsers.size()
+        );
+
         respond(ApplicationService.getInstance()
                 .getEmbed()
-                .setDescription("Progress: " + fetchingUsers.size() + " users to fetch and " + users.size() + " users to load left."));
+                .setTitle("Progress")
+                .setDescription(String.join(System.lineSeparator(), progress)));
     }
 
     private void startRoles() {
