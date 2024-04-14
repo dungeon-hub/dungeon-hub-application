@@ -87,7 +87,6 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 String emoji = getRandomEmoji();
 
                 try {
-                    System.out.println(emoji);
                     messageCreateEvent.addReactionToMessage(emoji).join();
                 }
                 catch (CompletionException ignored) {
