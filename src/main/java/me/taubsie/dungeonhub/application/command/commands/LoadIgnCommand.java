@@ -233,8 +233,6 @@ public class LoadIgnCommand extends Command {
                                 .strip()
                 ));
 
-        System.out.println("★");
-
         fetchingUsers.putAll(usersToFetch);
 
         String description = fetchingUsers.entrySet().stream()
