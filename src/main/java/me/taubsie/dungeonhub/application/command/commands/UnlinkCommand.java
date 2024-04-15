@@ -98,7 +98,7 @@ public class UnlinkCommand extends Command {
     @Contract(pure = true, value = "_ -> new")
     private static @NotNull EmbedBuilder getEmbed(@NotNull DiscordUserModel oldUserModel) {
         ApplicationService service = ApplicationService.getInstance();
-        String description = String.format("Unlinked successfully from UUID `%s'.", oldUserModel.getMinecraftId());
+        String description = String.format("Unlinked successfully from UUID `%s`.", oldUserModel.getMinecraftId());
         return service.getEmbed().setDescription(description).setColor(EmbedColor.POSITIVE.getColor());
     }
 
