@@ -104,8 +104,12 @@ public class DiscordServerConnection implements ModuleConnection {
                 .getGson().fromJson(s, DungeonHubService.getInstance().getScoreModelListType()));
     }
 
+    public Optional<LeaderboardModel> loadTotalLeaderboard(long serverId, @Nullable ScoreType scoreType, @Nullable Integer page) {
+        return loadTotalLeaderboard(serverId, scoreType, page, null);
+    }
+
     public Optional<LeaderboardModel> loadTotalLeaderboard(long serverId, @Nullable ScoreType scoreType, @Nullable Integer page,
-                                                      @Nullable Long userId) {
+                                                           @Nullable Long userId) {
         if (scoreType == null) {
             scoreType = ScoreType.DEFAULT;
         }

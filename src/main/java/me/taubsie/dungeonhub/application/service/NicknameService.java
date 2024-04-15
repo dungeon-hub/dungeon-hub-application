@@ -203,7 +203,14 @@ public class NicknameService {
         roles.sort(Comparator.comparingInt(Role::getPosition).reversed());
 
         DiscordRoleModel role = getRoleModel(server, roles);
-        server.updateNickname(user, loadUsername(role.getNameSchema(), new PlayerInformation(user, discordUserModel)));
+
+        String nickname = loadUsername(role.getNameSchema(), new PlayerInformation(user, discordUserModel));
+
+        if(nickname.isBlank()) {
+            return;
+        }
+
+        server.updateNickname(user, nickname);
     }
 
     public String loadUsername(String nameSchema, @NotNull PlayerInformation playerInformation) {
@@ -224,6 +231,6 @@ public class NicknameService {
         }
         matcher.appendTail(usernameBuilder);
 
-        return usernameBuilder.toString();
+        return usernameBuilder.toString().strip();
     }
 }

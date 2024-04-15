@@ -65,7 +65,7 @@ public class LoadIgnCommand extends Command {
             return;
         }
 
-        List<Map.Entry<Long, String>> currentWave = fetchingUsers.entrySet().stream().limit(10).toList();
+        List<Map.Entry<Long, String>> currentWave = fetchingUsers.entrySet().stream().limit(4).toList();
 
         currentWave.forEach(entry -> {
             try {
