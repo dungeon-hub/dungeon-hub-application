@@ -37,6 +37,9 @@ public class LoadIgnCommand extends Command {
     private static final Map<Long, UUID> users = Collections.synchronizedMap(new HashMap<>());
     private static final Set<Long> roleUsers = Collections.synchronizedSet(new HashSet<>());
     private static final Set<Long> usernameUsers = Collections.synchronizedSet(new HashSet<>());
+    private static final Set<String> playerNotFound = Collections.synchronizedSet(new HashSet<>());
+    private static final Set<String> notLinked = Collections.synchronizedSet(new HashSet<>());
+    private static final Set<String> linkedToOther = Collections.synchronizedSet(new HashSet<>());
     private static Long serverId;
 
     static {
@@ -73,6 +76,7 @@ public class LoadIgnCommand extends Command {
             }
             catch (PlayerNotFoundException playerNotFoundException) {
                 //ignored since we can just ignore players we didn't find
+                playerNotFound.add("<@" + entry.getKey() + ">: `" + entry.getValue() + "`");
             }
         });
 
@@ -86,6 +90,7 @@ public class LoadIgnCommand extends Command {
             Optional<String> hypixelName = HypixelConnection.getInstance().getHypixelLinkedDiscord(entry.getValue());
 
             if (hypixelName.isEmpty()) {
+                notLinked.add("<@" + entry.getKey() + ">: `" + entry.getValue() + "`");
                 return;
             }
 
@@ -96,6 +101,7 @@ public class LoadIgnCommand extends Command {
             String username = user.getDiscriminator().equals("0") ? user.getName() : user.getDiscriminatedName();
 
             if (!hypixelName.get().equalsIgnoreCase(username)) {
+                linkedToOther.add("<@" + entry.getKey() + ">: `" + entry.getValue() + "`");
                 return;
             }
 
@@ -140,6 +146,12 @@ public class LoadIgnCommand extends Command {
                 .setDescription("Shows the progress.")
                 .build();
 
+        SlashCommandOption resultOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("result")
+                .setDescription("Shows the result.")
+                .build();
+
         SlashCommandOption startOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("start")
@@ -158,7 +170,7 @@ public class LoadIgnCommand extends Command {
                 .setDescription("Starts the adding of roles.")
                 .build();
 
-        return List.of(progressOption, startOption, startUsernameOption, startRolesOption);
+        return List.of(progressOption, resultOption, startOption, startUsernameOption, startRolesOption);
     }
 
     private void show() {
@@ -255,12 +267,43 @@ public class LoadIgnCommand extends Command {
         );
     }
 
+    private void result() {
+        respond(
+                ApplicationService.getInstance()
+                        .getEmbed()
+                        .setColor(EmbedColor.DEFAULT.getColor())
+                        .addInlineField(
+                                "The following users weren't found",
+                                ContentConnection.getInstance()
+                                        .uploadFile(String.join(System.lineSeparator(), playerNotFound)
+                                                .getBytes(StandardCharsets.UTF_8))
+                                        .map(s -> "https://cdn.dungeon-hub.net/" + s)
+                                        .orElse(null)
+                        ).addInlineField(
+                                "The following users aren't linked to an account",
+                                ContentConnection.getInstance()
+                                        .uploadFile(String.join(System.lineSeparator(), notLinked)
+                                                .getBytes(StandardCharsets.UTF_8))
+                                        .map(s -> "https://cdn.dungeon-hub.net/" + s)
+                                        .orElse(null)
+                        ).addInlineField(
+                                "The following users are linked to another account",
+                                ContentConnection.getInstance()
+                                        .uploadFile(String.join(System.lineSeparator(), linkedToOther)
+                                                .getBytes(StandardCharsets.UTF_8))
+                                        .map(s -> "https://cdn.dungeon-hub.net/" + s)
+                                        .orElse(null)
+                        )
+        );
+    }
+
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         serverId = getServer().getId();
 
         switch (getOptionAtIndex(0).getName().toLowerCase()) {
             case "progress" -> show();
+            case "result" -> result();
             case "start" -> start();
             case "start-roles" -> startRoles();
             case "start-usernames" -> startUsernames();
