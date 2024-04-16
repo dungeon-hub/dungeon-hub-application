@@ -1,6 +1,7 @@
 package me.taubsie.dungeonhub.application.service;
 
 import me.taubsie.dungeonhub.application.classes.Leaderboard;
+import me.taubsie.dungeonhub.application.classes.ServerProperty;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
@@ -25,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Time;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletionException;
 
 @OnStart
 public class LeaderboardService implements StartupListener {
@@ -50,7 +52,7 @@ public class LeaderboardService implements StartupListener {
     }
 
     public String getLeaderboardTitle(@Nullable CarryTypeModel carryType, ScoreType scoreType) {
-        if(carryType == null) {
+        if (carryType == null) {
             return "Leaderboard | Total score" + scoreType.getLeaderboardSuffix();
         }
 
@@ -125,7 +127,7 @@ public class LeaderboardService implements StartupListener {
                     .setFooter(null)
                     .setTimestamp(null);
 
-            if(!leaderboard.isEmpty()) {
+            if (!leaderboard.isEmpty()) {
                 embed.setDescription(null);
             }
 
@@ -133,7 +135,7 @@ public class LeaderboardService implements StartupListener {
         }
 
         if (!embeds.isEmpty()) {
-            if(!leaderboards.get(0).isEmpty()) {
+            if (!leaderboards.get(0).isEmpty()) {
                 embeds.get(0).setDescription(getLeaderboardDescription());
             }
 
@@ -193,6 +195,30 @@ public class LeaderboardService implements StartupListener {
                     }
                 }
             }
+
+            ServerProperty.TOTAL_SCORE_LEADERBOARD_CHANNEL.getValue(serverModel.getId())
+                    .flatMap(id -> {
+                        try {
+                            return DiscordConnection.getInstance().getBot().getServerTextChannelById(id);
+                        }
+                        catch (CompletionException completionException) {
+                            return Optional.empty();
+                        }
+                    }).ifPresent(leaderboardChannel -> {
+                        for (ScoreType scoreType : ScoreType.values()) {
+                            if (leaderboards.containsKey(leaderboardChannel)) {
+                                leaderboards.get(leaderboardChannel).add(new Leaderboard(
+                                        getLeaderboardTitle(null, scoreType),
+                                        DiscordServerConnection.getInstance().loadTotalLeaderboard(serverModel.getId(), scoreType, 0).orElse(null)
+                                ));
+                            } else {
+                                leaderboards.put(leaderboardChannel, new ArrayList<>(List.of(new Leaderboard(
+                                        getLeaderboardTitle(null, scoreType),
+                                        DiscordServerConnection.getInstance().loadTotalLeaderboard(serverModel.getId(), scoreType, 0).orElse(null)
+                                ))));
+                            }
+                        }
+                    });
         }
 
         leaderboards.forEach(this::refreshLeaderboardInChannel);
