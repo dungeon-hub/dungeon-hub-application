@@ -30,7 +30,7 @@ public class RolesService {
     public void updateRoles(User user, Server server) {
         List<Role> newRoles = RolesService.getInstance().calculateRoles(user, server);
 
-        server.updateRoles(user, newRoles);
+        server.updateRoles(user, newRoles).join();
     }
 
     public List<Role> calculateRoles(User user, Server server) {
