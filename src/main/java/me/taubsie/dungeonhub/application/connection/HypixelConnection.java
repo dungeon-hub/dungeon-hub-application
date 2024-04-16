@@ -142,7 +142,7 @@ public class HypixelConnection implements HypixelHttpClient {
                 StringBuilder content = new StringBuilder();
                 String line;
 
-                while((line = bufferedReader.readLine()) != null) {
+                while ((line = bufferedReader.readLine()) != null) {
                     content.append(line);
                     content.append(System.lineSeparator());
 
@@ -155,7 +155,7 @@ public class HypixelConnection implements HypixelHttpClient {
 
                 Element head = document.head();
 
-                for(Element meta : head.getElementsByTag("meta")) {
+                for (Element meta : head.getElementsByTag("meta")) {
                     switch (meta.attr("property").toLowerCase()) {
                         case "og:title" -> result.put("title", meta.attr("content"));
                         case "og:image" -> result.put("icon", meta.attr("content"));
@@ -201,7 +201,7 @@ public class HypixelConnection implements HypixelHttpClient {
         //Highest cata xp of all profiles
         double highestXP = 0;
 
-        for(int i = 0; i < profiles.size(); i++) {
+        for (int i = 0; i < profiles.size(); i++) {
             try {
                 double thisXP = profiles.get(i).getAsJsonObject()
                         .getAsJsonObject("members")
@@ -259,7 +259,7 @@ public class HypixelConnection implements HypixelHttpClient {
     }
 
     private int cataXPToLevel(double xp) {
-        for(int i = 0; i < requiredXp.length; i++) {
+        for (int i = 0; i < requiredXp.length; i++) {
             if (requiredXp[i] > xp) return i;
         }
 
