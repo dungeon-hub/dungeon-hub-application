@@ -31,7 +31,7 @@ public class PlayerInformation {
                 .getNameByUUID(discordUserModel.getMinecraftId()));
         replacements.put("skyblock.catacombs.level", () -> String.valueOf(HypixelConnection.getInstance()
                 .getCataLevelByUUID(discordUserModel.getMinecraftId())));
-        replacements.put("skyblock.level", () -> String.valueOf(HypixelConnection.getInstance().getSkyblockLevelByUUID(discordUserModel.getMinecraftId())));
+        replacements.put("skyblock.level", () -> HypixelConnection.getInstance().getSkyblockLevelByUUID(discordUserModel.getMinecraftId()).stream().mapToObj(String::valueOf).findAny().orElse("?"));
 
         return replacements;
     }
