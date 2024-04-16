@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.command.commands;
 
+import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
@@ -16,6 +17,7 @@ import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @CommandParameters(name = "force-sync", description = "Forces the update of the users roles and nickname.", enabledForPermissions = {PermissionType.MANAGE_ROLES})
 public class ForceSyncCommand extends Command {
@@ -33,21 +35,24 @@ public class ForceSyncCommand extends Command {
 
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
-        Server server = getServer();
-        User user = getUserOption("user");
+        respondLater(CompletableFuture.supplyAsync(() -> {
+            Server server = getServer();
+            User user = getUserOption("user");
 
-        RolesService.getInstance().updateRoles(user, server);
-        try {
-            NicknameService.getInstance().updateNickname(user, server);
-            respond(ApplicationService.getInstance()
-                    .getEmbed()
-                    .setColor(EmbedColor.POSITIVE.getColor())
-                    .setDescription("Username and roles were synced!"));
-        } catch (NotLinkedException e) {
-            respondEphemeral(ApplicationService.getInstance()
-                    .getEmbed()
-                    .setColor(EmbedColor.NEGATIVE.getColor())
-                    .setDescription("The user is not linked, their roles were synced!"));
-        }
+            RolesService.getInstance().updateRoles(user, server);
+            try {
+                NicknameService.getInstance().updateNickname(user, server);
+
+                return DelayedResponse.fromEmbed(ApplicationService.getInstance()
+                        .getEmbed()
+                        .setColor(EmbedColor.POSITIVE.getColor())
+                        .setDescription("Username and roles were synced!"));
+            } catch (NotLinkedException e) {
+                return DelayedResponse.fromEmbed(ApplicationService.getInstance()
+                        .getEmbed()
+                        .setColor(EmbedColor.NEGATIVE.getColor())
+                        .setDescription("The user is not linked, their roles were synced!"));
+            }
+        }));
     }
 }
