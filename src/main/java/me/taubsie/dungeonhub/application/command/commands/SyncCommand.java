@@ -36,7 +36,6 @@ import java.util.function.Predicate;
  */
 @CommandParameters(name = "sync", description = "Update your roles and nickname based on your linked account.")
 public class SyncCommand extends Command {
-
     /**
      * Retrieves the Discord user model associated with the specified user for a slash command event.
      *
@@ -44,7 +43,7 @@ public class SyncCommand extends Command {
      * given {@link SlashCommandCreateEvent}. It checks if the user is linked to an in-game account. If not linked, it responds with
      * a modal asking the user to link their in-game account first.</p>
      *
-     * @param user                    the {@link User} for whom to retrieve the Discord user model
+     * @param user the {@link User} for whom to retrieve the Discord user model
      * @return an {@link Optional} containing the {@link DiscordUserModel} if the user is linked, otherwise an empty {@link Optional}
      * @throws NullPointerException if either the {@link SlashCommandCreateEvent} or the {@link User} is {@code null}
      * @see DiscordUserConnection#getInstance()
@@ -101,11 +100,9 @@ public class SyncCommand extends Command {
      * @see #updateNickName(CompletableFuture, User, DiscordUserModel, Server)
      */
     private static void sendEmbed(@NotNull CompletableFuture<DelayedResponse> completableFuture, @NotNull User user, @NotNull DiscordUserModel discordUserModel, @NotNull Server server) {
-
         boolean nickNameChanged = updateNickName(completableFuture, user, discordUserModel, server);
 
-        if(completableFuture.isDone())
-        {
+        if (completableFuture.isDone()) {
             return;
         }
 
