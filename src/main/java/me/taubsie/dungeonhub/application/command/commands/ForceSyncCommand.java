@@ -35,7 +35,7 @@ public class ForceSyncCommand extends Command {
 
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
-        respondLater(CompletableFuture.supplyAsync(() -> {
+        respondLater(new CompletableFuture<DelayedResponse>().completeAsync(() -> {
             Server server = getServer();
             User user = getUserOption("user");
 
