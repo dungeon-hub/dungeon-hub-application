@@ -5,6 +5,7 @@ import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
+import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.NicknameService;
 import me.taubsie.dungeonhub.application.service.RolesService;
@@ -18,6 +19,7 @@ import org.jetbrains.annotations.Unmodifiable;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
 
 /**
@@ -33,7 +35,6 @@ import java.util.function.Supplier;
  */
 @CommandParameters(name = "link", description = "Link your discord to your hypixel account.", enabledInDms = true)
 public class LinkCommand extends Command {
-
     /**
      * Returns a supplier for a delayed response containing an EmbedBuilder indicating successful linking.
      *
@@ -62,6 +63,8 @@ public class LinkCommand extends Command {
 
     @Override
     protected void executeCommand(@NotNull SlashCommandCreateEvent slashCommandCreateEvent) {
+        //TODO error / response if linked already
+
         String inGameName = getStringOption("ign");
         CompletableFuture<DelayedResponse> completableFuture = new CompletableFuture<>();
         respondLater(completableFuture);
@@ -70,6 +73,13 @@ public class LinkCommand extends Command {
             UUID linkedId = NicknameService.getInstance().linkToIgn(inGameName, getUser());
             completableFuture.completeAsync(linkedEmbedSupplier(linkedId));
             RolesService.getInstance().updateRoles(getUser());
+
+            try {
+                NicknameService.getInstance().updateNickname(getUser());
+            }
+            catch (CompletionException | NoNameSchemaException ignored) {
+                //ignored since probably missing permission
+            }
         }
         catch (CommandExecutionException commandExecutionException) {
             completableFuture.complete(DelayedResponse.fromException(commandExecutionException));
