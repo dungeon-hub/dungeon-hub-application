@@ -73,7 +73,7 @@ public class ManageStrikesCommand extends Command {
                             .update()
                             .join();
 
-                    new AllStrikesMessage(1, message.getChannel().getId(), message.getId(), user.getId());
+                    new AllStrikesMessage(0, message.getChannel().getId(), message.getId(), user.getId());
                 });
     }
 
