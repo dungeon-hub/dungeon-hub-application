@@ -62,7 +62,7 @@ public class LinkCommand extends Command {
         return () -> {
             EmbedBuilder embed = ApplicationService.getInstance().getEmbed();
             embed.setTitle("Linked successfully");
-            embed.setDescription("Your UUID is now `%s`".formatted(linkedId));
+            embed.setDescription("You're now linked to `%s`.".formatted(MojangConnection.getInstance().getNameByUUID(linkedId)));
             embed.setColor(EmbedColor.POSITIVE.getColor());
             return DelayedResponse.fromEmbed(embed);
         };
