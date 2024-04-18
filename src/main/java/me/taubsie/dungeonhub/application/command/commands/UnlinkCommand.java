@@ -3,6 +3,7 @@ package me.taubsie.dungeonhub.application.command.commands;
 import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
+import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
@@ -97,7 +98,7 @@ public class UnlinkCommand extends Command {
     @Contract(pure = true, value = "_ -> new")
     private static @NotNull EmbedBuilder getEmbed(@NotNull DiscordUserModel oldUserModel) {
         ApplicationService service = ApplicationService.getInstance();
-        String description = String.format("Unlinked successfully from UUID `%s`.", oldUserModel.getMinecraftId());
+        String description = String.format("Unlinked successfully from account `%s`.", MojangConnection.getInstance().getNameByUUID(oldUserModel.getMinecraftId()));
         return service.getEmbed().setDescription(description).setColor(EmbedColor.POSITIVE.getColor());
     }
 
