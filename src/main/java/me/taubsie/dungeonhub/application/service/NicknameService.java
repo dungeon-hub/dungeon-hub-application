@@ -133,11 +133,11 @@ public class NicknameService {
         String username = user.getDiscriminator().equals("0") ? user.getName() : user.getDiscriminatedName();
 
         if (hypixelName.isEmpty()) {
-            throw new InvalidOptionException("ign", "Please add the correct discord-account to your hypixel social menu.\n" + "To learn more about how to do this, use `/help verification`.");
+            throw new InvalidOptionException("ign", "Please add the correct discord-account (`" + user.getName() + "`) to your hypixel social menu.\n" + "To learn more about how to do this, use `/help verification`.");
         }
 
         if (!hypixelName.get().equalsIgnoreCase(username)) {
-            throw new HypixelLinkedToOtherException(ign);
+            throw new HypixelLinkedToOtherException(ign, hypixelName.get(), user.getName());
         }
 
         DiscordUserUpdateModel updateModel = new DiscordUserUpdateModel(uuid);
