@@ -135,8 +135,7 @@ public enum HelpTopic implements Nameable {
                             "- Join any lobby using `/lobby`\n" +
                             "- Right click with the \"My Profile\" item (second hotbar slot) in your hand.\n" +
                             "- Select \"Social Media\", to the right of your player head, then select \"Discord\".\n" +
-                            "- Paste your Discord username (" + (user.getDiscriminator().equals("0") ?
-                            user.getName() : user.getDiscriminatedName()) + ") exactly like that into the chat.\n" +
+                            "- Paste your Discord username (`" + user.getName() + "`) exactly like that into the chat.\n" +
                             "- If you get shown a book, select \"I understand\".\n" +
                             "## 2. On Discord\n" +
                             "- Use the `/link` command, this should complete the process.\n\n" +
