@@ -3,20 +3,29 @@ package me.taubsie.dungeonhub.application.command.commands;
 import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
+import me.taubsie.dungeonhub.application.connection.MojangConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
+import me.taubsie.dungeonhub.application.exceptions.MustBeServerException;
 import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaException;
+import me.taubsie.dungeonhub.application.loader.ClassLoaderService;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.NicknameService;
 import me.taubsie.dungeonhub.application.service.RolesService;
+import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.server.Server;
+import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
+import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandOption;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -63,19 +72,38 @@ public class LinkCommand extends Command {
 
     @Override
     protected void executeCommand(@NotNull SlashCommandCreateEvent slashCommandCreateEvent) {
-        //TODO error / response if linked already
+        User user = getUser();
+
+        Optional<UUID> linkedTo = DiscordUserConnection.getInstance().getById(user.getId()).map(DiscordUserModel::getMinecraftId);
+
+        if (linkedTo.isPresent()) {
+            respond(
+                    ApplicationService.getInstance()
+                            .getEmbed()
+                            .setColor(EmbedColor.INFORMATION.getColor())
+                            .setDescription("You're already linked to user `"
+                                    + MojangConnection.getInstance().getNameByUUID(linkedTo.get())
+                                    + "`! If you think that's incorrect, try using "
+                                    + ClassLoaderService.getInstance()
+                                    .getSlashCommand("unlink", null)
+                                    .map(SlashCommand::getMentionTag)
+                                    .orElse("`/unlink`")
+                                    + ".")
+            );
+            return;
+        }
 
         String inGameName = getStringOption("ign");
         CompletableFuture<DelayedResponse> completableFuture = new CompletableFuture<>();
         respondLater(completableFuture);
 
         try {
-            UUID linkedId = NicknameService.getInstance().linkToIgn(inGameName, getUser());
+            UUID linkedId = NicknameService.getInstance().linkToIgn(inGameName, user);
             completableFuture.completeAsync(linkedEmbedSupplier(linkedId));
-            RolesService.getInstance().updateRoles(getUser());
+            RolesService.getInstance().updateRoles(user);
 
             try {
-                NicknameService.getInstance().updateNickname(getUser());
+                NicknameService.getInstance().updateNickname(user);
             }
             catch (CompletionException | NoNameSchemaException ignored) {
                 //ignored since probably missing permission
