@@ -36,7 +36,6 @@ import java.util.concurrent.CompletableFuture;
  */
 @CommandParameters(name = "unlink", description = "Unlink from your ingame-account.", enabledInDms = true)
 public class UnlinkCommand extends Command {
-
     /**
      * Updates the Discord user data and returns the previous user model.
      *
