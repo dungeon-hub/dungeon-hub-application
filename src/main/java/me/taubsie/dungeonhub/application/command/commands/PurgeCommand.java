@@ -69,10 +69,34 @@ public class PurgeCommand extends Command {
         switch (subCommand.getName().toLowerCase()) {
             case "show" -> show(subCommand);
             case "add" -> add(subCommand);
-            case "start" -> start(subCommand);
+            case "start" -> start();
             case "progress" -> progress();
+            case "clear" -> clear();
             default -> throw new InvalidSubCommandException();
         }
+    }
+
+    public void clear() {
+        Server server = getServer();
+
+        if (PurgingService.getInstance().isPurgeActive(server.getId())) {
+            respondEphemeral(
+                    ApplicationService.getInstance()
+                            .getEmbed()
+                            .setColor(EmbedColor.NEGATIVE.getColor())
+                            .setDescription("The purge is already ongoing, it isn't possible to stop it.")
+            );
+            return;
+        }
+
+        PurgingService.getInstance().clearServer(server.getId());
+
+        respond(
+                ApplicationService.getInstance()
+                        .getEmbed()
+                        .setTitle("Purge cleared")
+                        .setColor(EmbedColor.DEFAULT.getColor())
+        );
     }
 
     public void progress() {
@@ -81,7 +105,7 @@ public class PurgeCommand extends Command {
         long progress = PurgingService.getInstance().getProgress(server.getId());
         long userProgress = PurgingService.getInstance().getUserProgress(server.getId());
 
-        if(progress <= 0) {
+        if (progress <= 0) {
             throw new CommandExecutionException("There is no active purge.");
         }
 
@@ -90,7 +114,7 @@ public class PurgeCommand extends Command {
                 .setTitle("Current purge")
                 .setColor(EmbedColor.DEFAULT.getColor());
 
-        if(PurgingService.getInstance().isPurgeActive(server.getId())) {
+        if (PurgingService.getInstance().isPurgeActive(server.getId())) {
             embed.setDescription(userProgress + " users are left. (" + progress + " actions)");
         } else {
             embed.setDescription(userProgress + " users will be purged. (" + progress + " actions)");
@@ -266,7 +290,7 @@ public class PurgeCommand extends Command {
         }));
     }
 
-    public void start(SlashCommandInteractionOption subCommand) {
+    public void start() {
         Server server = getServer();
 
         PurgingService.getInstance().enablePurge(server.getId());
@@ -314,6 +338,12 @@ public class PurgeCommand extends Command {
                 .setDescription("Shows you the progress of the current purge wave.")
                 .build();
 
-        return List.of(showOption, addOption, startOption, progressOption);
+        SlashCommandOption clearOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("clear")
+                .setDescription("Clears the current purge wave.")
+                .build();
+
+        return List.of(showOption, addOption, startOption, progressOption, clearOption);
     }
 }

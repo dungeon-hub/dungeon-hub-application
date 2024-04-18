@@ -179,11 +179,17 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
             String ign = ignOptional.get()
                     .replace("IGN: ", "")
                     .replaceAll("❮(\\S*)❯", "")
-                    .replace("★", "")
-                    .replace("✦", "")
-                    .replace("✶", "")
-                    .replace("✽", "")
                     .replace("❊", "")
+                    .replace("❉", "")
+                    .replace("❃", "")
+                    .replace("✽", "")
+                    .replace("✸", "")
+                    .replace("✷", "")
+                    .replace("✶", "")
+                    .replace("✧", "")
+                    .replace("✦", "")
+                    .replace("☆", "")
+                    .replace("★", "")
                     .strip();
 
             sendPlayerDataEmbed(ign, channel.get());

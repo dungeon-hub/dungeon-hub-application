@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.messages;
 
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
 import me.taubsie.dungeonhub.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.common.enums.ScoreType;
@@ -7,6 +8,8 @@ import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
 import org.javacord.api.interaction.callback.ComponentInteractionOriginalMessageUpdater;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Optional;
 
 public class LeaderboardMessage extends PageableMessage {
     @Nullable
@@ -32,14 +35,19 @@ public class LeaderboardMessage extends PageableMessage {
 
     @Override
     public void updatePage(ComponentInteractionOriginalMessageUpdater updater, int currentPage) {
+        String leaderboardTitle = LeaderboardService.getInstance().getLeaderboardTitle(carryType, scoreType);
+
         updater.removeAllEmbeds()
                 .addEmbed(
-                        LeaderboardService.getInstance().getLeaderboardEmbed(
-                                LeaderboardService.getInstance().getLeaderboardTitle(carryType, scoreType),
-                                ScoreConnection.getInstance(carryType)
-                                        .loadLeaderboard(scoreType, currentPage, userId)
-                                        .orElse(null)
-                        )
+                        Optional.ofNullable(carryType)
+                                .map(carryTypeModel -> ScoreConnection.getInstance(carryType)
+                                        .loadLeaderboard(scoreType, currentPage, userId))
+                                .orElseGet(() -> DiscordServerConnection.getInstance()
+                                        .loadTotalLeaderboard(getServer().orElseThrow().getId(), scoreType, currentPage, userId))
+                                .map(model -> LeaderboardService.getInstance()
+                                        .getLeaderboardEmbed(leaderboardTitle, model))
+                                .orElseGet(() -> LeaderboardService.getInstance()
+                                        .getEmptyLeaderboardEmbed(leaderboardTitle))
                 ).update();
     }
 }
