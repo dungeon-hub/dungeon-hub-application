@@ -13,12 +13,14 @@ import me.taubsie.dungeonhub.application.service.RolesService;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import org.javacord.api.entity.message.component.HighLevelComponent;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
@@ -97,10 +99,10 @@ public class SyncCommand extends Command {
      * @see EmbedColor#POSITIVE
      * @see ApplicationService#getInstance()
      * @see ApplicationService#getEmbed()
-     * @see #updateNickName(CompletableFuture, User, DiscordUserModel, Server)
+     * @see #updateNickName(CompletableFuture, User, DiscordUserModel, Server, List)
      */
-    private static void sendEmbed(@NotNull CompletableFuture<DelayedResponse> completableFuture, @NotNull User user, @NotNull DiscordUserModel discordUserModel, @NotNull Server server) {
-        boolean nickNameChanged = updateNickName(completableFuture, user, discordUserModel, server);
+    private static void sendEmbed(@NotNull CompletableFuture<DelayedResponse> completableFuture, @NotNull User user, @NotNull DiscordUserModel discordUserModel, @NotNull Server server, List<Role> roles) {
+        boolean nickNameChanged = updateNickName(completableFuture, user, discordUserModel, server, roles);
 
         if (completableFuture.isDone()) {
             return;
@@ -125,14 +127,14 @@ public class SyncCommand extends Command {
      * @return {@code true} if the nickname has been changed, {@code false} otherwise
      * @throws NullPointerException if any of the parameters is {@code null}
      * @see NicknameService#getInstance()
-     * @see NicknameService#updateNickname(User, DiscordUserModel, Server)
+     * @see NicknameService#updateNickname(User, DiscordUserModel, Server, List)
      * @see NoNameSchemaException
      * @see NotLinkedException
      * @see CompletionException
      */
-    private static boolean updateNickName(@NotNull CompletableFuture<DelayedResponse> future, @NotNull User user, @NotNull DiscordUserModel userModel, @NotNull Server server) {
+    private static boolean updateNickName(@NotNull CompletableFuture<DelayedResponse> future, @NotNull User user, @NotNull DiscordUserModel userModel, @NotNull Server server, List<Role> roles) {
         try {
-            NicknameService.getInstance().updateNickname(user, userModel, server);
+            NicknameService.getInstance().updateNickname(user, userModel, server, roles);
         }
         catch (NoNameSchemaException noNameSchemaException) {
             return false;
@@ -173,8 +175,8 @@ public class SyncCommand extends Command {
             respondLater(completableFuture);
 
             Server server = getServer();
-            RolesService.getInstance().updateRoles(user, server);
-            sendEmbed(completableFuture, user, model, server);
+            List<Role> roles = RolesService.getInstance().updateRoles(user, server);
+            sendEmbed(completableFuture, user, model, server, roles);
         }, linkAccountResponse(slashCommandCreateEvent));
     }
 }

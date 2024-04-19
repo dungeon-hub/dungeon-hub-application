@@ -128,7 +128,7 @@ public class LoadIgnCommand extends Command {
 
         currentWave.stream()
                 .map(id -> DiscordConnection.getInstance().getBot().getUserById(id).join())
-                .forEach(user -> NicknameService.getInstance().updateNickname(user));
+                .forEach(user -> NicknameService.getInstance().updateNickname(user, null));
 
         currentWave.forEach(usernameUsers::remove);
     }

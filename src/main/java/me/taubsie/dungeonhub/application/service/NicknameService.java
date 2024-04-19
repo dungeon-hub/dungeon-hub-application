@@ -14,6 +14,7 @@ import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
@@ -151,16 +152,18 @@ public class NicknameService {
      * Updates the nickname of the specified user on all mutual servers.
      *
      * <p>The {@code updateNickname} method without the server parameter iterates over all mutual servers of the user and calls
-     * the {@link #updateNickname(User, Server)} method for each server.</p>
+     * the {@link #updateNickname(User, Server, List)} method for each server.</p>
      *
      * @param user the Discord user for whom to update the nickname on all mutual servers
      * @throws NoNameSchemaException if no valid role with a non-blank name schema is found while updating the nickname
      * @throws NullPointerException  if the user is `null`
      */
-    public void updateNickname(@NotNull User user) {
+    public void updateNickname(@NotNull User user, @Nullable Map<Long, List<Role>> roles) {
         user.getMutualServers().forEach(server -> {
+            List<Role> serverRoles = roles != null ? roles.getOrDefault(server.getId(), null) : null;
+
             try {
-                updateNickname(user, server);
+                updateNickname(user, server, serverRoles);
             }
             catch (NoNameSchemaException ignored) {
                 //ignored, just don't set a username
@@ -172,7 +175,7 @@ public class NicknameService {
      * Updates the nickname of the specified user on the given server.
      *
      * <p>The {@code updateNickname} method with the server parameter retrieves the Discord user model from the connection,
-     * validates the user's link status, and then calls the {@link #updateNickname(User, DiscordUserModel, Server)} method.</p>
+     * validates the user's link status, and then calls the {@link #updateNickname(User, DiscordUserModel, Server, List)} method.</p>
      *
      * @param user   the Discord user for whom to update the nickname
      * @param server the Discord server where the nickname should be updated
@@ -180,9 +183,9 @@ public class NicknameService {
      * @throws NotLinkedException    if the user is not linked to a Minecraft account
      * @throws NullPointerException  if the user or server is `null`
      */
-    public void updateNickname(@NotNull User user, Server server) throws NoNameSchemaException, NotLinkedException {
+    public void updateNickname(@NotNull User user, Server server, @Nullable List<Role> serverRoles) throws NoNameSchemaException, NotLinkedException {
         DiscordUserModel discordUserModel = DiscordUserConnection.getInstance().getById(user.getId()).filter(discordUserModel1 -> discordUserModel1.getMinecraftId() != null).orElseThrow(NotLinkedException::new);
-        updateNickname(user, discordUserModel, server);
+        updateNickname(user, discordUserModel, server, serverRoles);
     }
 
     /**
@@ -198,15 +201,15 @@ public class NicknameService {
      * @param server           the Discord server where the nickname should be updated
      * @throws NoNameSchemaException if no valid role with a non-blank name schema is found while determining the role model
      */
-    public void updateNickname(@NotNull User user, @NotNull DiscordUserModel discordUserModel, @NotNull Server server) throws NoNameSchemaException {
-        List<Role> roles = server.getRoles(user);
+    public void updateNickname(@NotNull User user, @NotNull DiscordUserModel discordUserModel, @NotNull Server server, @Nullable List<Role> serverRoles) throws NoNameSchemaException {
+        List<Role> roles = new ArrayList<>(serverRoles != null ? serverRoles : server.getRoles(user));
         roles.sort(Comparator.comparingInt(Role::getPosition).reversed());
 
         DiscordRoleModel role = getRoleModel(server, roles);
 
         String nickname = loadUsername(role.getNameSchema(), new PlayerInformation(user, discordUserModel));
 
-        if(nickname.isBlank()) {
+        if (nickname.isBlank()) {
             return;
         }
 

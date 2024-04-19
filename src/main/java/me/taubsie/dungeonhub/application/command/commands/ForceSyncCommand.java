@@ -9,6 +9,7 @@ import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.NicknameService;
 import me.taubsie.dungeonhub.application.service.RolesService;
 import org.javacord.api.entity.permission.PermissionType;
+import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
@@ -39,9 +40,9 @@ public class ForceSyncCommand extends Command {
             Server server = getServer();
             User user = getUserOption("user");
 
-            RolesService.getInstance().updateRoles(user, server);
+            List<Role> roles = RolesService.getInstance().updateRoles(user, server);
             try {
-                NicknameService.getInstance().updateNickname(user, server);
+                NicknameService.getInstance().updateNickname(user, server, roles);
 
                 return DelayedResponse.fromEmbed(ApplicationService.getInstance()
                         .getEmbed()

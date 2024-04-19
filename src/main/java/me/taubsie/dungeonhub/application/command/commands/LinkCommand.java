@@ -7,13 +7,13 @@ import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
-import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaException;
 import me.taubsie.dungeonhub.application.loader.ClassLoaderService;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.NicknameService;
 import me.taubsie.dungeonhub.application.service.RolesService;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommand;
@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -98,12 +99,12 @@ public class LinkCommand extends Command {
         try {
             UUID linkedId = NicknameService.getInstance().linkToIgn(inGameName, user);
             completableFuture.completeAsync(linkedEmbedSupplier(linkedId));
-            RolesService.getInstance().updateRoles(user);
+            Map<Long, List<Role>> roles = RolesService.getInstance().updateRoles(user);
 
             try {
-                NicknameService.getInstance().updateNickname(user);
+                NicknameService.getInstance().updateNickname(user, roles);
             }
-            catch (CompletionException | NoNameSchemaException ignored) {
+            catch (CompletionException ignored) {
                 //ignored since probably missing permission
             }
         }

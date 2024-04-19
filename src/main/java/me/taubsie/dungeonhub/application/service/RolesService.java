@@ -5,6 +5,7 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleGroup
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
 import me.taubsie.dungeonhub.common.model.discord_role_group.DiscordRoleGroupModel;
+import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -23,14 +24,16 @@ public class RolesService {
         return instance;
     }
 
-    public void updateRoles(User user) {
-        user.getMutualServers().forEach(server -> updateRoles(user, server));
+    public Map<Long, List<Role>> updateRoles(User user) {
+        return user.getMutualServers().stream().collect(Collectors.toMap(DiscordEntity::getId, server -> updateRoles(user, server)));
     }
 
-    public void updateRoles(User user, Server server) {
+    public List<Role> updateRoles(User user, Server server) {
         List<Role> newRoles = RolesService.getInstance().calculateRoles(user, server);
 
-        server.updateRoles(user, newRoles).join();
+        server.updateRoles(user, newRoles);
+
+        return newRoles;
     }
 
     public List<Role> calculateRoles(User user, Server server) {
