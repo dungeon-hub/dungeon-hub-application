@@ -232,9 +232,15 @@ public class HypixelConnection implements HypixelHttpClient {
                 return null;
             }
 
-            JsonObject root = JsonParser.parseString(response.body().string()).getAsJsonObject();
+            JsonElement parsed = JsonParser.parseString(response.body().string());
 
-            if (root == null || root.isJsonNull()) {
+            if(parsed == null || parsed.isJsonNull()) {
+                return null;
+            }
+
+            JsonObject root = parsed.getAsJsonObject();
+
+            if (root == null || root.isJsonNull() || root.get("profiles").isJsonNull()) {
                 return null;
             }
 
