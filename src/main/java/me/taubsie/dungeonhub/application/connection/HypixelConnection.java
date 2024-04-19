@@ -1,9 +1,6 @@
 package me.taubsie.dungeonhub.application.connection;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadException;
 import net.hypixel.api.HypixelAPI;
@@ -235,7 +232,13 @@ public class HypixelConnection implements HypixelHttpClient {
                 return null;
             }
 
-            return JsonParser.parseString(response.body().string()).getAsJsonObject().getAsJsonArray("profiles");
+            JsonObject root = JsonParser.parseString(response.body().string()).getAsJsonObject();
+
+            if (root == null || root.isJsonNull()) {
+                return null;
+            }
+
+            return root.getAsJsonArray("profiles");
         }
         catch (IOException ioException) {
             logger.error("Profile request for UUID threw an error.", ioException);
