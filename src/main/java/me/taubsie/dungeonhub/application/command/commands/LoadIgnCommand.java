@@ -23,6 +23,8 @@ import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.Time;
@@ -33,6 +35,7 @@ import java.util.stream.Collectors;
 @CommandParameters(name = "load-ign", description = "Loads the IGN of all users on the server.", enabledForUsers =
         {356134481452597250L})
 public class LoadIgnCommand extends Command {
+    private static final Logger logger = LoggerFactory.getLogger(LoadIgnCommand.class);
     private static final Map<Long, String> fetchingUsers = Collections.synchronizedMap(new HashMap<>());
     private static final Map<Long, UUID> users = Collections.synchronizedMap(new HashMap<>());
     private static final Set<Long> roleUsers = Collections.synchronizedSet(new HashSet<>());
@@ -46,13 +49,18 @@ public class LoadIgnCommand extends Command {
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                fetchingWave();
+                try {
+                    fetchingWave();
 
-                loadingWave();
+                    loadingWave();
 
-                roleWave();
+                    roleWave();
 
-                usernameWave();
+                    usernameWave();
+                }
+                catch (Exception e) {
+                    logger.error(null, e);
+                }
             }
         }, new Time(System.currentTimeMillis() + 500L), 3000L);
     }
@@ -77,6 +85,9 @@ public class LoadIgnCommand extends Command {
             catch (PlayerNotFoundException playerNotFoundException) {
                 //ignored since we can just ignore players we didn't find
                 playerNotFound.add("<@" + entry.getKey() + ">: `" + entry.getValue() + "`");
+            }
+            catch (Exception e) {
+                logger.error(null, e);
             }
         });
 
