@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
+import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
@@ -37,6 +38,7 @@ public class EmbedCommand extends Command {
         switch (firstOption.getName().toLowerCase()) {
             case "get" -> get(firstOption);
             case "send" -> send(firstOption);
+            case "edit" -> edit(firstOption);
             default -> throw new InvalidSubCommandException();
         }
     }
@@ -76,6 +78,56 @@ public class EmbedCommand extends Command {
             case "timestamp" ->
                     embed.setTimestamp(DungeonHubService.getInstance().getGson().fromJson(value.getAsString(), Instant.class));
         }
+    }
+
+    private void edit(SlashCommandInteractionOption firstOption) {
+        EmbedBuilder embed = new EmbedBuilder();
+
+        try {
+            JsonObject embedSource = DungeonHubService.getInstance().getGson().fromJson(getStringOption(firstOption, "embed"), JsonObject.class);
+
+            embedSource.entrySet().forEach(entry -> applyJson(embed, entry.getKey(), entry.getValue()));
+        }
+        catch (Exception exception) {
+            throw new CommandExecutionException(exception);
+        }
+
+        int count;
+        try {
+            count = Math.toIntExact(getLongOption(firstOption, "count"));
+        }
+        catch (InvalidOptionException ignored) {
+            count = 0;
+        }
+
+        String link = getStringOption(firstOption, "link");
+
+        Message message = DiscordConnection.getInstance().getBot().getMessageByLink(link)
+                .orElseThrow(() -> new InvalidOptionException("link"))
+                .join();
+
+        if (!message.getAuthor().isYourself()) {
+            throw new InvalidOptionException("link", "How should I edit a message that wasn't sent by myself?");
+        }
+
+        if (message.getEmbeds().isEmpty()) {
+            throw new InvalidOptionException("link", "The given message doesn't have any embeds to edit.");
+        }
+
+        List<EmbedBuilder> embeds = new ArrayList<>(message.getEmbeds().stream().map(Embed::toBuilder).toList());
+
+        if (count >= embeds.size()) {
+            throw new InvalidOptionException("link", "The given message doesn't have that many embeds.");
+        }
+
+        embeds.set(count, embed);
+
+        message.edit(embeds);
+
+        respond(ApplicationService.getInstance()
+                .getEmbed()
+                .setColor(EmbedColor.POSITIVE.getColor())
+                .setDescription("Embed edited!"));
     }
 
     private void send(SlashCommandInteractionOption firstOption) {
@@ -160,7 +212,11 @@ public class EmbedCommand extends Command {
                 .join();
 
         if (message.getEmbeds().isEmpty()) {
-            throw new CommandExecutionException("The given message doesn't have an embed.");
+            throw new InvalidOptionException("link", "The given message doesn't have an embed.");
+        }
+
+        if (count >= message.getEmbeds().size()) {
+            throw new InvalidOptionException("link", "The given message doesn't have that many embeds.");
         }
 
         Embed embed = message.getEmbeds().get(count);
@@ -236,6 +292,13 @@ public class EmbedCommand extends Command {
                 .setOptions(List.of(embedOption, channelOption))
                 .build();
 
-        return List.of(getOption, sendOption);
+        SlashCommandOption editOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("edit")
+                .setDescription("Edit an embed sent by this bot.")
+                .setOptions(List.of(linkOption, embedOption, countOption))
+                .build();
+
+        return List.of(getOption, sendOption, editOption);
     }
 }
