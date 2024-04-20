@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
@@ -22,9 +23,11 @@ import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.*;
 
 import java.awt.*;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Stream;
 
@@ -59,15 +62,21 @@ public class EmbedCommand extends Command {
 
         String text = footer.getAsJsonPrimitive("text").getAsString();
 
-        if (footer.has("url")) {
-            embed.setFooter(text, footer.getAsJsonPrimitive("url").getAsString());
+        if (footer.has("iconUrl")) {
+            embed.setFooter(text, footer.getAsJsonPrimitive("iconUrl").getAsString());
         } else {
             embed.setFooter(text);
         }
     }
 
+    private void setThumbnail(EmbedBuilder embed, JsonElement value) {
+        JsonObject footer = value.getAsJsonObject();
+
+        embed.setThumbnail(footer.getAsJsonPrimitive("url").getAsString());
+    }
+
     private void applyJson(EmbedBuilder embed, String key, JsonElement value) {
-        switch (key.toLowerCase()) {
+        switch (key) {
             case "title" -> embed.setTitle(value.getAsString());
             case "description" -> embed.setDescription(value.getAsString());
             case "author" -> embed.setAuthor(value.getAsString());
@@ -78,6 +87,7 @@ public class EmbedCommand extends Command {
             case "footer" -> setFooter(embed, value);
             case "timestamp" ->
                     embed.setTimestamp(DungeonHubService.getInstance().getGson().fromJson(value.getAsString(), Instant.class));
+            case "thumbnail" -> setThumbnail(embed, value);
         }
     }
 
@@ -244,7 +254,9 @@ public class EmbedCommand extends Command {
             count = 0;
         }
 
-        boolean source = getOptionalStringOption(firstOption, "type").map(s -> s.equalsIgnoreCase("source")).orElse(false);
+        Optional<String> type = getOptionalStringOption(firstOption, "type");
+
+        boolean beautiful = type.map(s -> s.equalsIgnoreCase("beautiful")).orElse(false);
 
         Message message = server.getApi().getMessageByLink(link)
                 .orElseThrow(() -> new InvalidOptionException("link"))
@@ -264,13 +276,21 @@ public class EmbedCommand extends Command {
                 .getEmbed()
                 .setColor(EmbedColor.DEFAULT.getColor());
 
-        if (source) {
-            embedBuilder.setDescription(DungeonHubService.getInstance().getGson().toJson(embed));
-        } else {
+        if (beautiful) {
             DungeonHubService.getInstance().getGson().toJsonTree(embed)
                     .getAsJsonObject()
                     .entrySet()
                     .forEach(entry -> embedBuilder.addField(entry.getKey(), entry.getValue().toString()));
+        } else {
+            String embedSource = DungeonHubService.getInstance().getGson().toJson(embed);
+
+            String description = embedSource;
+
+            if (type.map(s -> s.equalsIgnoreCase("cdn")).orElse(false)) {
+                description = ContentConnection.getInstance().uploadFile(embedSource.getBytes(StandardCharsets.UTF_8)).map(s -> ContentConnection.getInstance().getCdnUrl(s).toString()).orElse(embedSource);
+            }
+
+            embedBuilder.setDescription(description);
         }
 
         respond(embedBuilder);
@@ -289,7 +309,7 @@ public class EmbedCommand extends Command {
                 .setType(SlashCommandOptionType.STRING)
                 .setName("type")
                 .setDescription("Select how you want to get the embed data.")
-                .setChoices(Stream.of("beautiful", "source").map(s -> new SlashCommandOptionChoiceBuilder().setName(s).setValue(s).build()).toList())
+                .setChoices(Stream.of("beautiful", "source", "cdn").map(s -> new SlashCommandOptionChoiceBuilder().setName(s).setValue(s).build()).toList())
                 .setRequired(false)
                 .build();
 
