@@ -1,5 +1,7 @@
 package me.taubsie.dungeonhub.application.command.commands;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
@@ -18,7 +20,11 @@ import org.javacord.api.entity.server.Server;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.*;
 
+import java.awt.*;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Stream;
 
 @CommandParameters(name = "embed", description = "Makes it possible to manage embeds.", enabledForPermissions =
@@ -29,21 +35,104 @@ public class EmbedCommand extends Command {
         SlashCommandInteractionOption firstOption = getOptionAtIndex(0);
 
         switch (firstOption.getName().toLowerCase()) {
-            case "get" -> get(slashCommandCreateEvent, firstOption);
-            case "send" -> send(slashCommandCreateEvent, firstOption);
+            case "get" -> get(firstOption);
+            case "send" -> send(firstOption);
             default -> throw new InvalidSubCommandException();
         }
     }
 
-    private void send(SlashCommandCreateEvent slashCommandCreateEvent, SlashCommandInteractionOption firstOption) {
-        ServerChannel channel = getChannelOption(firstOption, "channel");
+    private void setFields(EmbedBuilder embed, JsonElement value) {
+        value.getAsJsonArray().asList().stream()
+                .map(JsonElement::getAsJsonObject)
+                .forEach(jsonObject -> embed.addField(
+                        jsonObject.getAsJsonPrimitive("name").getAsString(),
+                        jsonObject.getAsJsonPrimitive("value").getAsString(),
+                        jsonObject.getAsJsonPrimitive("inline").getAsBoolean()
+                ));
+    }
+
+    private void setFooter(EmbedBuilder embed, JsonElement value) {
+        JsonObject footer = value.getAsJsonObject();
+
+        String text = footer.getAsJsonPrimitive("text").getAsString();
+
+        if (footer.has("url")) {
+            embed.setFooter(text, footer.getAsJsonPrimitive("url").getAsString());
+        } else {
+            embed.setFooter(text);
+        }
+    }
+
+    private void applyJson(EmbedBuilder embed, String key, JsonElement value) {
+        switch (key.toLowerCase()) {
+            case "title" -> embed.setTitle(value.getAsString());
+            case "description" -> embed.setDescription(value.getAsString());
+            case "author" -> embed.setAuthor(value.getAsString());
+            case "url" -> embed.setUrl(value.getAsString());
+            case "color" ->
+                    embed.setColor(DungeonHubService.getInstance().getGson().fromJson(value.getAsString(), Color.class));
+            case "fields" -> setFields(embed, value);
+            case "footer" -> setFooter(embed, value);
+            case "timestamp" ->
+                    embed.setTimestamp(DungeonHubService.getInstance().getGson().fromJson(value.getAsString(), Instant.class));
+        }
+    }
+
+    private void send(SlashCommandInteractionOption firstOption) {
+        ServerChannel channel;
+
+        try {
+            channel = getChannelOption(firstOption, "channel");
+        }
+        catch (InvalidOptionException ignored) {
+            channel = getChannel().asServerChannel().orElseThrow();
+        }
 
         String source = getStringOption(firstOption, "embed");
 
-        EmbedBuilder embedBuilder = DungeonHubService.getInstance().getGson().fromJson(source, EmbedBuilder.class);
+        List<EmbedBuilder> embeds = new ArrayList<>();
 
-        channel.asTextChannel().orElseThrow(() -> new CommandExecutionException("Unknown channel type"))
-                .sendMessage(embedBuilder).join();
+        try {
+            JsonElement embedSource = DungeonHubService.getInstance().getGson().fromJson(source, JsonElement.class);
+
+            if (embedSource.isJsonObject()) {
+                EmbedBuilder embedBuilder = new EmbedBuilder();
+
+                embedSource.getAsJsonObject()
+                        .entrySet()
+                        .forEach(entry -> applyJson(embedBuilder, entry.getKey(), entry.getValue()));
+
+                embeds.add(embedBuilder);
+            } else if (embedSource.isJsonArray()) {
+                embedSource.getAsJsonArray()
+                        .forEach(jsonElement -> {
+                            if (jsonElement.isJsonObject()) {
+                                EmbedBuilder embedBuilder = new EmbedBuilder();
+
+                                jsonElement.getAsJsonObject()
+                                        .entrySet()
+                                        .forEach(entry -> applyJson(embedBuilder, entry.getKey(), entry.getValue()));
+
+                                embeds.add(embedBuilder);
+                            }
+                        });
+            }
+        }
+        catch (Exception exception) {
+            throw new CommandExecutionException(exception);
+        }
+
+        if (embeds.isEmpty()) {
+            throw new CommandExecutionException("Please provide any embeds to send.");
+        }
+
+        try {
+            channel.asTextChannel().orElseThrow(() -> new CommandExecutionException("Unknown channel type"))
+                    .sendMessage(embeds).join();
+        }
+        catch (CompletionException ignored) {
+            throw new CommandExecutionException("Embed(s) couldn't be sent; please check if all required fields are set.");
+        }
 
         respond(ApplicationService.getInstance()
                 .getEmbed()
@@ -51,10 +140,18 @@ public class EmbedCommand extends Command {
                 .setDescription("Embed sent!"));
     }
 
-    private void get(SlashCommandCreateEvent slashCommandCreateEvent, SlashCommandInteractionOption firstOption) {
+    private void get(SlashCommandInteractionOption firstOption) {
         Server server = getServer();
 
         String link = getStringOption(firstOption, "link");
+
+        int count;
+        try {
+            count = Math.toIntExact(getLongOption(firstOption, "count"));
+        }
+        catch (InvalidOptionException ignored) {
+            count = 0;
+        }
 
         boolean source = getOptionalStringOption(firstOption, "type").map(s -> s.equalsIgnoreCase("source")).orElse(false);
 
@@ -66,7 +163,7 @@ public class EmbedCommand extends Command {
             throw new CommandExecutionException("The given message doesn't have an embed.");
         }
 
-        Embed embed = message.getEmbeds().get(0);
+        Embed embed = message.getEmbeds().get(count);
 
         EmbedBuilder embedBuilder = ApplicationService.getInstance()
                 .getEmbed()
@@ -101,11 +198,20 @@ public class EmbedCommand extends Command {
                 .setRequired(false)
                 .build();
 
+        SlashCommandOption countOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.LONG)
+                .setName("count")
+                .setDescription("Select which embed you want to get (0-based counting).")
+                .setLongMinValue(0)
+                .setLongMaxValue(100)
+                .setRequired(false)
+                .build();
+
         SlashCommandOption getOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("get")
                 .setDescription("Gets the embed data of a message.")
-                .setOptions(List.of(linkOption, typeOption))
+                .setOptions(List.of(linkOption, typeOption, countOption))
                 .build();
 
         SlashCommandOption channelOption = new SlashCommandOptionBuilder()
@@ -113,7 +219,7 @@ public class EmbedCommand extends Command {
                 .setName("channel")
                 .setDescription("The channel to send the embed into.")
                 .setChannelTypes(List.of(ChannelType.SERVER_TEXT_CHANNEL, ChannelType.PRIVATE_CHANNEL, ChannelType.SERVER_VOICE_CHANNEL, ChannelType.SERVER_NEWS_CHANNEL, ChannelType.SERVER_PUBLIC_THREAD))
-                .setRequired(true)
+                .setRequired(false)
                 .build();
 
         SlashCommandOption embedOption = new SlashCommandOptionBuilder()
@@ -127,7 +233,7 @@ public class EmbedCommand extends Command {
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("send")
                 .setDescription("Sends a custom embed.")
-                .setOptions(List.of(channelOption, embedOption))
+                .setOptions(List.of(embedOption, channelOption))
                 .build();
 
         return List.of(getOption, sendOption);
