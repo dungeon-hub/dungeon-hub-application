@@ -39,6 +39,7 @@ public class EmbedCommand extends Command {
             case "get" -> get(firstOption);
             case "send" -> send(firstOption);
             case "edit" -> edit(firstOption);
+            case "add" -> add(firstOption);
             default -> throw new InvalidSubCommandException();
         }
     }
@@ -78,6 +79,44 @@ public class EmbedCommand extends Command {
             case "timestamp" ->
                     embed.setTimestamp(DungeonHubService.getInstance().getGson().fromJson(value.getAsString(), Instant.class));
         }
+    }
+
+    private void add(SlashCommandInteractionOption firstOption) {
+        EmbedBuilder embed = new EmbedBuilder();
+
+        try {
+            JsonObject embedSource = DungeonHubService.getInstance().getGson().fromJson(getStringOption(firstOption, "embed"), JsonObject.class);
+
+            embedSource.entrySet().forEach(entry -> applyJson(embed, entry.getKey(), entry.getValue()));
+        }
+        catch (Exception exception) {
+            throw new CommandExecutionException(exception);
+        }
+
+        String link = getStringOption(firstOption, "link");
+
+        Message message = DiscordConnection.getInstance().getBot().getMessageByLink(link)
+                .orElseThrow(() -> new InvalidOptionException("link"))
+                .join();
+
+        if (!message.getAuthor().isYourself()) {
+            throw new InvalidOptionException("link", "How should I edit a message that wasn't sent by myself?");
+        }
+
+        if (message.getEmbeds().isEmpty()) {
+            throw new InvalidOptionException("link", "The given message doesn't have any embeds to edit.");
+        }
+
+        List<EmbedBuilder> embeds = new ArrayList<>(message.getEmbeds().stream().map(Embed::toBuilder).toList());
+
+        embeds.add(embed);
+
+        message.edit(embeds);
+
+        respond(ApplicationService.getInstance()
+                .getEmbed()
+                .setColor(EmbedColor.POSITIVE.getColor())
+                .setDescription("Embed added!"));
     }
 
     private void edit(SlashCommandInteractionOption firstOption) {
@@ -292,6 +331,13 @@ public class EmbedCommand extends Command {
                 .setOptions(List.of(embedOption, channelOption))
                 .build();
 
+        SlashCommandOption addOption = new SlashCommandOptionBuilder()
+                .setType(SlashCommandOptionType.SUB_COMMAND)
+                .setName("add")
+                .setDescription("Add an embed to a message sent by this bot.")
+                .setOptions(List.of(linkOption, embedOption))
+                .build();
+
         SlashCommandOption editOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("edit")
@@ -299,6 +345,6 @@ public class EmbedCommand extends Command {
                 .setOptions(List.of(linkOption, embedOption, countOption))
                 .build();
 
-        return List.of(getOption, sendOption, editOption);
+        return List.of(getOption, sendOption, addOption, editOption);
     }
 }
