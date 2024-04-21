@@ -278,7 +278,7 @@ public class EmbedCommand extends Command {
             count = Math.toIntExact(getLongOption(firstOption, "count"));
         }
         catch (InvalidOptionException ignored) {
-            count = 0;
+            count = -1;
         }
 
         Optional<String> type = getOptionalStringOption(firstOption, "type");
@@ -293,23 +293,28 @@ public class EmbedCommand extends Command {
             throw new InvalidOptionException("link", "The given message doesn't have an embed.");
         }
 
-        if (count >= message.getEmbeds().size()) {
+        if (count != -1 && count >= message.getEmbeds().size()) {
             throw new InvalidOptionException("link", "The given message doesn't have that many embeds.");
         }
 
-        Embed embed = message.getEmbeds().get(count);
+        List<Embed> embeds;
+        if (count == -1) {
+            embeds = message.getEmbeds();
+        } else {
+            embeds = List.of(message.getEmbeds().get(count));
+        }
 
         EmbedBuilder embedBuilder = ApplicationService.getInstance()
                 .getEmbed()
                 .setColor(EmbedColor.DEFAULT.getColor());
 
-        if (beautiful) {
-            DungeonHubService.getInstance().getGson().toJsonTree(embed)
+        if (beautiful && embeds.size() == 1) {
+            DungeonHubService.getInstance().getGson().toJsonTree(embeds.get(0))
                     .getAsJsonObject()
                     .entrySet()
                     .forEach(entry -> embedBuilder.addField(entry.getKey(), entry.getValue().toString()));
         } else {
-            String embedSource = DungeonHubService.getInstance().getGson().toJson(embed);
+            String embedSource = DungeonHubService.getInstance().getGson().toJson(embeds.size() == 1 ? embeds.get(0) : embeds);
 
             String description = embedSource;
 
