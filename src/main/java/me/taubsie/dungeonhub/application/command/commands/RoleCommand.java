@@ -17,7 +17,7 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 
 import java.util.List;
 
-@CommandParameters(name = "role", description = "Manage a role.", enabledForPermissions = {PermissionType.MANAGE_ROLES}, enabledForUsers = {356134481452597250L})
+@CommandParameters(name = "role", description = "Manage a role.", enabledForPermissions = {PermissionType.MANAGE_ROLES})
 public class RoleCommand extends Command {
     @Override
     public long[] getEnabledServers() {
