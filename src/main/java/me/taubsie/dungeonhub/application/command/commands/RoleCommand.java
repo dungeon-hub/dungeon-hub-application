@@ -31,16 +31,20 @@ public class RoleCommand extends Command {
 
         User user = getUserOption(firstOption, "user");
 
-        if(add) {
-            add(role, user);
+        if (add) {
+            user.addRole(role).join();
+
+            //unfortunately, we have to call getUserOption() again to ensure the cached roles are reloaded (javacord moment)
+            add(role, getUserOption(firstOption, "user"));
         } else {
-            remove(role, user);
+            user.removeRole(role).join();
+
+            //unfortunately, we have to call getUserOption() again to ensure the cached roles are reloaded (javacord moment)
+            remove(role, getUserOption(firstOption, "user"));
         }
     }
 
     private void add(Role role, User user) {
-        role.addUser(user);
-
         respond(ApplicationService.getInstance()
                 .getEmbed()
                 .setColor(EmbedColor.POSITIVE.getColor())
@@ -50,8 +54,6 @@ public class RoleCommand extends Command {
     }
 
     private void remove(Role role, User user) {
-        role.removeUser(user);
-
         respond(ApplicationService.getInstance()
                 .getEmbed()
                 .setColor(EmbedColor.POSITIVE.getColor())
