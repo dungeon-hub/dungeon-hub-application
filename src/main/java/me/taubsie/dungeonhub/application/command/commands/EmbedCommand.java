@@ -2,6 +2,7 @@ package me.taubsie.dungeonhub.application.command.commands;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
@@ -28,6 +29,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Stream;
 
@@ -297,6 +299,10 @@ public class EmbedCommand extends Command {
             throw new InvalidOptionException("link", "The given message doesn't have that many embeds.");
         }
 
+        CompletableFuture<DelayedResponse> response = new CompletableFuture<>();
+
+        respondLater(response);
+
         List<Embed> embeds;
         if (count == -1) {
             embeds = message.getEmbeds();
@@ -318,14 +324,14 @@ public class EmbedCommand extends Command {
 
             String description = embedSource;
 
-            if (type.map(s -> s.equalsIgnoreCase("cdn")).orElse(false)) {
+            if (embedSource.length() >= 4000 || type.map(s -> s.equalsIgnoreCase("cdn")).orElse(false)) {
                 description = ContentConnection.getInstance().uploadFile(embedSource.getBytes(StandardCharsets.UTF_8)).map(s -> ContentConnection.getInstance().getCdnUrl(s).toString()).orElse(embedSource);
             }
 
             embedBuilder.setDescription(description);
         }
 
-        respond(embedBuilder);
+        response.complete(DelayedResponse.fromEmbed(embedBuilder));
     }
 
     @Override
