@@ -90,14 +90,14 @@ public class RoleCommand extends Command {
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("add")
                 .setDescription("Add a role to a user")
-                .setOptions(List.of(roleOption, userOption))
+                .setOptions(List.of(userOption, roleOption))
                 .build();
 
         SlashCommandOption removeOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.SUB_COMMAND)
                 .setName("remove")
                 .setDescription("Remove a role from a user")
-                .setOptions(List.of(roleOption, userOption))
+                .setOptions(List.of(userOption, roleOption))
                 .build();
 
         return List.of(addOption, removeOption);
