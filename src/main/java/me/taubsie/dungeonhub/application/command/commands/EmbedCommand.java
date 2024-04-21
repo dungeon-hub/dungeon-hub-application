@@ -92,15 +92,42 @@ public class EmbedCommand extends Command {
     }
 
     private void add(SlashCommandInteractionOption firstOption) {
-        EmbedBuilder embed = new EmbedBuilder();
+        String source = getStringOption(firstOption, "embed");
+
+        List<EmbedBuilder> embeds = new ArrayList<>();
 
         try {
-            JsonObject embedSource = DungeonHubService.getInstance().getGson().fromJson(getStringOption(firstOption, "embed"), JsonObject.class);
+            JsonElement embedSource = DungeonHubService.getInstance().getGson().fromJson(source, JsonElement.class);
 
-            embedSource.entrySet().forEach(entry -> applyJson(embed, entry.getKey(), entry.getValue()));
+            if (embedSource.isJsonObject()) {
+                EmbedBuilder embedBuilder = new EmbedBuilder();
+
+                embedSource.getAsJsonObject()
+                        .entrySet()
+                        .forEach(entry -> applyJson(embedBuilder, entry.getKey(), entry.getValue()));
+
+                embeds.add(embedBuilder);
+            } else if (embedSource.isJsonArray()) {
+                embedSource.getAsJsonArray()
+                        .forEach(jsonElement -> {
+                            if (jsonElement.isJsonObject()) {
+                                EmbedBuilder embedBuilder = new EmbedBuilder();
+
+                                jsonElement.getAsJsonObject()
+                                        .entrySet()
+                                        .forEach(entry -> applyJson(embedBuilder, entry.getKey(), entry.getValue()));
+
+                                embeds.add(embedBuilder);
+                            }
+                        });
+            }
         }
         catch (Exception exception) {
             throw new CommandExecutionException(exception);
+        }
+
+        if (embeds.isEmpty()) {
+            throw new CommandExecutionException("Please provide any embeds to send.");
         }
 
         String link = getStringOption(firstOption, "link");
@@ -117,16 +144,16 @@ public class EmbedCommand extends Command {
             throw new InvalidOptionException("link", "The given message doesn't have any embeds to edit.");
         }
 
-        List<EmbedBuilder> embeds = new ArrayList<>(message.getEmbeds().stream().map(Embed::toBuilder).toList());
+        List<EmbedBuilder> newEmbeds = new ArrayList<>(message.getEmbeds().stream().map(Embed::toBuilder).toList());
 
-        embeds.add(embed);
+        newEmbeds.addAll(embeds);
 
-        message.edit(embeds);
+        message.edit(newEmbeds);
 
         respond(ApplicationService.getInstance()
                 .getEmbed()
                 .setColor(EmbedColor.POSITIVE.getColor())
-                .setDescription("Embed added!"));
+                .setDescription("Embed(s) added!"));
     }
 
     private void edit(SlashCommandInteractionOption firstOption) {
