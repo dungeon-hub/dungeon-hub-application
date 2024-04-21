@@ -31,6 +31,9 @@ public class RoleCommand extends Command {
 
         User user = getUserOption(firstOption, "user");
 
+        //TODO make sure that user's highest role is higher than the one that they're trying to give
+        //user.getRoles(role.getServer()).stream().sorted(Comparator.comparingInt(Role::getPosition).reversed()).findFirst();
+
         if (add) {
             user.addRole(role).join();
 
