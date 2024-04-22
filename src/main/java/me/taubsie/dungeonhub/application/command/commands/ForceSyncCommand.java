@@ -20,7 +20,7 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-@CommandParameters(name = "force-sync", description = "Forces the update of the users roles and nickname.", enabledForPermissions = {PermissionType.MANAGE_ROLES})
+@CommandParameters(name = "force-sync", description = "Forces the update of the users roles and nickname.", enabledForPermissions = {PermissionType.MANAGE_NICKNAMES})
 public class ForceSyncCommand extends Command {
     @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
