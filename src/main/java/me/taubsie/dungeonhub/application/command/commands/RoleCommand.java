@@ -3,8 +3,10 @@ package me.taubsie.dungeonhub.application.command.commands;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
+import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidSubCommandException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
+import me.taubsie.dungeonhub.application.service.NicknameService;
 import me.taubsie.dungeonhub.application.service.RolesService;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.permission.Role;
@@ -25,44 +27,41 @@ public class RoleCommand extends Command {
     }
 
     private void addRemove(SlashCommandInteractionOption firstOption) {
+        User issuer = getUser();
+
         boolean add = firstOption.getName().equalsIgnoreCase("add");
 
         Role role = getRoleOption(firstOption, "role");
 
         User user = getUserOption(firstOption, "user");
 
-        //TODO make sure that user's highest role is higher than the one that they're trying to give
-        //user.getRoles(role.getServer()).stream().sorted(Comparator.comparingInt(Role::getPosition).reversed()).findFirst();
+        if (!role.getServer().isOwner(issuer)
+                && role.getPosition() >= issuer.getRoles(role.getServer()).stream().mapToInt(Role::getPosition).max().orElse(0)) {
+            throw new CommandExecutionException("You aren't allowed to give roles that are higher than those that you have.");
+        }
 
         if (add) {
             user.addRole(role).join();
 
-            //unfortunately, we have to call getUserOption() again to ensure the cached roles are reloaded (javacord moment)
-            add(role, getUserOption(firstOption, "user"));
+            respond(ApplicationService.getInstance()
+                    .getEmbed()
+                    .setColor(EmbedColor.POSITIVE.getColor())
+                    .setDescription("Successfully added " + role.getMentionTag() + " to " + user.getMentionTag() + "."));
         } else {
             user.removeRole(role).join();
 
-            //unfortunately, we have to call getUserOption() again to ensure the cached roles are reloaded (javacord moment)
-            remove(role, getUserOption(firstOption, "user"));
+            respond(ApplicationService.getInstance()
+                    .getEmbed()
+                    .setColor(EmbedColor.POSITIVE.getColor())
+                    .setDescription("Successfully removed " + role.getMentionTag() + " from " + user.getMentionTag() + "."));
         }
-    }
 
-    private void add(Role role, User user) {
-        respond(ApplicationService.getInstance()
-                .getEmbed()
-                .setColor(EmbedColor.POSITIVE.getColor())
-                .setDescription("Successfully added " + role.getMentionTag() + " to " + user.getMentionTag() + "."));
+        //unfortunately, we have to call getUserOption() again to ensure the cached roles are reloaded (javacord moment)
+        user = getUserOption(firstOption, "user");
 
-        RolesService.getInstance().updateRoles(user, getServer());
-    }
+        List<Role> updatedRoles = RolesService.getInstance().updateRoles(user, getServer());
 
-    private void remove(Role role, User user) {
-        respond(ApplicationService.getInstance()
-                .getEmbed()
-                .setColor(EmbedColor.POSITIVE.getColor())
-                .setDescription("Successfully removed " + role.getMentionTag() + " from " + user.getMentionTag() + "."));
-
-        RolesService.getInstance().updateRoles(user, getServer());
+        NicknameService.getInstance().updateNickname(user, getServer(), updatedRoles);
     }
 
     @Override
