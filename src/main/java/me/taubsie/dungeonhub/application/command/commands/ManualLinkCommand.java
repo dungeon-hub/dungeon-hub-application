@@ -35,7 +35,7 @@ public class ManualLinkCommand extends Command {
         Set<User> users = getServer().getMembersByName(discordUser);
 
         if (users.size() != 1) {
-            throw new CommandExecutionException("The specified user does not exist.");
+            throw new CommandExecutionException("The specified user (`" + discordUser + "`) does not exist.");
         }
 
         users.forEach(user -> NicknameService.getInstance().linkToIgn(ign, user));
