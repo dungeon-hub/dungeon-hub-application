@@ -54,7 +54,7 @@ public class HelpCommand extends Command {
                     .setTitle("**Bot Usage:**")
                     .setDescription("""
                             This bot uses slash commands, in order to use it you must have your discord client updated (No need to worry if you're on desktop).
-                                                    
+                            
                             **Usage:**\s
                             `/log amount:NUMBER carry-type:Completion/S/S+/Tier 2/Tier 3/Tier 4` - Run this inside the ticket you are logging to log your carries and earn score.
                             `/score` - Displays your current score.
