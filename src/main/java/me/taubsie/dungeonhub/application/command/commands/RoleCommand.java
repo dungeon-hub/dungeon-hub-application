@@ -37,7 +37,7 @@ public class RoleCommand extends Command {
 
         if (!role.getServer().isOwner(issuer)
                 && role.getPosition() >= issuer.getRoles(role.getServer()).stream().mapToInt(Role::getPosition).max().orElse(0)) {
-            throw new CommandExecutionException("You aren't allowed to give roles that are higher than those that you have.");
+            throw new CommandExecutionException("You aren't allowed to manage roles that are higher than those that you have.");
         }
 
         if (add) {
