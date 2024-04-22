@@ -155,7 +155,7 @@ public class EmbedCommand extends Command {
         respond(ApplicationService.getInstance()
                 .getEmbed()
                 .setColor(EmbedColor.POSITIVE.getColor())
-                .setDescription("Embed(s) added!"));
+                .setDescription("Embed(s) added to message " + message.getLink() + "!"));
     }
 
     private void edit(SlashCommandInteractionOption firstOption) {
@@ -205,7 +205,7 @@ public class EmbedCommand extends Command {
         respond(ApplicationService.getInstance()
                 .getEmbed()
                 .setColor(EmbedColor.POSITIVE.getColor())
-                .setDescription("Embed edited!"));
+                .setDescription("Embed in message " + message.getLink() + " edited!"));
     }
 
     private void send(SlashCommandInteractionOption firstOption) {
@@ -267,7 +267,7 @@ public class EmbedCommand extends Command {
         respond(ApplicationService.getInstance()
                 .getEmbed()
                 .setColor(EmbedColor.POSITIVE.getColor())
-                .setDescription("Embed sent!"));
+                .setDescription("Embed sent into <#" + channel.getId() + ">!"));
     }
 
     private void get(SlashCommandInteractionOption firstOption) {
