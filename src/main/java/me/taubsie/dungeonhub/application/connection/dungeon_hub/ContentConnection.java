@@ -72,4 +72,15 @@ public class ContentConnection {
 
         return performUpload(data, url);
     }
+
+    public Optional<String> downloadFile(String uri) {
+        HttpUrl url = getApiUrl(uri).build();
+
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+
+        return DungeonHubConnection.getInstance().executeRequest(request);
+    }
 }

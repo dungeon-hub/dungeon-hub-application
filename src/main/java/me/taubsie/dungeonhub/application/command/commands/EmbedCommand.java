@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
+import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
@@ -219,6 +220,14 @@ public class EmbedCommand extends Command {
         }
 
         String source = getStringOption(firstOption, "embed");
+
+        String cdnPrefix = ConfigProperty.CDN_URL.getValue();
+
+        if (source.startsWith(cdnPrefix)) {
+            source = source.substring(cdnPrefix.length());
+
+            source = ContentConnection.getInstance().downloadFile(source).orElseThrow(() -> new CommandExecutionException("Couldn't download the file correctly."));
+        }
 
         List<EmbedBuilder> embeds = new ArrayList<>();
 
