@@ -1,0 +1,81 @@
+package me.taubsie.dungeonhub.kord.application.commands
+
+import com.kotlindiscord.kord.extensions.commands.Arguments
+import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
+import com.kotlindiscord.kord.extensions.extensions.Extension
+import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
+import dev.kord.common.entity.MessageFlag
+import dev.kord.common.entity.MessageFlags
+import dev.kord.core.entity.Guild
+import dev.kord.core.entity.User
+import dev.kord.rest.builder.message.EmbedBuilder
+import me.taubsie.dungeonhub.kord.application.classes.HelpDisplay
+import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
+import me.taubsie.dungeonhub.kord.application.enums.HelpTopic
+import me.taubsie.dungeonhub.kord.application.service.ApplicationService
+
+class HelpCommand : Extension() {
+    override val name = "help-command"
+
+    override suspend fun setup() {
+        publicSlashCommand(::HelpArguments) {
+            name = "help"
+            description = "List of available commands."
+
+            action {
+                if (arguments.helpTopic == null) {
+                    respondOpposite {
+                        flags = MessageFlags().plus(MessageFlag.Ephemeral)
+                        embeds =
+                            mutableListOf(returnEmbed(user.asUserOrNull(), guild?.asGuildOrNull(), arguments.helpTopic))
+                    }
+                } else {
+                    respond {
+                        embeds =
+                            mutableListOf(returnEmbed(user.asUserOrNull(), guild?.asGuildOrNull(), arguments.helpTopic))
+                    }
+                }
+            }
+        }
+    }
+
+    fun returnEmbed(user: User?, guild: Guild?, helpTopic: HelpTopic?): EmbedBuilder {
+        val embed: EmbedBuilder = ApplicationService.embed
+
+        if (helpTopic == null) {
+            embed.title = "**Bot Usage:**"
+            embed.color = EmbedColor.DEFAULT.color
+            embed.description = """
+                            This bot uses slash commands, in order to use it you must have your discord client updated (No need to worry if you're on desktop).
+                                                    
+                            **Usage:** 
+                            `/log amount:NUMBER carry-type:Completion/S/S+/Tier 2/Tier 3/Tier 4` - Run this inside the ticket you are logging to log your carries and earn score.
+                            `/score` - Displays your current score.
+                            `/score-help` - Displays more information about the score system.
+                            `/calc-price type:TYPE tier:TIER amount:AMOUNT` - Calculates the price of carries.
+                            `/leaderboard leaderboard:TYPE` - Shows a leaderboard containing either the current or the all-time score.
+                            """.trimIndent()
+
+            return embed
+        }
+
+        embed.title = "**" + helpTopic.title + "**"
+
+        val helpDisplay: HelpDisplay = helpTopic.description.getDescription(user!!, guild)!!
+        embed.description = helpDisplay.description
+        embed.color = helpDisplay.embedColor.color
+        helpDisplay.fields.forEach { (name: String?, value: String?) ->
+            embed.field(name, false) { value }
+        }
+
+        return embed
+    }
+
+    inner class HelpArguments : Arguments() {
+        val helpTopic by optionalEnumChoice<HelpTopic> {
+            name = "topic"
+            description = "Select what topic you need help with."
+            typeName = "HelpTopic"
+        }
+    }
+}

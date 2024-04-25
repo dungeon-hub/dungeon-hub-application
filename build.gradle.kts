@@ -35,6 +35,7 @@ dependencies {
     implementation("me.nullicorn:Nedit:2.2.0")
     implementation("com.google.zxing:javase:3.5.2")
     implementation("dev.kord:kord-core:0.13.1")
+    implementation("com.kotlindiscord.kord.extensions:kord-extensions:1.6.0")
     implementation(kotlin("stdlib-jdk8"))
 
     annotationProcessor("org.projectlombok:lombok:1.18.28")
