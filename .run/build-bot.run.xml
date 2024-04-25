@@ -13,7 +13,7 @@
           <option value="build" />
         </list>
       </option>
-      <option name="vmOptions" />
+      <option name="vmOptions" value="-Dconsole.encoding=UTF-8 -Dfile.encoding=UTF-8" />
     </ExternalSystemSettings>
     <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
     <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>

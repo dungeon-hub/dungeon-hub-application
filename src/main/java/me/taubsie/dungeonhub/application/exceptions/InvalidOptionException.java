@@ -1,23 +1,21 @@
 package me.taubsie.dungeonhub.application.exceptions;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 public class InvalidOptionException extends CommandExecutionException
 {
-    private final String name;
-    private final String additionalMessage;
-
-    public InvalidOptionException(String name)
+    public InvalidOptionException(@NotNull String name)
     {
         this(name, null);
     }
 
-    public InvalidOptionException(String name, String additionalMessage)
+    public InvalidOptionException(@NotNull String name, @Nullable String additionalMessage)
     {
-        this.name = name;
-        this.additionalMessage = additionalMessage;
+        super(getMessage(name, additionalMessage));
     }
 
-    @Override
-    public String getMessage()
+    private static @NotNull String getMessage(@NotNull String name, @Nullable String additionalMessage)
     {
         if (additionalMessage == null)
         {

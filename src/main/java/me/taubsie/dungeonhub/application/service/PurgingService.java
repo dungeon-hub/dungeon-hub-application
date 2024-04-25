@@ -22,13 +22,13 @@ public class PurgingService implements StartupListener {
     private static final Logger logger = LoggerFactory.getLogger(PurgingService.class);
     private static PurgingService instance;
     private final List<PurgeData> purgeDataList = new ArrayList<>();
+    private final List<Long> purgeEnabled = new ArrayList<>();
 
     public static PurgingService getInstance() {
-        if (instance == null) {
+        return Objects.requireNonNullElseGet(instance, () -> {
             instance = new PurgingService();
-        }
-
-        return instance;
+            return instance;
+        });
     }
 
     //TODO probably increase time to prevent it getting stuck and to have too many open threads.
@@ -44,13 +44,49 @@ public class PurgingService implements StartupListener {
         }, new Time(System.currentTimeMillis() + 500L), 3000L);
     }
 
+    public void clearServer(long serverId) {
+        if (!purgeEnabled.contains(serverId)) {
+            purgeDataList.removeIf(purgeData -> purgeData.purgeType().getCarryType().getServer().getId() == serverId);
+        }
+    }
+
+    public void enablePurge(Long serverId) {
+        if (!purgeEnabled.contains(serverId)) {
+            purgeEnabled.add(serverId);
+        }
+    }
+
+    public long getProgress(long serverId) {
+        return purgeDataList.stream()
+                .filter(purgeData -> purgeData.purgeType().getCarryType().getServer().getId() == serverId)
+                .count();
+    }
+
+    public long getUserProgress(long serverId) {
+        return purgeDataList.stream()
+                .filter(purgeData -> purgeData.purgeType().getCarryType().getServer().getId() == serverId)
+                .map(PurgeData::userId)
+                .distinct()
+                .count();
+    }
+
+    public boolean isPurgeActive(long serverId) {
+        return purgeEnabled.contains(serverId);
+    }
+
     /**
      * This method is private to prevent it from being run from outside this service.
      * That is done so that the amount of threads created is limited, to prevent the server this is currently hosted
      * on from reaching the vm's thread limit.
      */
     private void purgeWave() {
-        List<PurgeData> currentWave = purgeDataList.stream().limit(5).toList();
+        List<PurgeData> currentWave = purgeDataList.stream()
+                .filter(purgeData -> purgeEnabled.contains(purgeData.purgeType().getCarryType().getServer().getId()))
+                .limit(5)
+                .toList();
+
+        purgeEnabled.removeIf(aLong -> purgeDataList.stream()
+                .noneMatch(purgeData -> purgeData.purgeType().getCarryType().getServer().getId() == aLong));
 
         currentWave.forEach(purgeData -> {
             Optional<Server> server = DiscordConnection.getInstance().getBot().getServerById(purgeData.purgeType().getCarryType().getServer().getId());

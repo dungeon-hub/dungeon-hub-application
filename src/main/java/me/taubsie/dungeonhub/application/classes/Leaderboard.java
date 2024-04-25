@@ -23,7 +23,15 @@ public class Leaderboard {
         return title;
     }
 
+    public boolean isEmpty() {
+        return leaderboardModel == null || leaderboardModel.getScores().isEmpty();
+    }
+
     public EmbedBuilder getEmbed() {
+        if(isEmpty()) {
+            return LeaderboardService.getInstance().getEmptyLeaderboardEmbed(title);
+        }
+
         return LeaderboardService.getInstance().getLeaderboardEmbed(title, leaderboardModel);
     }
 }

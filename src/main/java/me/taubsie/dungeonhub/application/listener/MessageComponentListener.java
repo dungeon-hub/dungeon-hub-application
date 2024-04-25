@@ -1,10 +1,15 @@
 package me.taubsie.dungeonhub.application.listener;
 
+import me.taubsie.dungeonhub.application.classes.HelpDisplay;
 import me.taubsie.dungeonhub.application.classes.ServerProperty;
+import me.taubsie.dungeonhub.application.connection.MojangConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
+import me.taubsie.dungeonhub.application.enums.HelpTopic;
 import me.taubsie.dungeonhub.application.exceptions.*;
+import me.taubsie.dungeonhub.application.loader.ClassLoaderService;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.application.service.PermissionService;
@@ -12,16 +17,20 @@ import me.taubsie.dungeonhub.common.enums.QueueStep;
 import me.taubsie.dungeonhub.common.enums.ScoreType;
 import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel;
 import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueUpdateModel;
+import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import me.taubsie.dungeonhub.common.model.score.LoggedCarryModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.MessageFlag;
+import org.javacord.api.entity.message.component.HighLevelComponent;
+import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.MessageComponentCreateEvent;
 import org.javacord.api.interaction.MessageComponentInteraction;
+import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.listener.interaction.MessageComponentCreateListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Stream;
 
@@ -60,6 +70,54 @@ public class MessageComponentListener implements MessageComponentCreateListener 
             case "reload_playerdata", "show_flagged_banned", "show_excluded" -> {
                 // This is here so that the default block doesn't get executed and the lambda expressions that are set
                 // on creation work
+            }
+
+            case "link_user" -> {
+                long userId = messageComponentCreateEvent.getMessageComponentInteraction().getUser().getId();
+
+                Optional<UUID> linkedTo = DiscordUserConnection.getInstance().getById(userId).map(DiscordUserModel::getMinecraftId);
+
+                if (linkedTo.isPresent()) {
+                    messageComponentCreateEvent.getMessageComponentInteraction()
+                            .createImmediateResponder()
+                            .addEmbed(
+                                    ApplicationService.getInstance()
+                                            .getEmbed()
+                                            .setColor(EmbedColor.INFORMATION.getColor())
+                                            .setDescription("You're already linked to user `"
+                                                    + MojangConnection.getInstance().getNameByUUID(linkedTo.get())
+                                                    + "`! If you think that's incorrect, try using "
+                                                    + ClassLoaderService.getInstance()
+                                                    .getSlashCommand("unlink", null)
+                                                    .map(SlashCommand::getMentionTag)
+                                                    .orElse("`/unlink`")
+                                                    + ".")
+                            )
+                            .setFlags(MessageFlag.EPHEMERAL)
+                            .respond();
+                    return;
+                }
+
+                String message = "Link your ingame-account.";
+                HighLevelComponent component = ApplicationService.getInstance().getLinkModalComponent();
+                messageComponentCreateEvent.getMessageComponentInteraction().respondWithModal("link_ign", message, component);
+            }
+            case "show_help_linking" -> {
+                HelpTopic helpTopic = HelpTopic.VERIFICATION;
+
+                EmbedBuilder embedBuilder = new EmbedBuilder().setTitle("**" + helpTopic.getTitle() + "**");
+
+                HelpDisplay helpDisplay = helpTopic.getDescription().getDescription(messageComponentCreateEvent.getMessageComponentInteraction().getUser(), messageComponentCreateEvent.getMessageComponentInteraction().getServer().orElse(null));
+
+                embedBuilder.setColor(helpDisplay.embedColor().getColor()).setDescription(helpDisplay.description());
+
+                helpDisplay.fields().forEach(embedBuilder::addField);
+
+                messageComponentCreateEvent.getMessageComponentInteraction()
+                        .createImmediateResponder()
+                        .addEmbed(embedBuilder)
+                        .setFlags(MessageFlag.EPHEMERAL)
+                        .respond();
             }
 
             default -> ApplicationService.getInstance()
@@ -120,18 +178,14 @@ public class MessageComponentListener implements MessageComponentCreateListener 
         }
 
         Optional<CarryQueueModel> carryQueue = QueueConnection.getInstance()
-                .getCarryQueueByRelatedId(channel.get().getId())
-                .map(Collection::stream)
-                .flatMap(Stream::findFirst);
+                .getCarryQueuesByQueueStep(QueueStep.CONFIRMATION).stream()
+                .flatMap(Collection::stream)
+                .filter(carryQueueModel -> carryQueueModel.getRelationId() == channel.get().getId())
+                .findFirst();
 
         if (carryQueue.isEmpty()) {
             ApplicationService.getInstance().respondWithError(messageComponentInteraction,
-                    new CommandExecutionException() {
-                        @Override
-                        public String getMessage() {
-                            return "Carry isn't in queue anymore. Please discard and log this again!";
-                        }
-                    });
+                    new CommandExecutionException("Carry isn't in queue anymore. Please discard and log this again!"));
             return;
         }
 
@@ -180,8 +234,8 @@ public class MessageComponentListener implements MessageComponentCreateListener 
 
         Message message = messageComponentInteraction.getMessage();
 
-        for(CarryQueueModel queueModel : QueueConnection.getInstance()
-                .getCarryQueuesByQueueStep(QueueStep.APPROVING)
+        for (CarryQueueModel queueModel : QueueConnection.getInstance()
+                .getCarryQueueByRelatedIdAndQueueStep(message.getId(), QueueStep.APPROVING)
                 .orElse(new HashSet<>())) {
             User carrier = messageComponentInteraction.getApi().getUserById(queueModel.getCarrier().getId()).join();
 
@@ -221,7 +275,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
         messageComponentInteraction.acknowledge();
         Message message = messageComponentInteraction.getMessage();
 
-        for(CarryQueueModel queueModel : QueueConnection.getInstance()
+        for (CarryQueueModel queueModel : QueueConnection.getInstance()
                 .getCarryQueueByRelatedIdAndQueueStep(message.getId(), QueueStep.APPROVING)
                 .orElse(new HashSet<>())) {
             CarryQueueUpdateModel updateModel = new CarryQueueUpdateModel()
@@ -230,7 +284,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
             Optional<LoggedCarryModel> loggedCarryModel = QueueConnection.getInstance()
                     .logQueue(queueModel.getId(), updateModel);
 
-            if(loggedCarryModel.isEmpty()) {
+            if (loggedCarryModel.isEmpty()) {
                 return;
             }
 
@@ -259,6 +313,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                         ApplicationService.getInstance()
                                 .loadEmbedFromCarryQueue(queueModel)
                                 .setTitle("Information")
+                                .setColor(EmbedColor.DEFAULT.getColor())
                 );
             }
             catch (CompletionException | NullPointerException ignored) {

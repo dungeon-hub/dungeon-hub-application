@@ -70,12 +70,7 @@ public class CalcPriceCommand extends Command {
         long pricePerCarry = ApplicationService.getInstance().calculatePricePerCarry(carryDifficulty.get(), amount);
 
         if (price < 0) {
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Something went wrong.. The calculated price (" + price + ") is negative?";
-                }
-            };
+            throw new CommandExecutionException("Something went wrong.. The calculated price (" + price + ") is negative?");
         }
 
         String priceText = price != 0

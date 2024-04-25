@@ -1,6 +1,7 @@
 package me.taubsie.dungeonhub.application.service;
 
 import me.taubsie.dungeonhub.application.classes.Leaderboard;
+import me.taubsie.dungeonhub.application.classes.ServerProperty;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
@@ -25,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Time;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletionException;
 
 @OnStart
 public class LeaderboardService implements StartupListener {
@@ -41,11 +43,19 @@ public class LeaderboardService implements StartupListener {
         return instance;
     }
 
-    public void registerPageListener(Message message, CarryTypeModel carryType, ScoreType scoreType) {
-        new LeaderboardMessage(1, message.getChannel().getId(), message.getId(), carryType, scoreType);
+    public void registerPageListener(Message message, @Nullable CarryTypeModel carryType, ScoreType scoreType, Long userId) {
+        new LeaderboardMessage(0, message.getChannel().getId(), message.getId(), carryType, scoreType, userId);
     }
 
-    public String getLeaderboardTitle(CarryTypeModel carryType, ScoreType scoreType) {
+    public String getLeaderboardDescription() {
+        return "To see how score works, use `/help score`";
+    }
+
+    public String getLeaderboardTitle(@Nullable CarryTypeModel carryType, ScoreType scoreType) {
+        if (carryType == null) {
+            return "Leaderboard | Total score" + scoreType.getLeaderboardSuffix();
+        }
+
         return "Leaderboard | " + carryType.getDisplayName() + "-Carries" + scoreType.getLeaderboardSuffix();
     }
 
@@ -54,17 +64,15 @@ public class LeaderboardService implements StartupListener {
             return getEmptyLeaderboardEmbed(title);
         }
 
-        String description = "To see how score works, use /score-help";
-
         EmbedBuilder embed = ApplicationService.getInstance()
                 .getEmbed()
                 .setTitle(title)
-                .setDescription(description)
+                .setDescription(getLeaderboardDescription())
                 .setColor(EmbedColor.DEFAULT.getColor());
 
         int counter = DungeonHubService.getInstance().getOffsetFromPageNumber(leaderboardModel.getPage());
 
-        for(ScoreModel score : leaderboardModel.getScores()) {
+        for (ScoreModel score : leaderboardModel.getScores()) {
             embed.addField(
                     "#" + ++counter + " Carrier",
                     getPlayerScore(score)
@@ -92,7 +100,7 @@ public class LeaderboardService implements StartupListener {
                 .getEmbed()
                 .setTitle(title)
                 .setColor(EmbedColor.NEGATIVE.getColor())
-                .setDescription("No score has been gained yet!\n To see how score works, use /score-help");
+                .setDescription("No score has been gained yet!\n" + getLeaderboardDescription());
     }
 
     public long getNextPossibleRefresh() {
@@ -114,8 +122,26 @@ public class LeaderboardService implements StartupListener {
     private void refreshLeaderboardInChannel(ServerTextChannel channel, List<Leaderboard> leaderboards) {
         List<EmbedBuilder> embeds = new ArrayList<>();
 
-        for(Leaderboard leaderboard : leaderboards) {
-            embeds.add(leaderboard.getEmbed());
+        for (Leaderboard leaderboard : leaderboards) {
+            EmbedBuilder embed = leaderboard.getEmbed()
+                    .setFooter(null)
+                    .setTimestamp(null);
+
+            if (!leaderboard.isEmpty()) {
+                embed.setDescription(null);
+            }
+
+            embeds.add(embed);
+        }
+
+        if (!embeds.isEmpty()) {
+            if (!leaderboards.get(0).isEmpty()) {
+                embeds.get(0).setDescription(getLeaderboardDescription());
+            }
+
+            embeds.get(embeds.size() - 1)
+                    .setFooter(ApplicationService.getInstance().getFooter())
+                    .setTimestamp(Instant.now());
         }
 
         Optional<Message> messageOptional =
@@ -141,8 +167,8 @@ public class LeaderboardService implements StartupListener {
 
         Map<ServerTextChannel, List<Leaderboard>> leaderboards = new HashMap<>();
 
-        for(DiscordServerModel serverModel : DiscordServerConnection.getInstance().loadAllServers().orElse(new ArrayList<>())) {
-            for(CarryTypeModel carryType :
+        for (DiscordServerModel serverModel : DiscordServerConnection.getInstance().loadAllServers().orElse(new ArrayList<>())) {
+            for (CarryTypeModel carryType :
                     CarryTypeConnection.getInstance(serverModel.getId()).getAllCarryTypes().orElse(List.of())) {
                 Optional<ServerTextChannel> leaderboardChannel = carryType.getLeaderboardChannel()
                         .flatMap(id -> DiscordConnection.getInstance().getBot().getServerTextChannelById(id));
@@ -151,7 +177,7 @@ public class LeaderboardService implements StartupListener {
                     continue;
                 }
 
-                for(ScoreType scoreType : ScoreType.values()) {
+                for (ScoreType scoreType : ScoreType.values()) {
                     if (scoreType == ScoreType.EVENT && !carryType.isEventActive()) {
                         continue;
                     }
@@ -169,6 +195,30 @@ public class LeaderboardService implements StartupListener {
                     }
                 }
             }
+
+            ServerProperty.TOTAL_SCORE_LEADERBOARD_CHANNEL.getValue(serverModel.getId())
+                    .flatMap(id -> {
+                        try {
+                            return DiscordConnection.getInstance().getBot().getServerTextChannelById(id);
+                        }
+                        catch (CompletionException completionException) {
+                            return Optional.empty();
+                        }
+                    }).ifPresent(leaderboardChannel -> {
+                        for (ScoreType scoreType : ScoreType.values()) {
+                            if (leaderboards.containsKey(leaderboardChannel)) {
+                                leaderboards.get(leaderboardChannel).add(new Leaderboard(
+                                        getLeaderboardTitle(null, scoreType),
+                                        DiscordServerConnection.getInstance().loadTotalLeaderboard(serverModel.getId(), scoreType, 0).orElse(null)
+                                ));
+                            } else {
+                                leaderboards.put(leaderboardChannel, new ArrayList<>(List.of(new Leaderboard(
+                                        getLeaderboardTitle(null, scoreType),
+                                        DiscordServerConnection.getInstance().loadTotalLeaderboard(serverModel.getId(), scoreType, 0).orElse(null)
+                                ))));
+                            }
+                        }
+                    });
         }
 
         leaderboards.forEach(this::refreshLeaderboardInChannel);

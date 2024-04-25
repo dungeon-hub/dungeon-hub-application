@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="EntryPointsManager">
-    <list size="7">
+    <list size="8">
       <item index="0" class="java.lang.String" itemvalue="me.taubsie.carrylogs.application.command.CommandParameters" />
       <item index="1" class="java.lang.String" itemvalue="me.taubsie.carrylogs.application.listener.Listener" />
       <item index="2" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.application.command.CommandParameters" />
@@ -9,6 +9,7 @@
       <item index="4" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.application.loader.OnStart" />
       <item index="5" class="java.lang.String" itemvalue="org.apache.logging.log4j.core.config.plugins.Plugin" />
       <item index="6" class="java.lang.String" itemvalue="org.apache.logging.log4j.core.config.plugins.PluginFactory" />
+      <item index="7" class="java.lang.String" itemvalue="org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity" />
     </list>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
@@ -34,7 +35,7 @@
   <component name="ProjectResources">
     <resource url="https://maven.apache.org/ASSEMBLY/2.2.0" location="$PROJECT_DIR$/src/main/resources/assembly/distribution.xml" />
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="openjdk-17" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="jbr-17" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
   <component name="ProjectType">

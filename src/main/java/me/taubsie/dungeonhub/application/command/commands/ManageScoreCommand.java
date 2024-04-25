@@ -38,11 +38,6 @@ import java.util.concurrent.CompletableFuture;
         enabledForPermissions = {PermissionType.MANAGE_MESSAGES})
 public class ManageScoreCommand extends Command {
     @Override
-    public long[] getEnabledServers() {
-        return new long[]{693263712626278553L, 1023684107877761196L};
-    }
-
-    @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         Server server = getServer();
 

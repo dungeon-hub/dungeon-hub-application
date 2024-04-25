@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.listener;
 
+import me.taubsie.dungeonhub.application.classes.ServerProperty;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection;
@@ -15,6 +16,7 @@ import me.taubsie.dungeonhub.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.common.DungeonHubService;
 import me.taubsie.dungeonhub.common.enums.QueueStep;
 import me.taubsie.dungeonhub.common.enums.ScoreType;
+import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel;
 import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueUpdateModel;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import me.taubsie.dungeonhub.common.model.score.LoggedCarryModel;
@@ -37,8 +39,11 @@ import org.javacord.api.listener.message.MessageEditListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletionException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Taubsie
@@ -51,8 +56,12 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
     private static final long APPROVE_AMOUNT_THRESHOLD = 8;
     private static final long APPROVE_SCORE_THRESHOLD = 30;
 
+    private static final Pattern CHANNEL_FROM_TRANSCRIPT = Pattern.compile("^\\s*Channel: [^(]*\\((?<channel>\\d*)\\)");
+
     @Override
     public void onMessageCreate(MessageCreateEvent messageCreateEvent) {
+        addReactionToPets(messageCreateEvent);
+
         logTicket(messageCreateEvent);
 
         loadSkycryptFromTicket(messageCreateEvent);
@@ -61,6 +70,59 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
     @Override
     public void onMessageEdit(MessageEditEvent messageEditEvent) {
         logTicket(messageEditEvent);
+    }
+
+    private void addReactionToPets(MessageCreateEvent messageCreateEvent) {
+        if (messageCreateEvent.isServerMessage() && messageCreateEvent.getServer().isPresent()) {
+            long serverId = messageCreateEvent.getServer().get().getId();
+            long channelId = messageCreateEvent.getChannel().getId();
+            if ((serverId == 1023684107877761196L && channelId == 1220895875102937098L)
+                    || (serverId == 693263712626278553L && channelId == 1219427157655289908L)) {
+                if (messageCreateEvent.getMessageAttachments().isEmpty()) {
+                    if (messageCreateEvent.getMessageAuthor().isRegularUser() && messageCreateEvent.getMessage().getEmbeds().stream().flatMap(embed -> embed.getThumbnail().stream()).findFirst().isEmpty()) {
+                        return;
+                    }
+                }
+
+                String emoji = getRandomEmoji();
+
+                try {
+                    messageCreateEvent.addReactionToMessage(emoji).join();
+                }
+                catch (CompletionException ignored) {
+                    // ignored, just don't add a reaction then
+                }
+            }
+        }
+    }
+
+    private String[] getEmojiPool() {
+        return new String[]{
+                "Woah:1220111116651204608",
+                "woah:1220111081150615572",
+                "girlwow:1220111157742800956",
+                "catelove:1204407157848678430",
+                "ZTcool:1204406493353353256",
+                "pepega:697756021048868894",
+                "smikecate:1204406375791333426",
+                "poggorfish:694270485613117480"
+        };
+    }
+
+    private String getRandomEmoji() {
+        double bound = 101.0;
+
+        String[] emojiPool = getEmojiPool();
+
+        int random = new Random().nextInt((int) bound);
+
+        String emoji = emojiPool[(int) (random * (emojiPool.length / bound))];
+
+        if (random == 100) {
+            emoji = "swag:708383726370947132";
+        }
+
+        return emoji;
     }
 
     private void loadSkycryptFromTicket(MessageCreateEvent messageCreateEvent) {
@@ -117,11 +179,17 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
             String ign = ignOptional.get()
                     .replace("IGN: ", "")
                     .replaceAll("❮(\\S*)❯", "")
-                    .replace("★", "")
-                    .replace("✦", "")
-                    .replace("✶", "")
-                    .replace("✽", "")
                     .replace("❊", "")
+                    .replace("❉", "")
+                    .replace("❃", "")
+                    .replace("✽", "")
+                    .replace("✸", "")
+                    .replace("✷", "")
+                    .replace("✶", "")
+                    .replace("✧", "")
+                    .replace("✦", "")
+                    .replace("☆", "")
+                    .replace("★", "")
                     .strip();
 
             sendPlayerDataEmbed(ign, channel.get());
@@ -219,160 +287,141 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
     private void logTicket(CertainMessageEvent messageEvent) {
         Server server = messageEvent.getServer().orElse(null);
 
-        if (!messageEvent.isServerMessage()
-                || server == null
-                || !(server.getId() == IdList.SERVER.getId()
-                || server.getId() == IdList.SERVER.getTestId())) {
+        if (!messageEvent.isServerMessage() || server == null) {
             return;
         }
 
-        if (messageEvent.getChannel().getId() == IdList.TRANSCRIPTS_CHANNEL.getLocalId(server.getId())
-                && (messageEvent.getMessageContent().startsWith("carrylog;")
-                || messageEvent.getMessageContent().startsWith("carrylogs;"))) {
+        if (ServerProperty.TRANSCRIPTS_CHANNEL.getValue(server.getId()).map(s -> messageEvent.getChannel().getIdAsString().equals(s)).orElse(false)) {
+            List<MessageAttachment> attachments = messageEvent.getMessageAttachments();
 
-            String[] splitContent = messageEvent.getMessageContent().split(";");
-            if (splitContent.length != 3) {
+            if (attachments.size() != 1) {
                 return;
             }
 
-            long channelId = Long.parseLong(splitContent[1]);
-            final String attachmentLink;
+            MessageAttachment attachment = attachments.get(0);
 
-            if (splitContent[2].equals("{transcript_url}")) {
-                return;
-            }
+            byte[] attachmentContent = attachment.asByteArray().join();
 
-            if (splitContent[2].equalsIgnoreCase("deprecated")) {
-                //TODO upload attachment of file to cdn and use that as a link
-                List<MessageAttachment> attachments = messageEvent.getMessageAttachments();
+            String content = new String(attachmentContent, StandardCharsets.UTF_8);
 
-                if (attachments.size() != 1) {
-                    return;
-                }
+            Optional<Long> channelId = content.lines()
+                    .limit(7)
+                    .map(String::strip)
+                    .map(CHANNEL_FROM_TRANSCRIPT::matcher)
+                    .filter(Matcher::find)
+                    .map(matcher -> matcher.group("channel"))
+                    .map(Long::parseLong)
+                    .findFirst();
 
-                MessageAttachment attachment = attachments.get(0);
+            String attachmentLink = null;
 
-                byte[] attachmentContent = attachment.asByteArray().join();
+            Optional<TextChannel> approvingChannel = ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.getId())
+                    .flatMap(s -> messageEvent.getApi().getTextChannelById(s));
 
-                Optional<String> attachmentUrl = ContentConnection.getInstance().uploadFile(attachmentContent, "{uuid}.html");
-
-                if (attachmentUrl.isEmpty()) {
-                    logger.error("Couldn't upload content of attachment on message {}.", messageEvent.getMessage().getId());
-                    return;
-                }
-
-                attachmentLink = ContentConnection.getInstance().getCdnUrl(attachmentUrl.get()).toString();
-            } else {
-                attachmentLink = "https://tickettool.xyz/direct?url=" + splitContent[2];
-            }
-
-            long approvingChannelId = IdList.APPROVING_CHANNEL.getLocalId(server.getId());
-            Optional<TextChannel> approvingChannel = messageEvent.getApi()
-                    .getTextChannelById(approvingChannelId);
-
-            QueueConnection.getInstance()
+            for (CarryQueueModel queueModel : QueueConnection.getInstance()
                     .getCarryQueuesByQueueStep(QueueStep.TRANSCRIPT)
                     .orElse(new HashSet<>())
-                    .stream().filter(carryQueueModel -> carryQueueModel.getRelationId() == channelId)
-                    .forEach(queueModel -> {
-                        queueModel.setAttachmentLink(attachmentLink);
+                    .stream().filter(carryQueueModel -> channelId.map(aLong -> aLong.equals(carryQueueModel.getRelationId())).orElse(false))
+                    .toList()) {
+                if (attachmentLink == null) {
+                    Optional<String> attachmentUrl = ContentConnection.getInstance().uploadFile(attachmentContent, "{uuid}.html");
 
-                        CarryQueueUpdateModel updateModel = new CarryQueueUpdateModel()
-                                .setAttachmentLink(attachmentLink);
+                    if (attachmentUrl.isEmpty()) {
+                        logger.error("Couldn't upload content of attachment on message {}.", messageEvent.getMessage().getId());
+                        return;
+                    }
 
-                        if ((queueModel.getAmount() >= APPROVE_AMOUNT_THRESHOLD
-                                || queueModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
-                                && approvingChannel.isPresent()) {
-                            Message message = approvingChannel.get()
-                                    .sendMessage(
+                    attachmentLink = ContentConnection.getInstance().getCdnUrl(attachmentUrl.get()).toString();
+                }
+
+                queueModel.setAttachmentLink(attachmentLink);
+
+                CarryQueueUpdateModel updateModel = new CarryQueueUpdateModel()
+                        .setAttachmentLink(attachmentLink);
+
+                if ((queueModel.getAmount() >= APPROVE_AMOUNT_THRESHOLD
+                        || queueModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
+                        && approvingChannel.isPresent()) {
+                    Message message = approvingChannel.get()
+                            .sendMessage(
+                                    ApplicationService.getInstance()
+                                            .loadEmbedFromCarryQueue(queueModel)
+                                            .setTitle("Accept carry-log?")
+                                            .setColor(EmbedColor.DEFAULT.getColor()),
+                                    ActionRow.of(org.javacord.api.entity.message.component.Button.success(
+                                            "accept_log",
+                                            "Accept"), Button.danger("deny", "Deny"))
+                            ).join();
+
+                    updateModel.setQueueStep(QueueStep.APPROVING)
+                            .setRelationId(message.getId());
+
+                    QueueConnection.getInstance().updateQueue(queueModel.getId(), updateModel);
+                } else {
+                    Long updatedScore = QueueConnection.getInstance()
+                            .logQueue(queueModel.getId(), updateModel)
+                            .stream()
+                            .map(LoggedCarryModel::scoreModels)
+                            .flatMap(Collection::stream)
+                            .filter(scoreModel -> scoreModel.getScoreType().equals(ScoreType.DEFAULT))
+                            .findFirst()
+                            .map(ScoreModel::getScoreAmount)
+                            .orElseGet(() -> ScoreConnection.getInstance(queueModel.getCarryType())
+                                    .getScore(queueModel.getCarrier().getId())
+                                    .map(ScoreModel::getScoreAmount)
+                                    .orElse(0L));
+
+                    User carrier = messageEvent.getApi().getUserById(queueModel.getCarrier().getId()).join();
+
+                    if (carrier != null && carrier.openPrivateChannel().join() != null) {
+                        carrier.openPrivateChannel().join();
+                        Optional<PrivateChannel> privateChannelOptional = carrier.getPrivateChannel();
+                        long gainedScore = queueModel.calculateScore();
+
+                        try {
+                            privateChannelOptional.ifPresent(privateChannel -> privateChannel
+                                    .sendMessage("Your carry was logged!\n\n" +
+                                                    "**Score gained:** " + gainedScore +
+                                                    "\n**Your Updated Score:** " + updatedScore,
                                             ApplicationService.getInstance()
                                                     .loadEmbedFromCarryQueue(queueModel)
-                                                    .setTitle("Accept carry-log?")
-                                                    .setColor(EmbedColor.DEFAULT.getColor()),
-                                            ActionRow.of(org.javacord.api.entity.message.component.Button.success(
-                                                    "accept_log",
-                                                    "Accept"), Button.danger("deny", "Deny"))
-                                    ).join();
-
-                            updateModel.setQueueStep(QueueStep.APPROVING)
-                                    .setRelationId(message.getId());
-
-                            QueueConnection.getInstance().updateQueue(queueModel.getId(), updateModel);
-                        } else {
-                            Long updatedScore = QueueConnection.getInstance()
-                                    .logQueue(queueModel.getId(), updateModel)
-                                    .stream()
-                                    .map(LoggedCarryModel::scoreModels)
-                                    .flatMap(Collection::stream)
-                                    .filter(scoreModel -> scoreModel.getScoreType().equals(ScoreType.DEFAULT))
-                                    .findFirst()
-                                    .map(ScoreModel::getScoreAmount)
-                                    .orElseGet(() -> ScoreConnection.getInstance(queueModel.getCarryType())
-                                            .getScore(queueModel.getCarrier().getId())
-                                            .map(ScoreModel::getScoreAmount)
-                                            .orElse(0L));
-
-                            User carrier = messageEvent.getApi().getUserById(queueModel.getCarrier().getId()).join();
-
-                            if (carrier != null && carrier.openPrivateChannel().join() != null) {
-                                carrier.openPrivateChannel().join();
-                                Optional<PrivateChannel> privateChannelOptional = carrier.getPrivateChannel();
-                                long gainedScore = queueModel.calculateScore();
-
-                                try {
-                                    privateChannelOptional.ifPresent(privateChannel -> privateChannel
-                                            .sendMessage("Your carry was logged!\n\n" +
-                                                            "**Score gained:** " + gainedScore +
-                                                            "\n**Your Updated Score:** " + updatedScore,
-                                                    ApplicationService.getInstance()
-                                                            .getEmbed(queueModel.getTime())
-                                                            .setTitle("Information")
-                                                            .setColor(EmbedColor.DEFAULT.getColor())
-                                                            .addInlineField("Number of carries",
-                                                                    String.valueOf(queueModel.getAmount()))
-                                                            .addInlineField("Type of carry",
-                                                                    queueModel.getCarryTier().getDisplayName() + " - "
-                                                                            + queueModel.getCarryDifficulty().getDisplayName())
-                                                            .addInlineField("Player",
-                                                                    messageEvent.getApi().getUserById(queueModel.getPlayer().getId()).join().getMentionTag())
-                                                            .addInlineField("Carrier", carrier.getMentionTag())
-                                                            .addInlineField("Transcript-Link", "[Click to open]" +
-                                                                    "(" + queueModel.getAttachmentLink() + ")")).join());
-                                }
-                                catch (CompletionException completionException) {
-                                    logger.error("Error when sending log message.", completionException);
-                                }
-                            }
-
-                            Optional<ServerTextChannel> logChannel = queueModel.getCarryTier()
-                                    .getCarryType()
-                                    .getLogChannel()
-                                    .flatMap(server::getTextChannelById);
-
-                            if (logChannel.isPresent()) {
-                                logger.debug("Carry logged: {}",
-                                        DungeonHubService.getInstance().getGson().toJson(queueModel));
-
-                                logChannel.get().sendMessage(
-                                        ApplicationService.getInstance()
-                                                .getEmbed(queueModel.getTime())
-                                                .setTitle("Carry accepted.")
-                                                .setColor(EmbedColor.POSITIVE.getColor())
-                                                .addInlineField("Number of carries",
-                                                        String.valueOf(queueModel.getAmount()))
-                                                .addInlineField("Type of carry",
-                                                        queueModel.getCarryTier().getDisplayName() + " - " + queueModel.getCarryDifficulty().getDisplayName())
-                                                .addInlineField("Player",
-                                                        messageEvent.getApi().getUserById(queueModel.getPlayer().getId()).join().getMentionTag())
-                                                .addInlineField("Carrier",
-                                                        messageEvent.getApi().getUserById(queueModel.getCarrier().getId()).join().getMentionTag())
-                                                .addInlineField("Transcript-Link", "[Click to open]" +
-                                                        "(" + queueModel.getAttachmentLink() + ")"));
-                            }
-
-                            QueueConnection.getInstance().deleteQueue(queueModel.getId());
+                                                    .setTitle("Information")
+                                                    .setColor(EmbedColor.DEFAULT.getColor())).join());
                         }
-                    });
+                        catch (CompletionException completionException) {
+                            logger.error("Error when sending log message.", completionException);
+                        }
+                    }
+
+                    Optional<ServerTextChannel> logChannel = queueModel.getCarryTier()
+                            .getCarryType()
+                            .getLogChannel()
+                            .flatMap(server::getTextChannelById);
+
+                    if (logChannel.isPresent()) {
+                        logger.debug("Carry logged: {}",
+                                DungeonHubService.getInstance().getGson().toJson(queueModel));
+
+                        logChannel.get().sendMessage(
+                                ApplicationService.getInstance()
+                                        .getEmbed(queueModel.getTime())
+                                        .setTitle("Carry accepted.")
+                                        .setColor(EmbedColor.POSITIVE.getColor())
+                                        .addInlineField("Number of carries",
+                                                String.valueOf(queueModel.getAmount()))
+                                        .addInlineField("Type of carry",
+                                                queueModel.getCarryTier().getDisplayName() + " - " + queueModel.getCarryDifficulty().getDisplayName())
+                                        .addInlineField("Player",
+                                                messageEvent.getApi().getUserById(queueModel.getPlayer().getId()).join().getMentionTag())
+                                        .addInlineField("Carrier",
+                                                messageEvent.getApi().getUserById(queueModel.getCarrier().getId()).join().getMentionTag())
+                                        .addInlineField("Transcript-Link", "[Click to open]" +
+                                                "(" + queueModel.getAttachmentLink() + ")"));
+                    }
+
+                    QueueConnection.getInstance().deleteQueue(queueModel.getId());
+                }
+            }
 
             LeaderboardService.getInstance().refreshLeaderboard();
         }

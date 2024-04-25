@@ -25,7 +25,7 @@ public class RefreshCommand extends Command {
 
     @Override
     public long[] getEnabledServers() {
-        return new long[]{693263712626278553L, 1023684107877761196L};
+        return new long[]{693263712626278553L, 1023684107877761196L, 764326796736856066L};
     }
 
     @Override

@@ -1,15 +1,14 @@
 package me.taubsie.dungeonhub.application.exceptions;
 
 public class HypixelLinkedToOtherException extends CommandExecutionException {
-    private final String ign;
-
     public HypixelLinkedToOtherException(String ign) {
-        this.ign = ign;
+        super("`" + ign + "` has their ingame discord-account set to something else.\n" +
+                "If you need more information about linking your discord account, please use `/help verification`");
     }
 
-    @Override
-    public String getMessage() {
-        return "`" + ign + "` is already linked to another discord-account.\n" +
-                "If you need more information about linking your discord account, please use `/help verification`";
+    public HypixelLinkedToOtherException(String ign, String wrongUsername, String actualUsername) {
+        super("`" + ign + "` has their ingame discord-account set to `" + wrongUsername + "`.\n" +
+                "If that is your account, please change it to `" + actualUsername + "` and wait for it to update.\n" +
+                "If you need more information about linking your discord account, please use `/help verification`");
     }
 }

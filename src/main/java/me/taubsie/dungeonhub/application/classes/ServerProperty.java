@@ -30,22 +30,12 @@ public enum ServerProperty implements Nameable {
     MODERATION_LOGS_CHANNEL("id_moderation_logs_channel", ServerPropertyType.CHANNEL),
     SCORE_LOGS_CHANNEL("id_score_logs_channel", ServerPropertyType.CHANNEL),
     STRIKES_LOGS_CHANNEL("id_strikes_logs_channel", ServerPropertyType.CHANNEL),
+    LOG_APPROVING_CHANNEL("id_log_approving_channel", ServerPropertyType.CHANNEL),
+    TRANSCRIPTS_CHANNEL("id_transcripts_channel", ServerPropertyType.CHANNEL),
+    TOTAL_SCORE_LEADERBOARD_CHANNEL("id_total_score_leaderboard_channel", ServerPropertyType.CHANNEL),
+    SERVICE_TEAM_RULES_CHANNEL("id_service_team_rules_channel", ServerPropertyType.CHANNEL),
 
-    SCORE_MANAGEMENT_ROLE("id_score_management_score", ServerPropertyType.ROLE),
-    F4_ROLE("id_f4_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    F5_ROLE("id_f5_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    F6_ROLE("id_f6_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    F7_ROLE("id_f7_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    EMAN_T3_ROLE("id_eman_t3_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    EMAN_T4_ROLE("id_eman_t4_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    BLAZE_T2_ROLE("id_blaze_t2_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    BLAZE_T3_ROLE("id_blaze_t3_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    BLAZE_T4_ROLE("id_blaze_t4_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    KUUDRA_BASIC_ROLE("id_kuudra_basic_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    KUUDRA_HOT_ROLE("id_kuudra_hot_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    KUUDRA_BURNING_ROLE("id_kuudra_burning_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    KUUDRA_FIERY_ROLE("id_kuudra_fiery_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED}),
-    KUUDRA_INFERNAL_ROLE("id_kuudra_infernal_role", ServerPropertyType.ROLE, new ServerProperty[]{SCORE_ENABLED});
+    SCORE_MANAGEMENT_ROLE("id_score_management_score", ServerPropertyType.ROLE);
 
     private final String name;
     @Getter

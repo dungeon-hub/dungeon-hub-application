@@ -42,8 +42,7 @@ public class RoleSettingsCommand extends Command {
 
         if (nameSchema.isEmpty() && verifiedRole.isEmpty()) {
             if (currentRole.isEmpty()) {
-                respondEphemeral(ApplicationService.getInstance()
-                        .getErrorEmbed(new NoOptionFoundException()));
+                throw new NoOptionFoundException();
             } else {
                 respondEphemeral(ApplicationService.getInstance()
                         .loadEmbedFromDiscordRole(currentRole.get()));

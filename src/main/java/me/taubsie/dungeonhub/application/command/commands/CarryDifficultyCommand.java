@@ -83,12 +83,7 @@ public class CarryDifficultyCommand extends Command {
 
         if (carryType.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "That carry type doesn't exists!";
-                }
-            };
+            throw new CommandExecutionException("That carry type doesn't exists!");
         }
 
         Optional<CarryTierModel> carryTier = CarryTierConnection.getInstance(carryType.get())
@@ -115,12 +110,7 @@ public class CarryDifficultyCommand extends Command {
 
         if (displayName.isEmpty() && price.isEmpty() && score.isEmpty() && bulkAmount.isEmpty() && bulkPrice.isEmpty() && thumbnailUrl.isEmpty() && priceName.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Please provide something you want to edit.";
-                }
-            };
+            throw new CommandExecutionException("Please provide something you want to edit.");
         }
 
         CarryDifficultyUpdateModel updateModel = new CarryDifficultyUpdateModel();
@@ -138,12 +128,7 @@ public class CarryDifficultyCommand extends Command {
 
         if (updatedCarryDifficulty.isEmpty()) {
             //TODO custom class
-            throw new CommandExecutionException() {
-                @Override
-                public String getMessage() {
-                    return "Couldn't update carry difficulty.";
-                }
-            };
+            throw new CommandExecutionException("Couldn't update carry difficulty.");
         }
 
         respond(ApplicationService.getInstance()

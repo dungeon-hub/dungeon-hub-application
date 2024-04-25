@@ -34,10 +34,7 @@ import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.Nameable;
 import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.entity.message.MessageFlag;
-import org.javacord.api.entity.message.component.ActionRowBuilder;
-import org.javacord.api.entity.message.component.HighLevelComponent;
-import org.javacord.api.entity.message.component.TextInputBuilder;
-import org.javacord.api.entity.message.component.TextInputStyle;
+import org.javacord.api.entity.message.component.*;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -75,14 +72,32 @@ public class ApplicationService {
         return "discord.dungeon-hub.net";
     }
 
+    /**
+     * Returns the default footer used for most embeds.
+     * Warning is suppressed, since the escape needs to be made due to some systems having an issue showing the unicode representation through discord.
+     *
+     * @return the default footer used for most embeds.
+     */
     public String getFooter() {
         return getServerLink() + " • made by @taubsie";
     }
 
+    /**
+     * Returns the footer used for embeds of unstable or new features.
+     * Warning is suppressed, since the escape needs to be made due to some systems having an issue showing the unicode representation through discord.
+     *
+     * @return the footer used for embeds of unstable or new features.
+     */
     public String getUnstableFooter() {
         return getServerLink() + " • THIS FEATURE IS UNSTABLE • please report bugs to @taubsie";
     }
 
+    /**
+     * Returns the footer used for price message embeds.
+     * Warning is suppressed, since the escape needs to be made due to some systems having an issue showing the unicode representation through discord.
+     *
+     * @return the footer used for price message embeds.
+     */
     public String getPriceFooter() {
         return getServerLink() + " • also see /calc-price • made by @taubsie";
     }
@@ -400,7 +415,7 @@ public class ApplicationService {
                 .toList();
 
         if (!flagResponses.isEmpty()) {
-            embed.addField("Flagged", "**This user is flagged, which means it's not safe to interact with them.**\n"
+            embed.addField("Flagged", "**This user is flagged, which means it might not safe to interact with them.**\n"
                             + formatFlagDetails(flagResponses))
                     .setColor(EmbedColor.NEGATIVE.getColor());
         } else {
@@ -528,6 +543,23 @@ public class ApplicationService {
                         .setMinimumLength(3)
                         .setPlaceholder("For example: Taubsie")
                         .setRequired(true)
+                        .build()
+        ).build();
+    }
+
+    public HighLevelComponent getLinkButtons() {
+        return new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                        .setCustomId("link_user")
+                        .setEmoji("\uD83D\uDD17")
+                        .setLabel("Link")
+                        .setStyle(ButtonStyle.PRIMARY)
+                        .build(),
+                new ButtonBuilder()
+                        .setCustomId("show_help_linking")
+                        .setEmoji("❔")
+                        .setLabel("Help")
+                        .setStyle(ButtonStyle.SECONDARY)
                         .build()
         ).build();
     }
