@@ -55,6 +55,7 @@ public class ModalListener implements ModalSubmitListener {
                             .setTitle("Linked successfully")
                             .setDescription("Your UUID is now `" + linkedId + "`")
                             .setColor(EmbedColor.POSITIVE.getColor()))
+                    .setFlags(MessageFlag.EPHEMERAL)
                     .update();
         }
         catch (CommandExecutionException commandExecutionException) {

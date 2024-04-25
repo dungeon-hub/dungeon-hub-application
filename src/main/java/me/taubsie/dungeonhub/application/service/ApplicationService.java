@@ -34,10 +34,7 @@ import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.Nameable;
 import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.entity.message.MessageFlag;
-import org.javacord.api.entity.message.component.ActionRowBuilder;
-import org.javacord.api.entity.message.component.HighLevelComponent;
-import org.javacord.api.entity.message.component.TextInputBuilder;
-import org.javacord.api.entity.message.component.TextInputStyle;
+import org.javacord.api.entity.message.component.*;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -546,6 +543,23 @@ public class ApplicationService {
                         .setMinimumLength(3)
                         .setPlaceholder("For example: Taubsie")
                         .setRequired(true)
+                        .build()
+        ).build();
+    }
+
+    public HighLevelComponent getLinkButtons() {
+        return new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                        .setCustomId("link_user")
+                        .setEmoji("\uD83D\uDD17")
+                        .setLabel("Link")
+                        .setStyle(ButtonStyle.PRIMARY)
+                        .build(),
+                new ButtonBuilder()
+                        .setCustomId("show_help_linking")
+                        .setEmoji("❔")
+                        .setLabel("Help")
+                        .setStyle(ButtonStyle.SECONDARY)
                         .build()
         ).build();
     }
