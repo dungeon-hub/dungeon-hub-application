@@ -1,11 +1,11 @@
 package me.taubsie.dungeonhub.application.connection;
 
-import dev.kord.core.Kord;
 import lombok.Getter;
 import me.taubsie.dungeonhub.application.loader.ClassLoaderService;
 import me.taubsie.dungeonhub.application.loader.OnStart;
 import me.taubsie.dungeonhub.application.loader.StartupListener;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
+import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.activity.ActivityType;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -31,7 +31,7 @@ public class DiscordConnection implements StartupListener {
     private static final String LINE = "----------------------------------------";
 
     private static DiscordConnection instance;
-    private Kord bot;
+    private DiscordApi bot;
 
     /**
      * The main-method that is executed by the JVM.
@@ -71,8 +71,6 @@ public class DiscordConnection implements StartupListener {
      */
     @Override
     public void onStart() {
-        bot = ApplicationService.getInstance().getKord().login();
-
         bot = ApplicationService.getInstance().getApiBuilder().login().join();
 
         resetBotAppearance();
@@ -85,8 +83,6 @@ public class DiscordConnection implements StartupListener {
         logger.info(getLine());
         getServerListMessage().forEach(logger::info);
         logger.info(getLine());
-
-        ApplicationService.getInstance().loginKord(bot);
     }
 
     /**
