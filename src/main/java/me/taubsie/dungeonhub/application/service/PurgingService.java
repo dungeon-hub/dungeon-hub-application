@@ -44,6 +44,12 @@ public class PurgingService implements StartupListener {
         }, new Time(System.currentTimeMillis() + 500L), 3000L);
     }
 
+    public void clearServer(long serverId) {
+        if (!purgeEnabled.contains(serverId)) {
+            purgeDataList.removeIf(purgeData -> purgeData.purgeType().getCarryType().getServer().getId() == serverId);
+        }
+    }
+
     public void enablePurge(Long serverId) {
         if (!purgeEnabled.contains(serverId)) {
             purgeEnabled.add(serverId);

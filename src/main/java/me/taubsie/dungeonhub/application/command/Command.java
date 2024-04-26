@@ -54,7 +54,7 @@ public abstract class Command {
             throw new NotAllowedThereException();
         }
 
-        if (!hasPermissions(getUser()) || !isEnabledForUser(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getId())) {
+        if (!isEnabledForUser(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getId())) {
             throw new MissingPermissionException();
         }
 

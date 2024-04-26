@@ -19,7 +19,6 @@ import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 
-import java.awt.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -43,7 +42,7 @@ public class StrikesCommand extends Command {
 
         slashCommandCreateEvent.getSlashCommandInteraction().respondLater(true).thenAccept(responseUpdater -> {
             Message message = getMessage(responseUpdater, target);
-            new StrikeMessage(1, message.getChannel().getId(), message.getId(), target.getId());
+            new StrikeMessage(0, message.getChannel().getId(), message.getId(), target.getId());
         });
     }
 

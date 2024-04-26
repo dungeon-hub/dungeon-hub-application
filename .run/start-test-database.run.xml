@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="start-dev-database" type="docker-deploy" factoryName="docker-compose.yml" server-name="Docker Local">
+  <configuration default="false" name="start-test-database" type="docker-deploy" factoryName="docker-compose.yml" server-name="Docker Local">
     <deployment type="docker-compose.yml">
       <settings>
         <option name="envFilePath" value="" />

@@ -13,12 +13,14 @@ import me.taubsie.dungeonhub.application.service.RolesService;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import org.javacord.api.entity.message.component.HighLevelComponent;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
@@ -36,7 +38,6 @@ import java.util.function.Predicate;
  */
 @CommandParameters(name = "sync", description = "Update your roles and nickname based on your linked account.")
 public class SyncCommand extends Command {
-
     /**
      * Retrieves the Discord user model associated with the specified user for a slash command event.
      *
@@ -44,7 +45,7 @@ public class SyncCommand extends Command {
      * given {@link SlashCommandCreateEvent}. It checks if the user is linked to an in-game account. If not linked, it responds with
      * a modal asking the user to link their in-game account first.</p>
      *
-     * @param user                    the {@link User} for whom to retrieve the Discord user model
+     * @param user the {@link User} for whom to retrieve the Discord user model
      * @return an {@link Optional} containing the {@link DiscordUserModel} if the user is linked, otherwise an empty {@link Optional}
      * @throws NullPointerException if either the {@link SlashCommandCreateEvent} or the {@link User} is {@code null}
      * @see DiscordUserConnection#getInstance()
@@ -98,14 +99,12 @@ public class SyncCommand extends Command {
      * @see EmbedColor#POSITIVE
      * @see ApplicationService#getInstance()
      * @see ApplicationService#getEmbed()
-     * @see #updateNickName(CompletableFuture, User, DiscordUserModel, Server)
+     * @see #updateNickName(CompletableFuture, User, DiscordUserModel, Server, List)
      */
-    private static void sendEmbed(@NotNull CompletableFuture<DelayedResponse> completableFuture, @NotNull User user, @NotNull DiscordUserModel discordUserModel, @NotNull Server server) {
+    private static void sendEmbed(@NotNull CompletableFuture<DelayedResponse> completableFuture, @NotNull User user, @NotNull DiscordUserModel discordUserModel, @NotNull Server server, List<Role> roles) {
+        boolean nickNameChanged = updateNickName(completableFuture, user, discordUserModel, server, roles);
 
-        boolean nickNameChanged = updateNickName(completableFuture, user, discordUserModel, server);
-
-        if(completableFuture.isDone())
-        {
+        if (completableFuture.isDone()) {
             return;
         }
 
@@ -128,17 +127,17 @@ public class SyncCommand extends Command {
      * @return {@code true} if the nickname has been changed, {@code false} otherwise
      * @throws NullPointerException if any of the parameters is {@code null}
      * @see NicknameService#getInstance()
-     * @see NicknameService#updateNickname(User, DiscordUserModel, Server)
+     * @see NicknameService#updateNickname(User, DiscordUserModel, Server, List)
      * @see NoNameSchemaException
      * @see NotLinkedException
      * @see CompletionException
      */
-    private static boolean updateNickName(@NotNull CompletableFuture<DelayedResponse> future, @NotNull User user, @NotNull DiscordUserModel userModel, @NotNull Server server) {
+    private static boolean updateNickName(@NotNull CompletableFuture<DelayedResponse> future, @NotNull User user, @NotNull DiscordUserModel userModel, @NotNull Server server, List<Role> roles) {
         try {
-            NicknameService.getInstance().updateNickname(user, userModel, server);
+            NicknameService.getInstance().updateNickname(user, userModel, server, roles);
         }
         catch (NoNameSchemaException noNameSchemaException) {
-            return true;
+            return false;
         }
         catch (NotLinkedException notLinkedException) {
             future.complete(DelayedResponse.fromException(notLinkedException));
@@ -146,7 +145,7 @@ public class SyncCommand extends Command {
         catch (CompletionException completionException) {
             //ignored since probably missing permission
         }
-        return false;
+        return true;
     }
 
     /**
@@ -176,8 +175,8 @@ public class SyncCommand extends Command {
             respondLater(completableFuture);
 
             Server server = getServer();
-            RolesService.getInstance().updateRoles(user, server);
-            sendEmbed(completableFuture, user, model, server);
+            List<Role> roles = RolesService.getInstance().updateRoles(user, server);
+            sendEmbed(completableFuture, user, model, server, roles);
         }, linkAccountResponse(slashCommandCreateEvent));
     }
 }

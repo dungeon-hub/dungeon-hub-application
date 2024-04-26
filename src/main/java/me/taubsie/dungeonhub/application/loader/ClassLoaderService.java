@@ -12,6 +12,7 @@ import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandBuilder;
 import org.javacord.api.listener.GloballyAttachableListener;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,7 +174,7 @@ public class ClassLoaderService {
         return classes;
     }
 
-    public Optional<Map.Entry<SlashCommand, Command>> getCommandData(String commandName, Server server) {
+    public Optional<Map.Entry<SlashCommand, Command>> getCommandData(String commandName, @Nullable Server server) {
         return slashCommandMap
                 .entrySet()
                 .parallelStream()
@@ -186,11 +187,11 @@ public class ClassLoaderService {
                 .findAny();
     }
 
-    public Optional<Command> getCommand(String commandName, Server server) {
+    public Optional<Command> getCommand(String commandName, @Nullable Server server) {
         return getCommandData(commandName, server).map(Map.Entry::getValue);
     }
 
-    public Optional<SlashCommand> getSlashCommand(String commandName, Server server) {
+    public Optional<SlashCommand> getSlashCommand(String commandName, @Nullable Server server) {
         return getCommandData(commandName, server).map(Map.Entry::getKey);
     }
 

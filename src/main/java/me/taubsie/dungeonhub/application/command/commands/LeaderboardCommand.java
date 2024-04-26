@@ -3,8 +3,8 @@ package me.taubsie.dungeonhub.application.command.commands;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.messages.PageableMessage;
 import me.taubsie.dungeonhub.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.common.enums.ScoreType;
@@ -37,22 +37,18 @@ public class LeaderboardCommand extends Command {
 
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
-        Optional<CarryTypeModel> carryType = CarryTypeConnection.getInstance(getServer().getId())
-                .getByIdentifier(getStringOption("carry-type"));
-
-        if (carryType.isEmpty()) {
-            throw new InvalidOptionException("carry-type");
-        }
+        Optional<CarryTypeModel> carryType = getOptionalStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), "carry-type")
+                .flatMap(s -> CarryTypeConnection.getInstance(getServer().getId()).getByIdentifier(s));
 
         ScoreType scoreType = getEnumOption("score-type", ScoreType.class, ScoreType.DEFAULT);
 
-        String leaderboardTitle = LeaderboardService.getInstance().getLeaderboardTitle(carryType.get(), scoreType);
+        String leaderboardTitle = LeaderboardService.getInstance().getLeaderboardTitle(carryType.orElse(null), scoreType);
 
         slashCommandCreateEvent.getSlashCommandInteraction()
                 .respondLater()
                 .thenAccept(responseUpdater -> {
-                    Optional<LeaderboardModel> leaderboardModel = ScoreConnection.getInstance(carryType.get())
-                            .loadLeaderboard(scoreType, 0, getUser().getId());
+                    Optional<LeaderboardModel> leaderboardModel = carryType.map(carryTypeModel -> ScoreConnection.getInstance(carryTypeModel).loadLeaderboard(scoreType, 0, getUser().getId()))
+                            .orElseGet(() -> DiscordServerConnection.getInstance().loadTotalLeaderboard(getServer().getId(), scoreType, 0, getUser().getId()));
 
                     EmbedBuilder embed = leaderboardModel.map(model -> LeaderboardService.getInstance()
                                     .getLeaderboardEmbed(leaderboardTitle, model))
@@ -66,12 +62,12 @@ public class LeaderboardCommand extends Command {
                             .update()
                             .join();
 
-                    LeaderboardService.getInstance().registerPageListener(message, carryType.get(), scoreType, getUser().getId());
+                    LeaderboardService.getInstance().registerPageListener(message, carryType.orElse(null), scoreType, getUser().getId());
                 });
     }
 
     @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
-        return List.of(CarryTypeCommand.getCarryTypeOption(), getScoreTypeOption());
+        return List.of(CarryTypeCommand.getCarryTypeOption(false), getScoreTypeOption());
     }
 }

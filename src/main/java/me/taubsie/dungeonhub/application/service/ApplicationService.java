@@ -34,10 +34,7 @@ import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.Nameable;
 import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.entity.message.MessageFlag;
-import org.javacord.api.entity.message.component.ActionRowBuilder;
-import org.javacord.api.entity.message.component.HighLevelComponent;
-import org.javacord.api.entity.message.component.TextInputBuilder;
-import org.javacord.api.entity.message.component.TextInputStyle;
+import org.javacord.api.entity.message.component.*;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -81,9 +78,8 @@ public class ApplicationService {
      *
      * @return the default footer used for most embeds.
      */
-    @SuppressWarnings("UnnecessaryUnicodeEscape")
     public String getFooter() {
-        return getServerLink() + " \u2022 made by @taubsie";
+        return getServerLink() + " • made by @taubsie";
     }
 
     /**
@@ -92,9 +88,8 @@ public class ApplicationService {
      *
      * @return the footer used for embeds of unstable or new features.
      */
-    @SuppressWarnings("UnnecessaryUnicodeEscape")
     public String getUnstableFooter() {
-        return getServerLink() + " \u2022 THIS FEATURE IS UNSTABLE \u2022 please report bugs to @taubsie";
+        return getServerLink() + " • THIS FEATURE IS UNSTABLE • please report bugs to @taubsie";
     }
 
     /**
@@ -103,9 +98,8 @@ public class ApplicationService {
      *
      * @return the footer used for price message embeds.
      */
-    @SuppressWarnings("UnnecessaryUnicodeEscape")
     public String getPriceFooter() {
-        return getServerLink() + " \u2022 also see /calc-price \u2022 made by @taubsie";
+        return getServerLink() + " • also see /calc-price • made by @taubsie";
     }
 
     public EmbedBuilder getEmbed() {
@@ -549,6 +543,23 @@ public class ApplicationService {
                         .setMinimumLength(3)
                         .setPlaceholder("For example: Taubsie")
                         .setRequired(true)
+                        .build()
+        ).build();
+    }
+
+    public HighLevelComponent getLinkButtons() {
+        return new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                        .setCustomId("link_user")
+                        .setEmoji("\uD83D\uDD17")
+                        .setLabel("Link")
+                        .setStyle(ButtonStyle.PRIMARY)
+                        .build(),
+                new ButtonBuilder()
+                        .setCustomId("show_help_linking")
+                        .setEmoji("❔")
+                        .setLabel("Help")
+                        .setStyle(ButtonStyle.SECONDARY)
                         .build()
         ).build();
     }

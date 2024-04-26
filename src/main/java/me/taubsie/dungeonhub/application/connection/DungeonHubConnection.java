@@ -76,8 +76,6 @@ public class DungeonHubConnection {
                         body,
                         response.code(),
                         response.body() != null ? response.body().string() : null);
-
-                System.out.println(AuthorizationConnection.getInstance().getApiToken());
             }
         }
         catch (IOException ioException) {

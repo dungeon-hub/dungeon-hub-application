@@ -1,9 +1,6 @@
 package me.taubsie.dungeonhub.application.connection;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadException;
 import net.hypixel.api.HypixelAPI;
@@ -142,7 +139,7 @@ public class HypixelConnection implements HypixelHttpClient {
                 StringBuilder content = new StringBuilder();
                 String line;
 
-                while((line = bufferedReader.readLine()) != null) {
+                while ((line = bufferedReader.readLine()) != null) {
                     content.append(line);
                     content.append(System.lineSeparator());
 
@@ -155,7 +152,7 @@ public class HypixelConnection implements HypixelHttpClient {
 
                 Element head = document.head();
 
-                for(Element meta : head.getElementsByTag("meta")) {
+                for (Element meta : head.getElementsByTag("meta")) {
                     switch (meta.attr("property").toLowerCase()) {
                         case "og:title" -> result.put("title", meta.attr("content"));
                         case "og:image" -> result.put("icon", meta.attr("content"));
@@ -201,7 +198,7 @@ public class HypixelConnection implements HypixelHttpClient {
         //Highest cata xp of all profiles
         double highestXP = 0;
 
-        for(int i = 0; i < profiles.size(); i++) {
+        for (int i = 0; i < profiles.size(); i++) {
             try {
                 double thisXP = profiles.get(i).getAsJsonObject()
                         .getAsJsonObject("members")
@@ -235,7 +232,19 @@ public class HypixelConnection implements HypixelHttpClient {
                 return null;
             }
 
-            return JsonParser.parseString(response.body().string()).getAsJsonObject().getAsJsonArray("profiles");
+            JsonElement parsed = JsonParser.parseString(response.body().string());
+
+            if(parsed == null || parsed.isJsonNull()) {
+                return null;
+            }
+
+            JsonObject root = parsed.getAsJsonObject();
+
+            if (root == null || root.isJsonNull() || root.get("profiles").isJsonNull()) {
+                return null;
+            }
+
+            return root.getAsJsonArray("profiles");
         }
         catch (IOException ioException) {
             logger.error("Profile request for UUID threw an error.", ioException);
@@ -244,22 +253,32 @@ public class HypixelConnection implements HypixelHttpClient {
         return null;
     }
 
-    public int getSkyblockLevelByUUID(UUID uuid) {
+    public OptionalInt getSkyblockLevelByUUID(UUID uuid) {
         JsonArray profiles = getProfiles(uuid);
 
-        return profiles.asList().stream()
-                .map(JsonElement::getAsJsonObject)
-                .map(jsonObject -> jsonObject.getAsJsonObject("members"))
-                .map(jsonObject -> jsonObject.getAsJsonObject(uuid.toString().replace("-", "")))
-                .map(jsonObject -> jsonObject.getAsJsonObject("leveling"))
-                .map(jsonObject -> jsonObject.getAsJsonPrimitive("experience"))
-                .mapToInt(JsonPrimitive::getAsInt)
-                .map(operand -> operand / 100)
-                .max().orElse(0);
+        try {
+            return profiles.asList().stream()
+                    .map(JsonElement::getAsJsonObject)
+                    .map(jsonObject -> jsonObject.getAsJsonObject("members"))
+                    .filter(Objects::nonNull)
+                    .map(jsonObject -> jsonObject.getAsJsonObject(uuid.toString().replace("-", "")))
+                    .filter(Objects::nonNull)
+                    .map(jsonObject -> jsonObject.getAsJsonObject("leveling"))
+                    .filter(Objects::nonNull)
+                    .map(jsonObject -> jsonObject.getAsJsonPrimitive("experience"))
+                    .filter(Objects::nonNull)
+                    .mapToInt(JsonPrimitive::getAsInt)
+                    .map(operand -> operand / 100)
+                    .max();
+        }
+        catch (NullPointerException nullPointerException) {
+            logger.error("Skyblock level couldn't be loaded for user with UUID `" + uuid + "`.", nullPointerException);
+            return OptionalInt.empty();
+        }
     }
 
     private int cataXPToLevel(double xp) {
-        for(int i = 0; i < requiredXp.length; i++) {
+        for (int i = 0; i < requiredXp.length; i++) {
             if (requiredXp[i] > xp) return i;
         }
 

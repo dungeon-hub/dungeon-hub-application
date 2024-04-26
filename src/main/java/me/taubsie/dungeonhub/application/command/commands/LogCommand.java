@@ -52,7 +52,8 @@ public class LogCommand extends Command {
                 .flatMap(Collection::stream)
                 .findFirst().isPresent()) {
             //TODO custom class
-            throw new CommandExecutionException("Someone is already logging this carry, please wait a bit.");
+            throw new CommandExecutionException("Someone is already logging this carry.\n" +
+                    "If you think this is a mistake, please report this to <@356134481452597250>.");
         }
 
         Long amountOfCarries = getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), "amount");

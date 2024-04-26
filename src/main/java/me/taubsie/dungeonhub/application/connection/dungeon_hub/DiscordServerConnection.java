@@ -2,12 +2,15 @@ package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
 import me.taubsie.dungeonhub.common.DungeonHubService;
+import me.taubsie.dungeonhub.common.enums.ScoreType;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
+import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
 import me.taubsie.dungeonhub.common.model.server.DiscordServerModel;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,5 +102,34 @@ public class DiscordServerConnection implements ModuleConnection {
 
         return executeRequest(request, s -> DungeonHubService.getInstance()
                 .getGson().fromJson(s, DungeonHubService.getInstance().getScoreModelListType()));
+    }
+
+    public Optional<LeaderboardModel> loadTotalLeaderboard(long serverId, @Nullable ScoreType scoreType, @Nullable Integer page) {
+        return loadTotalLeaderboard(serverId, scoreType, page, null);
+    }
+
+    public Optional<LeaderboardModel> loadTotalLeaderboard(long serverId, @Nullable ScoreType scoreType, @Nullable Integer page,
+                                                           @Nullable Long userId) {
+        if (scoreType == null) {
+            scoreType = ScoreType.DEFAULT;
+        }
+
+        if (page == null || page < 0) {
+            page = 0;
+        }
+
+        HttpUrl.Builder urlBuilder = getApiUrl(serverId + "/total-leaderboard")
+                .addQueryParameter("score-type", scoreType.name())
+                .addQueryParameter("page", String.valueOf(page));
+
+        if (userId != null) {
+            urlBuilder.addQueryParameter("user", String.valueOf(userId));
+        }
+
+        Request request = getApiRequest(urlBuilder.build())
+                .get()
+                .build();
+
+        return executeRequest(request, LeaderboardModel::fromJson);
     }
 }
