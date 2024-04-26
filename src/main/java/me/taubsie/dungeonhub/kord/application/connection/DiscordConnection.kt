@@ -10,9 +10,12 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.config.ConfigProperty
+import me.taubsie.dungeonhub.application.config.ConfigService
 import me.taubsie.dungeonhub.kord.application.commands.HelpCommand
 import me.taubsie.dungeonhub.kord.application.commands.TestCommand
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.loader.StartupListener
+import me.taubsie.dungeonhub.kord.application.service.ApplicationService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -27,6 +30,11 @@ object DiscordConnection : StartupListener {
     fun main(args: Array<String>) {
         runBlocking {
             launch {
+                //TODO make it work automatically through class scanning (or similar)
+                ConfigService.getInstance().preStart()
+                ConfigService.getInstance().onStart()
+                ConfigService.getInstance().postStart()
+
                 onStart()
             }
         }
