@@ -48,6 +48,14 @@ object DiscordConnection : StartupListener {
                     add { HelpCommand() }
                 }
 
+                errorResponse { _, type ->
+                    embeds = if (type.error is CommandExecutionException) {
+                        mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionException))
+                    } else {
+                        mutableListOf(ApplicationService.getErrorEmbed(CommandExecutionException(type.error)))
+                    }
+                }
+
                 @OptIn(PrivilegedIntent::class)
                 intents {
                     //+Intent.GuildMembers
