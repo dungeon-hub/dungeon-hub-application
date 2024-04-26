@@ -150,9 +150,9 @@ object ApplicationService {
     }
 
     fun getErrorEmbed(embed: EmbedBuilder, commandExecutionException: CommandExecutionException): EmbedBuilder {
-        val embed = getErrorEmbed(embed)
-        embed.description = commandExecutionException.message
-        return embed
+        val embedBuilder = getErrorEmbed(embed)
+        embedBuilder.description = commandExecutionException.message
+        return embedBuilder
     }
 
     /*fun respondWithError(

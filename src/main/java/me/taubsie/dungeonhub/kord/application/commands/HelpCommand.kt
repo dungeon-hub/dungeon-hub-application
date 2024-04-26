@@ -4,11 +4,10 @@ import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
-import dev.kord.common.entity.MessageFlag
-import dev.kord.common.entity.MessageFlags
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.User
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import me.taubsie.dungeonhub.kord.application.classes.HelpDisplay
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.enums.HelpTopic
@@ -23,16 +22,18 @@ class HelpCommand : Extension() {
             description = "List of available commands."
 
             action {
+                val responder: suspend FollowupMessageCreateBuilder.() -> Unit = {
+                    embeds =
+                        mutableListOf(returnEmbed(user.asUserOrNull(), guild?.asGuildOrNull(), arguments.helpTopic))
+                }
+
                 if (arguments.helpTopic == null) {
                     respondOpposite {
-                        flags = MessageFlags().plus(MessageFlag.Ephemeral)
-                        embeds =
-                            mutableListOf(returnEmbed(user.asUserOrNull(), guild?.asGuildOrNull(), arguments.helpTopic))
+                        responder()
                     }
                 } else {
                     respond {
-                        embeds =
-                            mutableListOf(returnEmbed(user.asUserOrNull(), guild?.asGuildOrNull(), arguments.helpTopic))
+                        responder()
                     }
                 }
             }
