@@ -7,12 +7,13 @@ import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.User
 import dev.kord.rest.builder.message.EmbedBuilder
-import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import me.taubsie.dungeonhub.kord.application.classes.HelpDisplay
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.enums.HelpTopic
+import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
 
+@LoadExtension
 class HelpCommand : Extension() {
     override val name = "help-command"
 
@@ -22,19 +23,9 @@ class HelpCommand : Extension() {
             description = "List of available commands."
 
             action {
-                val responder: suspend FollowupMessageCreateBuilder.() -> Unit = {
+                respond {
                     embeds =
                         mutableListOf(returnEmbed(user.asUserOrNull(), guild?.asGuildOrNull(), arguments.helpTopic))
-                }
-
-                if (arguments.helpTopic == null) {
-                    respondOpposite {
-                        responder()
-                    }
-                } else {
-                    respond {
-                        responder()
-                    }
                 }
             }
         }

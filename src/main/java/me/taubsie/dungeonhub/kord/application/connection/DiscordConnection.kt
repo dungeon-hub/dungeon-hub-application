@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.config.ConfigProperty
-import me.taubsie.dungeonhub.kord.application.commands.HelpCommand
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.loader.ClassLoader
 import me.taubsie.dungeonhub.kord.application.loader.OnStart
@@ -49,10 +48,6 @@ object DiscordConnection : StartupListener {
     override suspend fun onStart() {
         bot =
             ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value) {
-                extensions {
-                    add { HelpCommand() }
-                }
-
                 errorResponse { _, type ->
                     embeds = if (type.error is CommandExecutionException) {
                         mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionException))
@@ -67,18 +62,6 @@ object DiscordConnection : StartupListener {
                     +Intent.MessageContent
                 }
             }
-
-        /*kord.on<MessageCreateEvent> { // runs every time a message is created that our bot can read
-
-            // ignore other bots, even ourselves. We only serve humans here!
-            if (message.author?.isBot != false) return@on
-
-            // check if our command is being invoked
-            if (message.content != "!ping") return@on
-
-            // all clear, give them the pong!
-            message.channel.createMessage("pong!")
-        }*/
 
         ClassLoader.loadExtensions(bot!!)
 
