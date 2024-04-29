@@ -1,8 +1,8 @@
 package me.taubsie.dungeonhub.application.config;
 
-import me.taubsie.dungeonhub.application.loader.OnStart;
-import me.taubsie.dungeonhub.application.loader.StartupListener;
 import me.taubsie.dungeonhub.common.Nameable;
+import me.taubsie.dungeonhub.kord.application.loader.OnStart;
+import me.taubsie.dungeonhub.kord.application.loader.StartupListener;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

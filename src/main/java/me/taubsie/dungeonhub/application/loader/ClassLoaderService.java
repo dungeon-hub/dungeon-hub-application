@@ -5,6 +5,7 @@ import com.google.errorprone.annotations.DoNotCall;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.listener.Listener;
+import me.taubsie.dungeonhub.kord.application.loader.OnStart;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.interaction.ApplicationCommand;

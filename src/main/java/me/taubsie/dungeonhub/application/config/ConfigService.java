@@ -1,7 +1,11 @@
 package me.taubsie.dungeonhub.application.config;
 
-import me.taubsie.dungeonhub.application.loader.OnStart;
+import kotlin.Unit;
+import kotlin.coroutines.Continuation;
 import me.taubsie.dungeonhub.common.DungeonHubService;
+import me.taubsie.dungeonhub.kord.application.loader.OnStart;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,13 +58,23 @@ public class ConfigService extends ConfigFile<ConfigProperty> {
         return new File(getConfigFolder() + File.separator + "application_config.properties");
     }
 
+    @Nullable
     @Override
-    public void preStart() {
+    public Object preStart(@NotNull Continuation<? super Unit> $completion) {
         reloadConfig();
+        return null;
     }
 
+    @Nullable
     @Override
-    public void onStart() {
+    public Object onStart(@NotNull Continuation<? super Unit> $completion) {
         resetTimer();
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public Object postStart(@NotNull Continuation<? super Unit> $completion) {
+        return null;
     }
 }

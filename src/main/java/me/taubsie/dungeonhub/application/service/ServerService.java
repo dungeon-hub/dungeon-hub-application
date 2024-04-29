@@ -3,9 +3,9 @@ package me.taubsie.dungeonhub.application.service;
 import me.taubsie.dungeonhub.application.classes.ServerData;
 import me.taubsie.dungeonhub.application.classes.ServerProperty;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
-import me.taubsie.dungeonhub.application.loader.OnStart;
 import me.taubsie.dungeonhub.application.loader.StartupListener;
 import me.taubsie.dungeonhub.common.DungeonHubService;
+import me.taubsie.dungeonhub.kord.application.loader.OnStart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

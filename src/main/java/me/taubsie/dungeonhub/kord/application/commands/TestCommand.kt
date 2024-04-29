@@ -4,8 +4,9 @@ import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
-import dev.kord.rest.builder.message.EmbedBuilder
+import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 
+@LoadExtension
 class TestCommand : Extension() {
     override val name = "test"
 

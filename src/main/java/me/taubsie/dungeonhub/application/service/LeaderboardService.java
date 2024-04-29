@@ -7,7 +7,6 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnect
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
-import me.taubsie.dungeonhub.application.loader.OnStart;
 import me.taubsie.dungeonhub.application.loader.StartupListener;
 import me.taubsie.dungeonhub.application.messages.LeaderboardMessage;
 import me.taubsie.dungeonhub.common.DungeonHubService;
@@ -16,6 +15,7 @@ import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
 import me.taubsie.dungeonhub.common.model.server.DiscordServerModel;
+import me.taubsie.dungeonhub.kord.application.loader.OnStart;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;

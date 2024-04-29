@@ -4,10 +4,10 @@ import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
-import me.taubsie.dungeonhub.application.loader.OnStart;
 import me.taubsie.dungeonhub.application.loader.StartupListener;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
+import me.taubsie.dungeonhub.kord.application.loader.OnStart;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -131,7 +131,7 @@ public class MessagesService implements StartupListener {
     }
 
     private List<EmbedBuilder> addPriceFooterToLast(List<EmbedBuilder> embeds) {
-        for(EmbedBuilder embed : embeds) {
+        for (EmbedBuilder embed : embeds) {
             embed.setFooter(null);
         }
 
