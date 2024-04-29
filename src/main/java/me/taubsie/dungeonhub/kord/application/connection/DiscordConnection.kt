@@ -25,6 +25,11 @@ object DiscordConnection : StartupListener {
 
     var bot: ExtensibleBot? = null
 
+    /**
+     * Returns a line for command-line output.
+     *
+     * @return a line for command-line output.
+     */
     private const val LINE = "----------------------------------------"
 
     @JvmStatic
@@ -37,6 +42,10 @@ object DiscordConnection : StartupListener {
         }
     }
 
+    /**
+     * Method by the {@link StartupListener} interface, this is automatically executed on program launch.
+     * This implementation starts the discord-bot.
+     */
     override suspend fun onStart() {
         bot =
             ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value) {
@@ -82,6 +91,11 @@ object DiscordConnection : StartupListener {
         logger.info(LINE)
     }
 
+    /**
+     * Returns the formatted message to list all servers the bot is on.
+     *
+     * @return the formatted message to list all servers the bot is on.
+     */
     private suspend fun getServerListMessage(): List<String> {
         val message: MutableList<String> = mutableListOf()
 

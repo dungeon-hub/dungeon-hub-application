@@ -2,19 +2,12 @@ package me.taubsie.dungeonhub.application.connection;
 
 import lombok.Getter;
 import me.taubsie.dungeonhub.application.loader.ClassLoaderService;
-import me.taubsie.dungeonhub.application.loader.OnStart;
-import me.taubsie.dungeonhub.application.loader.StartupListener;
-import me.taubsie.dungeonhub.application.service.ApplicationService;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.activity.ActivityType;
 import org.javacord.api.entity.server.Server;
-import org.javacord.api.entity.user.User;
 import org.javacord.api.entity.user.UserStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * This is the main-class for the application.
@@ -24,9 +17,8 @@ import java.util.List;
  * @author Taubsie
  * @since 1.0.0
  */
-@OnStart(priority = 1)
 @Getter
-public class DiscordConnection implements StartupListener {
+public class DiscordConnection {
     private static final Logger logger = LoggerFactory.getLogger(DiscordConnection.class);
     private static final String LINE = "----------------------------------------";
 
@@ -54,55 +46,6 @@ public class DiscordConnection implements StartupListener {
         }
 
         return instance;
-    }
-
-    /**
-     * Returns a line for command-line output.
-     *
-     * @return a line for command-line output.
-     */
-    public static String getLine() {
-        return LINE;
-    }
-
-    /**
-     * Method by the {@link StartupListener} interface, this is automatically executed on program launch.
-     * This implementation starts the discord-bot.
-     */
-    @Override
-    public void onStart() {
-        bot = ApplicationService.getInstance().getApiBuilder().login().join();
-
-        resetBotAppearance();
-
-        ClassLoaderService.getInstance().loadListeners(bot);
-
-        ClassLoaderService.getInstance().loadGlobalSlashCommands(bot);
-        ClassLoaderService.getInstance().loadServerSlashCommands(bot);
-
-        logger.info(getLine());
-        getServerListMessage().forEach(logger::info);
-        logger.info(getLine());
-    }
-
-    /**
-     * Returns the formatted message to list all servers the bot is on.
-     *
-     * @return the formatted message to list all servers the bot is on.
-     */
-    public List<String> getServerListMessage() {
-        List<String> message = new ArrayList<>();
-
-        message.add("Im on servers:");
-        message.addAll(bot.getServers().stream()
-                .map(server -> String.format("%s with id '%d' by %s (%d)",
-                        server.getName(),
-                        server.getId(),
-                        server.getOwner().map(User::getDiscriminatedName).orElse("no-name"),
-                        server.getOwnerId()))
-                .toList());
-
-        return message;
     }
 
     /**
