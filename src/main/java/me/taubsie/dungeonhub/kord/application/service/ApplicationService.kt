@@ -556,13 +556,13 @@ object ApplicationService {
 
     @Throws(ChecksumException::class, NotFoundException::class, FormatException::class)
     fun readQRCodeImage(bufferedImage: BufferedImage?): String {
-        val binaryBitmap: BinaryBitmap = BinaryBitmap(
+        val binaryBitmap = BinaryBitmap(
             HybridBinarizer(
                 BufferedImageLuminanceSource(bufferedImage)
             )
         )
 
-        val qrCodeReader: QRCodeReader = QRCodeReader()
+        val qrCodeReader = QRCodeReader()
 
         return qrCodeReader.decode(binaryBitmap).text
     }
