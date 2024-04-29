@@ -17,7 +17,6 @@ class TestCommand : Extension() {
 
             action {
                 respond {
-                    embeds = mutableListOf(EmbedBuilder())
                     content = "Hi ${arguments.msg ?: user.mention}!"
                 }
             }
