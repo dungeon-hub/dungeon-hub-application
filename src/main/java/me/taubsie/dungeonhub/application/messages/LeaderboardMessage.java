@@ -1,6 +1,5 @@
 package me.taubsie.dungeonhub.application.messages;
 
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
 import me.taubsie.dungeonhub.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.common.enums.ScoreType;
@@ -8,8 +7,6 @@ import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
 import org.javacord.api.interaction.callback.ComponentInteractionOriginalMessageUpdater;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Optional;
 
 public class LeaderboardMessage extends PageableMessage {
     @Nullable
@@ -37,7 +34,8 @@ public class LeaderboardMessage extends PageableMessage {
     public void updatePage(ComponentInteractionOriginalMessageUpdater updater, int currentPage) {
         String leaderboardTitle = LeaderboardService.getInstance().getLeaderboardTitle(carryType, scoreType);
 
-        updater.removeAllEmbeds()
+        //TODO fix
+        /*updater.removeAllEmbeds()
                 .addEmbed(
                         Optional.ofNullable(carryType)
                                 .map(carryTypeModel -> ScoreConnection.getInstance(carryType)
@@ -48,6 +46,6 @@ public class LeaderboardMessage extends PageableMessage {
                                         .getLeaderboardEmbed(leaderboardTitle, model))
                                 .orElseGet(() -> LeaderboardService.getInstance()
                                         .getEmptyLeaderboardEmbed(leaderboardTitle))
-                ).update();
+                ).update();*/
     }
 }

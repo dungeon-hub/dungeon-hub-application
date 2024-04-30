@@ -423,7 +423,8 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                 }
             }
 
-            LeaderboardService.getInstance().refreshLeaderboard();
+            //TODO fix
+            //LeaderboardService.getInstance().refreshLeaderboard();
         }
     }
 }

@@ -39,14 +39,15 @@ public class RefreshCommand extends Command {
                         .respondLater(true)
                         .join();
 
-                if (!LeaderboardService.getInstance().refreshLeaderboard()) {
+                //TODO fix
+                /*if (!LeaderboardService.getInstance().refreshLeaderboard()) {
                     updater.addEmbed(getEmbed()
                                     .setColor(EmbedColor.NEGATIVE.getColor())
                                     .setDescription("Leaderboard refresh is on cooldown.\n" +
                                             "Please try again <t:" + LeaderboardService.getInstance().getNextPossibleRefresh() + ":R>."))
                             .update();
                     return;
-                }
+                }*/
 
                 updater.addEmbed(getEmbed()
                                 .setColor(EmbedColor.POSITIVE.getColor())

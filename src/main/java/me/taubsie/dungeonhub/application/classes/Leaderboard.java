@@ -1,9 +1,9 @@
 package me.taubsie.dungeonhub.application.classes;
 
+import dev.kord.rest.builder.message.EmbedBuilder;
 import lombok.Getter;
 import me.taubsie.dungeonhub.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
-import org.javacord.api.entity.message.embed.EmbedBuilder;
 
 /**
  * This class holds the data for a simple leaderboard without pages.
@@ -28,7 +28,7 @@ public class Leaderboard {
     }
 
     public EmbedBuilder getEmbed() {
-        if(isEmpty()) {
+        if (isEmpty()) {
             return LeaderboardService.getInstance().getEmptyLeaderboardEmbed(title);
         }
 

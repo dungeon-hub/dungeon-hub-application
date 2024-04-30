@@ -93,7 +93,8 @@ public class ManageScoreCommand extends Command {
                             .setTitle("Score-Management")
                             .setDescription(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getMentionTag() + " edited the " + carryType.get().getDisplayName() + "-score of " + user.getMentionTag() + ".\nThey " + (removed ? "removed" : "added") + " " + amount + " score, the user now has " + updatedScore + " score.")));
 
-            LeaderboardService.getInstance().refreshLeaderboard();
+            //TODO fix
+            //LeaderboardService.getInstance().refreshLeaderboard();
 
             return DelayedResponse.fromEmbed(
                     ApplicationService

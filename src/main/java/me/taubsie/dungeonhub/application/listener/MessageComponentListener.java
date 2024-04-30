@@ -339,7 +339,8 @@ public class MessageComponentListener implements MessageComponentCreateListener 
             logger.debug("Carry logged: {}", queueModel);
         }
 
-        LeaderboardService.getInstance().refreshLeaderboard();
+        //TODO fix
+        //LeaderboardService.getInstance().refreshLeaderboard();
 
         message.delete();
     }

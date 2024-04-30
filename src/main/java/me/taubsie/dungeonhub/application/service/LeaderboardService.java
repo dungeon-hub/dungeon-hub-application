@@ -1,12 +1,12 @@
 package me.taubsie.dungeonhub.application.service;
 
+import dev.kord.rest.builder.message.EmbedBuilder;
 import me.taubsie.dungeonhub.application.classes.Leaderboard;
 import me.taubsie.dungeonhub.application.classes.ServerProperty;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
-import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.loader.StartupListener;
 import me.taubsie.dungeonhub.application.messages.LeaderboardMessage;
 import me.taubsie.dungeonhub.common.DungeonHubService;
@@ -15,10 +15,9 @@ import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
 import me.taubsie.dungeonhub.common.model.server.DiscordServerModel;
+import me.taubsie.dungeonhub.kord.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.kord.application.loader.OnStart;
-import org.javacord.api.entity.channel.ServerTextChannel;
-import org.javacord.api.entity.message.Message;
-import org.javacord.api.entity.message.embed.EmbedBuilder;
+import me.taubsie.dungeonhub.kord.application.service.ApplicationService;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,20 +42,22 @@ public class LeaderboardService implements StartupListener {
         return instance;
     }
 
-    public void registerPageListener(Message message, @Nullable CarryTypeModel carryType, ScoreType scoreType, Long userId) {
+    /*public void registerPageListener(Message message, @Nullable CarryTypeModel carryType, ScoreType scoreType, Long userId) {
         new LeaderboardMessage(0, message.getChannel().getId(), message.getId(), carryType, scoreType, userId);
-    }
+    }*/
 
     public String getLeaderboardDescription() {
         return "To see how score works, use `/help score`";
     }
 
     public String getLeaderboardTitle(@Nullable CarryTypeModel carryType, ScoreType scoreType) {
+        String suffix = scoreType.getLeaderboardSuffix() == null ? "" : scoreType.getLeaderboardSuffix();
+
         if (carryType == null) {
-            return "Leaderboard | Total score" + scoreType.getLeaderboardSuffix();
+            return "Leaderboard | Total score" + suffix;
         }
 
-        return "Leaderboard | " + carryType.getDisplayName() + "-Carries" + scoreType.getLeaderboardSuffix();
+        return "Leaderboard | " + carryType.getDisplayName() + "-Carries" + suffix;
     }
 
     public EmbedBuilder getLeaderboardEmbed(String title, @Nullable LeaderboardModel leaderboardModel) {
@@ -64,26 +65,27 @@ public class LeaderboardService implements StartupListener {
             return getEmptyLeaderboardEmbed(title);
         }
 
-        EmbedBuilder embed = ApplicationService.getInstance()
-                .getEmbed()
-                .setTitle(title)
-                .setDescription(getLeaderboardDescription())
-                .setColor(EmbedColor.DEFAULT.getColor());
+        EmbedBuilder embed = ApplicationService.INSTANCE.getEmbed();
+        embed.setTitle(title);
+        embed.setDescription(getLeaderboardDescription());
+        embed.setColor(EmbedColor.DEFAULT.getColor());
 
         int counter = DungeonHubService.getInstance().getOffsetFromPageNumber(leaderboardModel.getPage());
 
         for (ScoreModel score : leaderboardModel.getScores()) {
-            embed.addField(
+            embed.field(
                     "#" + ++counter + " Carrier",
-                    getPlayerScore(score)
+                    false,
+                    () -> getPlayerScore(score)
             );
         }
 
         leaderboardModel.getPlayerScore().ifPresent(playerScore ->
                 leaderboardModel.getPlayerPosition().ifPresent(position ->
-                        embed.addField(
+                        embed.field(
                                 "__**Your rank:**__ #" + (position + 1),
-                                getPlayerScore(playerScore)
+                                false,
+                                () -> getPlayerScore(playerScore)
                         )
                 )
         );
@@ -96,18 +98,19 @@ public class LeaderboardService implements StartupListener {
     }
 
     public EmbedBuilder getEmptyLeaderboardEmbed(String title) {
-        return ApplicationService.getInstance()
-                .getEmbed()
-                .setTitle(title)
-                .setColor(EmbedColor.NEGATIVE.getColor())
-                .setDescription("No score has been gained yet!\n" + getLeaderboardDescription());
+        EmbedBuilder embed = ApplicationService.INSTANCE.getEmbed();
+        embed.setTitle(title);
+        embed.setColor(EmbedColor.NEGATIVE.getColor());
+        embed.setDescription("No score has been gained yet!\n" + getLeaderboardDescription());
+        return embed;
     }
 
     public long getNextPossibleRefresh() {
         return lastRefresh.plusSeconds(REFRESH_COOLDOWN).getEpochSecond();
     }
 
-    @Override
+    //TODO migrate static leaderboard
+    /*@Override
     public void onStart() {
         this.lastRefresh = Instant.now().minusSeconds(REFRESH_COOLDOWN + 10L);
 
@@ -123,9 +126,9 @@ public class LeaderboardService implements StartupListener {
         List<EmbedBuilder> embeds = new ArrayList<>();
 
         for (Leaderboard leaderboard : leaderboards) {
-            EmbedBuilder embed = leaderboard.getEmbed()
-                    .setFooter(null)
-                    .setTimestamp(null);
+            EmbedBuilder embed = leaderboard.getEmbed();
+            embed.setFooter(null);
+            embed.setTimestamp(null);
 
             if (!leaderboard.isEmpty()) {
                 embed.setDescription(null);
@@ -139,9 +142,8 @@ public class LeaderboardService implements StartupListener {
                 embeds.get(0).setDescription(getLeaderboardDescription());
             }
 
-            embeds.get(embeds.size() - 1)
-                    .setFooter(ApplicationService.getInstance().getFooter())
-                    .setTimestamp(Instant.now());
+            embeds.get(embeds.size() - 1).setFooter(ApplicationService.INSTANCE.getFooter());
+            embeds.get(embeds.size() - 1).setTimestamp(kotlinx.datetime.Instant.Companion.fromEpochMilliseconds(Instant.now().toEpochMilli()));
         }
 
         Optional<Message> messageOptional =
@@ -151,13 +153,13 @@ public class LeaderboardService implements StartupListener {
         } else {
             messageOptional.get().createUpdater().removeAllEmbeds().addEmbeds(embeds).applyChanges().join();
         }
-    }
+    }*/
 
     /**
      * Doesn't actually refresh the leaderboard, it just suggests that the leaderboard should be refreshed.
      * Cooldown for a refresh is {@value REFRESH_COOLDOWN} seconds.
      */
-    public boolean refreshLeaderboard() {
+    /*public boolean refreshLeaderboard() {
         if (lastRefresh.plusSeconds(REFRESH_COOLDOWN - 1L).isAfter(Instant.now())) {
             return false;
         }
@@ -177,7 +179,7 @@ public class LeaderboardService implements StartupListener {
                     continue;
                 }
 
-                for (ScoreType scoreType : ScoreType.values()) {
+                for (ScoreType scoreType : ScoreType.getEntries()) {
                     if (scoreType == ScoreType.EVENT && !carryType.isEventActive()) {
                         continue;
                     }
@@ -205,7 +207,7 @@ public class LeaderboardService implements StartupListener {
                             return Optional.empty();
                         }
                     }).ifPresent(leaderboardChannel -> {
-                        for (ScoreType scoreType : ScoreType.values()) {
+                        for (ScoreType scoreType : ScoreType.getEntries()) {
                             if (leaderboards.containsKey(leaderboardChannel)) {
                                 leaderboards.get(leaderboardChannel).add(new Leaderboard(
                                         getLeaderboardTitle(null, scoreType),
@@ -224,5 +226,5 @@ public class LeaderboardService implements StartupListener {
         leaderboards.forEach(this::refreshLeaderboardInChannel);
 
         return true;
-    }
+    }*/
 }
