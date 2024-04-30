@@ -30,55 +30,6 @@ public class AutoCompleteListener implements AutocompleteCreateListener {
             Server server = autocompleteCreateEvent.getAutocompleteInteraction().getServer().orElseThrow();
 
             if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase(
-                    CarryTypeCommand.FIELD_NAME)) {
-                autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(
-                        CarryTypeConnection.getInstance(server.getId())
-                                .getAllCarryTypes()
-                                .orElse(new ArrayList<>())
-                                .stream()
-                                .map(carryType -> SlashCommandOptionChoice.create(carryType.getDisplayName(),
-                                        carryType.getIdentifier()))
-                                .toList()
-                );
-                return;
-            }
-
-            if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase(PurgeCommand.FIELD_NAME)) {
-                List<SlashCommandInteractionOption> allOptions = autocompleteCreateEvent.getAutocompleteInteraction()
-                        .getOptions().stream()
-                        .flatMap(option -> option.isSubcommandOrGroup() ? option.getOptions().stream() :
-                                Stream.of(option))
-                        .flatMap(option -> option.isSubcommandOrGroup() ? option.getOptions().stream() :
-                                Stream.of(option))
-                        .toList();
-
-                Optional<SlashCommandInteractionOption> carryTypeOption = allOptions.stream()
-                        .filter(option -> option.getName().equalsIgnoreCase(CarryTypeCommand.FIELD_NAME))
-                        .findFirst();
-
-                if (carryTypeOption.isPresent()) {
-                    Optional<String> carryTypeIdentifier =
-                            carryTypeOption.flatMap(SlashCommandInteractionOption::getStringValue);
-
-                    if (carryTypeIdentifier.isPresent()) {
-                        autocompleteCreateEvent.getAutocompleteInteraction().respondWithChoices(
-                                CarryTypeConnection.getInstance(server.getId())
-                                        .getByIdentifier(carryTypeIdentifier.get())
-                                        .flatMap(carryType -> PurgeTypeConnection.getInstance(carryType).getAllPurgeTypes())
-                                        .orElse(List.of())
-                                        .stream()
-                                        .map(purgeType -> SlashCommandOptionChoice.create(purgeType.getDisplayName(),
-                                                purgeType.getIdentifier()))
-                                        .toList()
-                        );
-                        return;
-                    }
-                }
-
-                throw new NoSuchElementException();
-            }
-
-            if (autocompleteCreateEvent.getAutocompleteInteraction().getFocusedOption().getName().equalsIgnoreCase(
                     CarryTierCommand.FIELD_NAME)) {
                 List<SlashCommandInteractionOption> allOptions = autocompleteCreateEvent.getAutocompleteInteraction()
                         .getOptions().stream()
