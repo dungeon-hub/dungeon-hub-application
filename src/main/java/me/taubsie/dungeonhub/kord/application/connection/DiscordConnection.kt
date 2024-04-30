@@ -46,22 +46,21 @@ object DiscordConnection : StartupListener {
      * This implementation starts the discord-bot.
      */
     override suspend fun onStart() {
-        bot =
-            ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value) {
-                errorResponse { _, type ->
-                    embeds = if (type.error is CommandExecutionException) {
-                        mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionException))
-                    } else {
-                        mutableListOf(ApplicationService.getErrorEmbed(CommandExecutionException(type.error)))
-                    }
-                }
-
-                @OptIn(PrivilegedIntent::class)
-                intents {
-                    //+Intent.GuildMembers
-                    +Intent.MessageContent
+        bot = ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value) {
+            errorResponse { _, type ->
+                embeds = if (type.error is CommandExecutionException) {
+                    mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionException))
+                } else {
+                    mutableListOf(ApplicationService.getErrorEmbed(CommandExecutionException(type.error)))
                 }
             }
+
+            @OptIn(PrivilegedIntent::class)
+            intents {
+                //+Intent.GuildMembers
+                +Intent.MessageContent
+            }
+        }
 
         ClassLoader.loadExtensions(bot!!)
 
@@ -98,7 +97,7 @@ object DiscordConnection : StartupListener {
         return message
     }
 
-    private suspend fun resetBotAppearance() {
+    suspend fun resetBotAppearance() {
         bot?.kordRef?.editPresence {
             val name = bot?.kordRef?.guilds?.map { value -> value.memberCount!! }?.reduce { a, b -> a + b }.toString() +
                     " carriers on " +
