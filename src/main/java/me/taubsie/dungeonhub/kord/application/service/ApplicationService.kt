@@ -97,7 +97,7 @@ object ApplicationService {
     }
 
     suspend fun getBotOwner(kord: Kord): User? {
-        val ownerId = kord.getApplicationInfo().ownerId ?: kord.getApplicationInfo().team?.ownerUserId
+        val ownerId = kord.getApplicationInfo().team?.ownerUserId ?: kord.getApplicationInfo().ownerId
 
         if (ownerId == null) {
             return null
