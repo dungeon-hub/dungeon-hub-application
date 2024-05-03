@@ -86,13 +86,7 @@ object DiscordConnection : StartupListener {
         message.add("Im on servers:")
         message.addAll(
             bot?.kordRef?.guilds?.map { server ->
-                String.format(
-                    "%s with id '%d' by %s (%d)",
-                    server.name,
-                    server.id.value,
-                    server.getOwnerOrNull()?.effectiveName ?: "no-name",
-                    server.ownerId
-                )
+                "${server.name} with id '${server.id}' by ${server.getOwnerOrNull()?.effectiveName ?: "no-name"} (${server.ownerId})"
             }!!.toList()
         )
 
