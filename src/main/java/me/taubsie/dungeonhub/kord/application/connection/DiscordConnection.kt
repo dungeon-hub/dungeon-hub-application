@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.kord.application.listener.ServerJoinListener
 import me.taubsie.dungeonhub.kord.application.loader.ClassLoader
 import me.taubsie.dungeonhub.kord.application.loader.OnStart
 import me.taubsie.dungeonhub.kord.application.loader.StartupListener
@@ -60,6 +61,12 @@ object DiscordConnection : StartupListener {
                     DiscordConnection.logger.info(LINE)
                     getServerListMessage().forEach(DiscordConnection.logger::info)
                     DiscordConnection.logger.info(LINE)
+
+                    ServerJoinListener.GUILD_ON_JOIN.addAll(
+                        bot?.kordRef?.guilds?.map { guild ->
+                            guild.id.value
+                        }?.toList()!!
+                    )
                 }
             }
 
