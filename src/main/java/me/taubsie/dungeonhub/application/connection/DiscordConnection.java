@@ -47,30 +47,4 @@ public class DiscordConnection {
 
         return instance;
     }
-
-    /**
-     * This resets the activity shown on the bot back to the default.
-     */
-    private void resetBotActivity() {
-        bot.updateActivity(ActivityType.WATCHING,
-                bot.getServers().stream().mapToInt(Server::getMemberCount).sum() + " carriers on " + bot.getServers().size() + " servers");
-    }
-
-    /**
-     * This resets the status of the bot back to the default.
-     */
-    private void resetBotStatus() {
-        bot.updateStatus(UserStatus.ONLINE);
-    }
-
-    /**
-     * This resets the bot's appearance.
-     *
-     * @see #resetBotActivity()
-     * @see #resetBotStatus()
-     */
-    public void resetBotAppearance() {
-        resetBotActivity();
-        resetBotStatus();
-    }
 }

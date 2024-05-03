@@ -1,8 +1,10 @@
 package me.taubsie.dungeonhub.kord.application.connection
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
+import dev.kord.common.entity.PresenceStatus
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.reduce
@@ -18,6 +20,7 @@ import me.taubsie.dungeonhub.kord.application.loader.StartupListener
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import kotlin.concurrent.thread
 
 @OnStart(priority = 1)
 object DiscordConnection : StartupListener {
@@ -67,6 +70,16 @@ object DiscordConnection : StartupListener {
                             guild.id.value
                         }?.toList()!!
                     )
+
+                    thread {
+                        runBlocking {
+                            launch {
+                                delay(10000)
+
+                                resetBotAppearance()
+                            }
+                        }
+                    }
                 }
             }
 
@@ -74,6 +87,11 @@ object DiscordConnection : StartupListener {
             intents {
                 +Intent.GuildMembers
                 +Intent.MessageContent
+            }
+
+            presence {
+                state = "Loading..."
+                status = PresenceStatus.Idle
             }
         }
 
@@ -100,6 +118,9 @@ object DiscordConnection : StartupListener {
         return message
     }
 
+    /**
+     * This resets the bot's appearance.
+     */
     suspend fun resetBotAppearance() {
         bot?.kordRef?.editPresence {
             val name = bot?.kordRef?.guilds?.map { value -> value.memberCount!! }?.reduce { a, b -> a + b }.toString() +
@@ -108,6 +129,7 @@ object DiscordConnection : StartupListener {
                     " servers"
 
             watching(name)
+            status = PresenceStatus.Online
         }
     }
 }
