@@ -55,9 +55,17 @@ object DiscordConnection : StartupListener {
                 }
             }
 
+            hooks {
+                beforeStart {
+                    DiscordConnection.logger.info(LINE)
+                    getServerListMessage().forEach(DiscordConnection.logger::info)
+                    DiscordConnection.logger.info(LINE)
+                }
+            }
+
             @OptIn(PrivilegedIntent::class)
             intents {
-                //+Intent.GuildMembers
+                +Intent.GuildMembers
                 +Intent.MessageContent
             }
         }
@@ -65,12 +73,6 @@ object DiscordConnection : StartupListener {
         ClassLoader.loadExtensions(bot!!)
 
         bot?.start()
-
-        resetBotAppearance()
-
-        logger.info(LINE)
-        getServerListMessage().forEach(logger::info)
-        logger.info(LINE)
     }
 
     /**
