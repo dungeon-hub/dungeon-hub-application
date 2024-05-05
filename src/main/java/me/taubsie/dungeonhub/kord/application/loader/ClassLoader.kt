@@ -12,7 +12,6 @@ import java.io.IOException
 import java.lang.reflect.Field
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Modifier
-import java.util.stream.Collectors
 
 object ClassLoader {
     private val startupListeners: MutableMap<StartupListener, OnStart> = HashMap()
@@ -47,7 +46,7 @@ object ClassLoader {
         }
     }
 
-    fun <T : StartupListener> addStartupListener(listener: T, onStart: OnStart) {
+    private fun <T : StartupListener> addStartupListener(listener: T, onStart: OnStart) {
         startupListeners[listener] = onStart
     }
 
@@ -103,8 +102,9 @@ object ClassLoader {
             }
         } catch (noSuchMethodException: NoSuchMethodException) {
             try {
-                if(Modifier.isStatic(clazz.getDeclaredField("INSTANCE").modifiers)
-                    && clazz.getDeclaredField("INSTANCE").type == clazz) {
+                if (Modifier.isStatic(clazz.getDeclaredField("INSTANCE").modifiers)
+                    && clazz.getDeclaredField("INSTANCE").type == clazz
+                ) {
                     val field: Field = clazz.getDeclaredField("INSTANCE")
                     field.setAccessible(true)
                     return field.get(this) as StartupListener
@@ -145,36 +145,13 @@ object ClassLoader {
     /**
      * @return the first two entries seperated with a dot in the package name
      */
-    fun readPackage(clazz: Class<*>): String {
+    private fun readPackage(clazz: Class<*>): String {
         val fullName = clazz.packageName
         val packageNameAfterFirstDot = fullName.substring(fullName.indexOf('.') + 1)
         return fullName.substring(0, fullName.indexOf('.') + 1) + packageNameAfterFirstDot.substring(
             0,
             packageNameAfterFirstDot.indexOf('.')
         )
-    }
-
-    fun getClassesInPackage(packageName: String?): Set<Class<*>> {
-        val classes: MutableSet<Class<*>> = HashSet()
-
-        try {
-            classes.addAll(
-                ClassPath.from(java.lang.ClassLoader.getSystemClassLoader())
-                    .allClasses
-                    .stream()
-                    .filter { classInfo: ClassPath.ClassInfo ->
-                        classInfo.packageName.startsWith(
-                            (packageName)!!
-                        )
-                    }
-                    .map { path -> path.load() }
-                    .collect(Collectors.toSet())
-            )
-        } catch (ioException: IOException) {
-            logger.error(null, ioException)
-        }
-
-        return classes
     }
 
     @DoNotCall("possibly unsafe")
@@ -221,31 +198,10 @@ object ClassLoader {
     }
 
     suspend fun loadExtensions(bot: ExtensibleBot) {
-        for(extension in extensions) {
+        for (extension in extensions) {
             bot.addExtension {
                 extension
             }
         }
     }
-
-    //TODO listener registration?
-    /*fun loadListeners(bot: DiscordApi) {
-        for (listenerClass: Class<GloballyAttachableListener?> in getClassesInPackage<GloballyAttachableListener?, Listener>(
-            readPackage(javaClass),
-            (GloballyAttachableListener::class.java),
-            Listener::class.java
-        ).keys) {
-            try {
-                bot.addListener(listenerClass.getDeclaredConstructor().newInstance())
-            } catch (exception: InvocationTargetException) {
-                logger.error(null, exception)
-            } catch (exception: InstantiationException) {
-                logger.error(null, exception)
-            } catch (exception: IllegalAccessException) {
-                logger.error(null, exception)
-            } catch (exception: NoSuchMethodException) {
-                logger.error(null, exception)
-            }
-        }
-    }*/
 }
