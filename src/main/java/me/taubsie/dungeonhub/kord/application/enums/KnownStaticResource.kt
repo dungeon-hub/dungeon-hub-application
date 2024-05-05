@@ -1,11 +1,11 @@
 package me.taubsie.dungeonhub.kord.application.enums
 
+import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import lombok.Getter
-import me.taubsie.dungeonhub.common.Nameable
 
 //TODO add more
 //TODO implement in carry tier / carry difficulty thumbnail settings ?
-enum class KnownStaticResource(@field:Getter val path: String, val displayName: String) {
+enum class KnownStaticResource(@field:Getter val path: String, val displayName: String?): ChoiceEnum {
     ICON_GIF("favicon.gif", "Icon (GIF)"),
     ICON("favicon.ico", "Icon"),
     BANNER("banner.png", "Banner"),
@@ -30,8 +30,11 @@ enum class KnownStaticResource(@field:Getter val path: String, val displayName: 
         return path
     }
 
+    override val readableName: String
+        get() = loadDisplayName()
+
     fun loadDisplayName(): String {
-        if (displayName.isNotBlank()) {
+        if (!displayName.isNullOrBlank()) {
             return displayName
         }
 

@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,14 +51,14 @@ public class DungeonHubConnection {
         return executeRequest(request).map(function);
     }
 
-    public Optional<String> executeRequest(Request request) {
+    public Optional<byte[]> executeRawRequest(Request request) {
         try (Response response = getHttpClient().newCall(request).execute()) {
             if (response.isSuccessful()) {
                 logger.debug("Executed request to '{}' successfully.", request.url());
 
                 return Optional.ofNullable(response.body()).map(responseBody -> {
                     try {
-                        return responseBody.string();
+                        return responseBody.bytes();
                     }
                     catch (IOException ioException) {
                         logger.error(null, ioException);
@@ -82,6 +83,10 @@ public class DungeonHubConnection {
             logger.error(null, ioException);
         }
         return Optional.empty();
+    }
+
+    public Optional<String> executeRequest(Request request) {
+        return executeRawRequest(request).map(bytes -> new String(bytes, StandardCharsets.UTF_8));
     }
 
     public String getBody(Request request) {
