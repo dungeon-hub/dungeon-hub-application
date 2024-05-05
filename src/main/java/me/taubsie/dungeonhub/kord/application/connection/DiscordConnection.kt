@@ -51,11 +51,16 @@ object DiscordConnection : StartupListener {
      */
     override suspend fun onStart() {
         bot = ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value) {
-            errorResponse { _, type ->
+            errorResponse { message, type ->
                 embeds = if (type.error is CommandExecutionException) {
                     mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionException))
                 } else {
-                    mutableListOf(ApplicationService.getErrorEmbed(CommandExecutionException(type.error)))
+                    val embed = ApplicationService.getErrorEmbed(CommandExecutionException(type.error))
+                    if (message.isNotBlank()) {
+                        embed.title = message
+                    }
+
+                    mutableListOf(embed)
                 }
             }
 
