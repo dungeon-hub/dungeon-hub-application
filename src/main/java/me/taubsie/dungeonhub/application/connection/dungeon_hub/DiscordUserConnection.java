@@ -35,6 +35,14 @@ public class DiscordUserConnection implements ModuleConnection {
         return logger;
     }
 
+    public Optional<String> countLinkedUsers() {
+        HttpUrl url = getApiUrl("count-linked").build();
+
+        Request request = new Request.Builder().url(url).build();
+
+        return executeRequest(request);
+    }
+
     public Optional<DiscordUserModel> getById(long id) {
         HttpUrl url = getApiUrl(id).build();
 

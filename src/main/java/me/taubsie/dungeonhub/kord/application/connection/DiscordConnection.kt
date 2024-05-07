@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.config.ConfigProperty
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.listener.ServerJoinListener
 import me.taubsie.dungeonhub.kord.application.loader.ClassLoader
@@ -123,7 +124,7 @@ object DiscordConnection : StartupListener {
      */
     suspend fun resetBotAppearance() {
         bot?.kordRef?.editPresence {
-            val name = bot?.kordRef?.guilds?.map { value -> value.memberCount!! }?.reduce { a, b -> a + b }.toString() +
+            val name = DiscordUserConnection.getInstance().countLinkedUsers().orElse("0") +
                     " carriers on " +
                     bot?.kordRef?.guilds?.count() +
                     " servers"
