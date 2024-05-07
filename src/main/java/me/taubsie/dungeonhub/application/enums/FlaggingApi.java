@@ -4,7 +4,7 @@ import lombok.Getter;
 import me.taubsie.dungeonhub.application.classes.FlagDetail;
 import me.taubsie.dungeonhub.application.classes.FlagResponse;
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection;
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -11,6 +11,7 @@ import me.taubsie.dungeonhub.common.Nameable;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
 import org.javacord.api.entity.Attachment;
 import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.channel.ServerChannel;

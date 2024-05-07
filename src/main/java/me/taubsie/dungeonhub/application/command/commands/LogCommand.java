@@ -5,7 +5,7 @@ import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection;
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.common.enums.QueueStep;

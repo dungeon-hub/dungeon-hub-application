@@ -6,7 +6,7 @@ import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.NotLinkedException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.RolesService;

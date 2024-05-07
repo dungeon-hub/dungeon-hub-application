@@ -1,7 +1,7 @@
 package me.taubsie.dungeonhub.application.classes;
 
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;

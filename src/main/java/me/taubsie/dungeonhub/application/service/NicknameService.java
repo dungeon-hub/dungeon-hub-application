@@ -9,6 +9,7 @@ import me.taubsie.dungeonhub.application.exceptions.*;
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel;
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;

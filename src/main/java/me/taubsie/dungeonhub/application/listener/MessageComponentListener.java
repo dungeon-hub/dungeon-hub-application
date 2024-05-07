@@ -20,6 +20,7 @@ import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueUpdateModel;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import me.taubsie.dungeonhub.common.model.score.LoggedCarryModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;

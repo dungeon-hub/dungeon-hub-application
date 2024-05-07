@@ -1,6 +1,6 @@
 package me.taubsie.dungeonhub.kord.application.classes
 
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 
 @JvmRecord

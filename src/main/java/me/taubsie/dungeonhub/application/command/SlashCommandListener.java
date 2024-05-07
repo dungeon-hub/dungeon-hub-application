@@ -1,6 +1,6 @@
 package me.taubsie.dungeonhub.application.command;
 
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.UnknownCommandException;
 import me.taubsie.dungeonhub.application.listener.Listener;
 import me.taubsie.dungeonhub.application.service.ApplicationService;

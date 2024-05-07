@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.exceptions;
 
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;

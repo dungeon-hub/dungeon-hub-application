@@ -1,5 +1,7 @@
 package me.taubsie.dungeonhub.application.exceptions;
 
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
+
 public class HypixelLinkedToOtherException extends CommandExecutionException {
     public HypixelLinkedToOtherException(String ign) {
         super("`" + ign + "` has their ingame discord-account set to something else.\n" +
