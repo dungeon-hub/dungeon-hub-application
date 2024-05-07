@@ -1,7 +1,6 @@
 package me.taubsie.dungeonhub.application.command.commands;
 
 import me.taubsie.dungeonhub.application.classes.DelayedResponse;
-import me.taubsie.dungeonhub.application.classes.ServerProperty;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
@@ -16,6 +15,7 @@ import me.taubsie.dungeonhub.common.enums.ScoreType;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreUpdateModel;
+import me.taubsie.dungeonhub.kord.application.enums.ServerProperty;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.permission.PermissionType;

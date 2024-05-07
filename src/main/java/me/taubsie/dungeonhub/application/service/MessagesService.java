@@ -8,6 +8,7 @@ import me.taubsie.dungeonhub.application.loader.StartupListener;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import me.taubsie.dungeonhub.kord.application.loader.OnStart;
+import me.taubsie.dungeonhub.kord.application.service.ServerService;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -99,7 +100,7 @@ public class MessagesService implements StartupListener {
     }
 
     private void refreshPriceMessages() {
-        ServerService.getInstance()
+        ServerService.INSTANCE
                 .getAllServers()
                 .forEach(serverData -> refreshPriceMessages(serverData.getId()));
     }

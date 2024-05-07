@@ -2,7 +2,7 @@ package me.taubsie.dungeonhub.application.service;
 
 import dev.kord.rest.builder.message.EmbedBuilder;
 import me.taubsie.dungeonhub.application.classes.Leaderboard;
-import me.taubsie.dungeonhub.application.classes.ServerProperty;
+import me.taubsie.dungeonhub.kord.application.enums.ServerProperty;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;

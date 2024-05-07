@@ -1,6 +1,6 @@
 package me.taubsie.dungeonhub.application.command.commands;
 
-import me.taubsie.dungeonhub.application.classes.ServerProperty;
+import me.taubsie.dungeonhub.kord.application.enums.ServerProperty;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;

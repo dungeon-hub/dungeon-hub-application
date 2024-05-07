@@ -1,6 +1,6 @@
 package me.taubsie.dungeonhub.application.service;
 
-import me.taubsie.dungeonhub.application.classes.ServerProperty;
+import me.taubsie.dungeonhub.kord.application.enums.ServerProperty;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;

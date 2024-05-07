@@ -4,10 +4,10 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.core.event.guild.GuildDeleteEvent
-import me.taubsie.dungeonhub.application.service.ServerService
 import me.taubsie.dungeonhub.kord.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
+import me.taubsie.dungeonhub.kord.application.service.ServerService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -37,7 +37,7 @@ class ServerLeaveListener : Extension() {
                     "I just left server `${event.guild?.name}` by $ownerName (<@${event.guild?.ownerId}>)."
                 )
 
-                ServerService.getInstance().unloadServerData(event.guildId.value.toLong())
+                ServerService.unloadServerData(event.guildId.value.toLong())
             }
         }
     }

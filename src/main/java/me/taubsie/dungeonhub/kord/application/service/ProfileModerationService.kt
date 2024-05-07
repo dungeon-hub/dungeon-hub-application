@@ -90,7 +90,7 @@ object ProfileModerationService {
 
     private fun isBanDisabled(serverId: Long): Boolean {
         return ServerProperty.PROFILE_MODERATION_BAN.getValue(serverId)
-            .map { s: String ->
+            .map { s: String? ->
                 s.equals(
                     "false",
                     ignoreCase = true

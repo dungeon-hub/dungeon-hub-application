@@ -4,10 +4,10 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.core.event.guild.GuildCreateEvent
-import me.taubsie.dungeonhub.application.service.ServerService
 import me.taubsie.dungeonhub.kord.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
+import me.taubsie.dungeonhub.kord.application.service.ServerService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -38,7 +38,7 @@ class ServerJoinListener : Extension() {
                     "I just joined server `${event.guild.name}` by $ownerName (<@${event.guild.ownerId}>)."
                 )
 
-                ServerService.getInstance().loadServerData(event.guild.id.value.toLong())
+                ServerService.loadServerData(event.guild.id.value.toLong())
             }
         }
     }

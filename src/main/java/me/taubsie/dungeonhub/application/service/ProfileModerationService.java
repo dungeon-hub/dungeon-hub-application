@@ -1,6 +1,6 @@
 package me.taubsie.dungeonhub.application.service;
 
-import me.taubsie.dungeonhub.application.classes.ServerProperty;
+import me.taubsie.dungeonhub.kord.application.enums.ServerProperty;
 import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.component.ActionRow;
 import org.javacord.api.entity.message.component.Button;
@@ -19,19 +19,6 @@ import java.util.concurrent.CompletionException;
 public class ProfileModerationService {
     private static final Logger logger = LoggerFactory.getLogger(ProfileModerationService.class);
 
-    private static final Long[] excludedIds = new Long[]{
-            727320030462869515L,
-            703035551330205716L,
-            599475365471059978L,
-            678580255384141824L,
-            633350165574451200L,
-            577147388255272970L,
-            1097692461452767272L,
-            928744398571831359L,
-            542229014681747456L,
-            1059959722549190728L,
-            1119562575458336828L
-    };
     private static ProfileModerationService instance;
 
     public static ProfileModerationService getInstance() {

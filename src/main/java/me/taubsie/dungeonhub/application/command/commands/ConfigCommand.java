@@ -1,15 +1,15 @@
 package me.taubsie.dungeonhub.application.command.commands;
 
-import me.taubsie.dungeonhub.application.classes.ServerData;
-import me.taubsie.dungeonhub.application.classes.ServerProperty;
-import me.taubsie.dungeonhub.application.classes.ServerPropertyType;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
-import me.taubsie.dungeonhub.application.service.ServerService;
+import me.taubsie.dungeonhub.kord.application.enums.ServerProperty;
+import me.taubsie.dungeonhub.kord.application.enums.ServerPropertyType;
+import me.taubsie.dungeonhub.kord.application.misc.ServerData;
+import me.taubsie.dungeonhub.kord.application.service.ServerService;
 import org.javacord.api.entity.channel.ChannelType;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.permission.PermissionType;
@@ -35,9 +35,9 @@ public class ConfigCommand extends Command {
                 .getSlashCommandInteraction()
                 .getOptionByIndex(0)
                 .map(option -> getStringOption(option, "property"))
-                .flatMap(ServerProperty::getPropertyByName);
+                .flatMap(ServerProperty.Companion::getPropertyByName);
 
-        if(property.isEmpty()) {
+        if (property.isEmpty()) {
             throw new InvalidOptionException(
                     "property",
                     "Please use one of the following: "
@@ -47,10 +47,10 @@ public class ConfigCommand extends Command {
             );
         }
 
-        if(get) {
+        if (get) {
             getConfig(property.get());
         } else {
-            if(!property.get().isEnabled(getServer().getId()) && !getUser().isBotOwnerOrTeamMember()) {
+            if (!property.get().isEnabled(getServer().getId()) && !getUser().isBotOwnerOrTeamMember()) {
                 throw new InvalidOptionException("property", "This property is disabled on this server.");
             }
 
@@ -58,20 +58,20 @@ public class ConfigCommand extends Command {
                     .getSlashCommandInteraction()
                     .getOptionByIndex(0)
                     .map(option -> {
-                        if(property.get().getPropertyType() == ServerPropertyType.ROLE) {
+                        if (property.get().getPropertyType() == ServerPropertyType.ROLE) {
                             return getRoleOption(option, "value").getIdAsString();
                         }
 
-                        if(property.get().getPropertyType() == ServerPropertyType.CHANNEL
+                        if (property.get().getPropertyType() == ServerPropertyType.CHANNEL
                                 || property.get().getPropertyType() == ServerPropertyType.CATEGORY) {
                             return getChannelOption(option, "value").getIdAsString();
                         }
 
-                        if(property.get().getPropertyType() == ServerPropertyType.NUMBER) {
+                        if (property.get().getPropertyType() == ServerPropertyType.NUMBER) {
                             return String.valueOf(getLongOption(option, "value"));
                         }
 
-                        if(property.get().getPropertyType() == ServerPropertyType.BOOLEAN) {
+                        if (property.get().getPropertyType() == ServerPropertyType.BOOLEAN) {
                             return String.valueOf(getBooleanOption(option, "value"));
                         }
 
@@ -79,7 +79,7 @@ public class ConfigCommand extends Command {
                     })
                     .map(s -> s.replace("\\n", "\n"));
 
-            if(value.isEmpty()) {
+            if (value.isEmpty()) {
                 throw new InvalidOptionException("value", "Please enter a new value.");
             }
 
@@ -88,14 +88,14 @@ public class ConfigCommand extends Command {
     }
 
     private void setConfig(ServerProperty property, String value) {
-        String oldValue = ServerService.getInstance()
+        String oldValue = ServerService.INSTANCE
                 .getActualServerProperty(getServer().getId(), property)
                 .map(s -> property.getPropertyType().applyPropertyType(s))
                 .orElse("None was set.");
 
-        Optional<ServerData> serverData = ServerService.getInstance().getServerData(getServer().getId());
+        Optional<ServerData> serverData = ServerService.INSTANCE.getServerData(getServer().getId());
 
-        if(serverData.isEmpty()) {
+        if (serverData.isEmpty()) {
             throw new CommandExecutionException("Couldn't load the server data from storage.");
         }
 
@@ -110,15 +110,15 @@ public class ConfigCommand extends Command {
     }
 
     private void getConfig(ServerProperty property) {
-        Optional<String> value = ServerService.getInstance().getActualServerProperty(getServer().getId(), property);
+        Optional<String> value = ServerService.INSTANCE.getActualServerProperty(getServer().getId(), property);
 
-        if(value.isEmpty()) {
+        if (value.isEmpty()) {
             EmbedBuilder embed = ApplicationService.getInstance()
                     .getEmbed()
                     .setColor(EmbedColor.NEGATIVE.getColor())
                     .setDescription("No value for `" + property.getName() + "` is set.");
 
-            if(!property.isEnabled(getServer().getId())) {
+            if (!property.isEnabled(getServer().getId())) {
                 embed.addInlineField("Option enabled", String.valueOf(property.isEnabled(getServer().getId())));
             }
 
@@ -132,7 +132,7 @@ public class ConfigCommand extends Command {
                 .setDescription("Loaded the value of `" + property.getName() + "`.")
                 .addInlineField("Current value", property.getPropertyType().applyPropertyType(value.get()));
 
-        if(!property.isEnabled(getServer().getId())) {
+        if (!property.isEnabled(getServer().getId())) {
             embed.addInlineField("Option enabled", String.valueOf(property.isEnabled(getServer().getId())));
         }
 
