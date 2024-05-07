@@ -168,7 +168,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
                     .map(DiscordUserModel::getMinecraftId)
                     .map(uuid -> MojangConnection.getInstance().getNameByUUID(uuid))
                     .or(() -> Arrays.stream(lines)
-                            .filter(s -> s.startsWith("IGN: "))
+                            .filter(s -> s.startsWith("IGN: ") || s.startsWith("- **IGN**:") || s.startsWith("**IGN**:"))
                             .findFirst())
                     .or(() -> user.getNickname(server.get()));
 
@@ -178,6 +178,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
             String ign = ignOptional.get()
                     .replace("IGN: ", "")
+                    .replace("- **IGN**: ", "")
                     .replace("**IGN**: ", "")
                     .replaceAll("❮(\\S*)❯", "")
                     .replace("❊", "")
