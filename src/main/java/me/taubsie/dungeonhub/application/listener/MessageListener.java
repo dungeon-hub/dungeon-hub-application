@@ -178,6 +178,7 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
 
             String ign = ignOptional.get()
                     .replace("IGN: ", "")
+                    .replace("**IGN**: ", "")
                     .replaceAll("❮(\\S*)❯", "")
                     .replace("❊", "")
                     .replace("❉", "")
