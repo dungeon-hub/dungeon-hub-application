@@ -1,7 +1,7 @@
 package me.taubsie.dungeonhub.application.service;
 
 import me.taubsie.dungeonhub.application.classes.PlayerInformation;
-import me.taubsie.dungeonhub.application.connection.HypixelConnection;
+import me.taubsie.dungeonhub.kord.application.connection.HypixelConnection;
 import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
@@ -131,7 +131,7 @@ public class NicknameService {
     public UUID linkToIgn(String ign, @NotNull User user) throws CommandExecutionException {
         UUID uuid = MojangConnection.getInstance().getUUIDByName(ign);
 
-        Optional<String> hypixelName = HypixelConnection.getInstance().getHypixelLinkedDiscord(uuid);
+        Optional<String> hypixelName = HypixelConnection.INSTANCE.getHypixelLinkedDiscord(uuid);
         String username = user.getDiscriminator().equals("0") ? user.getName() : user.getDiscriminatedName();
 
         if (hypixelName.isEmpty()) {

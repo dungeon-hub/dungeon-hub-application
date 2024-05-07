@@ -1,8 +1,6 @@
 package me.taubsie.dungeonhub.kord.application.service
 
-import com.kotlindiscord.kord.extensions.utils.any
 import com.kotlindiscord.kord.extensions.utils.dm
-import com.kotlindiscord.kord.extensions.utils.hasRoles
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.asChannelOfOrNull
@@ -14,9 +12,9 @@ import dev.kord.rest.builder.component.ActionRowBuilder
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import me.taubsie.dungeonhub.application.classes.ServerProperty
-import me.taubsie.dungeonhub.application.enums.IdList
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadException
+import me.taubsie.dungeonhub.kord.application.enums.ServerProperty
 import net.codebox.homoglyph.Homoglyph
 import net.codebox.homoglyph.HomoglyphBuilder
 import org.slf4j.Logger
@@ -248,15 +246,12 @@ object ProfileModerationService {
         return Arrays.stream(excludedIds).anyMatch { id: Long -> id == userId }
     }
 
-    fun isVerified(user: Member, server: Guild): Boolean {
-        return user.roleBehaviors.any { role ->
-            (role.id.value.toLong() == IdList.VERIFIED_ROLE.getLocalId(server.id.value.toLong())
-                    || role.id.value.toLong() == IdList.ALT_VERIFIED_ROLE.getLocalId(server.id.value.toLong()))
-        }
+    fun isVerified(user: Member): Boolean {
+        return DiscordUserConnection.getInstance().getLinkedById(user.id.value.toLong()).isPresent
     }
 
     fun isExcluded(user: Member, server: Guild): Boolean {
-        return isExcluded(user) || isVerified(user, server)
+        return isExcluded(user) || isVerified(user)
     }
 
     fun isExcluded(user: Member): Boolean {

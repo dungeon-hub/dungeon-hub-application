@@ -4,7 +4,7 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.user.UserUpdateEvent
-import kotlinx.coroutines.flow.mapNotNull
+import me.taubsie.dungeonhub.kord.application.connection.getMutualServers
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ProfileModerationService
 
@@ -28,9 +28,7 @@ class UserChangeListener : Extension() {
 
         event<UserUpdateEvent> {
             action {
-                event.kord.guilds.mapNotNull { server ->
-                    event.user.asMemberOrNull(server.id)
-                }.collect { member ->
+                event.user.getMutualServers().collect { member ->
                     if (ProfileModerationService.isExcluded(member, member.guild.asGuild())) {
                         return@collect
                     }
