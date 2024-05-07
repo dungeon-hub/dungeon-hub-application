@@ -1,20 +1,9 @@
 package me.taubsie.dungeonhub.application.service;
 
-import com.google.zxing.*;
-import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.common.HybridBinarizer;
-import com.google.zxing.qrcode.QRCodeReader;
-import com.google.zxing.qrcode.QRCodeWriter;
 import lombok.extern.slf4j.Slf4j;
 import me.taubsie.dungeonhub.application.classes.FlagResponse;
 import me.taubsie.dungeonhub.application.command.Command;
-import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
-import me.taubsie.dungeonhub.application.connection.FlaggingConnection;
-import me.taubsie.dungeonhub.application.connection.HypixelConnection;
-import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.loader.ClassLoaderService;
 import me.taubsie.dungeonhub.common.DungeonHubService;
@@ -29,9 +18,7 @@ import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
 import org.javacord.api.DiscordApi;
-import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.Nameable;
-import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.*;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -44,10 +31,6 @@ import org.javacord.api.interaction.SlashCommandOptionBuilder;
 import org.javacord.api.interaction.SlashCommandOptionType;
 import org.jetbrains.annotations.NotNull;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
@@ -79,16 +62,6 @@ public class ApplicationService {
      */
     public String getFooter() {
         return getServerLink() + " • made by @taubsie";
-    }
-
-    /**
-     * Returns the footer used for embeds of unstable or new features.
-     * Warning is suppressed, since the escape needs to be made due to some systems having an issue showing the unicode representation through discord.
-     *
-     * @return the footer used for embeds of unstable or new features.
-     */
-    public String getUnstableFooter() {
-        return getServerLink() + " • THIS FEATURE IS UNSTABLE • please report bugs to @taubsie";
     }
 
     /**
@@ -148,13 +121,6 @@ public class ApplicationService {
         }
 
         return String.valueOf(number);
-    }
-
-    public DiscordApiBuilder getApiBuilder() {
-        return new DiscordApiBuilder()
-                .setToken(ConfigProperty.DISCORD_BOT_TOKEN.getValue())
-                .setAllNonPrivilegedIntents()
-                .addIntents(Intent.MESSAGE_CONTENT, Intent.GUILD_MEMBERS);
     }
 
     public EmbedBuilder getErrorEmbed() {
@@ -387,47 +353,6 @@ public class ApplicationService {
                 .build();
     }
 
-    //TODO maybe make it possible to update the embed in 2 intervals, since the mojang+safety+jerry api takes long,
-    // as well as the skycrypt api takes long too
-    //probably first load skycrypt, then the rest?
-    public EmbedBuilder getPlayerDataEmbed(String ign, Long discordId) throws FailedToLoadEmbedException {
-        Map<String, String> skycryptData = HypixelConnection.getInstance().getSkyCryptData(ign);
-
-        String description = skycryptData.getOrDefault("description", "Couldn't load SkyCrypt data. Please try again " +
-                "later.");
-
-        EmbedBuilder embed = ApplicationService.getInstance()
-                .getEmbed()
-                .setColor(EmbedColor.INFORMATION.getColor())
-                .setDescription(description)
-                .setTitle(skycryptData.getOrDefault("title", ign))
-                .setUrl(ConfigProperty.SKYCRYPT_API_URL + "stats/" + ign)
-                .setThumbnail(skycryptData.getOrDefault("icon", null));
-
-        UUID uuid = MojangConnection.getInstance().getUUIDByName(ign);
-
-        List<FlagResponse> flagResponses = FlaggingConnection.getInstance().isFlagged(uuid, discordId)
-                .stream()
-                .filter(flagResponse -> flagResponse.uuid() != null || flagResponse.discord() != null)
-                .filter(flagResponse -> (flagResponse.uuid() != null && flagResponse.uuid().flagged())
-                        || (flagResponse.discord() != null && flagResponse.discord().flagged()))
-                .toList();
-
-        if (!flagResponses.isEmpty()) {
-            embed.addField("Flagged", "**This user is flagged, which means it might not safe to interact with them.**\n"
-                            + formatFlagDetails(flagResponses))
-                    .setColor(EmbedColor.NEGATIVE.getColor());
-        } else {
-            embed.setColor(EmbedColor.POSITIVE.getColor());
-        }
-
-        if (!skycryptData.containsKey("description") || !skycryptData.containsKey("title")) {
-            throw new FailedToLoadEmbedException(embed);
-        }
-
-        return embed;
-    }
-
     public String formatFlagDetails(List<FlagResponse> flagged) {
         List<String> result = new ArrayList<>();
 
@@ -498,41 +423,6 @@ public class ApplicationService {
         carryDifficulty.getActualPriceName().ifPresent(s -> embed.addInlineField("Price Title", s));
 
         return embed;
-    }
-
-    public BufferedImage generateQRCodeImage(String barcodeText) throws WriterException {
-        QRCodeWriter barcodeWriter = new QRCodeWriter();
-
-        Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
-        hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
-        hints.put(EncodeHintType.MARGIN, 1);
-
-        BitMatrix bitMatrix = barcodeWriter.encode(barcodeText, BarcodeFormat.QR_CODE, 200, 200, hints);
-
-        return MatrixToImageWriter.toBufferedImage(bitMatrix);
-    }
-
-    public String readQRCodeImage(BufferedImage bufferedImage) throws ChecksumException, NotFoundException,
-            FormatException {
-        BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(
-                new BufferedImageLuminanceSource(bufferedImage)
-        ));
-
-        QRCodeReader qrCodeReader = new QRCodeReader();
-
-        return qrCodeReader.decode(binaryBitmap).getText();
-    }
-
-    public byte[] readImageData(BufferedImage bufferedImage) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try {
-            ImageIO.write(bufferedImage, "png", outputStream);
-        }
-        catch (IOException ioException) {
-            log.error(null, ioException);
-            return new byte[0];
-        }
-        return outputStream.toByteArray();
     }
 
     public HighLevelComponent getLinkModalComponent() {

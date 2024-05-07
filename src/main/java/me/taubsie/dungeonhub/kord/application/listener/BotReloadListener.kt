@@ -9,8 +9,7 @@ import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 
 @LoadExtension
 class BotReloadListener: Extension() {
-    override val name: String
-        get() = "bot-reload-listener"
+    override val name = "bot-reload-listener"
 
     override suspend fun setup() {
         event<ResumedEvent> {

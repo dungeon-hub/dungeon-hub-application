@@ -4,6 +4,7 @@ import kotlin.Unit;
 import kotlin.coroutines.Continuation;
 import me.taubsie.dungeonhub.common.DungeonHubService;
 import me.taubsie.dungeonhub.kord.application.loader.OnStart;
+import me.taubsie.dungeonhub.kord.application.loader.StartPriority;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -15,7 +16,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
-@OnStart
+@OnStart(priority = StartPriority.CONFIGURATION_LOADER)
 public class ConfigService extends ConfigFile<ConfigProperty> {
     private static ConfigService instance;
     private final Logger logger = LoggerFactory.getLogger(ConfigService.class);

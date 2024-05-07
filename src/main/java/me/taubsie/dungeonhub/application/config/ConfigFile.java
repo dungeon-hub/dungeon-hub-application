@@ -2,6 +2,7 @@ package me.taubsie.dungeonhub.application.config;
 
 import me.taubsie.dungeonhub.common.Nameable;
 import me.taubsie.dungeonhub.kord.application.loader.OnStart;
+import me.taubsie.dungeonhub.kord.application.loader.StartPriority;
 import me.taubsie.dungeonhub.kord.application.loader.StartupListener;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -15,7 +16,7 @@ import java.nio.file.Files;
 import java.util.Properties;
 import java.util.Set;
 
-@OnStart
+@OnStart(priority = StartPriority.CONFIGURATION_LOADER)
 public abstract class ConfigFile<T extends Nameable> implements StartupListener {
     private static final Logger logger = LoggerFactory.getLogger(ConfigFile.class);
 
