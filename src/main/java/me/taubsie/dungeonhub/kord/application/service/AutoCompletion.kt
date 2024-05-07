@@ -47,6 +47,11 @@ object AutoCompletion {
                 }
                 .orElse(listOf())
                 .stream()
+                .filter { carryTier ->
+                    focusedOption.value.isEmpty()
+                            || (carryTier.identifier.startsWith(focusedOption.value, true)
+                            || carryTier.displayName.startsWith(focusedOption.value, true))
+                }
                 .map { carryTier ->
                     Choice.StringChoice(
                         name = carryTier.displayName,
@@ -82,6 +87,11 @@ object AutoCompletion {
                     .allCarryDifficulties
                     .orElse(listOf())
                     .stream()
+                    .filter { carryDifficulty ->
+                        focusedOption.value.isEmpty()
+                                || (carryDifficulty.identifier.startsWith(focusedOption.value, true)
+                                || carryDifficulty.displayName.startsWith(focusedOption.value, true))
+                    }
                     .map { carryDifficulty ->
                         Choice.StringChoice(
                             name = carryDifficulty.displayName,
@@ -104,6 +114,11 @@ object AutoCompletion {
                     .allCarryDifficulties
                     .orElse(listOf())
                     .stream()
+                    .filter { carryDifficulty ->
+                        focusedOption.value.isEmpty()
+                                || (carryDifficulty.identifier.startsWith(focusedOption.value, true)
+                                || carryDifficulty.displayName.startsWith(focusedOption.value, true))
+                    }
                     .map { carryDifficulty ->
                         Choice.StringChoice(
                             name = carryDifficulty.displayName,
@@ -133,6 +148,11 @@ object AutoCompletion {
                 }
                 .orElse(listOf())
                 .stream()
+                .filter { purgeType ->
+                    focusedOption.value.isEmpty()
+                            || (purgeType.identifier.startsWith(focusedOption.value, true)
+                            || purgeType.displayName.startsWith(focusedOption.value, true))
+                }
                 .map { purgeType ->
                     Choice.StringChoice(
                         name = purgeType.displayName,
