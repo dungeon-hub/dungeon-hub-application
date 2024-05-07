@@ -122,21 +122,25 @@ object ClassLoader {
             .stream()
             .sorted(
                 Comparator.comparingInt<Map.Entry<StartupListener, OnStart>> { value: Map.Entry<StartupListener, OnStart> ->
-                    value.value.priority
+                    if (value.value.order != 100) value.value.order else value.value.priority.priority
                 }
             )
             .map { entry -> entry.key }
             .toList()
 
-    suspend fun executeStartup() {
+    suspend fun executePreStart() {
         for (startupListener: StartupListener in sortedListeners) {
             startupListener.preStart()
         }
+    }
 
+    suspend fun executeStartup() {
         for (startupListener: StartupListener in sortedListeners) {
             startupListener.onStart()
         }
+    }
 
+    suspend fun executePostStart() {
         for (startupListener: StartupListener in sortedListeners) {
             startupListener.postStart()
         }
