@@ -75,7 +75,7 @@ class MessageListener : Extension() {
             .map { uuid -> MojangConnection.getInstance().getNameByUUID(uuid) }
             .or {
                 lines.stream()
-                    .filter { s -> s.startsWith("IGN: ") }
+                    .filter { s -> s.startsWith("IGN: ") || s.startsWith("- **IGN**:") || s.startsWith("**IGN:**") }
                     .findFirst()
             }.or {
                 runBlocking {
@@ -91,6 +91,8 @@ class MessageListener : Extension() {
 
         val ign = ignOptional.get()
             .replace("IGN: ", "")
+            .replace("- **IGN**: ", "")
+            .replace("**IGN**: ", "")
             .replace("❮(\\S*)❯".toRegex(), "")
             .replace("❊", "")
             .replace("❉", "")
