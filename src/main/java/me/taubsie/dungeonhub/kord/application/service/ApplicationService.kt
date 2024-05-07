@@ -17,7 +17,6 @@ import kotlinx.datetime.Instant
 import me.taubsie.dungeonhub.application.classes.FlagResponse
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
-import me.taubsie.dungeonhub.application.connection.HypixelConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.common.enums.ScoreType
 import me.taubsie.dungeonhub.common.model.carry.CarryModel
@@ -28,6 +27,7 @@ import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
 import me.taubsie.dungeonhub.common.model.score.ScoreModel
 import me.taubsie.dungeonhub.kord.application.connection.DiscordConnection
+import me.taubsie.dungeonhub.kord.application.connection.HypixelConnection
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.exceptions.FailedToLoadEmbedException
@@ -332,10 +332,9 @@ object ApplicationService {
         get() {
             val embed = embed
             embed.title = "No score was found!"
-            embed.description = """
-    Please make sure that a carry type is setup on this server.
-    For more information about how to do this, contact `@taubsie` (<@356134481452597250>)!
-    """.trimIndent()
+            embed.description =
+                "Please make sure that a carry type is setup on this server.\n" +
+                        "For more information about how to do this, contact `@taubsie` (<@356134481452597250>)!"
             embed.color = EmbedColor.NEGATIVE.color
 
             return embed
@@ -396,7 +395,7 @@ object ApplicationService {
     //probably first load skycrypt, then the rest?
     @Throws(FailedToLoadEmbedException::class)
     fun getPlayerDataEmbed(ign: String, discordId: Long?): EmbedBuilder {
-        val skycryptData: Map<String, String?> = HypixelConnection.getInstance().getSkyCryptData(ign)
+        val skycryptData: Map<String, String?> = HypixelConnection.getSkyCryptDataSync(ign)
 
         val description = skycryptData.getOrDefault(
             "description", "Couldn't load SkyCrypt data. Please try again " +
@@ -428,10 +427,9 @@ object ApplicationService {
 
         if (flagResponses.isNotEmpty()) {
             embed.field("Flagged", false) {
-                """
-     **This user is flagged, which means it might not safe to interact with them.**
-     ${formatFlagDetails(flagResponses)}
-     """.trimIndent()
+                "**This user is flagged, which means it might not safe to interact with them.**\n${
+                    formatFlagDetails(flagResponses)
+                }"
             }
 
             embed.color = EmbedColor.NEGATIVE.color

@@ -4,7 +4,7 @@ import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.DiscordConnection;
-import me.taubsie.dungeonhub.application.connection.HypixelConnection;
+import me.taubsie.dungeonhub.kord.application.connection.HypixelConnection;
 import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
@@ -98,7 +98,7 @@ public class LoadIgnCommand extends Command {
         List<Map.Entry<Long, UUID>> currentWave = users.entrySet().stream().limit(5).toList();
 
         currentWave.forEach(entry -> {
-            Optional<String> hypixelName = HypixelConnection.getInstance().getHypixelLinkedDiscord(entry.getValue());
+            Optional<String> hypixelName = HypixelConnection.INSTANCE.getHypixelLinkedDiscord(entry.getValue());
 
             if (hypixelName.isEmpty()) {
                 notLinked.add("<@" + entry.getKey() + ">: `" + entry.getValue() + "`");

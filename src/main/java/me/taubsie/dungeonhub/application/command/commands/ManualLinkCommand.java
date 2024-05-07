@@ -2,7 +2,7 @@ package me.taubsie.dungeonhub.application.command.commands;
 
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
-import me.taubsie.dungeonhub.application.connection.HypixelConnection;
+import me.taubsie.dungeonhub.kord.application.connection.HypixelConnection;
 import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
@@ -28,7 +28,7 @@ public class ManualLinkCommand extends Command {
 
         UUID uuid = MojangConnection.getInstance().getUUIDByName(ign);
 
-        String discordUser = HypixelConnection.getInstance().getHypixelLinkedDiscord(uuid)
+        String discordUser = HypixelConnection.INSTANCE.getHypixelLinkedDiscord(uuid)
                 .orElseThrow(() -> new InvalidOptionException("ign", "Please add the correct discord-account to your hypixel social menu.\n"
                         + "To learn more about how to do this, use `/help verification`."));
 

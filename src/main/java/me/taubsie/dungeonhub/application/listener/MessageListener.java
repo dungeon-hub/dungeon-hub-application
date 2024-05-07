@@ -1,34 +1,25 @@
 package me.taubsie.dungeonhub.application.listener;
 
-import me.taubsie.dungeonhub.application.classes.ServerProperty;
-import me.taubsie.dungeonhub.application.config.ConfigProperty;
-import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection;
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
-import me.taubsie.dungeonhub.application.enums.IdList;
-import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException;
-import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
-import me.taubsie.dungeonhub.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.common.DungeonHubService;
 import me.taubsie.dungeonhub.common.enums.QueueStep;
 import me.taubsie.dungeonhub.common.enums.ScoreType;
 import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel;
 import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueUpdateModel;
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import me.taubsie.dungeonhub.common.model.score.LoggedCarryModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
+import me.taubsie.dungeonhub.kord.application.enums.ServerProperty;
 import org.javacord.api.entity.channel.PrivateChannel;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.MessageAttachment;
-import org.javacord.api.entity.message.MessageUpdater;
-import org.javacord.api.entity.message.component.*;
-import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.entity.message.component.ActionRow;
+import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.message.CertainMessageEvent;
@@ -63,8 +54,6 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
         addReactionToPets(messageCreateEvent);
 
         logTicket(messageCreateEvent);
-
-        loadSkycryptFromTicket(messageCreateEvent);
     }
 
     @Override
@@ -123,164 +112,6 @@ public class MessageListener implements MessageCreateListener, MessageEditListen
         }
 
         return emoji;
-    }
-
-    private void loadSkycryptFromTicket(MessageCreateEvent messageCreateEvent) {
-        Optional<Server> server = messageCreateEvent.getServer();
-        Optional<ServerTextChannel> channel = messageCreateEvent.getMessage().getServerTextChannel();
-
-        if (!messageCreateEvent.isServerMessage()
-                || channel.isEmpty()
-                || server.isEmpty()
-                || !(server.get().getId() == IdList.SERVER.getId()
-                || server.get().getId() == IdList.SERVER.getTestId())) {
-            return;
-        }
-
-        try {
-            if (channel.get().getMessages(5).join().size() != 1) {
-                return;
-            }
-
-            Message firstMessage =
-                    channel.get().getMessagesAsStream().reduce((message, message2) -> message2).orElse(null);
-
-            if (firstMessage == null) {
-                return;
-            }
-
-            List<User> mentionedUsers = firstMessage.getMentionedUsers();
-
-            if (mentionedUsers.size() != 1) {
-                return;
-            }
-
-            User user = mentionedUsers.get(0);
-
-            String[] lines = firstMessage.getContent().split("\n");
-
-            if (lines.length < 2) {
-                return;
-            }
-
-            Optional<String> ignOptional = DiscordUserConnection.getInstance()
-                    .getLinkedById(user.getId())
-                    .map(DiscordUserModel::getMinecraftId)
-                    .map(uuid -> MojangConnection.getInstance().getNameByUUID(uuid))
-                    .or(() -> Arrays.stream(lines)
-                            .filter(s -> s.startsWith("IGN: "))
-                            .findFirst())
-                    .or(() -> user.getNickname(server.get()));
-
-            if (ignOptional.isEmpty()) {
-                return;
-            }
-
-            String ign = ignOptional.get()
-                    .replace("IGN: ", "")
-                    .replaceAll("❮(\\S*)❯", "")
-                    .replace("❊", "")
-                    .replace("❉", "")
-                    .replace("❃", "")
-                    .replace("✽", "")
-                    .replace("✸", "")
-                    .replace("✷", "")
-                    .replace("✶", "")
-                    .replace("✧", "")
-                    .replace("✦", "")
-                    .replace("☆", "")
-                    .replace("★", "")
-                    .strip();
-
-            sendPlayerDataEmbed(ign, channel.get());
-        }
-        catch (CompletionException ignored) {
-            //this just happens when the execution takes so long that the channel gets deleted
-            //sending an error then wouldn't be needed
-        }
-    }
-
-    private Button getSkyCryptButton(String ign) {
-        return new ButtonBuilder().setStyle(ButtonStyle.LINK)
-                .setUrl(ConfigProperty.SKYCRYPT_API_URL + "stats/" + ign)
-                .setLabel("SkyCrypt")
-                .build();
-    }
-
-    //TODO threads threads threads
-    private void sendPlayerDataEmbed(String ign, ServerTextChannel channel) {
-        EmbedBuilder playerDataEmbed;
-        try {
-            playerDataEmbed = ApplicationService.getInstance().getPlayerDataEmbed(ign, null);
-
-            channel.sendMessage(playerDataEmbed,
-                    new ActionRowBuilder().addComponents(
-                            getSkyCryptButton(ign)
-                    ).build());
-        }
-        catch (PlayerNotFoundException playerNotFoundException) {
-            playerDataEmbed = ApplicationService.getInstance().getErrorEmbed(playerNotFoundException);
-
-            //TODO load scammer data from discord?
-
-            channel.sendMessage(playerDataEmbed);
-        }
-        catch (FailedToLoadEmbedException failedToLoadEmbedException) {
-            playerDataEmbed = failedToLoadEmbedException.getEmbed();
-
-            channel.sendMessage(playerDataEmbed,
-                            new ActionRowBuilder().addComponents(
-                                    getSkyCryptButton(ign),
-                                    new ButtonBuilder().setStyle(ButtonStyle.SECONDARY)
-                                            .setLabel("Reload")
-                                            .setCustomId("reload_playerdata")
-                                            .build()
-                            ).build())
-                    .thenAccept(message -> message.addButtonClickListener(event ->
-                            event.getButtonInteractionWithCustomId("reload_playerdata")
-                                    .ifPresent(buttonInteraction -> {
-                                        buttonInteraction.createOriginalMessageUpdater()
-                                                .removeAllComponents()
-                                                .removeAllEmbeds()
-                                                .addEmbed(ApplicationService.getInstance()
-                                                        .getEmbed()
-                                                        .setDescription("Loading..."))
-                                                .update().join();
-
-                                        //TODO maybe also update username to use?
-
-                                        MessageUpdater updater = message.createUpdater();
-
-                                        try {
-                                            EmbedBuilder embed =
-                                                    ApplicationService.getInstance().getPlayerDataEmbed(ign, null);
-
-                                            updater.removeAllEmbeds()
-                                                    .addEmbed(embed);
-
-                                            updater.removeAllComponents()
-                                                    .addComponents(new ActionRowBuilder().addComponents(
-                                                            getSkyCryptButton(ign)
-                                                    ).build());
-                                        }
-                                        catch (FailedToLoadEmbedException failedToLoadAgain) {
-                                            updater.removeAllEmbeds()
-                                                    .addEmbed(failedToLoadAgain.getEmbed());
-
-                                            updater.removeAllComponents()
-                                                    .addComponents(new ActionRowBuilder().addComponents(
-                                                            getSkyCryptButton(ign),
-                                                            new ButtonBuilder().setStyle(ButtonStyle.SECONDARY)
-                                                                    .setLabel("Reload")
-                                                                    .setCustomId("reload_playerdata")
-                                                                    .build()
-                                                    ).build());
-                                        }
-
-                                        updater.applyChanges();
-                                    })
-                    ));
-        }
     }
 
     //TODO reduce complexity

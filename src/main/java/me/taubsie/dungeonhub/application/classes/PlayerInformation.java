@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import me.taubsie.dungeonhub.application.connection.HypixelConnection;
+import me.taubsie.dungeonhub.kord.application.connection.HypixelConnection;
 import me.taubsie.dungeonhub.application.connection.MojangConnection;
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
 import org.javacord.api.entity.user.User;
@@ -29,9 +29,9 @@ public class PlayerInformation {
         replacements.put("discord.displayname", () -> user.getName());
         replacements.put("minecraft.name", () -> MojangConnection.getInstance()
                 .getNameByUUID(discordUserModel.getMinecraftId()));
-        replacements.put("skyblock.catacombs.level", () -> String.valueOf(HypixelConnection.getInstance()
+        replacements.put("skyblock.catacombs.level", () -> String.valueOf(HypixelConnection.INSTANCE
                 .getCataLevelByUUID(discordUserModel.getMinecraftId())));
-        replacements.put("skyblock.level", () -> HypixelConnection.getInstance().getSkyblockLevelByUUID(discordUserModel.getMinecraftId()).stream().mapToObj(String::valueOf).findAny().orElse("?"));
+        replacements.put("skyblock.level", () -> HypixelConnection.INSTANCE.getSkyblockLevelByUUID(discordUserModel.getMinecraftId()).stream().mapToObj(String::valueOf).findAny().orElse("?"));
 
         return replacements;
     }

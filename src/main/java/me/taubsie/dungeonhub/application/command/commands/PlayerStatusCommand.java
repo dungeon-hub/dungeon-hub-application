@@ -3,8 +3,8 @@ package me.taubsie.dungeonhub.application.command.commands;
 import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
-import me.taubsie.dungeonhub.application.connection.HypixelConnection;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
+import me.taubsie.dungeonhub.kord.application.connection.HypixelConnection;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.SlashCommandOptionBuilder;
@@ -14,8 +14,7 @@ import java.awt.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-@CommandParameters(name = "playerstatus", description = "Shows you the current status of a player.", enabledInDms =
-        true)
+@CommandParameters(name = "playerstatus", description = "Shows you the current status of a player.", enabledInDms = true)
 public class PlayerStatusCommand extends Command {
     @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
@@ -26,7 +25,7 @@ public class PlayerStatusCommand extends Command {
                         ApplicationService.getInstance()
                                 .getEmbed()
                                 .setColor(Color.GREEN)
-                                .setDescription(HypixelConnection.getInstance()
+                                .setDescription(HypixelConnection.INSTANCE
                                         .getOnlineStatus(ign)
                                         .toString())
                 )
