@@ -80,7 +80,7 @@ public class LeaderboardService implements StartupListener {
         }
 
         leaderboardModel.getPlayerScore().ifPresent(playerScore ->
-                leaderboardModel.getPlayerPosition().ifPresent(position ->
+                leaderboardModel.getPlayerPosition().filter(pos -> pos != -1).ifPresent(position ->
                         embed.addField(
                                 "__**Your rank:**__ #" + (position + 1),
                                 getPlayerScore(playerScore)
