@@ -26,7 +26,6 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,15 +44,6 @@ public class LogCommand extends Command {
         if (carryTier.isEmpty()) {
             //TODO custom class
             throw new CommandExecutionException("Please use this in a carry-ticket. If this is one, tell the administrators to do `/setup`!");
-        }
-
-        if (QueueConnection.getInstance()
-                .getCarryQueueByRelatedIdAndQueueStep(channel.getId(), QueueStep.CONFIRMATION).stream()
-                .flatMap(Collection::stream)
-                .findFirst().isPresent()) {
-            //TODO custom class
-            throw new CommandExecutionException("Someone is already logging this carry.\n" +
-                    "If you think this is a mistake, please report this to <@356134481452597250>.");
         }
 
         Long amountOfCarries = getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), "amount");
