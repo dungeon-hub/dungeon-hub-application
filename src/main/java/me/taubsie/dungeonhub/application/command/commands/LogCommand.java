@@ -5,6 +5,7 @@ import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection;
+import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
@@ -16,8 +17,7 @@ import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import org.javacord.api.entity.channel.Categorizable;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
-import org.javacord.api.entity.message.component.ActionRow;
-import org.javacord.api.entity.message.component.Button;
+import org.javacord.api.entity.message.component.*;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -26,6 +26,7 @@ import org.javacord.api.interaction.SlashCommandOptionType;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,6 +45,28 @@ public class LogCommand extends Command {
         if (carryTier.isEmpty()) {
             //TODO custom class
             throw new CommandExecutionException("Please use this in a carry-ticket. If this is one, tell the administrators to do `/setup`!");
+        }
+
+        if (QueueConnection.getInstance()
+                .getCarryQueueByRelatedIdAndQueueStep(channel.getId(), QueueStep.CONFIRMATION).stream()
+                .flatMap(Collection::stream)
+                .findFirst().isPresent()) {
+            respondEphemeral(ApplicationService.getInstance()
+                    .getEmbed()
+                    .setColor(EmbedColor.NEGATIVE.getColor())
+                    .setDescription("Someone is already logging this carry.\n" +
+                            "If you think this is a mistake, clear the log using the buttons below." +
+                            "Otherwise, simply click ignore this message."),
+                    new ActionRowBuilder()
+                            .addComponents(
+                                    new ButtonBuilder()
+                                            .setCustomId("clear_log")
+                                            .setLabel("Clear log")
+                                            .setStyle(ButtonStyle.PRIMARY)
+                                            .build()
+                            ).build());
+
+            return;
         }
 
         Long amountOfCarries = getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), "amount");

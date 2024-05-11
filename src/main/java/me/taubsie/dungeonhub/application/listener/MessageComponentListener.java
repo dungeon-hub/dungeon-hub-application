@@ -72,6 +72,44 @@ public class MessageComponentListener implements MessageComponentCreateListener 
                 // on creation work
             }
 
+            case "clear_log" -> {
+                long channel = messageComponentCreateEvent.getMessageComponentInteraction()
+                        .getChannel().orElseThrow()
+                        .getId();
+
+                Optional<CarryQueueModel> carryQueue = QueueConnection.getInstance()
+                        .getCarryQueueByRelatedIdAndQueueStep(channel, QueueStep.CONFIRMATION).stream()
+                        .flatMap(Collection::stream)
+                        .findFirst();
+
+                if (carryQueue.isEmpty()) {
+                    messageComponentCreateEvent.getMessageComponentInteraction()
+                            .createImmediateResponder()
+                            .addEmbed(
+                                    ApplicationService.getInstance()
+                                            .getEmbed()
+                                            .setColor(EmbedColor.INFORMATION.getColor())
+                                            .setDescription("That log request was already cleared.")
+                            )
+                            .setFlags(MessageFlag.EPHEMERAL)
+                            .respond();
+                    return;
+                }
+
+                QueueConnection.getInstance().deleteQueue(carryQueue.get().getId());
+
+                messageComponentCreateEvent.getMessageComponentInteraction()
+                        .createImmediateResponder()
+                        .addEmbed(
+                                ApplicationService.getInstance()
+                                        .getEmbed()
+                                        .setColor(EmbedColor.POSITIVE.getColor())
+                                        .setDescription("The log request was cleared, you can now log again!")
+                        )
+                        .setFlags(MessageFlag.EPHEMERAL)
+                        .respond();
+            }
+
             case "link_user" -> {
                 long userId = messageComponentCreateEvent.getMessageComponentInteraction().getUser().getId();
 
@@ -160,8 +198,7 @@ public class MessageComponentListener implements MessageComponentCreateListener 
         messageComponentInteraction.createImmediateResponder()
                 .setContent("Log discarded!")
                 .setFlags(MessageFlag.EPHEMERAL)
-                .respond()
-                .join();
+                .respond();
 
         QueueConnection.getInstance().deleteQueue(carryQueue.get().getId());
 
