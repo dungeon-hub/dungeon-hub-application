@@ -210,7 +210,7 @@ object ProfileModerationService {
         }
     }
 
-    private fun executeBan(server: Guild, user: User, executor: User, reason: String) {
+    private fun executeBan(server: Guild, user: Member, executor: User, reason: String) {
         runBlocking {
             launch {
                 server.ban(user.id) {
