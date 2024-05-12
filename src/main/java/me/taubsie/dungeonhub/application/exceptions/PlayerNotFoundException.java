@@ -11,6 +11,7 @@ public class PlayerNotFoundException extends CommandExecutionException {
     }
 
     public PlayerNotFoundException(@NotNull UUID uuid) {
-        super("Player with UUID \"" + uuid + "\" not found!");
+        super("Player with UUID \"" + uuid + "\" not found!\n" +
+                "NOTE: If you think this is a mistake, try again in a few minutes.");
     }
 }
