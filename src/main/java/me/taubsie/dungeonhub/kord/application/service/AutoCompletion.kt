@@ -18,8 +18,8 @@ object AutoCompletion {
                 .stream()
                 .filter { carryType ->
                     focusedOption.value.isEmpty()
-                            || (carryType.identifier.startsWith(focusedOption.value, true)
-                            || carryType.displayName.startsWith(focusedOption.value, true))
+                            || (carryType.identifier.contains(focusedOption.value, true)
+                            || carryType.displayName.contains(focusedOption.value, true))
                 }
                 .map { carryType ->
                     Choice.StringChoice(
@@ -40,26 +40,28 @@ object AutoCompletion {
         }.values.firstOrNull()?.value as String?
 
         if (carryType != null) {
-            CarryTypeConnection.getInstance(event.getGuildId())
-                .getByIdentifier(carryType)
-                .flatMap { carryTypeModel ->
-                    CarryTierConnection.getInstance(carryTypeModel).allCarryTiers
-                }
-                .orElse(listOf())
-                .stream()
-                .filter { carryTier ->
-                    focusedOption.value.isEmpty()
-                            || (carryTier.identifier.startsWith(focusedOption.value, true)
-                            || carryTier.displayName.startsWith(focusedOption.value, true))
-                }
-                .map { carryTier ->
-                    Choice.StringChoice(
-                        name = carryTier.displayName,
-                        value = carryTier.identifier,
-                        nameLocalizations = Optional()
-                    )
-                }
-                .toList()
+            suggest(
+                CarryTypeConnection.getInstance(event.getGuildId())
+                    .getByIdentifier(carryType)
+                    .flatMap { carryTypeModel ->
+                        CarryTierConnection.getInstance(carryTypeModel).allCarryTiers
+                    }
+                    .orElse(listOf())
+                    .stream()
+                    .filter { carryTier ->
+                        focusedOption.value.isEmpty()
+                                || (carryTier.identifier.contains(focusedOption.value, true)
+                                || carryTier.displayName.contains(focusedOption.value, true))
+                    }
+                    .map { carryTier ->
+                        Choice.StringChoice(
+                            name = carryTier.displayName,
+                            value = carryTier.identifier,
+                            nameLocalizations = Optional()
+                        )
+                    }
+                    .toList()
+            )
         }
 
         listOf<Choice>()
@@ -83,23 +85,25 @@ object AutoCompletion {
                 }.orElse(null)
 
             if (carryTierModel != null) {
-                CarryDifficultyConnection.getInstance(carryTierModel)
-                    .allCarryDifficulties
-                    .orElse(listOf())
-                    .stream()
-                    .filter { carryDifficulty ->
-                        focusedOption.value.isEmpty()
-                                || (carryDifficulty.identifier.startsWith(focusedOption.value, true)
-                                || carryDifficulty.displayName.startsWith(focusedOption.value, true))
-                    }
-                    .map { carryDifficulty ->
-                        Choice.StringChoice(
-                            name = carryDifficulty.displayName,
-                            value = carryDifficulty.identifier,
-                            nameLocalizations = Optional()
-                        )
-                    }
-                    .toList()
+                suggest(
+                    CarryDifficultyConnection.getInstance(carryTierModel)
+                        .allCarryDifficulties
+                        .orElse(listOf())
+                        .stream()
+                        .filter { carryDifficulty ->
+                            focusedOption.value.isEmpty()
+                                    || (carryDifficulty.identifier.contains(focusedOption.value, true)
+                                    || carryDifficulty.displayName.contains(focusedOption.value, true))
+                        }
+                        .map { carryDifficulty ->
+                            Choice.StringChoice(
+                                name = carryDifficulty.displayName,
+                                value = carryDifficulty.identifier,
+                                nameLocalizations = Optional()
+                            )
+                        }
+                        .toList()
+                )
             }
         } else {
             val categoryId = event.interaction.channel.asChannelOfOrNull<CategorizableChannel>()?.categoryId
@@ -110,23 +114,25 @@ object AutoCompletion {
             }?.orElse(null)
 
             if (carryTierByCategory != null) {
-                CarryDifficultyConnection.getInstance(carryTierByCategory)
-                    .allCarryDifficulties
-                    .orElse(listOf())
-                    .stream()
-                    .filter { carryDifficulty ->
-                        focusedOption.value.isEmpty()
-                                || (carryDifficulty.identifier.startsWith(focusedOption.value, true)
-                                || carryDifficulty.displayName.startsWith(focusedOption.value, true))
-                    }
-                    .map { carryDifficulty ->
-                        Choice.StringChoice(
-                            name = carryDifficulty.displayName,
-                            value = carryDifficulty.identifier,
-                            nameLocalizations = Optional()
-                        )
-                    }
-                    .toList()
+                suggest(
+                    CarryDifficultyConnection.getInstance(carryTierByCategory)
+                        .allCarryDifficulties
+                        .orElse(listOf())
+                        .stream()
+                        .filter { carryDifficulty ->
+                            focusedOption.value.isEmpty()
+                                    || (carryDifficulty.identifier.contains(focusedOption.value, true)
+                                    || carryDifficulty.displayName.contains(focusedOption.value, true))
+                        }
+                        .map { carryDifficulty ->
+                            Choice.StringChoice(
+                                name = carryDifficulty.displayName,
+                                value = carryDifficulty.identifier,
+                                nameLocalizations = Optional()
+                            )
+                        }
+                        .toList()
+                )
             }
         }
 
@@ -141,26 +147,28 @@ object AutoCompletion {
         }.values.firstOrNull()?.value as String?
 
         if (carryType != null) {
-            CarryTypeConnection.getInstance(event.getGuildId())
-                .getByIdentifier(carryType)
-                .flatMap { carryTypeModel ->
-                    PurgeTypeConnection.getInstance(carryTypeModel).allPurgeTypes
-                }
-                .orElse(listOf())
-                .stream()
-                .filter { purgeType ->
-                    focusedOption.value.isEmpty()
-                            || (purgeType.identifier.startsWith(focusedOption.value, true)
-                            || purgeType.displayName.startsWith(focusedOption.value, true))
-                }
-                .map { purgeType ->
-                    Choice.StringChoice(
-                        name = purgeType.displayName,
-                        value = purgeType.identifier,
-                        nameLocalizations = Optional()
-                    )
-                }
-                .toList()
+            suggest(
+                CarryTypeConnection.getInstance(event.getGuildId())
+                    .getByIdentifier(carryType)
+                    .flatMap { carryTypeModel ->
+                        PurgeTypeConnection.getInstance(carryTypeModel).allPurgeTypes
+                    }
+                    .orElse(listOf())
+                    .stream()
+                    .filter { purgeType ->
+                        focusedOption.value.isEmpty()
+                                || (purgeType.identifier.contains(focusedOption.value, true)
+                                || purgeType.displayName.contains(focusedOption.value, true))
+                    }
+                    .map { purgeType ->
+                        Choice.StringChoice(
+                            name = purgeType.displayName,
+                            value = purgeType.identifier,
+                            nameLocalizations = Optional()
+                        )
+                    }
+                    .toList()
+            )
         }
 
         listOf<Choice>()

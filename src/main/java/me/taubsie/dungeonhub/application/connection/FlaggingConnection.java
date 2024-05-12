@@ -4,13 +4,16 @@ import com.google.gson.JsonObject;
 import me.taubsie.dungeonhub.application.classes.FlagDetail;
 import me.taubsie.dungeonhub.application.classes.FlagResponse;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
-import me.taubsie.dungeonhub.application.enums.FlaggingApi;
+import me.taubsie.dungeonhub.kord.application.enums.FlaggingApi;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 public class FlaggingConnection implements Connection {
     private static final Logger logger = LoggerFactory.getLogger(FlaggingConnection.class);
@@ -38,7 +41,7 @@ public class FlaggingConnection implements Connection {
     }
 
     public List<FlagResponse> isFlagged(UUID uuid, Long id) {
-        return Arrays.stream(FlaggingApi.values())
+        return FlaggingApi.getEntries().stream()
                 .parallel()
                 .map(flaggingApi -> flaggingApi.execute(uuid, id))
                 .toList();

@@ -1,10 +1,11 @@
-package me.taubsie.dungeonhub.application.classes;
+package me.taubsie.dungeonhub.kord.application.misc;
 
 import dev.kord.rest.builder.message.EmbedBuilder;
 import lombok.Getter;
-import me.taubsie.dungeonhub.application.service.LeaderboardService;
+import me.taubsie.dungeonhub.kord.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
 
+//TODO migrate to kotlin
 /**
  * This class holds the data for a simple leaderboard without pages.
  * It contains the title of the leaderboard and the score data, to allow easy querying and building.
@@ -29,9 +30,9 @@ public class Leaderboard {
 
     public EmbedBuilder getEmbed() {
         if (isEmpty()) {
-            return LeaderboardService.getInstance().getEmptyLeaderboardEmbed(title);
+            return LeaderboardService.INSTANCE.getEmptyLeaderboardEmbed(title);
         }
 
-        return LeaderboardService.getInstance().getLeaderboardEmbed(title, leaderboardModel);
+        return LeaderboardService.INSTANCE.getLeaderboardEmbed(title, leaderboardModel);
     }
 }

@@ -8,6 +8,7 @@ import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.QRCodeWriter
 import dev.kord.core.Kord
+import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.User
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -145,7 +146,7 @@ object ApplicationService {
 
     fun getErrorEmbed(commandExecutionException: CommandExecutionException): EmbedBuilder {
         val embed = errorEmbed
-        errorEmbed.description = commandExecutionException.message
+        embed.description = commandExecutionException.message
         return embed
     }
 
@@ -343,7 +344,7 @@ object ApplicationService {
     suspend fun getScoreCountMessage(
         userToCheck: User,
         user: User,
-        server: Guild?,
+        server: GuildBehavior?,
         scoreCount: List<ScoreModel>
     ): EmbedBuilder {
         if (scoreCount.isEmpty()) {

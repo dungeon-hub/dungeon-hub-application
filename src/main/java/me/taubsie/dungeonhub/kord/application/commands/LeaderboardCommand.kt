@@ -10,10 +10,11 @@ import com.kotlindiscord.kord.extensions.pagination.pages.Page
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection
-import me.taubsie.dungeonhub.application.service.LeaderboardService
+import me.taubsie.dungeonhub.kord.application.service.LeaderboardService
 import me.taubsie.dungeonhub.common.enums.ScoreType
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
 import me.taubsie.dungeonhub.common.model.score.LeaderboardModel
+import me.taubsie.dungeonhub.kord.application.connection.copy
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.AutoCompletion
 
@@ -34,7 +35,7 @@ class LeaderboardCommand : Extension() {
 
                 val scoreType: ScoreType = arguments.scoreType ?: ScoreType.DEFAULT
 
-                val leaderboardTitle = LeaderboardService.getInstance().getLeaderboardTitle(carryType, scoreType)
+                val leaderboardTitle = LeaderboardService.getLeaderboardTitle(carryType, scoreType)
 
                 val firstPage: LeaderboardModel? =
                     if (carryType != null)
@@ -49,7 +50,7 @@ class LeaderboardCommand : Extension() {
                 if (firstPage == null || firstPage.totalPages == 0) {
                     respond {
                         embeds =
-                            mutableListOf(LeaderboardService.getInstance().getEmptyLeaderboardEmbed(leaderboardTitle))
+                            mutableListOf(LeaderboardService.getEmptyLeaderboardEmbed(leaderboardTitle))
                     }
                     return@action
                 }
@@ -75,19 +76,9 @@ class LeaderboardCommand : Extension() {
 
                         page(
                             Page {
-                                val embed = LeaderboardService.getInstance()
-                                    .getLeaderboardEmbed(leaderboardTitle, leaderboardModel)
+                                val embed = LeaderboardService.getLeaderboardEmbed(leaderboardTitle, leaderboardModel)
 
-                                description = embed.description
-                                title = embed.title
-                                footer = embed.footer
-                                fields = embed.fields
-                                color = embed.color
-                                timestamp = embed.timestamp
-                                url = embed.url
-                                image = embed.image
-                                author = embed.author
-                                thumbnail = embed.thumbnail
+                                copy(embed)
                             }
                         )
                     }

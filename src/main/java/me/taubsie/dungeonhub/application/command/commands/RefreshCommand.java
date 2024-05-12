@@ -6,8 +6,8 @@ import me.taubsie.dungeonhub.application.connection.AuthorizationConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.exceptions.MissingPermissionException;
-import me.taubsie.dungeonhub.application.service.LeaderboardService;
 import me.taubsie.dungeonhub.application.service.MessagesService;
+import me.taubsie.dungeonhub.kord.application.service.LeaderboardService;
 import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandOption;
@@ -39,15 +39,14 @@ public class RefreshCommand extends Command {
                         .respondLater(true)
                         .join();
 
-                //TODO fix
-                /*if (!LeaderboardService.getInstance().refreshLeaderboard()) {
+                if (!LeaderboardService.INSTANCE.refreshLeaderboard()) {
                     updater.addEmbed(getEmbed()
                                     .setColor(EmbedColor.NEGATIVE.getColor())
                                     .setDescription("Leaderboard refresh is on cooldown.\n" +
-                                            "Please try again <t:" + LeaderboardService.getInstance().getNextPossibleRefresh() + ":R>."))
+                                            "Please try again <t:" + LeaderboardService.INSTANCE.getNextPossibleRefresh() + ":R>."))
                             .update();
                     return;
-                }*/
+                }
 
                 updater.addEmbed(getEmbed()
                                 .setColor(EmbedColor.POSITIVE.getColor())

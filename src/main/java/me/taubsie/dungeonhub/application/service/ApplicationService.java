@@ -17,7 +17,6 @@ import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
-import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.Nameable;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.*;
@@ -87,13 +86,6 @@ public class ApplicationService {
         return new EmbedBuilder()
                 .setTimestamp(time)
                 .setFooter(getFooter());
-    }
-
-    public User getBotOwner(DiscordApi api) {
-        return Objects.requireNonNull(api.getCachedTeam()
-                .map(team -> team.requestOwner().join())
-                .orElseGet(() -> api.getOwner().map(CompletableFuture::join)
-                        .orElse(null)));
     }
 
     public String makeDoubleReadable(double number) {
@@ -451,20 +443,5 @@ public class ApplicationService {
                         .setStyle(ButtonStyle.SECONDARY)
                         .build()
         ).build();
-    }
-
-    public long calculatePrice(CarryDifficultyModel carryDifficulty, long amount) {
-        return calculatePricePerCarry(carryDifficulty, amount) * amount;
-    }
-
-    public long calculatePricePerCarry(CarryDifficultyModel carryDifficulty, long amount) {
-        Optional<Integer> bulkPrice = carryDifficulty.getBulkPrice();
-        Optional<Integer> bulkAmount = carryDifficulty.getBulkAmount();
-
-        if (bulkPrice.isPresent() && bulkAmount.isPresent() && bulkAmount.get() <= amount) {
-            return bulkPrice.get();
-        }
-
-        return carryDifficulty.getPrice();
     }
 }

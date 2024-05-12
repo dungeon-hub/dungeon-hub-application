@@ -9,6 +9,7 @@ import dev.kord.core.entity.User
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
+import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -163,4 +164,17 @@ fun Guild.isDungeonHub(): Boolean {
 
 fun Snowflake.isDungeonHub(): Boolean {
     return listOf(693263712626278553, 1023684107877761196).contains(value.toLong())
+}
+
+fun EmbedBuilder.copy(other: EmbedBuilder) {
+    this.description = other.description
+    this.title = other.title
+    this.footer = other.footer
+    this.fields = other.fields
+    this.color = other.color
+    this.timestamp = other.timestamp
+    this.url = other.url
+    this.image = other.image
+    this.author = other.author
+    this.thumbnail = other.thumbnail
 }
