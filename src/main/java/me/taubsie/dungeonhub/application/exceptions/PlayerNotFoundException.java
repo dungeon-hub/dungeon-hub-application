@@ -8,7 +8,9 @@ import java.util.UUID;
 public class PlayerNotFoundException extends CommandExecutionException {
 
     public PlayerNotFoundException(@NotNull String name) {
-        super("Player with name \"" + name + "\" not found!");
+        super("Player with name \"" + name + "\" not found!\n" +
+                "\n" +
+                "NOTE: If you think this is a mistake, try again in a few minutes.");
     }
 
     public PlayerNotFoundException(@NotNull UUID uuid) {
