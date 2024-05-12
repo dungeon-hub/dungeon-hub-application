@@ -6,7 +6,6 @@ import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -62,13 +61,5 @@ public class PermissionService {
                 .map(role -> role.hasUser(user))
                 .flatMap(bool -> Boolean.TRUE.equals(bool) ? Optional.of(true) : Optional.empty())
                 .orElseGet(() -> server.getAllowedPermissions(user).contains(PermissionType.ADMINISTRATOR));
-    }
-
-    public boolean mayUseCdn(User user) {
-        List<Long> allowedUsers = List.of(356134481452597250L, 531094512819240960L, 564353701003657216L,
-                574048571364605992L, 1116284449190064220L, 795048346955677748L, 884589309037011015L,
-                346292488837005334L);
-
-        return allowedUsers.contains(user.getId());
     }
 }

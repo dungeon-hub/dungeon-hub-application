@@ -173,6 +173,6 @@ enum class HelpTopic(
         });
 
     fun interface DescriptionSupplier {
-        fun getDescription(user: User, server: Guild?): HelpDisplay?
+        fun getDescription(user: User, server: Guild?): HelpDisplay
     }
 }

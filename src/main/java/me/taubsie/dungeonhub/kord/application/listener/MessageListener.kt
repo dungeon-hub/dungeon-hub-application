@@ -6,44 +6,340 @@ import com.kotlindiscord.kord.extensions.components.ephemeralButton
 import com.kotlindiscord.kord.extensions.components.linkButton
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
+import com.kotlindiscord.kord.extensions.utils.addReaction
+import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.MessageChannelBehavior
+import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.channel.createMessage
+import dev.kord.core.behavior.getChannelOfOrNull
+import dev.kord.core.entity.Guild
+import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.DmChannel
+import dev.kord.core.entity.channel.GuildMessageChannel
+import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.core.event.message.MessageUpdateEvent
+import dev.kord.rest.builder.message.actionRow
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.reduce
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
+import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection
 import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundException
+import me.taubsie.dungeonhub.common.DungeonHubService
+import me.taubsie.dungeonhub.common.enums.QueueStep
+import me.taubsie.dungeonhub.common.enums.ScoreType
+import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel
+import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueUpdateModel
+import me.taubsie.dungeonhub.common.model.score.LoggedCarryModel
+import me.taubsie.dungeonhub.common.model.score.ScoreModel
+import me.taubsie.dungeonhub.kord.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.kord.application.connection.isDungeonHub
+import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
+import me.taubsie.dungeonhub.kord.application.enums.ServerProperty
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.exceptions.FailedToLoadEmbedException
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
+import me.taubsie.dungeonhub.kord.application.service.LeaderboardService
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Request
+import org.slf4j.LoggerFactory
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.util.*
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 import kotlin.concurrent.thread
 import kotlin.time.toKotlinDuration
 
 @LoadExtension
 class MessageListener : Extension() {
+    companion object {
+        private const val APPROVE_AMOUNT_THRESHOLD: Long = 8
+        private const val APPROVE_SCORE_THRESHOLD: Long = 30
+
+        private val CHANNEL_FROM_TRANSCRIPT: Pattern = Pattern.compile("^\\s*Channel: [^(]*\\((?<channel>\\d*)\\)")
+
+        private val logger = LoggerFactory.getLogger(MessageListener::class.java)
+    }
+
     override val name = "message-listener"
 
     override suspend fun setup() {
         event<MessageCreateEvent> {
             action {
+                addReactionToPets(event)
+
+                logTicket(event)
+
                 loadSkycryptFromTicket(event)
+            }
+        }
+
+        event<MessageUpdateEvent> {
+            action {
+                logTicket(event)
             }
         }
     }
 
-    suspend fun loadSkycryptFromTicket(event: MessageCreateEvent) {
+    private suspend fun logTicket(event: MessageCreateEvent) {
+        logTicket(event.message, event.getGuildOrNull())
+    }
+
+    private suspend fun logTicket(event: MessageUpdateEvent) {
+        logTicket(
+            event.message.asMessage(),
+            event.message.getChannelOrNull()?.asChannelOfOrNull<GuildMessageChannel>()?.getGuildOrNull()
+        )
+    }
+
+    private suspend fun logTicket(message: Message, server: Guild?) {
+        if (server == null) {
+            return
+        }
+
+        if (ServerProperty.TRANSCRIPTS_CHANNEL.getValue(server.id.value.toLong()).map { s: String ->
+                message.channelId.toString() == s
+            }.orElse(false)) {
+            val attachments = message.attachments
+
+            if (attachments.size != 1) {
+                return
+            }
+
+            val attachment = attachments.first()
+
+            val attachmentRequest = Request.Builder().url(attachment.url.toHttpUrl()).build()
+
+            val attachmentData: ByteArray = DungeonHubConnection.getInstance().executeRawRequest(attachmentRequest)
+                .orElseThrow { CommandExecutionException("Couldn't read file data.") }
+
+            val content = String(attachmentData, StandardCharsets.UTF_8)
+
+            val channelId: Optional<Long> = content.lines().stream()
+                .limit(7)
+                .map { obj: String -> obj.trim() }
+                .map { input: String ->
+                    CHANNEL_FROM_TRANSCRIPT.matcher(
+                        input
+                    )
+                }
+                .filter { obj: Matcher -> obj.find() }
+                .map { matcher: Matcher ->
+                    matcher.group(
+                        "channel"
+                    )
+                }
+                .map { s: String -> s.toLong() }
+                .findFirst()
+
+            var attachmentLink: String? = null
+
+            val approvingChannel = ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.id.value.toLong())
+                .map { s: String ->
+                    runBlocking { DiscordConnection.bot?.kordRef?.getChannelOf<TextChannel>(Snowflake(s)) }
+                }
+
+            for (queueModel in QueueConnection.getInstance()
+                .getCarryQueuesByQueueStep(QueueStep.TRANSCRIPT)
+                .orElse(HashSet())
+                .stream().filter { carryQueueModel: CarryQueueModel ->
+                    channelId.map { aLong: Long -> aLong == carryQueueModel.relationId }
+                        .orElse(false)
+                }
+                .toList()) {
+                if (attachmentLink == null) {
+                    val attachmentUrl = ContentConnection.getInstance().uploadFile(attachmentData, "{uuid}.html")
+
+                    if (attachmentUrl.isEmpty) {
+                        logger.error(
+                            "Couldn't upload content of attachment on message {}.",
+                            message.id
+                        )
+                        return
+                    }
+
+                    attachmentLink = ContentConnection.getInstance().getCdnUrl(attachmentUrl.get()).toString()
+                }
+
+                queueModel.attachmentLink = attachmentLink
+
+                val updateModel = CarryQueueUpdateModel()
+                    .setAttachmentLink(attachmentLink)
+
+                if ((queueModel.amount >= APPROVE_AMOUNT_THRESHOLD
+                            || queueModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
+                    && approvingChannel.isPresent
+                ) {
+                    val createdMessage = approvingChannel.get()
+                        .createMessage {
+                            val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                            embed.title = "Accept carry-log?"
+                            embed.color = EmbedColor.DEFAULT.color
+
+                            embeds = mutableListOf(embed)
+
+                            actionRow {
+                                interactionButton(ButtonStyle.Success, "accept_log") {
+                                    label = "Accept"
+                                }
+
+                                interactionButton(ButtonStyle.Danger, "deny") {
+                                    label = "Deny"
+                                }
+                            }
+                        }
+
+                    updateModel.setQueueStep(QueueStep.APPROVING)
+                        .setRelationId(createdMessage.id.value.toLong())
+
+                    QueueConnection.getInstance().updateQueue(queueModel.id, updateModel)
+                } else {
+                    val updatedScore = QueueConnection.getInstance()
+                        .logQueue(queueModel.id, updateModel)
+                        .stream()
+                        .map(LoggedCarryModel::scoreModels)
+                        .flatMap { obj: List<ScoreModel> -> obj.stream() }
+                        .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.DEFAULT }
+                        .findFirst()
+                        .map { obj: ScoreModel -> obj.scoreAmount }
+                        .orElseGet {
+                            ScoreConnection.getInstance(queueModel.carryType)
+                                .getScore(queueModel.carrier.id)
+                                .map { obj: ScoreModel -> obj.scoreAmount }
+                                .orElse(0L)
+                        }
+
+                    val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(queueModel.carrier.id))
+
+                    if (carrier != null) {
+                        carrier.dm {
+                            val gainedScore = queueModel.calculateScore()
+
+                            this.content = "Your carry was logged!\n\n" +
+                                    "**Score gained:** $gainedScore\n" +
+                                    "**Your Updated Score:** $updatedScore"
+
+                            val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                            embed.title = "Information"
+                            embed.color = EmbedColor.DEFAULT.color
+
+                            embeds = mutableListOf(embed)
+                        }
+
+                        val logChannel = queueModel.carryTier
+                            .carryType
+                            .logChannel
+                            .map { id: Long ->
+                                runBlocking { server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id)) }
+                            }
+
+                        if (logChannel.isPresent) {
+                            logger.debug(
+                                "Carry logged: {}",
+                                DungeonHubService.getInstance().gson.toJson(queueModel)
+                            )
+
+                            logChannel.get().createMessage {
+                                val embed = ApplicationService.getEmbed(queueModel.time.toKotlinInstant())
+                                embed.title = "Carry accepted."
+                                embed.color = EmbedColor.POSITIVE.color
+                                embed.field("Number of carries", true) { queueModel.amount.toString() }
+                                embed.field("Type of carry", true) {
+                                    "${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName}"
+                                }
+                                embed.field("Player", true) {
+                                    "<@${queueModel.player.id}>"
+                                }
+                                embed.field("Carrier", true) {
+                                    "<@${queueModel.carrier.id}>"
+                                }
+                                embed.field("Transcript-Link", true) {
+                                    "[Click to open](${queueModel.attachmentLink})"
+                                }
+
+                                embeds = mutableListOf(embed)
+                            }
+                        }
+
+                        QueueConnection.getInstance().deleteQueue(queueModel.id)
+                    }
+                }
+
+                LeaderboardService.refreshLeaderboard()
+            }
+        }
+    }
+
+    private suspend fun addReactionToPets(event: MessageCreateEvent) {
+        if (event.guildId != null) {
+            val serverId = event.guildId!!
+            val channelId = event.message.channel.id
+            if ((serverId.value.toLong() == 1023684107877761196L && channelId.value.toLong() == 1220895875102937098L)
+                || (serverId.value.toLong() == 693263712626278553L && channelId.value.toLong() == 1219427157655289908L)
+            ) {
+                if (event.message.attachments.isEmpty()) {
+                    if (
+                        event.message.author?.isBot == false &&
+                        event.message.embeds.stream()
+                            .map { embed -> embed.thumbnail }
+                            .filter { it != null }
+                            .findFirst().isEmpty
+                    ) {
+                        return
+                    }
+                }
+
+                val emoji: String = getRandomEmoji()
+
+                event.message.addReaction(emoji)
+            }
+        }
+    }
+
+    private fun getEmojiPool(): List<String> {
+        return listOf(
+            "Woah:1220111116651204608",
+            "woah:1220111081150615572",
+            "girlwow:1220111157742800956",
+            "catelove:1204407157848678430",
+            "ZTcool:1204406493353353256",
+            "pepega:697756021048868894",
+            "smikecate:1204406375791333426",
+            "poggorfish:694270485613117480"
+        )
+    }
+
+    private fun getRandomEmoji(): String {
+        val bound = 101.0
+
+        val emojiPool = getEmojiPool()
+
+        val random = Random().nextInt(bound.toInt())
+
+        var emoji = emojiPool[(random * (emojiPool.size / bound)).toInt()]
+
+        if (random == 100) {
+            emoji = "swag:708383726370947132"
+        }
+
+        return emoji
+    }
+
+    private suspend fun loadSkycryptFromTicket(event: MessageCreateEvent) {
         if (event.guildId == null
             || event.message.channel is DmChannel
             || event.guildId?.isDungeonHub() != true
