@@ -1,38 +1,25 @@
-package me.taubsie.dungeonhub.kord.application.misc;
+package me.taubsie.dungeonhub.kord.application.misc
 
-import dev.kord.rest.builder.message.EmbedBuilder;
-import lombok.Getter;
-import me.taubsie.dungeonhub.kord.application.service.LeaderboardService;
-import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
+import dev.kord.rest.builder.message.EmbedBuilder
+import lombok.Getter
+import me.taubsie.dungeonhub.common.model.score.LeaderboardModel
+import me.taubsie.dungeonhub.kord.application.service.LeaderboardService.getEmptyLeaderboardEmbed
+import me.taubsie.dungeonhub.kord.application.service.LeaderboardService.getLeaderboardEmbed
 
-//TODO migrate to kotlin
 /**
  * This class holds the data for a simple leaderboard without pages.
  * It contains the title of the leaderboard and the score data, to allow easy querying and building.
  */
-public class Leaderboard {
-    private final String title;
-    @Getter
-    private final LeaderboardModel leaderboardModel;
+class Leaderboard(private val leaderboardTitle: String, private val leaderboardModel: LeaderboardModel?) {
+    val isEmpty: Boolean
+        get() = leaderboardModel == null || leaderboardModel.scores.isEmpty()
 
-    public Leaderboard(String title, LeaderboardModel leaderboardModel) {
-        this.title = title;
-        this.leaderboardModel = leaderboardModel;
-    }
+    val embed: EmbedBuilder
+        get() {
+            if (isEmpty) {
+                return getEmptyLeaderboardEmbed(leaderboardTitle)
+            }
 
-    public String getLeaderboardTitle() {
-        return title;
-    }
-
-    public boolean isEmpty() {
-        return leaderboardModel == null || leaderboardModel.getScores().isEmpty();
-    }
-
-    public EmbedBuilder getEmbed() {
-        if (isEmpty()) {
-            return LeaderboardService.INSTANCE.getEmptyLeaderboardEmbed(title);
+            return getLeaderboardEmbed(leaderboardTitle, leaderboardModel)
         }
-
-        return LeaderboardService.INSTANCE.getLeaderboardEmbed(title, leaderboardModel);
-    }
 }

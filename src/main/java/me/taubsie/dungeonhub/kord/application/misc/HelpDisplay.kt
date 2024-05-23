@@ -1,4 +1,4 @@
-package me.taubsie.dungeonhub.kord.application.classes
+package me.taubsie.dungeonhub.kord.application.misc
 
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor

@@ -10,7 +10,7 @@ import dev.kord.core.entity.Guild
 import dev.kord.core.entity.User
 import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
-import me.taubsie.dungeonhub.kord.application.classes.HelpDisplay
+import me.taubsie.dungeonhub.kord.application.misc.HelpDisplay
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.enums.HelpTopic
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension

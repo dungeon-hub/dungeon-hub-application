@@ -9,7 +9,7 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerCon
 import me.taubsie.dungeonhub.application.exceptions.MustBeServerException
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
-import me.taubsie.dungeonhub.kord.application.classes.HelpDisplay
+import me.taubsie.dungeonhub.kord.application.misc.HelpDisplay
 import me.taubsie.dungeonhub.kord.application.enums.HelpTopic.DescriptionSupplier
 
 @Getter
