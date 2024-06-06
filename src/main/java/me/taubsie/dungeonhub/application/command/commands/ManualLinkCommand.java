@@ -60,6 +60,6 @@ public class ManualLinkCommand extends Command {
 
     @Override
     public long[] getEnabledServers() {
-        return new long[]{693263712626278553L};
+        return new long[]{693263712626278553L, 1023684107877761196L, 633621474183217163L};
     }
 }
