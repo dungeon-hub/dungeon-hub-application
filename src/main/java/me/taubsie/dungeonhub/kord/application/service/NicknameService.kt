@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.kord.application.service
 
+import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Role
@@ -100,8 +101,7 @@ object NicknameService {
      * The `updateNickname` method with the server parameter retrieves the Discord user model from the connection,
      * validates the user's link status, and then calls the [.updateNickname] method.
      *
-     * @param user   the Discord user for whom to update the nickname
-     * @param server the Discord server where the nickname should be updated
+     * @param member  the discord server member for whom to update the nickname
      * @throws NoNameSchemaException if no valid role with a non-blank name schema is found while updating the nickname
      * @throws NotLinkedException    if the user is not linked to a Minecraft account
      * @throws NullPointerException  if the user or server is `null`
@@ -123,9 +123,8 @@ object NicknameService {
      * Discord role model using the [.getRoleModel] method. Finally, it updates the user's nickname on
      * the server by loading the username from the role's name schema and the provided Discord user model.
      *
-     * @param user             the Discord user for whom to update the nickname
+     * @param member           the discord server member for whom to update the nickname
      * @param discordUserModel the Discord user model providing additional information
-     * @param server           the Discord server where the nickname should be updated
      * @throws NoNameSchemaException if no valid role with a non-blank name schema is found while determining the role model
      */
     @Throws(NoNameSchemaException::class)
@@ -197,7 +196,7 @@ object NicknameService {
      * for the server, and finds the first valid role in the list using the [.validateRole] predicate. If a valid role is
      * found, the corresponding DiscordRoleModel is returned; otherwise, a [NoNameSchemaException] is thrown.
      *
-     * @param server the Discord server for which to retrieve role models and validate roles
+     * @param member the discord server member for which to retrieve role models and validate roles
      * @param roles  the list of roles to be validated and for which to find the corresponding role model
      * @return the DiscordRoleModel of the first valid role in the list
      * @throws NoNameSchemaException if no valid role with a non-blank name schema is found
@@ -205,7 +204,7 @@ object NicknameService {
      */
     @Contract(pure = true)
     private fun getRoleModel(member: Member, roles: List<Role>): DiscordRoleModel {
-        val discordRoles = getRoleModels(member)
+        val discordRoles = getRoleModels(member.guild)
         val toModel = Function { role: Role -> discordRoles[role.id.value.toLong()] }
         val roleOptional = roles.parallelStream().filter(validateRole(discordRoles)).findFirst()
         return roleOptional.map(toModel).orElseThrow { NoNameSchemaException() }!!
@@ -218,13 +217,13 @@ object NicknameService {
      * The `getRoleModels` method retrieves the Discord role models associated with the provided server
      * using the [DiscordRoleConnection] and converts them into a map using the role IDs as keys.
      *
-     * @param server the Discord server for which to retrieve role models
+     * @param guild the Discord server for which to retrieve role models
      * @return a map of Discord role models with role IDs as keys
      * @throws NullPointerException if the specified server is `null`
      */
     @Contract(pure = true)
-    private fun getRoleModels(member: Member): Map<Long, DiscordRoleModel> {
-        return DiscordRoleConnection.getInstance(member.guild.id.value.toLong())
+    private fun getRoleModels(guild: GuildBehavior): Map<Long, DiscordRoleModel> {
+        return DiscordRoleConnection.getInstance(guild.id.value.toLong())
             .allRoles.orElse(emptyList())
             .stream().collect(toMap())
     }

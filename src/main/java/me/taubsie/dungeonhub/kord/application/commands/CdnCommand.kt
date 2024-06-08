@@ -19,7 +19,6 @@ import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
-import java.nio.charset.StandardCharsets
 
 @LoadExtension
 class CdnCommand : Extension() {

@@ -1,7 +1,6 @@
 package me.taubsie.dungeonhub.kord.application.misc
 
 import dev.kord.rest.builder.message.EmbedBuilder
-import lombok.Getter
 import me.taubsie.dungeonhub.common.model.score.LeaderboardModel
 import me.taubsie.dungeonhub.kord.application.service.LeaderboardService.getEmptyLeaderboardEmbed
 import me.taubsie.dungeonhub.kord.application.service.LeaderboardService.getLeaderboardEmbed
