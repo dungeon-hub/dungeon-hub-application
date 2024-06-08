@@ -9,7 +9,6 @@ import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.QRCodeWriter
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
-import dev.kord.core.entity.Guild
 import dev.kord.core.entity.User
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.EmbedBuilder.Footer
@@ -43,7 +42,7 @@ import java.util.*
 import javax.imageio.ImageIO
 
 object ApplicationService {
-    private const val MAX_MINECRAFT_USERNAME_LENGTH = 16
+    const val MAX_MINECRAFT_USERNAME_LENGTH = 16
     private val logger: Logger = LoggerFactory.getLogger(DiscordConnection::class.java)
 
     private val serverLink: String
@@ -52,7 +51,6 @@ object ApplicationService {
     val footer: Footer
         /**
          * Returns the default footer used for most embeds.
-         * Warning is suppressed, since the escape needs to be made due to some systems having an issue showing the unicode representation through discord.
          *
          * @return the default footer used for most embeds.
          */
@@ -65,7 +63,6 @@ object ApplicationService {
     val unstableFooter: String
         /**
          * Returns the footer used for embeds of unstable or new features.
-         * Warning is suppressed, since the escape needs to be made due to some systems having an issue showing the unicode representation through discord.
          *
          * @return the footer used for embeds of unstable or new features.
          */
@@ -74,7 +71,6 @@ object ApplicationService {
     val priceFooter: String
         /**
          * Returns the footer used for price message embeds.
-         * Warning is suppressed, since the escape needs to be made due to some systems having an issue showing the unicode representation through discord.
          *
          * @return the footer used for price message embeds.
          */
@@ -370,7 +366,7 @@ object ApplicationService {
             if (scoreDescriptions.containsKey(scoreModel.scoreType)) {
                 scoreDescriptions[scoreModel.scoreType]!!.add(description)
             } else {
-                scoreDescriptions[scoreModel.scoreType] = ArrayList(java.util.List.of(description))
+                scoreDescriptions[scoreModel.scoreType] = mutableListOf(description)
             }
         }
 
@@ -540,13 +536,13 @@ object ApplicationService {
 
     @Throws(WriterException::class)
     fun generateQRCodeImage(barcodeText: String?): BufferedImage {
-        val barcodeWriter: QRCodeWriter = QRCodeWriter()
+        val barcodeWriter = QRCodeWriter()
 
-        val hints: MutableMap<EncodeHintType, Any> = EnumMap<EncodeHintType, Any>(
+        val hints: MutableMap<EncodeHintType, Any> = EnumMap(
             EncodeHintType::class.java
         )
-        hints.put(EncodeHintType.CHARACTER_SET, "UTF-8")
-        hints.put(EncodeHintType.MARGIN, 1)
+        hints[EncodeHintType.CHARACTER_SET] = "UTF-8"
+        hints[EncodeHintType.MARGIN] = 1
 
         val bitMatrix: BitMatrix = barcodeWriter.encode(barcodeText, BarcodeFormat.QR_CODE, 200, 200, hints)
 
@@ -576,16 +572,6 @@ object ApplicationService {
         }
         return outputStream.toByteArray()
     }
-
-    /*val linkModalComponent: HighLevelComponent
-        get() = ActionRowBuilder().addComponents(
-            TextInputBuilder(TextInputStyle.SHORT, "ign", "Ingame-Name")
-                .setMaximumLength(MAX_MINECRAFT_USERNAME_LENGTH)
-                .setMinimumLength(3)
-                .setPlaceholder("For example: Taubsie")
-                .setRequired(true)
-                .build()
-        ).build()*/
 
     fun calculatePrice(carryDifficulty: CarryDifficultyModel, amount: Long): Long {
         return calculatePricePerCarry(carryDifficulty, amount) * amount

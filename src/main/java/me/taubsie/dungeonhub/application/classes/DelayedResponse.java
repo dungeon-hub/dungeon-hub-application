@@ -4,8 +4,6 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
-import me.taubsie.dungeonhub.application.service.ApplicationService;
 import org.javacord.api.entity.message.component.HighLevelComponent;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.jetbrains.annotations.Nullable;
@@ -23,10 +21,6 @@ public class DelayedResponse {
 
     public static DelayedResponse fromEmbed(EmbedBuilder embedBuilder) {
         return DelayedResponse.builder().setEmbed(embedBuilder).build();
-    }
-
-    public static DelayedResponse fromException(CommandExecutionException commandExecutionException) {
-        return fromEmbed(ApplicationService.getInstance().getErrorEmbed(commandExecutionException));
     }
 
     public static class DelayedResponseBuilder {
@@ -48,11 +42,6 @@ public class DelayedResponse {
 
         public DelayedResponseBuilder setEmbed(EmbedBuilder... embed) {
             this.embed = embed;
-            return this;
-        }
-
-        public DelayedResponseBuilder setHighLevelComponents(HighLevelComponent... highLevelComponents) {
-            this.highLevelComponents = highLevelComponents;
             return this;
         }
     }

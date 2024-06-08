@@ -5,21 +5,16 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyC
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
 import me.taubsie.dungeonhub.application.exceptions.*;
-import me.taubsie.dungeonhub.application.loader.ClassLoaderService;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
-import me.taubsie.dungeonhub.common.Nameable;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
-import org.javacord.api.entity.Attachment;
-import org.javacord.api.entity.DiscordEntity;
 import org.javacord.api.entity.channel.ServerChannel;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.entity.message.component.HighLevelComponent;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
-import org.javacord.api.entity.permission.PermissionType;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
@@ -30,12 +25,10 @@ import org.javacord.api.interaction.SlashCommandOption;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 /**
  * This class is used to allow easier implementation of commands, as a class scanner looks for classes that extends
@@ -47,20 +40,6 @@ public abstract class Command {
     private SlashCommandCreateEvent slashCommandCreateEvent;
 
     protected abstract void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent);
-
-    public final void execute(SlashCommandCreateEvent slashCommandCreateEvent) {
-        this.slashCommandCreateEvent = slashCommandCreateEvent;
-
-        if (!isEnabledInServer(slashCommandCreateEvent.getSlashCommandInteraction().getServer().map(DiscordEntity::getId).orElse(0L))) {
-            throw new NotAllowedThereException();
-        }
-
-        if (!isEnabledForUser(slashCommandCreateEvent.getSlashCommandInteraction().getUser().getId())) {
-            throw new MissingPermissionException();
-        }
-
-        executeCommand(slashCommandCreateEvent);
-    }
 
     public final EmbedBuilder getEmbed() {
         return ApplicationService.getInstance().getEmbed();
@@ -117,50 +96,6 @@ public abstract class Command {
         return Collections.emptyList();
     }
 
-    public long[] getEnabledServers() {
-        return new long[]{};
-    }
-
-    private Optional<CommandParameters> getCommandParameters() {
-        return ClassLoaderService.getInstance().getCommandParameters(getClass());
-    }
-
-    private boolean hasPermissions(User user) {
-        try {
-            PermissionType[] permissions = getCommandParameters()
-                    .map(CommandParameters::enabledForPermissions)
-                    .orElse(new PermissionType[]{});
-            return getServer().hasPermissions(user, permissions) || getServer().isAdmin(user) || getServer().isOwner(user);
-        }
-        catch (MustBeServerException mustBeServerException) {
-            return isEnabledInDms();
-        }
-    }
-
-    public final boolean isEnabledInDms() {
-        return getCommandParameters().map(CommandParameters::enabledInDms).orElse(false);
-    }
-
-    public final boolean isEnabledInServer(long serverId) {
-        return isGlobal() || Arrays.stream(getEnabledServers()).anyMatch(value -> value == serverId);
-    }
-
-    public final boolean isEnabledForUser(long userId) {
-        return getEnabledUsers().length == 0 || Arrays.stream(getEnabledUsers()).anyMatch(value -> value == userId);
-    }
-
-    public final boolean isGlobal() {
-        return getEnabledServers().length == 0;
-    }
-
-    public final String getCommandName() {
-        return getCommandParameters().map(CommandParameters::name).orElse(null);
-    }
-
-    public final long[] getEnabledUsers() {
-        return getCommandParameters().map(CommandParameters::enabledForUsers).orElse(new long[]{});
-    }
-
     public final Server getServer() {
         Optional<Server> server = slashCommandCreateEvent.getSlashCommandInteraction().getServer();
 
@@ -203,75 +138,6 @@ public abstract class Command {
         return getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
     }
 
-    public final Attachment getAttachmentOption(String name) {
-        return getAttachmentOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
-    }
-
-    public final <T extends Enum<T> & Nameable> T getEnumOption(@NotNull String name, @NotNull Class<T> enumClass,
-                                                                T defaultValue) {
-        try {
-            String value = getStringOption(name);
-
-            Optional<T> possibleMatch = Arrays.stream(enumClass.getEnumConstants())
-                    .filter(t -> t.getName().equalsIgnoreCase(value))
-                    .findFirst();
-
-            return possibleMatch
-                    .orElseGet(() -> T.valueOf(enumClass, value));
-        }
-        catch (IllegalArgumentException illegalArgumentException) {
-            return defaultValue;
-        }
-    }
-
-    public final <T extends Enum<T> & Nameable> T getEnumOption(@NotNull String name, @NotNull Class<T> enumClass) {
-        try {
-            String value = getStringOption(name);
-
-            Optional<T> possibleMatch = Arrays.stream(enumClass.getEnumConstants())
-                    .filter(t -> t.getName().equalsIgnoreCase(value))
-                    .findFirst();
-
-            return possibleMatch
-                    .orElseGet(() -> T.valueOf(enumClass, value));
-        }
-        catch (IllegalArgumentException illegalArgumentException) {
-            String message = String.format(
-                    "Please enter a valid %s (%s)",
-                    name,
-                    Arrays.stream(enumClass.getEnumConstants())
-                            .map(Nameable::getDisplayName)
-                            .collect(Collectors.joining(", "))
-            );
-
-            throw new InvalidOptionException(name, message);
-        }
-    }
-
-    public final <T extends Enum<T> & Nameable> T getEnumOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, @NotNull String name, @NotNull Class<T> enumClass) {
-        try {
-            String value = getStringOption(slashCommandCreateEvent, name);
-
-            Optional<T> possibleMatch = Arrays.stream(enumClass.getEnumConstants())
-                    .filter(t -> t.getName().equalsIgnoreCase(value))
-                    .findFirst();
-
-            return possibleMatch
-                    .orElseGet(() -> T.valueOf(enumClass, value));
-        }
-        catch (IllegalArgumentException illegalArgumentException) {
-            String message = String.format(
-                    "Please enter a valid %s (%s)",
-                    name,
-                    Arrays.stream(enumClass.getEnumConstants())
-                            .map(Nameable::getDisplayName)
-                            .collect(Collectors.joining(", "))
-            );
-
-            throw new InvalidOptionException(name, message);
-        }
-    }
-
     public final Optional<String> getOptionalStringOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         return slashCommandCreateEvent.getOptionByName(name).flatMap(SlashCommandInteractionOption::getStringValue);
     }
@@ -286,24 +152,9 @@ public abstract class Command {
         return stringValue.get();
     }
 
-    public final Attachment getAttachmentOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
-                                                String name) {
-        Optional<Attachment> attachmentValue = getOption(slashCommandCreateEvent, name).getAttachmentValue();
-
-        if (attachmentValue.isEmpty()) {
-            throw new InvalidOptionException(name);
-        }
-
-        return attachmentValue.get();
-    }
-
     public final Optional<Boolean> getOptionalBooleanOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         return slashCommandCreateEvent.getOptionByName(name)
                 .flatMap(SlashCommandInteractionOption::getBooleanValue);
-    }
-
-    public final Boolean getBooleanOption(String name) {
-        return getBooleanOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
     }
 
     public final Boolean getBooleanOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
@@ -348,10 +199,6 @@ public abstract class Command {
         return roleValue.get();
     }
 
-    public final Long getLongOption(String name) {
-        return getLongOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
-    }
-
     public final Optional<Long> getOptionalLongOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
                                                       String name) {
         return slashCommandCreateEvent.getOptionByName(name).flatMap(SlashCommandInteractionOption::getLongValue);
@@ -379,17 +226,6 @@ public abstract class Command {
         }
 
         return userValue.get();
-    }
-
-    public final SlashCommandInteractionOption getOption(String name) {
-        Optional<SlashCommandInteractionOption> interactionOption =
-                slashCommandCreateEvent.getSlashCommandInteraction().getOptionByName(name);
-
-        if (interactionOption.isEmpty()) {
-            throw new InvalidOptionException(name);
-        }
-
-        return interactionOption.get();
     }
 
     public final SlashCommandInteractionOption getOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
