@@ -50,6 +50,90 @@ import java.util.regex.Pattern
 @OnStart(priority = StartPriority.DISCORD_BOT)
 object DiscordConnection : StartupListener {
     private val logger: Logger = LoggerFactory.getLogger(DiscordConnection::class.java)
+    private var uptime: Instant = Instant.now()
+    private var currentAppearance = 0
+    private val possibleAppearances: List<Pair<AppearanceType, suspend () -> String>> = listOf(
+        AppearanceType.Custom to {
+            "Handling ${DiscordUserConnection.getInstance().countLinkedUsers().orElse("0")} linked users!"
+        },
+        AppearanceType.Watching to {
+            "${bot?.kordRef?.totalUserCount() ?: 0} carriers on ${bot?.kordRef?.guilds?.count() ?: 0} servers"
+        },
+        AppearanceType.Competing to {
+            "score leaderboards for first place"
+        },
+        //TODO uncomment once released
+        /*AppearanceType.Custom to {
+            "Customize me at dungeon-hub.net"
+        },*/
+        AppearanceType.Custom to {
+            "Running 100% in Kotlin!"
+        },
+        AppearanceType.Watching to {
+            "you clear dungeons"
+        },
+        AppearanceType.Custom to {
+            "Helping you level up!"
+        },
+        AppearanceType.Playing to {
+            "some Master Mode."
+        },
+        AppearanceType.Custom to {
+            "Check out /help for more!"
+        },
+        AppearanceType.Custom to {
+            "Remember to close and /log"
+        },
+        AppearanceType.Listening to {
+            val diff = Instant.now().toEpochMilli() - uptime.toEpochMilli()
+
+            val diffSeconds = diff / 1000 % 60
+            val diffMinutes = diff / (60 * 1000) % 60
+            val diffHours = diff / (60 * 60 * 1000) % 24
+            val diffDays = diff / (24 * 60 * 60 * 1000)
+
+            val time = if(diffDays > 0) {
+                "$diffDays days"
+            } else if(diffHours > 0) {
+                "$diffHours hours"
+            } else if(diffMinutes > 0) {
+                "$diffMinutes minutes"
+            } else if(diffSeconds > 0) {
+                "$diffSeconds seconds"
+            } else {
+                "just now"
+            }
+
+            "discord events since $time"
+        }
+    )
+
+    enum class AppearanceType(val apply: (text: String) -> (PresenceBuilder.() -> Unit)) {
+        /**
+         * Playing {text}
+         */
+        Playing({ s -> { playing(s) } }),
+
+        /**
+         * Listening to {text}
+         */
+        Listening({ s -> { listening(s) } }),
+
+        /**
+         * Watching {text}
+         */
+        Watching({ s -> { watching(s) } }),
+
+        /**
+         * Competing in {text}
+         */
+        Competing({ s -> { competing(s) } }),
+
+        /**
+         * {text}
+         */
+        Custom({ s -> { state = s } });
+    }
 
     var bot: ExtensibleBot? = null
 
@@ -141,13 +225,13 @@ object DiscordConnection : StartupListener {
      */
     private suspend fun resetBotAppearance() {
         bot?.kordRef?.editPresence {
-            val name = DiscordUserConnection.getInstance().countLinkedUsers().orElse("0") +
-                    " carriers on " +
-                    bot?.kordRef?.guilds?.count() +
-                    " servers"
-
-            watching(name)
             status = PresenceStatus.Online
+
+            currentAppearance = if (currentAppearance >= possibleAppearances.size - 1) 0 else currentAppearance + 1
+
+            val appearance = possibleAppearances[currentAppearance]
+
+            appearance.first.apply(appearance.second())()
         }
     }
 
@@ -164,7 +248,19 @@ object DiscordConnection : StartupListener {
     }
 
     override suspend fun postStart() {
-        resetBotAppearance()
+        Timer().scheduleAtFixedRate(object : TimerTask() {
+            override fun run() {
+                runBlocking {
+                    resetBotAppearance()
+                }
+            }
+        }, Time(System.currentTimeMillis() + 1000), /*1000 * 60*/ 5000)
+
+        //TODO delete this once complete
+        //do this to reset commands on all servers
+        ServerJoinListener.GUILD_ON_JOIN.forEach {
+            bot?.kordRef?.createGuildApplicationCommands(Snowflake(it)) {}?.collect()
+        }
     }
 }
 

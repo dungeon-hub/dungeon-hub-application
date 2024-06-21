@@ -21,8 +21,6 @@ class ServerLeaveListener : Extension() {
             action {
                 ServerJoinListener.GUILD_ON_JOIN.remove(event.guildId.value)
 
-                DiscordConnection.resetBotAppearance()
-
                 val ownerName = event.guild?.getOwnerOrNull()?.effectiveName ?: "no-name"
 
                 logger.info(

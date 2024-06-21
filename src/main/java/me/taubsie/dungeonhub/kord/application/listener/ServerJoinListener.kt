@@ -23,8 +23,6 @@ class ServerJoinListener : Extension() {
                     return@action
                 }
 
-                DiscordConnection.resetBotAppearance()
-
                 val ownerName = event.guild.getOwnerOrNull()?.effectiveName ?: "no-name"
 
                 logger.info(
