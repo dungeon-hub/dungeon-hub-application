@@ -149,7 +149,7 @@ class LoggingSystem : Extension() {
                             ApplicationService.getErrorEmbed(
                                 InvalidOptionException(
                                     "carry-difficulty",
-                                    "${arguments.carryDifficulty} is no valid type."
+                                    "`${arguments.carryDifficulty}` is no valid type."
                                 )
                             )
                         )
