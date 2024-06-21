@@ -261,7 +261,7 @@ class LinkingSystem : Extension() {
                         embed.color = EmbedColor.DEFAULT.color
                         embed.title = "Linking"
                         embed.description =
-                            "Please link to your Minecraft account using the buttons below.\nRemember to never give out the email connected to your Microsoft account and to never click any links!"
+                            "Please link to your Minecraft account using the buttons below.\nRemember to never give out the email connected to your Microsoft account and to never click any links!\nCheck this video if you're still unsure if messages similar to this are legit: https://youtu.be/WRRIOkM8oe8?t=743&si=oc71yA9h-XJUsGpX"
                         embeds = mutableListOf(embed)
 
                         actionRow {
