@@ -19,8 +19,8 @@ import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
-import me.taubsie.dungeonhub.application.exceptions.MissingPermissionException
+import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException
+import me.taubsie.dungeonhub.kord.application.exceptions.MissingPermissionException
 import me.taubsie.dungeonhub.common.enums.ScoreType
 import me.taubsie.dungeonhub.common.model.score.ScoreModel
 import me.taubsie.dungeonhub.common.model.score.ScoreUpdateModel

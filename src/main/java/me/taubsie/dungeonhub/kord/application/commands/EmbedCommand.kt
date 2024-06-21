@@ -20,15 +20,15 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
-import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.common.DungeonHubService
+import me.taubsie.dungeonhub.kord.application.config.ConfigProperty
 import me.taubsie.dungeonhub.kord.application.connection.applyJson
 import me.taubsie.dungeonhub.kord.application.connection.isSelf
 import me.taubsie.dungeonhub.kord.application.connection.loadMessageByLink
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
 import java.nio.charset.StandardCharsets
@@ -55,16 +55,24 @@ class EmbedCommand : Extension() {
                     respond {
                         val beautiful = arguments.type.equals("beautiful", ignoreCase = true)
 
-                        val message = arguments.getMessage() ?: throw InvalidOptionException("link")
+                        val message = arguments.getMessage() ?: throw InvalidOptionException(
+                            "link"
+                        )
 
                         if (message.embeds.isEmpty()) {
-                            throw InvalidOptionException("link", "The given message doesn't have an embed.")
+                            throw InvalidOptionException(
+                                "link",
+                                "The given message doesn't have an embed."
+                            )
                         }
 
                         val count = arguments.count ?: -1
 
                         if (count != -1 && count >= message.embeds.size) {
-                            throw InvalidOptionException("link", "The given message doesn't have that many embeds.")
+                            throw InvalidOptionException(
+                                "link",
+                                "The given message doesn't have that many embeds."
+                            )
                         }
 
                         val embeds = if (count == -1) message.embeds else mutableListOf(message.embeds[count])
@@ -117,6 +125,7 @@ class EmbedCommand : Extension() {
                         var source = arguments.embed
 
                         val cdnPrefix = ConfigProperty.CDN_URL.value
+                            ?: throw CommandExecutionException("The CDN isn't set up correctly in the bot's settings, please tell an administrator to correct that.")
 
                         if (source.startsWith(cdnPrefix)) {
                             source = source.substring(cdnPrefix.length)
@@ -188,7 +197,7 @@ class EmbedCommand : Extension() {
                 }
             }
 
-            publicSlashCommand(::MessageLinkEmbedArguments) {
+            publicSubCommand(::MessageLinkEmbedArguments) {
                 name = "add"
                 description = "Add an embed to a message sent by this bot."
 
@@ -242,7 +251,9 @@ class EmbedCommand : Extension() {
                             throw CommandExecutionException("Please provide any embeds to send.")
                         }
 
-                        val message = arguments.getMessage() ?: throw InvalidOptionException("link")
+                        val message = arguments.getMessage() ?: throw InvalidOptionException(
+                            "link"
+                        )
 
                         if (message.author?.isSelf() != true) {
                             throw InvalidOptionException(
@@ -252,7 +263,10 @@ class EmbedCommand : Extension() {
                         }
 
                         if (message.embeds.isEmpty()) {
-                            throw InvalidOptionException("link", "The given message doesn't have any embeds to edit.")
+                            throw InvalidOptionException(
+                                "link",
+                                "The given message doesn't have any embeds to edit."
+                            )
                         }
 
                         message.edit {
@@ -266,7 +280,7 @@ class EmbedCommand : Extension() {
                 }
             }
 
-            publicSlashCommand(::EditArguments) {
+            publicSubCommand(::EditArguments) {
                 name = "edit"
                 description = "Edit an embed sent by this bot."
 
@@ -301,13 +315,19 @@ class EmbedCommand : Extension() {
                         }
 
                         if (message.embeds.isEmpty()) {
-                            throw InvalidOptionException("link", "The given message doesn't have any embeds to edit.")
+                            throw InvalidOptionException(
+                                "link",
+                                "The given message doesn't have any embeds to edit."
+                            )
                         }
 
                         message.edit {
                             val embedBuilders = embeds ?: mutableListOf()
-                            if(count >= embedBuilders.size) {
-                                throw InvalidOptionException("link", "The given message doesn't have that many embeds.")
+                            if (count >= embedBuilders.size) {
+                                throw InvalidOptionException(
+                                    "link",
+                                    "The given message doesn't have that many embeds."
+                                )
                             }
 
                             embedBuilders[count] = embed

@@ -7,8 +7,8 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnect
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
-import me.taubsie.dungeonhub.application.exceptions.InvalidSubCommandException;
+import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException;
+import me.taubsie.dungeonhub.kord.application.exceptions.InvalidSubCommandException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierCreationModel;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;

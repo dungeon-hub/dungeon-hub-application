@@ -67,7 +67,7 @@ class UserScanCommand : Extension() {
             if (!member.isBot) {
                 val checkResult = ProfileModerationService.checkUserName(member.globalName)
                 if (checkResult != null) {
-                    if (ProfileModerationService.isExcluded(member, guild)) {
+                    if (ProfileModerationService.isExcluded(member)) {
                         excluded[member] = checkResult
                     } else {
                         result[member] = checkResult

@@ -1,7 +1,7 @@
 package me.taubsie.dungeonhub.application.connection;
 
 import com.google.gson.JsonParser;
-import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundException;
+import me.taubsie.dungeonhub.kord.application.exceptions.PlayerNotFoundException;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.slf4j.Logger;

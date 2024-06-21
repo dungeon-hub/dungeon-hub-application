@@ -15,7 +15,7 @@ import dev.kord.rest.builder.message.EmbedBuilder.Footer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import me.taubsie.dungeonhub.application.classes.FlagResponse
-import me.taubsie.dungeonhub.application.config.ConfigProperty
+import me.taubsie.dungeonhub.kord.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.common.enums.ScoreType

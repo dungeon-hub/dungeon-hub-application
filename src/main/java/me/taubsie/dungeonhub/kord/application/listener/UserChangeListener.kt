@@ -15,7 +15,7 @@ class UserChangeListener : Extension() {
     override suspend fun setup() {
         event<MemberJoinEvent> {
             action {
-                if (ProfileModerationService.isExcluded(event.member, event.getGuild())) {
+                if (ProfileModerationService.isExcluded(event.member)) {
                     return@action
                 }
 
@@ -29,7 +29,7 @@ class UserChangeListener : Extension() {
         event<UserUpdateEvent> {
             action {
                 event.user.getMutualServers().collect { member ->
-                    if (ProfileModerationService.isExcluded(member, member.guild.asGuild())) {
+                    if (ProfileModerationService.isExcluded(member)) {
                         return@collect
                     }
 

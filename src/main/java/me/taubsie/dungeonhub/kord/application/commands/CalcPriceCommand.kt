@@ -11,7 +11,7 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyC
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
+import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
@@ -62,7 +62,9 @@ class CalcPriceCommand : Extension() {
                         .orElse(null)
 
                     if (carryDifficulty == null) {
-                        throw InvalidOptionException("carry-difficulty")
+                        throw InvalidOptionException(
+                            "carry-difficulty"
+                        )
                     }
 
                     val price = ApplicationService.calculatePrice(carryDifficulty, arguments.amount)

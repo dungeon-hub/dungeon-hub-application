@@ -6,7 +6,7 @@ import dev.kord.core.entity.User
 import lombok.Getter
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
-import me.taubsie.dungeonhub.application.exceptions.MustBeServerException
+import me.taubsie.dungeonhub.kord.application.exceptions.MustBeServerException
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
 import me.taubsie.dungeonhub.kord.application.misc.HelpDisplay

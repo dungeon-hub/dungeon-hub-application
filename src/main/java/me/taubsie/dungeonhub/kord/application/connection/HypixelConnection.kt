@@ -7,9 +7,9 @@ import io.ktor.client.statement.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
-import me.taubsie.dungeonhub.application.config.ConfigProperty
+import me.taubsie.dungeonhub.kord.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.MojangConnection
-import me.taubsie.dungeonhub.application.exceptions.FailedToLoadException
+import me.taubsie.dungeonhub.kord.application.exceptions.FailedToLoadException
 import net.hypixel.api.HypixelAPI
 import net.hypixel.api.http.HypixelHttpClient
 import net.hypixel.api.http.HypixelHttpResponse
@@ -75,7 +75,7 @@ object HypixelConnection : HypixelHttpClient {
     override fun makeAuthenticatedRequest(url: String): CompletableFuture<HypixelHttpResponse> {
         return CompletableFuture<HypixelHttpResponse>().completeAsync {
             val request: Request = Request.Builder()
-                .addHeader("API-Key", ConfigProperty.HYPIXEL_API_KEY.value)
+                .addHeader("API-Key", ConfigProperty.HYPIXEL_API_KEY.value!!)
                 .url(url)
                 .get()
                 .build()
@@ -147,7 +147,6 @@ object HypixelConnection : HypixelHttpClient {
                     "og:title" -> result["title"] = meta.attr("content")
                     "og:image" -> result["icon"] = meta.attr("content")
                     "og:description" -> result["description"] = meta.attr("content")
-                    else -> {}
                 }
             }
         }
@@ -215,7 +214,7 @@ object HypixelConnection : HypixelHttpClient {
 
     fun getProfiles(uuid: UUID): JsonArray? {
         val request: Request = Request.Builder()
-            .addHeader("API-Key", ConfigProperty.HYPIXEL_API_KEY.value)
+            .addHeader("API-Key", ConfigProperty.HYPIXEL_API_KEY.value!!)
             .url("https://api.hypixel.net/skyblock/profiles?uuid=$uuid")
             .get()
             .build()

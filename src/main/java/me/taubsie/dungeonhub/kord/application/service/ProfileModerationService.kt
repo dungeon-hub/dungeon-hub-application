@@ -13,7 +13,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
-import me.taubsie.dungeonhub.application.exceptions.FailedToLoadException
+import me.taubsie.dungeonhub.kord.application.exceptions.FailedToLoadException
 import me.taubsie.dungeonhub.kord.application.enums.ServerProperty
 import net.codebox.homoglyph.Homoglyph
 import net.codebox.homoglyph.HomoglyphBuilder
@@ -250,11 +250,7 @@ object ProfileModerationService {
         return DiscordUserConnection.getInstance().getLinkedById(user.id.value.toLong()).isPresent
     }
 
-    fun isExcluded(user: Member, server: Guild): Boolean {
-        return isExcluded(user) || isVerified(user)
-    }
-
     fun isExcluded(user: Member): Boolean {
-        return user.isBot || isOverwritten(user.id.value.toLong())
+        return user.isBot || isOverwritten(user.id.value.toLong()) || isVerified(user)
     }
 }

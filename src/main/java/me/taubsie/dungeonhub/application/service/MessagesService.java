@@ -4,24 +4,18 @@ import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
-import me.taubsie.dungeonhub.application.loader.StartupListener;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
-import me.taubsie.dungeonhub.kord.application.loader.OnStart;
-import me.taubsie.dungeonhub.kord.application.service.ServerService;
 import org.javacord.api.entity.channel.ServerTextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 
-import java.sql.Time;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@OnStart
-public class MessagesService implements StartupListener {
-    private static final long REFRESH_PERIOD = 1000L * 60 * 15;
+public class MessagesService {
     private static MessagesService instance;
 
     public static MessagesService getInstance() {
@@ -85,52 +79,6 @@ public class MessagesService implements StartupListener {
         return Optional.of(embed);
     }
 
-    public void refreshPriceMessages(long serverId) {
-        refreshPriceMessages(DiscordServerConnection.getInstance()
-                .getAllCarryTiers(serverId)
-                .orElse(new ArrayList<>())
-                .stream());
-    }
-
-    public void refreshPriceMessages(Server server) {
-        refreshPriceMessages(DiscordServerConnection.getInstance()
-                .getAllCarryTiers(server.getId())
-                .orElse(new ArrayList<>())
-                .stream());
-    }
-
-    private void refreshPriceMessages() {
-        ServerService.INSTANCE
-                .getAllServers()
-                .forEach(serverData -> refreshPriceMessages(serverData.getId()));
-    }
-
-    private void refreshPriceMessages(Stream<CarryTierModel> carryTiers) {
-        Map<Long, List<CarryTierModel>> carryTiersPerChannel = carryTiers
-                .filter(carryTier -> carryTier.getPriceChannel().isPresent())
-                .collect(Collectors.toMap(
-                        carryTier -> carryTier.getPriceChannel().get(),
-                        carryTier -> new ArrayList<>(List.of(carryTier)),
-                        (o, o2) -> {
-                            o.addAll(o2);
-                            return o;
-                        }
-                ));
-
-        carryTiersPerChannel
-                .forEach((key, value) -> DiscordConnection.getInstance().getBot()
-                        .getServerTextChannelById(key)
-                        .ifPresent(serverTextChannel -> refreshPriceMessageInChannel(
-                                serverTextChannel,
-                                addPriceFooterToLast(
-                                        value.stream()
-                                                .flatMap(carryTier -> getPriceEmbed(carryTier).stream())
-                                                .toList()
-                                )
-                        ))
-                );
-    }
-
     private List<EmbedBuilder> addPriceFooterToLast(List<EmbedBuilder> embeds) {
         for (EmbedBuilder embed : embeds) {
             embed.setFooter(null);
@@ -156,15 +104,5 @@ public class MessagesService implements StartupListener {
         } else {
             messageOptional.get().createUpdater().removeAllEmbeds().addEmbeds(embeds).applyChanges().join();
         }
-    }
-
-    @Override
-    public void postStart() {
-        new Timer().scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                refreshPriceMessages();
-            }
-        }, new Time(System.currentTimeMillis() + 15000), REFRESH_PERIOD);
     }
 }

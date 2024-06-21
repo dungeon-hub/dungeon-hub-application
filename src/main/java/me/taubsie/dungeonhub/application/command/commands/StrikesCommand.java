@@ -3,7 +3,7 @@ package me.taubsie.dungeonhub.application.command.commands;
 import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection;
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
+import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException;
 import me.taubsie.dungeonhub.application.messages.PageableMessage;
 import me.taubsie.dungeonhub.application.messages.StrikeMessage;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
@@ -119,7 +119,7 @@ public class StrikesCommand extends Command {
     private @NotNull User getTarget(@NotNull SlashCommandCreateEvent slashCommandCreateEvent) {
         SlashCommandInteraction interaction = slashCommandCreateEvent.getSlashCommandInteraction();
         Optional<SlashCommandInteractionOption> argument = interaction.getArgumentByName("user");
-        return argument.map((o) -> getTarget()).orElseGet(this::getUser);
+        return argument.map(o -> getTarget()).orElseGet(this::getUser);
     }
 
     /**

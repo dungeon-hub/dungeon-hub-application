@@ -29,14 +29,14 @@ import kotlinx.coroutines.flow.reduce
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.toKotlinInstant
-import me.taubsie.dungeonhub.application.config.ConfigProperty
+import me.taubsie.dungeonhub.kord.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection
-import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundException
+import me.taubsie.dungeonhub.kord.application.exceptions.PlayerNotFoundException
 import me.taubsie.dungeonhub.common.DungeonHubService
 import me.taubsie.dungeonhub.common.enums.QueueStep
 import me.taubsie.dungeonhub.common.enums.ScoreType

@@ -1,7 +1,7 @@
 package me.taubsie.dungeonhub.kord.application.misc
 
 import lombok.Getter
-import me.taubsie.dungeonhub.application.config.ConfigFile
+import me.taubsie.dungeonhub.kord.application.config.ConfigFile
 import me.taubsie.dungeonhub.common.DungeonHubService
 import me.taubsie.dungeonhub.kord.application.enums.ServerProperty
 import me.taubsie.dungeonhub.kord.application.service.ServerService
@@ -24,11 +24,13 @@ class ServerData(val id: Long) : ConfigFile<ServerProperty>() {
         reloadConfig()
     }
 
-    override fun getPossibleProperties(): Set<ServerProperty> {
-        return Arrays.stream(ServerProperty.entries.toTypedArray())
+    override val possibleProperties: Set<ServerProperty>
+        get() = Arrays.stream(ServerProperty.entries.toTypedArray())
             .filter { obj: ServerProperty -> obj.enabled }
             .collect(Collectors.toSet())
-    }
+
+    override val configFile: File
+        get() = File(serverFolder + File.separator + "config.properties")
 
     fun isEnabled(serverProperty: ServerProperty): Boolean {
         return serverProperty.isEnabled(id)
@@ -36,10 +38,6 @@ class ServerData(val id: Long) : ConfigFile<ServerProperty>() {
 
     val serverFolder: String
         get() = configFolder + File.separator + id
-
-    override fun getConfigFile(): File {
-        return File(serverFolder + File.separator + "config.properties")
-    }
 
     companion object {
         val configFolder: String

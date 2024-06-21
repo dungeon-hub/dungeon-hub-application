@@ -10,10 +10,10 @@ import me.taubsie.dungeonhub.kord.application.misc.PlayerInformation
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
-import me.taubsie.dungeonhub.application.exceptions.HypixelLinkedToOtherException
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
-import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaException
-import me.taubsie.dungeonhub.application.exceptions.NotLinkedException
+import me.taubsie.dungeonhub.kord.application.exceptions.HypixelLinkedToOtherException
+import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException
+import me.taubsie.dungeonhub.kord.application.exceptions.NoNameSchemaException
+import me.taubsie.dungeonhub.kord.application.exceptions.NotLinkedException
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel
@@ -45,7 +45,7 @@ import java.util.stream.Collectors
  */
 object NicknameService {
     @Throws(CommandExecutionException::class)
-    fun linkToIgn(ign: String?, user: User): UUID {
+    fun linkToIgn(ign: String, user: User): UUID {
         val uuid = MojangConnection.getInstance().getUUIDByName(ign)
 
         val hypixelName = getHypixelLinkedDiscord(uuid)
@@ -61,7 +61,11 @@ object NicknameService {
         }
 
         if (!hypixelName.get().equals(username, ignoreCase = true)) {
-            throw HypixelLinkedToOtherException(ign, hypixelName.get(), user.username)
+            throw HypixelLinkedToOtherException(
+                ign,
+                hypixelName.get(),
+                user.username
+            )
         }
 
         val updateModel = DiscordUserUpdateModel(uuid)

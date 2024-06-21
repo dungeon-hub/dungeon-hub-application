@@ -19,6 +19,7 @@ import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
+import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.actionRow
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
@@ -29,8 +30,8 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyC
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
-import me.taubsie.dungeonhub.application.exceptions.MissingPermissionException
+import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException
+import me.taubsie.dungeonhub.kord.application.exceptions.MissingPermissionException
 import me.taubsie.dungeonhub.common.enums.QueueStep
 import me.taubsie.dungeonhub.common.enums.ScoreType
 import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueCreationModel
@@ -50,9 +51,9 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 
 @LoadExtension
-class LogCommand : Extension() {
-    override val name = "log-command"
-    private val logger = LoggerFactory.getLogger(LogCommand::class.java)
+class LoggingSystem : Extension() {
+    override val name = "logging-system"
+    private val logger = LoggerFactory.getLogger(LoggingSystem::class.java)
 
     override suspend fun setup() {
         publicSlashCommand(::LogArguments) {
@@ -159,7 +160,8 @@ class LogCommand : Extension() {
                     val messageCount = channel.getMessagesBefore(interactionId, null).count()
 
                     val firstMessage = try {
-                        channel.getMessagesBefore(event.interaction.id, null)
+                        channel.withStrategy(EntitySupplyStrategy.rest)
+                            .getMessagesBefore(event.interaction.id, null)
                             .takeWhile { true }
                             .reduce { message1, message2 -> if (message1.timestamp < message2.timestamp) message1 else message2 }
                     } catch (_: NoSuchElementException) {

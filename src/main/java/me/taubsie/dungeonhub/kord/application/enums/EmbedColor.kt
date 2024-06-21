@@ -2,6 +2,7 @@ package me.taubsie.dungeonhub.kord.application.enums
 
 import java.awt.Color
 
+//TODO update names like Positive to better use kotlin's style
 enum class EmbedColor(internalColor: Color) {
     POSITIVE(Color(0, 255, 0)),
     NEGATIVE(Color(255, 0, 0)),

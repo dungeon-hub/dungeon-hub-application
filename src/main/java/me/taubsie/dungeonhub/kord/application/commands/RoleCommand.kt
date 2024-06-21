@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.kord.application.exceptions.NoNameSchemaException
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
 import me.taubsie.dungeonhub.kord.application.service.NicknameService
@@ -83,7 +84,11 @@ class RoleCommand : Extension() {
 
                 val updatedRoles = RolesService.updateRoles(member)
 
-                NicknameService.updateNickname(member, updatedRoles)
+                try {
+                    NicknameService.updateNickname(member, updatedRoles)
+                } catch (ignored: NoNameSchemaException) {
+                    //ignore this, in that case you just don't apply a nickname
+                }
             }
         }
 
@@ -91,14 +96,14 @@ class RoleCommand : Extension() {
     }
 
     inner class RoleArguments : Arguments() {
-        val role by role {
-            name = "role"
-            description = "Select which role you mean."
-        }
-
         val user by user {
             name = "user"
             description = "Select which user to modify the role of."
+        }
+
+        val role by role {
+            name = "role"
+            description = "Select which role you mean."
         }
     }
 }

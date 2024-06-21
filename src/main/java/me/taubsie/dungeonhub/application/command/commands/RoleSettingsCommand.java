@@ -4,7 +4,7 @@ import me.taubsie.dungeonhub.application.command.Command;
 import me.taubsie.dungeonhub.application.command.CommandParameters;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
-import me.taubsie.dungeonhub.application.exceptions.NoOptionFoundException;
+import me.taubsie.dungeonhub.kord.application.exceptions.NoOptionFoundException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleCreationModel;
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
@@ -23,7 +23,7 @@ import java.util.Optional;
 @CommandParameters(name = "role-settings", description = "Change the settings of a role.", enabledForUsers =
         {356134481452597250L})
 public class RoleSettingsCommand extends Command {
-    @Override
+    //TODO @Override
     public long[] getEnabledServers() {
         return new long[]{1023684107877761196L};
     }

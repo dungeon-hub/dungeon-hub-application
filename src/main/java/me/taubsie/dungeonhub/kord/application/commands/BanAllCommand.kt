@@ -7,7 +7,7 @@ import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.common.entity.Snowflake
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
+import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
@@ -32,7 +32,10 @@ class BanAllCommand : Extension() {
                     val errors: MutableList<String> = ArrayList()
 
                     if (users.isEmpty()) {
-                        throw InvalidOptionException("users", "Please provide a comma-separated list of users to ban.")
+                        throw InvalidOptionException(
+                            "users",
+                            "Please provide a comma-separated list of users to ban."
+                        )
                     }
 
                     for (userId in users) {

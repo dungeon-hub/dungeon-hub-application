@@ -1,8 +1,8 @@
 package me.taubsie.dungeonhub.application.connection;
 
 import lombok.Getter;
-import me.taubsie.dungeonhub.application.config.ConfigProperty;
-import me.taubsie.dungeonhub.application.exceptions.NotFoundException;
+import me.taubsie.dungeonhub.kord.application.config.ConfigProperty;
+import me.taubsie.dungeonhub.kord.application.exceptions.NotFoundException;
 import me.taubsie.dungeonhub.common.DungeonHubService;
 import me.taubsie.dungeonhub.common.StrikeData;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;

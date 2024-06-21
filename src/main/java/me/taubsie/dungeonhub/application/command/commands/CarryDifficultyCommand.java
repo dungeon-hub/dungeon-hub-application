@@ -6,8 +6,8 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyC
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException;
-import me.taubsie.dungeonhub.application.exceptions.InvalidSubCommandException;
+import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException;
+import me.taubsie.dungeonhub.kord.application.exceptions.InvalidSubCommandException;
 import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyUpdateModel;

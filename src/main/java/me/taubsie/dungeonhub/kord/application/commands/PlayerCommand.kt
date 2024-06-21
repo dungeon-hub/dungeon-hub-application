@@ -6,8 +6,8 @@ import com.kotlindiscord.kord.extensions.components.components
 import com.kotlindiscord.kord.extensions.components.linkButton
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
-import me.taubsie.dungeonhub.application.config.ConfigProperty
-import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundException
+import me.taubsie.dungeonhub.kord.application.config.ConfigProperty
+import me.taubsie.dungeonhub.kord.application.exceptions.PlayerNotFoundException
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.exceptions.FailedToLoadEmbedException
@@ -16,13 +16,13 @@ import me.taubsie.dungeonhub.kord.application.service.ApplicationService
 import org.slf4j.LoggerFactory
 
 @LoadExtension
-class PlayerDataCommand : Extension() {
-    override val name = "playerdata-command"
-    private val logger = LoggerFactory.getLogger(PlayerDataCommand::class.java)
+class PlayerCommand : Extension() {
+    override val name = "player-command"
+    private val logger = LoggerFactory.getLogger(PlayerCommand::class.java)
 
     override suspend fun setup() {
-        publicSlashCommand(::PlayerDataArguments) {
-            name = "playerdata"
+        publicSlashCommand(::PlayerArguments) {
+            name = "player"
             description = "Displays the data for the given user user."
             allowInDms = true
 
@@ -66,7 +66,7 @@ class PlayerDataCommand : Extension() {
         }
     }
 
-    inner class PlayerDataArguments : Arguments() {
+    inner class PlayerArguments : Arguments() {
         val ign by string {
             name = "ign"
             description = "The IGN of the player."

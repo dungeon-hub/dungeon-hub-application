@@ -15,14 +15,15 @@ import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
+import dev.kord.gateway.builder.PresenceBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.toKotlinInstant
-import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.common.DungeonHubService
+import me.taubsie.dungeonhub.kord.application.config.ConfigProperty
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.listener.ServerJoinListener
 import me.taubsie.dungeonhub.kord.application.loader.ClassLoader
@@ -33,7 +34,9 @@ import me.taubsie.dungeonhub.kord.application.service.ApplicationService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.Color
+import java.sql.Time
 import java.time.Instant
+import java.util.*
 import java.util.regex.Pattern
 
 /**
@@ -72,7 +75,7 @@ object DiscordConnection : StartupListener {
      * This implementation starts the discord-bot.
      */
     override suspend fun preStart() {
-        bot = ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value) {
+        bot = ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value!!) {
             errorResponse { message, type ->
                 embeds = if (type.error is CommandExecutionException) {
                     mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionException))
@@ -108,6 +111,8 @@ object DiscordConnection : StartupListener {
 
         bot?.on<ReadyEvent> {
             ClassLoader.executePostStart()
+
+            uptime = Instant.now()
         }
 
         bot?.start()
@@ -134,7 +139,7 @@ object DiscordConnection : StartupListener {
     /**
      * This resets the bot's appearance.
      */
-    suspend fun resetBotAppearance() {
+    private suspend fun resetBotAppearance() {
         bot?.kordRef?.editPresence {
             val name = DiscordUserConnection.getInstance().countLinkedUsers().orElse("0") +
                     " carriers on " +
@@ -201,6 +206,20 @@ suspend fun Kord.loadMessageByLink(messageLink: String): Message? {
     return getChannel(Snowflake(matcher.group("channel")))
         ?.asChannelOfOrNull<MessageChannel>()
         ?.getMessage(Snowflake(matcher.group("message")))
+}
+
+suspend fun Kord.totalUserCount(): Int? {
+    return guilds.map { it.memberCount }.reduce { first, second ->
+        if(first == null && second == null) {
+            return@reduce null
+        }
+
+        if(first == null) {
+            return@reduce second
+        }
+
+        return@reduce first + (second ?: 0)
+    }
 }
 
 fun EmbedBuilder.setFields(value: JsonElement) {

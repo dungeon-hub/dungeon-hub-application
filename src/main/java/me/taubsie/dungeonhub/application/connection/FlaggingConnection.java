@@ -3,7 +3,7 @@ package me.taubsie.dungeonhub.application.connection;
 import com.google.gson.JsonObject;
 import me.taubsie.dungeonhub.application.classes.FlagDetail;
 import me.taubsie.dungeonhub.application.classes.FlagResponse;
-import me.taubsie.dungeonhub.application.config.ConfigProperty;
+import me.taubsie.dungeonhub.kord.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.kord.application.enums.FlaggingApi;
 import okhttp3.HttpUrl;
 import okhttp3.Request;

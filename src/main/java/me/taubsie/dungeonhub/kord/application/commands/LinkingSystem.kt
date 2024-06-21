@@ -1,12 +1,15 @@
 package me.taubsie.dungeonhub.kord.application.commands
 
 import com.kotlindiscord.kord.extensions.commands.Arguments
+import com.kotlindiscord.kord.extensions.commands.converters.impl.channel
 import com.kotlindiscord.kord.extensions.commands.converters.impl.string
 import com.kotlindiscord.kord.extensions.commands.converters.impl.user
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.common.entity.*
+import dev.kord.core.behavior.channel.asChannelOfOrNull
+import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.interaction.modal
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.respondPublic
@@ -14,6 +17,7 @@ import dev.kord.core.behavior.requestMembers
 import dev.kord.core.builder.components.emoji
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.Role
+import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.interaction.ButtonInteraction
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
@@ -24,15 +28,15 @@ import dev.kord.rest.builder.message.actionRow
 import kotlinx.coroutines.flow.*
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
-import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaException
-import me.taubsie.dungeonhub.application.exceptions.NotLinkedException
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel
 import me.taubsie.dungeonhub.kord.application.connection.HypixelConnection.getHypixelLinkedDiscord
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.enums.HelpTopic
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException
+import me.taubsie.dungeonhub.kord.application.exceptions.NoNameSchemaException
+import me.taubsie.dungeonhub.kord.application.exceptions.NotLinkedException
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
 import me.taubsie.dungeonhub.kord.application.service.NicknameService
@@ -115,7 +119,7 @@ class LinkingSystem : Extension() {
                         .map { it.members }
                         .toList()
 
-                    val user = users.map{ members -> members.firstOrNull { it.username == discordUser } }.firstOrNull()
+                    val user = users.map { members -> members.firstOrNull { it.username == discordUser } }.firstOrNull()
 
                     if (user == null) {
                         throw CommandExecutionException("The specified user (`$discordUser`) does not exist.")
@@ -241,6 +245,38 @@ class LinkingSystem : Extension() {
             }
         }
 
+        publicSlashCommand(::SendLinkMessageArguments) {
+            name = "send-link-message"
+            description = "Sends a message with components that are there to make linking easier."
+            defaultMemberPermissions = Permissions(Permission.ManageMessages)
+            allowInDms = false
+
+            action {
+                respond {
+                    val channel = arguments.channel.asChannelOfOrNull<GuildMessageChannel>()
+                        ?: throw CommandExecutionException("Channel couldn't be found or isn't a message channel. Please let an administrator know.")
+
+                    channel.createMessage {
+                        val embed = ApplicationService.embed
+                        embed.color = EmbedColor.DEFAULT.color
+                        embed.title = "Linking"
+                        embed.description =
+                            "Please link to your Minecraft account using the buttons below.\nRemember to never give out the email connected to your Microsoft account and to never click any links!"
+                        embeds = mutableListOf(embed)
+
+                        actionRow {
+                            addLinkButtons()
+                        }
+                    }
+
+                    val embed = ApplicationService.embed
+                    embed.color = EmbedColor.POSITIVE.color
+                    embed.description = "Trying to send message..."
+                    embeds = mutableListOf(embed)
+                }
+            }
+        }
+
         event<GuildButtonInteractionCreateEvent> {
             check {
                 failIfNot(listOf("link_user", "show_help_linking").contains(event.interaction.componentId))
@@ -341,6 +377,18 @@ class LinkingSystem : Extension() {
         val user by user {
             name = "user"
             description = "The user to sync."
+        }
+    }
+
+    inner class SendLinkMessageArguments : Arguments() {
+        val channel by channel {
+            name = "channel"
+            description = "The channel to send the message into."
+            requiredChannelTypes = mutableSetOf(
+                ChannelType.GuildText,
+                ChannelType.GuildVoice,
+                ChannelType.PublicGuildThread
+            )
         }
     }
 }

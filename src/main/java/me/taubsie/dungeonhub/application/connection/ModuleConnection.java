@@ -1,6 +1,6 @@
 package me.taubsie.dungeonhub.application.connection;
 
-import me.taubsie.dungeonhub.application.config.ConfigProperty;
+import me.taubsie.dungeonhub.kord.application.config.ConfigProperty;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.Request;
