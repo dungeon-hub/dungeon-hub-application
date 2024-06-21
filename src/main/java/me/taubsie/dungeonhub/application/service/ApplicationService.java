@@ -48,22 +48,8 @@ public class ApplicationService {
         return getServerLink() + " • made by @taubsie";
     }
 
-    /**
-     * Returns the footer used for price message embeds.
-     *
-     * @return the footer used for price message embeds.
-     */
-    public String getPriceFooter() {
-        return getServerLink() + " • also see /calc-price • made by @taubsie";
-    }
-
     public EmbedBuilder getEmbed() {
         return getEmbed(Instant.now());
-    }
-
-    public EmbedBuilder getEmbedWithoutTimestamp() {
-        return new EmbedBuilder()
-                .setFooter(getFooter());
     }
 
     public EmbedBuilder getEmbed(Instant time) {
