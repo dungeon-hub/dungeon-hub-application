@@ -79,8 +79,7 @@ class RoleCommand : Extension() {
 
         thread(start = true) {
             runBlocking {
-                //TODO test if roles are loaded correctly here -> if roles are cached from before command execution, this will be incorrect.
-                val member = arguments.user.asMember(issuer.guildId)
+                val member = arguments.user.fetchMember(issuer.guildId)
 
                 val updatedRoles = RolesService.updateRoles(member)
 
