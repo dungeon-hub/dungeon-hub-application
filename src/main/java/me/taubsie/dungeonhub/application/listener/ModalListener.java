@@ -7,12 +7,15 @@ import me.taubsie.dungeonhub.application.service.ApplicationService;
 import me.taubsie.dungeonhub.application.service.NicknameService;
 import me.taubsie.dungeonhub.application.service.RolesService;
 import org.javacord.api.entity.message.MessageFlag;
+import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.ModalSubmitEvent;
 import org.javacord.api.interaction.ModalInteraction;
 import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
 import org.javacord.api.listener.interaction.ModalSubmitListener;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -65,6 +68,8 @@ public class ModalListener implements ModalSubmitListener {
                     .update();
         }
 
-        RolesService.getInstance().updateRoles(user);
+        Map<Long, List<Role>> roles = RolesService.getInstance().updateRoles(user);
+
+        NicknameService.getInstance().updateNickname(user, roles);
     }
 }
