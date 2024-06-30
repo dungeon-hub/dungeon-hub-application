@@ -1,6 +1,5 @@
 package me.taubsie.dungeonhub.application.command;
 
-import me.taubsie.dungeonhub.application.classes.DelayedResponse;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection;
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection;
@@ -12,7 +11,6 @@ import me.taubsie.dungeonhub.kord.application.exceptions.*;
 import org.javacord.api.entity.channel.ServerChannel;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.MessageFlag;
-import org.javacord.api.entity.message.component.HighLevelComponent;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.permission.Role;
 import org.javacord.api.entity.server.Server;
@@ -20,14 +18,8 @@ import org.javacord.api.entity.user.User;
 import org.javacord.api.event.interaction.SlashCommandCreateEvent;
 import org.javacord.api.interaction.SlashCommandInteractionOption;
 import org.javacord.api.interaction.SlashCommandInteractionOptionsProvider;
-import org.javacord.api.interaction.SlashCommandOption;
-import org.javacord.api.interaction.callback.InteractionOriginalResponseUpdater;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * This class is used to allow easier implementation of commands, as a class scanner looks for classes that extends
@@ -58,43 +50,6 @@ public abstract class Command {
                 .addEmbed(embedBuilder)
                 .respond();
     }
-
-    public final void respondEphemeral(EmbedBuilder embedBuilder, HighLevelComponent... highLevelComponents) {
-        slashCommandCreateEvent.getSlashCommandInteraction()
-                .createImmediateResponder()
-                .setFlags(MessageFlag.EPHEMERAL)
-                .addEmbed(embedBuilder)
-                .addComponents(highLevelComponents)
-                .respond();
-    }
-
-    public final void respondLater(@NotNull CompletableFuture<DelayedResponse> delayedResponseFuture) {
-        InteractionOriginalResponseUpdater updater = slashCommandCreateEvent.getSlashCommandInteraction()
-                .respondLater()
-                .join();
-
-        delayedResponseFuture.thenAccept(delayedResponse -> executeRespondLater(updater, delayedResponse));
-    }
-
-    public final void respondLaterEphemeral(@NotNull CompletableFuture<DelayedResponse> delayedResponseFuture) {
-        InteractionOriginalResponseUpdater updater = slashCommandCreateEvent.getSlashCommandInteraction()
-                .respondLater(true)
-                .join();
-
-        delayedResponseFuture.thenAccept(delayedResponse -> executeRespondLater(updater, delayedResponse));
-    }
-
-    private void executeRespondLater(InteractionOriginalResponseUpdater updater, DelayedResponse delayedResponse) {
-        updater.setContent(delayedResponse.getContent())
-                .addEmbeds(delayedResponse.getEmbed())
-                .addComponents(delayedResponse.getHighLevelComponents())
-                .update();
-    }
-
-    public List<SlashCommandOption> getSlashCommandOptions() {
-        return Collections.emptyList();
-    }
-
     public final Server getServer() {
         Optional<Server> server = slashCommandCreateEvent.getSlashCommandInteraction().getServer();
 
@@ -133,10 +88,6 @@ public abstract class Command {
         return interactionOption.get();
     }
 
-    public final String getStringOption(String name) {
-        return getStringOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
-    }
-
     public final Optional<String> getOptionalStringOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         return slashCommandCreateEvent.getOptionByName(name).flatMap(SlashCommandInteractionOption::getStringValue);
     }
@@ -169,17 +120,6 @@ public abstract class Command {
     public final Optional<ServerChannel> getOptionalChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
         return slashCommandCreateEvent.getOptionByName(name)
                 .flatMap(SlashCommandInteractionOption::getChannelValue);
-    }
-
-    public final ServerChannel getChannelOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
-                                                String name) {
-        Optional<ServerChannel> channelValue = getOption(slashCommandCreateEvent, name).getChannelValue();
-
-        if (channelValue.isEmpty()) {
-            throw new InvalidOptionException(name);
-        }
-
-        return channelValue.get();
     }
 
     public final Optional<Role> getOptionalRoleOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
@@ -236,11 +176,6 @@ public abstract class Command {
         }
 
         return interactionOption.get();
-    }
-
-    public final void respondWithError(CommandExecutionException commandExecutionException) {
-        ApplicationService.getInstance().respondWithError(slashCommandCreateEvent.getInteraction(),
-                commandExecutionException);
     }
 
     public final CarryTypeModel getCarryType(long server, String identifier) {

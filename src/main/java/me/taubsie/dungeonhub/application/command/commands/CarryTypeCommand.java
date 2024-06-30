@@ -44,7 +44,6 @@ public class CarryTypeCommand extends Command {
         return getCarryTypeOption(true);
     }
 
-    @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         SlashCommandInteractionOption subCommand = getOptionAtIndex(0);
 
@@ -207,7 +206,6 @@ public class CarryTypeCommand extends Command {
         respondEphemeral(ApplicationService.getInstance().getCarryTypeEmbed(carryType.get()));
     }
 
-    @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
         return List.of(getCreateCommand(), getDeleteCommand(), getGetCommand(), getEditCommand(), getResetCommand());
     }

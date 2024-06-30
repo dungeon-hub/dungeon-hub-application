@@ -19,8 +19,6 @@ public @interface CommandParameters {
 
     String description() default "No description specified.";
 
-    boolean enabledInDms() default false;
-
     PermissionType[] enabledForPermissions() default {};
 
     long[] enabledForUsers() default {};

@@ -140,7 +140,6 @@ public class CarryDifficultyCommand extends Command {
         throw new InvalidSubCommandException();
     }
 
-    @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
         return List.of(getCreateCommand(), getDeleteCommand(), getGetCommand(), getEditCommand(), getResetCommand());
     }

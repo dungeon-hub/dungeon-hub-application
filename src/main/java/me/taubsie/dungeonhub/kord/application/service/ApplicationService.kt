@@ -14,8 +14,6 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.EmbedBuilder.Footer
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import me.taubsie.dungeonhub.application.classes.FlagResponse
-import me.taubsie.dungeonhub.kord.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.common.enums.ScoreType
@@ -26,11 +24,13 @@ import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
 import me.taubsie.dungeonhub.common.model.score.ScoreModel
+import me.taubsie.dungeonhub.kord.application.config.ConfigProperty
 import me.taubsie.dungeonhub.kord.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.kord.application.connection.HypixelConnection
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.exceptions.FailedToLoadEmbedException
+import me.taubsie.dungeonhub.kord.application.misc.FlagResponse
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
@@ -151,23 +151,6 @@ object ApplicationService {
         embedBuilder.description = commandExecutionException.message
         return embedBuilder
     }
-
-    /*fun respondWithError(
-        interactionBase: InteractionBase,
-        commandExecutionException: CommandExecutionException
-    ) {
-        interactionBase.createImmediateResponder()
-            .setFlags(MessageFlag.EPHEMERAL)
-            .addEmbed(getErrorEmbed(commandExecutionException))
-            .respond()
-    }
-
-    fun getCommand(slashCommandCreateEvent: SlashCommandCreateEvent): Optional<Command> {
-        return ClassLoaderService.getInstance().getCommand(
-            slashCommandCreateEvent.slashCommandInteraction.commandName,
-            slashCommandCreateEvent.slashCommandInteraction.server.orElse(null)
-        )
-    }*/
 
     fun loadEmbedFromDiscordRole(discordRoleModel: DiscordRoleModel): EmbedBuilder {
         val embed = embed
@@ -378,15 +361,6 @@ object ApplicationService {
         return embed
     }
 
-    /*val ingamenameOption: SlashCommandOption
-        get() = SlashCommandOptionBuilder()
-            .setName("ign")
-            .setDescription("The users ingame-name")
-            .setType(SlashCommandOptionType.STRING)
-            .setMinLength(2)
-            .setRequired(true)
-            .build()*/
-
     //TODO maybe make it possible to update the embed in 2 intervals, since the mojang+safety+jerry api takes long,
     // as well as the skycrypt api takes long too
     //probably first load skycrypt, then the rest?
@@ -417,8 +391,8 @@ object ApplicationService {
             .stream()
             .filter { flagResponse: FlagResponse -> flagResponse.uuid != null || flagResponse.discord != null }
             .filter { flagResponse: FlagResponse ->
-                ((flagResponse.uuid != null && flagResponse.uuid!!.flagged)
-                        || (flagResponse.discord != null && flagResponse.discord!!.flagged))
+                ((flagResponse.uuid != null && flagResponse.uuid.flagged)
+                        || (flagResponse.discord != null && flagResponse.discord.flagged))
             }
             .toList()
 
@@ -445,12 +419,12 @@ object ApplicationService {
         val result: MutableList<String> = ArrayList()
 
         for (flagResponse in flagged) {
-            if (flagResponse.discord != null && flagResponse.discord!!.flagged) {
-                result.add("- " + flagResponse.name + " (by discord): " + flagResponse.discord!!.format())
+            if (flagResponse.discord != null && flagResponse.discord.flagged) {
+                result.add("- " + flagResponse.name + " (by discord): " + flagResponse.discord.format())
             }
 
-            if (flagResponse.uuid != null && flagResponse.uuid!!.flagged) {
-                result.add("- " + flagResponse.name + " (by UUID): " + flagResponse.uuid!!.format())
+            if (flagResponse.uuid != null && flagResponse.uuid.flagged) {
+                result.add("- " + flagResponse.name + " (by UUID): " + flagResponse.uuid.format())
             }
         }
 

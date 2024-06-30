@@ -14,7 +14,7 @@ import java.io.IOException
 import java.nio.charset.StandardCharsets
 
 @LoadExtension
-class TestTranscriptCommand: Extension() {
+class TestTranscriptCommand : Extension() {
     override val name = "test-transcript-command"
     private val allowedUsers = listOf(
         356134481452597250L
@@ -36,7 +36,7 @@ class TestTranscriptCommand: Extension() {
                 respond {
                     val transcriptChannel = channel.asChannelOfOrNull<GuildMessageChannel>()
 
-                    if(transcriptChannel == null) {
+                    if (transcriptChannel == null) {
                         val embed = ApplicationService.errorEmbed
                         embed.description = "Please use this in a server text channel."
                         embeds = mutableListOf(embed)

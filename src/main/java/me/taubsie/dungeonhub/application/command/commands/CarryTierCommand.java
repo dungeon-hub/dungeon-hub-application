@@ -46,7 +46,6 @@ public class CarryTierCommand extends Command {
                 .build();
     }
 
-    @Override
     protected void executeCommand(SlashCommandCreateEvent slashCommandCreateEvent) {
         SlashCommandInteractionOption subCommand = getOptionAtIndex(0);
 
@@ -297,7 +296,6 @@ public class CarryTierCommand extends Command {
                 .setTitle("Updated Carry Tier with reset values"));
     }
 
-    @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
         return List.of(getCreateCommand(), getDeleteCommand(), getGetCommand(), getEditCommand(), getResetCommand());
     }

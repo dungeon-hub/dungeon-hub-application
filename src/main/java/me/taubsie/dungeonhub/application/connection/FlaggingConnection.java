@@ -1,10 +1,10 @@
 package me.taubsie.dungeonhub.application.connection;
 
 import com.google.gson.JsonObject;
-import me.taubsie.dungeonhub.application.classes.FlagDetail;
-import me.taubsie.dungeonhub.application.classes.FlagResponse;
 import me.taubsie.dungeonhub.kord.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.kord.application.enums.FlaggingApi;
+import me.taubsie.dungeonhub.kord.application.misc.FlagDetail;
+import me.taubsie.dungeonhub.kord.application.misc.FlagResponse;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import org.slf4j.Logger;
@@ -86,7 +86,7 @@ public class FlaggingConnection implements Connection {
 
         boolean flagged = dataObject.has("ratter") || dataObject.has("scammer");
 
-        FlagDetail.FlagDetailBuilder builder = FlagDetail.builder()
+        FlagDetail.Builder builder = FlagDetail.FlagDetailBuilder.builder()
                 .flagged(flagged);
 
         JsonObject detailObject = null;
@@ -149,7 +149,7 @@ public class FlaggingConnection implements Connection {
     }
 
     public FlagDetail fromJerryResponse(JsonObject rootObject) {
-        FlagDetail.FlagDetailBuilder builder = FlagDetail.builder()
+        FlagDetail.Builder builder = FlagDetail.FlagDetailBuilder.builder()
                 .flagged(rootObject.get("scammer").getAsBoolean());
 
         if (rootObject.has("details") && rootObject.get("details").isJsonObject()) {
