@@ -5,6 +5,7 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalUser
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.common.model.server.DiscordServerModel
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
@@ -27,8 +28,17 @@ class ScoreCommand : Extension() {
                         .getScores(DiscordServerModel(guild!!.id.value.toLong()), userToCheck.id.value.toLong())
                         .orElse(listOf())
 
+                    val carryCount = DiscordUserConnection.getInstance()
+                        .getCarryCount(userToCheck.id.value.toLong(), guild!!.id.value.toLong()).orElse(null)
+
                     embeds = mutableListOf(
-                        ApplicationService.getScoreCountMessage(userToCheck, event.interaction.user, guild, scores)
+                        ApplicationService.getScoreCountMessage(
+                            userToCheck,
+                            event.interaction.user,
+                            guild,
+                            scores,
+                            carryCount
+                        )
                     )
                 }
             }

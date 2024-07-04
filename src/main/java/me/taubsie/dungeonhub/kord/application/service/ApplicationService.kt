@@ -324,7 +324,8 @@ object ApplicationService {
         userToCheck: User,
         user: User,
         server: GuildBehavior?,
-        scoreCount: List<ScoreModel>
+        scoreCount: List<ScoreModel>,
+        carryCount: Int? = null
     ): EmbedBuilder {
         if (scoreCount.isEmpty()) {
             return noCarryTypeFoundEmbed
@@ -332,9 +333,11 @@ object ApplicationService {
 
         val embed = embed
 
-        embed.title = if ((userToCheck.id != user.id && server != null)
-        ) server.getMember(userToCheck.id).effectiveName + "'s score:"
-        else "Your score:"
+        embed.title = if ((userToCheck.id != user.id && server != null)) {
+            server.getMember(userToCheck.id).effectiveName + "'s score${if (carryCount != null) " from $carryCount carries" else ""}:"
+        } else {
+            "Your score${if (carryCount != null) " from $carryCount carries" else ""}:"
+        }
         embed.color = EmbedColor.DEFAULT.color
 
         val scoreDescriptions: EnumMap<ScoreType, MutableList<String>> = EnumMap<ScoreType, MutableList<String>>(
