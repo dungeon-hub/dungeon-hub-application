@@ -46,7 +46,7 @@ import java.util.*
 @PrivilegedIntent
 @LoadExtension
 class LinkingSystem : Extension() {
-    override val name = "link-system"
+    override val name = "linking-system"
 
     override suspend fun setup() {
         publicSlashCommand(::LinkArguments) {
