@@ -224,6 +224,7 @@ object ApplicationService {
 
         embed.field("User") { "<@${warningModel.user.id}>" }
         embed.field("Striker") { warningModel.striker?.let { "<@${it.id}>" } ?: "CONSOLE" }
+        embed.field("Severity") { warningModel.warningType.name }
         embed.field("Reason") { warningModel.reason ?: "No reason provided." }
         embed.field("Active") { warningModel.isActive.toString() }
 
@@ -240,6 +241,7 @@ object ApplicationService {
         }`"
 
         embedBuilder.field("You") { "<@${warningModel.user.id}>" }
+        embedBuilder.field("Severity") { warningModel.warningType.name }
         embedBuilder.field("Reason") {
             warningModel.reason ?: "No reason provided."
         }
@@ -260,6 +262,7 @@ object ApplicationService {
                 "CONSOLE"
             }
         }
+        embed.field("Severity") { warningModel.warningType.name }
         embed.field("Reason") { warningModel.reason ?: "No reason provided." }
 
         return embed
