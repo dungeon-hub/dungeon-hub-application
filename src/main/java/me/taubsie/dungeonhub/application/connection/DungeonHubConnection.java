@@ -1,11 +1,8 @@
 package me.taubsie.dungeonhub.application.connection;
 
 import lombok.Getter;
-import me.taubsie.dungeonhub.kord.application.config.ConfigProperty;
-import me.taubsie.dungeonhub.kord.application.exceptions.NotFoundException;
-import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.StrikeData;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
+import me.taubsie.dungeonhub.kord.application.config.ConfigProperty;
 import okhttp3.*;
 import okio.Buffer;
 import org.slf4j.Logger;
@@ -14,8 +11,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -121,124 +116,6 @@ public class DungeonHubConnection {
     public HttpUrl.Builder getApiUrl(String uri) {
         return HttpUrl.get(ConfigProperty.API_URL + API_PREFIX + uri)
                 .newBuilder();
-    }
-
-    public StrikeData loadStrikeDataFromId(long serverId, long id) throws NotFoundException {
-        Request request = getApiRequest(getApiUrl("strike/" + serverId)
-                .addQueryParameter("id", String.valueOf(id)).build())
-                .get()
-                .build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (response.code() == 404) {
-                throw new NotFoundException();
-            } else if (response.isSuccessful()) {
-                if (response.body() != null) {
-                    return DungeonHubService.getInstance().getGson().fromJson(response.body().string(),
-                            StrikeData.class);
-                }
-            } else {
-                logger.error("Error when trying to load strike by id.");
-            }
-        }
-        catch (IOException ioException) {
-            logger.error("Error when trying to load strike by id.", ioException);
-        }
-
-        throw new NotFoundException();
-    }
-
-    public List<StrikeData> loadValidStrikeData(long serverId, long userId) {
-        Request request = getApiRequest(getApiUrl("strike/" + serverId)
-                .addQueryParameter("user", String.valueOf(userId)).build())
-                .get()
-                .build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (response.isSuccessful()) {
-                if (response.body() != null) {
-                    return DungeonHubService.getInstance().getGson().fromJson(response.body().string(),
-                            DungeonHubService.getInstance().getStrikeDataListType());
-                }
-            } else {
-                logger.error("Error when trying to load valid strikes.");
-            }
-        }
-        catch (IOException ioException) {
-            logger.error(null, ioException);
-        }
-
-        return new ArrayList<>();
-    }
-
-    public List<StrikeData> loadAllStrikeData(long serverId, long userId) {
-        Request request = getApiRequest(getApiUrl("strike/" + serverId + "/all")
-                .addQueryParameter("user", String.valueOf(userId)).build())
-                .get().build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (response.isSuccessful()) {
-                if (response.body() != null) {
-                    return DungeonHubService.getInstance().getGson().fromJson(response.body().string(),
-                            DungeonHubService.getInstance().getStrikeDataListType());
-                }
-            } else {
-                logger.error("Error when trying to load all strike data of user.");
-            }
-        }
-        catch (IOException ioException) {
-            logger.error(null, ioException);
-        }
-
-        return new ArrayList<>();
-    }
-
-    public StrikeData insertStrikeData(StrikeData strikeData) {
-        RequestBody requestBody = new FormBody.Builder()
-                .add("strikeData", DungeonHubService.getInstance().getGson().toJson(strikeData))
-                .build();
-
-        Request request = getApiRequest("strike")
-                .post(requestBody)
-                .build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (response.isSuccessful()) {
-                if (response.body() != null) {
-                    return DungeonHubService.getInstance().getGson().fromJson(response.body().string(),
-                            StrikeData.class);
-                }
-            } else {
-                logger.error("Error when trying to insert strike.");
-            }
-        }
-        catch (IOException ioException) {
-            logger.error("Error when trying to insert strike.", ioException);
-        }
-
-        return strikeData;
-    }
-
-    public void removeStrike(long serverId, long id) {
-        //TODO implement
-    }
-
-    //TODO maybe extra endpoint with count() in database
-    public int getMaxAllStrikePage(long serverId, long userId) {
-        int entries = DungeonHubConnection.getInstance()
-                .loadAllStrikeData(serverId, userId)
-                .size();
-
-        return (int) Math.ceil(entries / 10.0);
-    }
-
-    //TODO maybe extra endpoint with count() in database
-    public int getMaxValidStrikePage(long serverId, long userId) {
-        int entries = DungeonHubConnection.getInstance()
-                .loadValidStrikeData(serverId, userId)
-                .size();
-
-        return (int) Math.ceil(entries / 10.0);
     }
 
     public Optional<CarryTierModel> removeCarryTier(CarryTierModel carryTier) {
