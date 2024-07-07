@@ -174,6 +174,7 @@ class WarningSystem : Extension() {
                                 }
                             }
 
+                        //TODO request exception
                         target.dm {
                             val dmEmbed = ApplicationService.formatWarnDm(addedWarning)
                             this@dm.embeds = mutableListOf(dmEmbed)
@@ -215,6 +216,7 @@ class WarningSystem : Extension() {
                             }
 
                         try {
+                            //TODO request exception
                             DiscordConnection.bot!!.kordRef.getUser(Snowflake(removedWarning.user.id))
                                 ?.dm {
                                     val dmEmbed = ApplicationService.embed
