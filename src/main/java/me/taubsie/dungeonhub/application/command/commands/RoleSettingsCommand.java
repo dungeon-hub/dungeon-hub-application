@@ -76,7 +76,7 @@ public class RoleSettingsCommand extends Command {
                 .setTitle("Modified role"));
     }
 
-    @Override
+    //TODO @Override
     public List<SlashCommandOption> getSlashCommandOptions() {
         SlashCommandOption roleOption = new SlashCommandOptionBuilder()
                 .setType(SlashCommandOptionType.ROLE)

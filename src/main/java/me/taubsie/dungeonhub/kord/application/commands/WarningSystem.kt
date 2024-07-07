@@ -50,8 +50,11 @@ class WarningSystem : Extension() {
                 var target = user
                 var noPermission = false
 
-                if (arguments.target != null && target.id != user.id) {
-                    if (!user.hasPermission(Permission.ModerateMembers)) {
+                if (arguments.target != null && arguments.target!!.id != user.id) {
+                    if (!user.isOwner()
+                        && !user.hasPermission(Permission.Administrator)
+                        && !user.hasPermission(Permission.ModerateMembers)
+                    ) {
                         noPermission = true
                     } else {
                         target = arguments.target!!
@@ -64,14 +67,14 @@ class WarningSystem : Extension() {
                     "You don't have the permission to see the warns of other people, so you're seeing your own."
 
                 val warns = WarningConnection.getInstance(guild!!.id.value.toLong())
-                    .getActiveWarns(user.id.value.toLong())
+                    .getActiveWarns(target.id.value.toLong())
                     .orElseThrow { CommandExecutionException("Couldn't load active warns of the given user.") }
 
                 if (warns.isEmpty()) {
                     val embed = ApplicationService.embed
                     embed.color = EmbedColor.INFORMATION.color
                     embed.title = "Warns of user ${target.tag}"
-                    embed.description = "User has no warns!"
+                    embed.description = "User hasn't been warned yet!"
 
                     respond {
                         embeds = if (noPermission) {
@@ -88,7 +91,8 @@ class WarningSystem : Extension() {
 
                     page(
                         Page {
-                            val description = "User ${target.tag} has ${warns.count()} active warns."
+                            val description =
+                                "User ${target.tag} has ${warns.count()} active warns.\n\nTo see further details, check the next pages for a list of all of them."
 
                             if (noPermission) {
                                 noPermissionEmbed.description += "\n\n$description"
@@ -99,6 +103,8 @@ class WarningSystem : Extension() {
                                 embed.description = description
                                 copy(embed)
                             }
+
+                            title = "Strikes of user ${target.tag}"
                         }
                     )
 
@@ -152,11 +158,6 @@ class WarningSystem : Extension() {
                         val embed = ApplicationService.formatWarn(addedWarning)
                         embeds = mutableListOf(embed)
 
-                        target.dm {
-                            val dmEmbed = ApplicationService.formatWarnDm(addedWarning)
-                            this@dm.embeds = mutableListOf(dmEmbed)
-                        }
-
                         ServerProperty.STRIKES_LOGS_CHANNEL
                             .getValue(guild!!.id.value.toLong())
                             .map {
@@ -172,6 +173,11 @@ class WarningSystem : Extension() {
                                     this@createMessage.embeds = mutableListOf(logEmbed)
                                 }
                             }
+
+                        target.dm {
+                            val dmEmbed = ApplicationService.formatWarnDm(addedWarning)
+                            this@dm.embeds = mutableListOf(dmEmbed)
+                        }
                     }
                 }
             }
