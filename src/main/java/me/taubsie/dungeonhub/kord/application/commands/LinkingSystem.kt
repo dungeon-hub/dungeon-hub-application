@@ -139,6 +139,8 @@ class LinkingSystem : Extension() {
         publicSlashCommand {
             name = "sync"
             description = "Update your roles and nickname based on your linked account."
+            //TODO maybe rewrite to also allow usage in dms
+            allowInDms = false
 
             action {
                 respond {

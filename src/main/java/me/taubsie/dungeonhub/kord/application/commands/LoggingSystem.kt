@@ -59,6 +59,7 @@ class LoggingSystem : Extension() {
         publicSlashCommand(::LogArguments) {
             name = "log"
             description = "Use this to log your carries."
+            allowInDms = false
 
             action {
                 respond {

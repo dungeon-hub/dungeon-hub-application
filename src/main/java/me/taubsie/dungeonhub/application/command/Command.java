@@ -143,30 +143,6 @@ public abstract class Command {
         return slashCommandCreateEvent.getOptionByName(name).flatMap(SlashCommandInteractionOption::getLongValue);
     }
 
-    public final Long getLongOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
-        Optional<Long> longValue = getOption(slashCommandCreateEvent, name).getLongValue();
-
-        if (longValue.isEmpty()) {
-            throw new InvalidOptionException(name);
-        }
-
-        return longValue.get();
-    }
-
-    public final User getUserOption(String name) {
-        return getUserOption(slashCommandCreateEvent.getSlashCommandInteraction(), name);
-    }
-
-    public final User getUserOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent, String name) {
-        Optional<User> userValue = getOption(slashCommandCreateEvent, name).getUserValue();
-
-        if (userValue.isEmpty()) {
-            throw new InvalidOptionException(name);
-        }
-
-        return userValue.get();
-    }
-
     public final SlashCommandInteractionOption getOption(SlashCommandInteractionOptionsProvider slashCommandCreateEvent,
                                                          String name) {
         Optional<SlashCommandInteractionOption> interactionOption = slashCommandCreateEvent.getOptionByName(name);

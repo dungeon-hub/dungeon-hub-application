@@ -6,10 +6,6 @@ import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
-import org.javacord.api.entity.message.component.ActionRowBuilder;
-import org.javacord.api.entity.message.component.ButtonBuilder;
-import org.javacord.api.entity.message.component.ButtonStyle;
-import org.javacord.api.entity.message.component.HighLevelComponent;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 
 import java.text.DecimalFormat;
@@ -148,22 +144,5 @@ public class ApplicationService {
         carryDifficulty.getActualPriceName().ifPresent(s -> embed.addInlineField("Price Title", s));
 
         return embed;
-    }
-
-    public HighLevelComponent getLinkButtons() {
-        return new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                        .setCustomId("link_user")
-                        .setEmoji("\uD83D\uDD17")
-                        .setLabel("Link")
-                        .setStyle(ButtonStyle.PRIMARY)
-                        .build(),
-                new ButtonBuilder()
-                        .setCustomId("show_help_linking")
-                        .setEmoji("❔")
-                        .setLabel("Help")
-                        .setStyle(ButtonStyle.SECONDARY)
-                        .build()
-        ).build();
     }
 }
