@@ -331,10 +331,12 @@ public class EmbedCommand extends Command {
         } else {
             String embedSource = DungeonHubService.getInstance().getGson().toJson(embeds.size() == 1 ? embeds.get(0) : embeds);
 
-            String description = embedSource;
+            String description;
 
             if (embedSource.length() >= 4000 || type.map(s -> s.equalsIgnoreCase("cdn")).orElse(false)) {
                 description = ContentConnection.getInstance().uploadFile(embedSource.getBytes(StandardCharsets.UTF_8)).map(s -> ContentConnection.getInstance().getCdnUrl(s).toString()).orElse(embedSource);
+            } else {
+                description = "```\n" + embedSource + "\n```";
             }
 
             embedBuilder.setDescription(description);
