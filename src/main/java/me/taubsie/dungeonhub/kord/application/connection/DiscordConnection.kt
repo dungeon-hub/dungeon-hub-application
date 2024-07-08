@@ -254,7 +254,7 @@ object DiscordConnection : StartupListener {
                     resetBotAppearance()
                 }
             }
-        }, Time(System.currentTimeMillis() + 1000), /*1000 * 60*/ 5000)
+        }, Time(System.currentTimeMillis() + 1000), 1000 * 60 * 2)
 
         //TODO delete this once complete
         //do this to reset commands on all servers
