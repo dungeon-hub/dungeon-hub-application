@@ -97,14 +97,15 @@ class EmbedCommand : Extension() {
                             val embedSource =
                                 DungeonHubService.getInstance().gson.toJson(if (embeds.size == 1) embeds[0] else embeds)
 
-                            var description = embedSource
-
-                            if (embedSource.length >= 4000 || arguments.type.equals("cdn", ignoreCase = true)) {
-                                description = ContentConnection.getInstance()
-                                    .uploadFile(embedSource.toByteArray(StandardCharsets.UTF_8)).map { s: String? ->
-                                        ContentConnection.getInstance().getCdnUrl(s).toString()
-                                    }.orElse(embedSource)
-                            }
+                            val description =
+                                if (embedSource.length >= 4000 || arguments.type.equals("cdn", ignoreCase = true)) {
+                                    ContentConnection.getInstance()
+                                        .uploadFile(embedSource.toByteArray(StandardCharsets.UTF_8)).map { s: String? ->
+                                            ContentConnection.getInstance().getCdnUrl(s).toString()
+                                        }.orElse(embedSource)
+                                } else {
+                                    "```\n$embedSource\n```"
+                                }
 
                             embedBuilder.description = description
                         }
