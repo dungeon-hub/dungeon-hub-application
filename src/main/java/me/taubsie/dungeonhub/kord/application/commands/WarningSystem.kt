@@ -183,19 +183,20 @@ class WarningSystem : Extension() {
                 }
             }
 
+            //TODO what about reactivate?
             publicSubCommand(::WarnRemoveArguments) {
-                name = "remove"
-                description = "Remove a given warning."
+                name = "deactivate"
+                description = "Deactivate a given warning."
 
                 action {
                     respond {
                         val removedWarning = WarningConnection.getInstance(guild!!.id.value.toLong())
-                            .removeWarning(arguments.id)
+                            .deactivateWarning(arguments.id)
                             .orElseThrow { InvalidOptionException("id", "Couldn't find a warning with the given id.") }
 
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.POSITIVE.color
-                        embed.description = "Removed warning #${arguments.id} from user <@${removedWarning.user.id}>."
+                        embed.description = "Deactivated warning #${arguments.id} from user <@${removedWarning.user.id}>."
 
                         ServerProperty.STRIKES_LOGS_CHANNEL
                             .getValue(guild!!.id.value.toLong())
@@ -209,7 +210,7 @@ class WarningSystem : Extension() {
                                 channel.createMessage {
                                     val logEmbed = ApplicationService.embed
                                     logEmbed.color = EmbedColor.INFORMATION.color
-                                    logEmbed.description = "<@${user.id}> removed warning #${removedWarning.id}."
+                                    logEmbed.description = "<@${user.id}> deactivated warning #${removedWarning.id}."
 
                                     this@createMessage.embeds = mutableListOf(logEmbed)
                                 }

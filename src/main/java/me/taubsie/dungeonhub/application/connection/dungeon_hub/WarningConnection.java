@@ -71,7 +71,7 @@ public class WarningConnection implements ModuleConnection {
         return executeRequest(request, WarningModel::fromJson);
     }
 
-    public Optional<WarningModel> removeWarning(long id) {
+    public Optional<WarningModel> deactivateWarning(long id) {
         HttpUrl url = getApiUrl(id).build();
 
         Request request = getApiRequest(url).delete().build();
