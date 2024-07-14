@@ -5,7 +5,6 @@ import me.taubsie.dungeonhub.application.enums.EmbedColor;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 
 import java.text.DecimalFormat;
@@ -77,17 +76,6 @@ public class ApplicationService {
 
     public EmbedBuilder getErrorEmbed(EmbedBuilder embed) {
         return embed.setTitle("Error").setColor(EmbedColor.NEGATIVE.getColor());
-    }
-
-    public EmbedBuilder loadEmbedFromDiscordRole(DiscordRoleModel discordRoleModel) {
-        EmbedBuilder embed = getEmbed();
-
-        embed.addInlineField("Role", "<@&" + discordRoleModel.getId() + ">");
-        embed.addInlineField("Name schema", discordRoleModel.getNameSchema() != null ?
-                discordRoleModel.getNameSchema() : "none");
-        embed.addInlineField("Verified role", discordRoleModel.isVerifiedRole() ? "yes" : "no");
-
-        return embed;
     }
 
     public EmbedBuilder getCarryTypeEmbed(CarryTypeModel carryType) {

@@ -1,7 +1,11 @@
 package me.taubsie.dungeonhub.kord.application.commands
 
+import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.commands.Arguments
+import com.kotlindiscord.kord.extensions.commands.application.slash.group
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
+import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalBoolean
+import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
 import com.kotlindiscord.kord.extensions.commands.converters.impl.role
 import com.kotlindiscord.kord.extensions.commands.converters.impl.user
 import com.kotlindiscord.kord.extensions.extensions.Extension
@@ -13,9 +17,13 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleConnection
+import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleCreationModel
+import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleUpdateModel
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.exceptions.NoNameSchemaException
+import me.taubsie.dungeonhub.kord.application.exceptions.NoOptionFoundException
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
 import me.taubsie.dungeonhub.kord.application.service.NicknameService
@@ -51,6 +59,88 @@ class RoleCommand : Extension() {
                 action {
                     respond {
                         embeds = mutableListOf(addRemove(false, user.asMember(guild!!.id), arguments))
+                    }
+                }
+            }
+
+            group("config") {
+                description = "Change the settings of a role."
+
+                publicSubCommand(::RoleConfigSetArguments) {
+                    name = "set"
+                    description = "Set a role config value"
+
+                    check {
+                        hasPermission(Permission.Administrator)
+                    }
+
+                    action {
+                        respond {
+                            val currentRole = DiscordRoleConnection.getInstance(guild!!.id.value.toLong())
+                                .getById(arguments.role.id.value.toLong())
+                                .orElse(null)
+
+                            if (arguments.nameSchema == null && arguments.verifiedRole == null) {
+                                if (currentRole == null) {
+                                    throw NoOptionFoundException()
+                                } else {
+                                    embeds = mutableListOf(ApplicationService.loadEmbedFromDiscordRole(currentRole))
+                                }
+                                return@respond
+                            }
+
+                            val modifiedRole = if (currentRole != null) {
+                                DiscordRoleConnection.getInstance(guild!!.id.value.toLong())
+                                    .updateRole(
+                                        arguments.role.id.value.toLong(),
+                                        DiscordRoleUpdateModel(
+                                            arguments.nameSchema,
+                                            arguments.verifiedRole
+                                        )
+                                    )
+                                    .orElse(null)
+                            } else {
+                                DiscordRoleConnection.getInstance(guild!!.id.value.toLong())
+                                    .addNewRole(
+                                        DiscordRoleCreationModel(
+                                            arguments.role.id.value.toLong(),
+                                            arguments.nameSchema,
+                                            arguments.verifiedRole ?: false
+                                        )
+                                    )
+                                    .orElse(null)
+                            }
+
+                            if (modifiedRole == null) {
+                                val embed = ApplicationService.embed
+                                embed.color = EmbedColor.NEGATIVE.color
+                                embed.description = "Couldn't modify the given role."
+                                embeds = mutableListOf(embed)
+
+                                return@respond
+                            }
+
+                            val embed = ApplicationService.loadEmbedFromDiscordRole(modifiedRole)
+                            embed.color = EmbedColor.POSITIVE.color
+                            embed.title = "Modified role"
+                            embeds = mutableListOf(embed)
+                        }
+                    }
+                }
+
+                publicSubCommand(::RoleConfigResetArguments) {
+                    name = "reset"
+                    description = "Reset a role config value"
+
+                    check {
+                        hasPermission(Permission.Administrator)
+                    }
+
+                    action {
+                        respond {
+                            //TODO finish implementation
+                            throw CommandExecutionException("Command isn't implemented yet.")
+                        }
                     }
                 }
             }
@@ -103,6 +193,30 @@ class RoleCommand : Extension() {
         val role by role {
             name = "role"
             description = "Select which role you mean."
+        }
+    }
+
+    inner class RoleConfigSetArguments : Arguments() {
+        val role by role {
+            name = "role"
+            description = "Select which role you want to configure."
+        }
+
+        val nameSchema by optionalString {
+            name = "name-schema"
+            description = "Set the name schema for this username"
+        }
+
+        val verifiedRole by optionalBoolean {
+            name = "verified-role"
+            description = "Set if the role should automatically be granted to everyone who is linked."
+        }
+    }
+
+    inner class RoleConfigResetArguments : Arguments() {
+        val role by role {
+            name = "role"
+            description = "Select which role you want to configure."
         }
     }
 }
