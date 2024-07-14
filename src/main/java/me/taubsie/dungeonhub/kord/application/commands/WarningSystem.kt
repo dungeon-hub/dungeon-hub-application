@@ -286,8 +286,8 @@ class WarningSystem : Extension() {
         }
 
         val type by stringChoice {
-            name = "type"
-            description = "The type of warning."
+            name = "severity"
+            description = "The severity of the warning."
 
             WarningType.entries.forEach { choice(it.name, it.name) }
         }
