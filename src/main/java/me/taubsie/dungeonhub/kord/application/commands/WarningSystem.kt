@@ -305,9 +305,10 @@ class WarningSystem : Extension() {
                             .orElseThrow { CommandExecutionException("Failed to add evidence to that warning. Did you enter a correct id?") }
 
                         if(arguments.attachment != null && arguments.text != null) {
-                            val embed = ApplicationService.embed
+                            val embed = ApplicationService.embedWithoutTimestamp
                             embed.color = EmbedColor.NEGATIVE.color
                             embed.description = "Please only provide either an attachment or a text. The given text wasn't added as evidence: ```\n${arguments.text}\n```"
+                            embed.footer = null
 
                             embeds = mutableListOf(embed, ApplicationService.formatWarn(warning))
                         } else {
