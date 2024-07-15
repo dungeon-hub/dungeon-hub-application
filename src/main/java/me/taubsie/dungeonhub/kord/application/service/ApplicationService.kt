@@ -27,6 +27,7 @@ import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
 import me.taubsie.dungeonhub.common.model.score.ScoreModel
+import me.taubsie.dungeonhub.common.model.warning.DetailedWarningModel
 import me.taubsie.dungeonhub.common.model.warning.WarningModel
 import me.taubsie.dungeonhub.kord.application.config.ConfigProperty
 import me.taubsie.dungeonhub.kord.application.connection.DiscordConnection
@@ -227,6 +228,28 @@ object ApplicationService {
         embed.field("Severity") { warningModel.warningType.name }
         embed.field("Reason") { warningModel.reason ?: "No reason provided." }
         embed.field("Active") { warningModel.isActive.toString() }
+
+        return embed
+    }
+
+    fun formatWarn(warningModel: DetailedWarningModel): EmbedBuilder {
+        val embed = getEmbed(warningModel.time.toKotlinInstant())
+        embed.color = EmbedColor.INFORMATION.color
+        embed.title = "Warning #${warningModel.id}"
+
+        embed.field("User") { "<@${warningModel.user.id}>" }
+        embed.field("Striker") { warningModel.striker?.let { "<@${it.id}>" } ?: "CONSOLE" }
+        embed.field("Severity") { warningModel.warningType.name }
+        embed.field("Reason") { warningModel.reason ?: "No reason provided." }
+        embed.field("Active") { warningModel.isActive.toString() }
+
+        if(warningModel.evidences.isNotEmpty()) {
+            val evidences = warningModel.evidences.stream().map {
+                "- ${it.evidence}"
+            }.toList().joinToString(separator = System.lineSeparator())
+
+            embed.field("Evidences") { evidences }
+        }
 
         return embed
     }

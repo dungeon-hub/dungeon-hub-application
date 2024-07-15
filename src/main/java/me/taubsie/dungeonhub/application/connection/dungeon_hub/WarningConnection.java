@@ -2,7 +2,9 @@ package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
 import me.taubsie.dungeonhub.common.DungeonHubService;
+import me.taubsie.dungeonhub.common.model.warning.DetailedWarningModel;
 import me.taubsie.dungeonhub.common.model.warning.WarningCreationModel;
+import me.taubsie.dungeonhub.common.model.warning.WarningEvidenceCreationModel;
 import me.taubsie.dungeonhub.common.model.warning.WarningModel;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
@@ -38,24 +40,24 @@ public class WarningConnection implements ModuleConnection {
         return logger;
     }
 
-    public Optional<List<WarningModel>> getAllWarns(long userId) {
+    public Optional<List<DetailedWarningModel>> getAllWarns(long userId) {
         HttpUrl url = getApiUrl("all")
                 .addQueryParameter("user", String.valueOf(userId))
                 .build();
 
         Request request = getApiRequest(url).get().build();
 
-        return executeRequest(request, s -> fromJson(s, DungeonHubService.getInstance().getWarningModelListType()));
+        return executeRequest(request, s -> fromJson(s, DungeonHubService.getInstance().getDetailedWarningModelListType()));
     }
 
-    public Optional<List<WarningModel>> getActiveWarns(long userId) {
+    public Optional<List<DetailedWarningModel>> getActiveWarns(long userId) {
         HttpUrl url = getApiUrl("active")
                 .addQueryParameter("user", String.valueOf(userId))
                 .build();
 
         Request request = getApiRequest(url).get().build();
 
-        return executeRequest(request, s -> fromJson(s, DungeonHubService.getInstance().getWarningModelListType()));
+        return executeRequest(request, s -> fromJson(s, DungeonHubService.getInstance().getDetailedWarningModelListType()));
     }
 
     public Optional<WarningModel> addWarning(WarningCreationModel creationModel) {
@@ -71,11 +73,25 @@ public class WarningConnection implements ModuleConnection {
         return executeRequest(request, WarningModel::fromJson);
     }
 
-    public Optional<WarningModel> deactivateWarning(long id) {
+    public Optional<DetailedWarningModel> deactivateWarning(long id) {
         HttpUrl url = getApiUrl(id).build();
 
         Request request = getApiRequest(url).delete().build();
 
-        return executeRequest(request, WarningModel::fromJson);
+        return executeRequest(request, DetailedWarningModel::fromJson);
+    }
+
+    //TODO test and implement to command
+    public Optional<DetailedWarningModel> addEvidence(long warningId, WarningEvidenceCreationModel evidenceCreationModel) {
+        HttpUrl url = getApiUrl(warningId + "/evidence").build();
+
+        RequestBody requestBody = RequestBody.create(
+                evidenceCreationModel.toJson(),
+                getJsonMediaType()
+        );
+
+        Request request = getApiRequest(url).put(requestBody).build();
+
+        return executeRequest(request, DetailedWarningModel::fromJson);
     }
 }

@@ -4,10 +4,7 @@ import com.kotlindiscord.kord.extensions.annotations.AlwaysPublicResponse
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.stringChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.long
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalMember
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
-import com.kotlindiscord.kord.extensions.commands.converters.impl.user
+import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
@@ -20,9 +17,12 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.channel.GuildMessageChannel
 import kotlinx.coroutines.runBlocking
+import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.WarningConnection
 import me.taubsie.dungeonhub.common.enums.WarningType
 import me.taubsie.dungeonhub.common.model.warning.WarningCreationModel
+import me.taubsie.dungeonhub.common.model.warning.WarningEvidenceCreationModel
 import me.taubsie.dungeonhub.kord.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.kord.application.connection.copy
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
@@ -31,6 +31,8 @@ import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionExcepti
 import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Request
 import org.slf4j.LoggerFactory
 
 @OptIn(AlwaysPublicResponse::class)
@@ -196,7 +198,8 @@ class WarningSystem : Extension() {
 
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.POSITIVE.color
-                        embed.description = "Deactivated warning #${arguments.id} from user <@${removedWarning.user.id}>."
+                        embed.description =
+                            "Deactivated warning #${arguments.id} from user <@${removedWarning.user.id}>."
 
                         ServerProperty.STRIKES_LOGS_CHANNEL
                             .getValue(guild!!.id.value.toLong())
@@ -269,6 +272,69 @@ class WarningSystem : Extension() {
                     }.send()
                 }
             }
+
+            publicSubCommand(::WarnAddEvidenceArguments) {
+                name = "add-evidence"
+                description = "Adds evidence to a warning."
+
+                action {
+                    respond {
+                        val evidence: String = if (arguments.attachment != null) {
+                            val attachmentRequest =
+                                Request.Builder().url(arguments.attachment!!.url.toHttpUrl()).build()
+
+                            val attachmentData = DungeonHubConnection.getInstance()
+                                .executeRawRequest(attachmentRequest)
+                                .orElseThrow { CommandExecutionException("Couldn't read file data.") }
+
+                            val uri = ContentConnection.getInstance()
+                                .uploadFile(attachmentData)
+                                .orElseThrow { CommandExecutionException("Couldn't upload file data to the cdn.") }
+
+                            ContentConnection.getInstance().getCdnUrl(uri).toString()
+                        } else if (arguments.text != null) {
+                            arguments.text!!
+                        } else {
+                            throw CommandExecutionException("Please either add an attachment or a text as evidence.")
+                        }
+
+                        val creationModel = WarningEvidenceCreationModel(evidence, user.id.value.toLong())
+
+                        val warning = WarningConnection.getInstance(guild!!.id.value.toLong())
+                            .addEvidence(arguments.id, creationModel)
+                            .orElseThrow { CommandExecutionException("Failed to add evidence to that warning. Did you enter a correct id?") }
+
+                        if(arguments.attachment != null && arguments.text != null) {
+                            val embed = ApplicationService.embed
+                            embed.color = EmbedColor.NEGATIVE.color
+                            embed.description = "Please only provide either an attachment or a text. The given text wasn't added as evidence: ```\n${arguments.text}\n```"
+
+                            embeds = mutableListOf(embed, ApplicationService.formatWarn(warning))
+                        } else {
+                            embeds = mutableListOf(ApplicationService.formatWarn(warning))
+                        }
+
+                        ServerProperty.STRIKES_LOGS_CHANNEL
+                            .getValue(guild!!.id.value.toLong())
+                            .map {
+                                runBlocking {
+                                    DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
+                                }
+                            }
+                            .orElse(null)
+                            ?.let { channel ->
+                                channel.createMessage {
+                                    val logEmbed = ApplicationService.embed
+                                    logEmbed.color = EmbedColor.INFORMATION.color
+                                    logEmbed.description =
+                                        "<@${user.id}> added an evidence to warning #${warning.id}:\n\n$evidence"
+
+                                    this@createMessage.embeds = mutableListOf(logEmbed)
+                                }
+                            }
+                    }
+                }
+            }
         }
     }
 
@@ -311,6 +377,24 @@ class WarningSystem : Extension() {
         val user by user {
             name = "user"
             description = "The user to see the warnings of."
+        }
+    }
+
+    inner class WarnAddEvidenceArguments : Arguments() {
+        val id by long {
+            name = "id"
+            description = "The id of the warning."
+            minValue = 1
+        }
+
+        val attachment by optionalAttachment {
+            name = "attachment"
+            description = "Add an attachment (image or similar) as evidence."
+        }
+
+        val text by optionalString {
+            name = "text"
+            description = "Add a text (or link) as evidence."
         }
     }
 }
