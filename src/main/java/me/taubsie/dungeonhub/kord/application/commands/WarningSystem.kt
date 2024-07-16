@@ -166,7 +166,7 @@ class WarningSystem : Extension() {
                             "The user now has ${activeWarnings.count()} active warnings, out of which **${activeWarnings.count { it.warningType == WarningType.Serious || it.warningType == WarningType.Major }}** are severe."
                         embeds = mutableListOf(embed)
 
-                        ServerProperty.STRIKES_LOGS_CHANNEL
+                        getChannelProperty(addedWarning.warningType)
                             .getValue(guild!!.id.value.toLong())
                             .map {
                                 runBlocking {
@@ -207,7 +207,7 @@ class WarningSystem : Extension() {
                         embed.description =
                             "Deactivated warning #${arguments.id} from user <@${removedWarning.user.id}>."
 
-                        ServerProperty.STRIKES_LOGS_CHANNEL
+                        getChannelProperty(removedWarning.warningType)
                             .getValue(guild!!.id.value.toLong())
                             .map {
                                 runBlocking {
@@ -322,7 +322,7 @@ class WarningSystem : Extension() {
                             embeds = mutableListOf(ApplicationService.formatWarn(warning))
                         }
 
-                        ServerProperty.STRIKES_LOGS_CHANNEL
+                        getChannelProperty(warning.warningType)
                             .getValue(guild!!.id.value.toLong())
                             .map {
                                 runBlocking {
@@ -403,6 +403,13 @@ class WarningSystem : Extension() {
         val text by optionalString {
             name = "text"
             description = "Add a text (or link) as evidence."
+        }
+    }
+
+    fun getChannelProperty(warningType: WarningType): ServerProperty {
+        return when(warningType) {
+            WarningType.Serious, WarningType.Major, WarningType.Minor -> ServerProperty.MODERATION_LOGS_CHANNEL
+            WarningType.Strike -> ServerProperty.STRIKES_LOGS_CHANNEL
         }
     }
 }
