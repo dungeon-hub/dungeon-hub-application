@@ -264,6 +264,7 @@ object ApplicationService {
         }`"
 
         embedBuilder.field("You") { "<@${warningModel.user.id}>" }
+        embedBuilder.field("Id") { "#${warningModel.id}" }
         embedBuilder.field("Severity") { warningModel.warningType.name }
         embedBuilder.field("Reason") {
             warningModel.reason ?: "No reason provided."
