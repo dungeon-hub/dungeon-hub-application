@@ -163,7 +163,7 @@ class WarningSystem : Extension() {
 
                         val embed = ApplicationService.formatWarn(addedWarning)
                         embed.description =
-                            "The user now has ${activeWarnings.count()} active warnings, out of which **${activeWarnings.count { it.warningType == WarningType.Serious || it.warningType == WarningType.Major }}** are severe."
+                            "That user now has ${activeWarnings.count()} active warnings, out of which **${activeWarnings.count { it.warningType == WarningType.Serious || it.warningType == WarningType.Major }}** are severe."
                         embeds = mutableListOf(embed)
 
                         getChannelProperty(addedWarning.warningType)
@@ -185,6 +185,7 @@ class WarningSystem : Extension() {
                         //TODO request exception
                         target.dm {
                             val dmEmbed = ApplicationService.formatWarnDm(addedWarning)
+                            dmEmbed.description = "You currently have ${activeWarnings.count()} active warnings."
                             this@dm.embeds = mutableListOf(dmEmbed)
                         }
                     }
