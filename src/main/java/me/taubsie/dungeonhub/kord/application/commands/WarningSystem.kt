@@ -406,7 +406,7 @@ class WarningSystem : Extension() {
         }
     }
 
-    fun getChannelProperty(warningType: WarningType): ServerProperty {
+    private fun getChannelProperty(warningType: WarningType): ServerProperty {
         return when(warningType) {
             WarningType.Serious, WarningType.Major, WarningType.Minor -> ServerProperty.MODERATION_LOGS_CHANNEL
             WarningType.Strike -> ServerProperty.STRIKES_LOGS_CHANNEL
