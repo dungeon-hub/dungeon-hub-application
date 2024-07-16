@@ -157,7 +157,13 @@ class WarningSystem : Extension() {
                             .addWarning(creationModel)
                             .orElseThrow { CommandExecutionException("Error while trying to add a warning") }
 
+                        val activeWarnings = WarningConnection.getInstance(guild!!.id.value.toLong())
+                            .getActiveWarns(user.id.value.toLong())
+                            .orElse(listOf())
+
                         val embed = ApplicationService.formatWarn(addedWarning)
+                        embed.description =
+                            "The user now has ${activeWarnings.count()} active warnings, out of which **${activeWarnings.count { it.warningType == WarningType.Serious || it.warningType == WarningType.Major }}** are severe."
                         embeds = mutableListOf(embed)
 
                         ServerProperty.STRIKES_LOGS_CHANNEL
@@ -304,10 +310,11 @@ class WarningSystem : Extension() {
                             .addEvidence(arguments.id, creationModel)
                             .orElseThrow { CommandExecutionException("Failed to add evidence to that warning. Did you enter a correct id?") }
 
-                        if(arguments.attachment != null && arguments.text != null) {
+                        if (arguments.attachment != null && arguments.text != null) {
                             val embed = ApplicationService.embedWithoutTimestamp
                             embed.color = EmbedColor.NEGATIVE.color
-                            embed.description = "Please only provide either an attachment or a text. The given text wasn't added as evidence: ```\n${arguments.text}\n```"
+                            embed.description =
+                                "Please only provide either an attachment or a text. The given text wasn't added as evidence: ```\n${arguments.text}\n```"
                             embed.footer = null
 
                             embeds = mutableListOf(embed, ApplicationService.formatWarn(warning))
