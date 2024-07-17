@@ -32,7 +32,7 @@ import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.kord.application.exceptions.MissingPermissionException
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
-import me.taubsie.dungeonhub.kord.application.service.AutoCompletion
+import me.taubsie.dungeonhub.kord.application.service.AutoCompletionService
 import me.taubsie.dungeonhub.kord.application.service.LeaderboardService
 import me.taubsie.dungeonhub.kord.application.service.PermissionService
 
@@ -178,7 +178,7 @@ class ManageScoreCommand : Extension() {
             name = "carry-type"
             description = "The identifier of the carry type"
             maxLength = 30
-            autoCompleteCallback = AutoCompletion.carryType
+            autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val amount by long {
@@ -194,7 +194,7 @@ class ManageScoreCommand : Extension() {
             name = "carry-type"
             description = "The identifier of the carry type"
             maxLength = 30
-            autoCompleteCallback = AutoCompletion.carryType
+            autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val resetType by enumChoice<ScoreResetType> {

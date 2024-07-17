@@ -9,7 +9,7 @@ import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kord.core.event.interaction.AutoCompleteInteractionCreateEvent
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.*
 
-object AutoCompletion {
+object AutoCompletionService {
     val carryType: AutoCompleteCallback = { event ->
         suggest(
             CarryTypeConnection.getInstance(event.getGuildId())

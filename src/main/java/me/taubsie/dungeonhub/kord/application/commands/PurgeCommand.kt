@@ -27,7 +27,7 @@ import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionExcepti
 import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
-import me.taubsie.dungeonhub.kord.application.service.AutoCompletion
+import me.taubsie.dungeonhub.kord.application.service.AutoCompletionService
 import me.taubsie.dungeonhub.kord.application.service.PurgingService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -314,14 +314,14 @@ class PurgeCommand : Extension() {
             name = "carry-type"
             description = "The identifier of the carry type"
             maxLength = 30
-            autoCompleteCallback = AutoCompletion.carryType
+            autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val purgeType by string {
             name = "purge-type"
             description = "The identifier of the purge type"
             maxLength = 30
-            autoCompleteCallback = AutoCompletion.purgeType
+            autoCompleteCallback = AutoCompletionService.purgeType
         }
 
         val threshold by long {

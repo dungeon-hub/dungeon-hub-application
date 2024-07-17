@@ -16,7 +16,7 @@ import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
-import me.taubsie.dungeonhub.kord.application.service.AutoCompletion
+import me.taubsie.dungeonhub.kord.application.service.AutoCompletionService
 import java.util.*
 
 @LoadExtension
@@ -101,21 +101,21 @@ class CalcPriceCommand : Extension() {
             name = "carry-type"
             description = "The identifier of the carry type"
             maxLength = 30
-            autoCompleteCallback = AutoCompletion.carryType
+            autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
             name = "carry-tier"
             description = "The identifier of the carry tier"
             maxLength = 30
-            autoCompleteCallback = AutoCompletion.carryTier
+            autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val carryDifficulty by string {
             name = "carry-difficulty"
             description = "The identifier of the carry difficulty"
             maxLength = 30
-            autoCompleteCallback = AutoCompletion.carryDifficulty
+            autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
 
         val amount by long {

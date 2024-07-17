@@ -44,7 +44,7 @@ import me.taubsie.dungeonhub.kord.application.enums.ServerProperty
 import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
-import me.taubsie.dungeonhub.kord.application.service.AutoCompletion
+import me.taubsie.dungeonhub.kord.application.service.AutoCompletionService
 import me.taubsie.dungeonhub.kord.application.service.LeaderboardService.refreshLeaderboard
 import me.taubsie.dungeonhub.kord.application.service.PermissionService
 import org.slf4j.LoggerFactory
@@ -456,7 +456,7 @@ class LoggingSystem : Extension() {
         val carryDifficulty by string {
             name = "carry-difficulty"
             description = "The difficulty of the carry."
-            autoCompleteCallback = AutoCompletion.carryDifficulty
+            autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
     }
 }

@@ -16,7 +16,7 @@ import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
 import me.taubsie.dungeonhub.common.model.score.LeaderboardModel
 import me.taubsie.dungeonhub.kord.application.connection.copy
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
-import me.taubsie.dungeonhub.kord.application.service.AutoCompletion
+import me.taubsie.dungeonhub.kord.application.service.AutoCompletionService
 
 @LoadExtension
 class LeaderboardCommand : Extension() {
@@ -92,7 +92,7 @@ class LeaderboardCommand : Extension() {
             name = "carry-type"
             description = "The identifier of the carry type"
             maxLength = 30
-            autoCompleteCallback = AutoCompletion.carryType
+            autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val scoreType by optionalEnumChoice<ScoreType> {
