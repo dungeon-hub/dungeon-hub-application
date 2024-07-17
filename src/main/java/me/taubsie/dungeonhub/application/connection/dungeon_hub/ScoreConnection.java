@@ -2,7 +2,9 @@ package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
 import me.taubsie.dungeonhub.common.DungeonHubService;
+import me.taubsie.dungeonhub.common.enums.ScoreResetType;
 import me.taubsie.dungeonhub.common.enums.ScoreType;
+import me.taubsie.dungeonhub.common.model.ScoreResetModel;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
 import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
 import me.taubsie.dungeonhub.common.model.score.ScoreModel;
@@ -123,5 +125,13 @@ public class ScoreConnection implements ModuleConnection {
                 .build();
 
         return executeRequest(request, LeaderboardModel::fromJson);
+    }
+
+    public Optional<ScoreResetModel> resetScore(ScoreResetType scoreResetType) {
+        HttpUrl url = getApiUrl().addQueryParameter("score-type", scoreResetType.name()).build();
+
+        Request request = getApiRequest(url).delete().build();
+
+        return executeRequest(request, ScoreResetModel::fromJson);
     }
 }

@@ -1,6 +1,8 @@
 package me.taubsie.dungeonhub.kord.application.commands
 
+import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.commands.Arguments
+import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.long
 import com.kotlindiscord.kord.extensions.commands.converters.impl.string
@@ -19,13 +21,15 @@ import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection
-import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException
-import me.taubsie.dungeonhub.kord.application.exceptions.MissingPermissionException
+import me.taubsie.dungeonhub.common.enums.ScoreResetType
 import me.taubsie.dungeonhub.common.enums.ScoreType
 import me.taubsie.dungeonhub.common.model.score.ScoreModel
 import me.taubsie.dungeonhub.common.model.score.ScoreUpdateModel
 import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
 import me.taubsie.dungeonhub.kord.application.enums.ServerProperty
+import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException
+import me.taubsie.dungeonhub.kord.application.exceptions.MissingPermissionException
 import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
 import me.taubsie.dungeonhub.kord.application.service.ApplicationService
 import me.taubsie.dungeonhub.kord.application.service.AutoCompletion
@@ -61,6 +65,44 @@ class ManageScoreCommand : Extension() {
                 action {
                     respond {
                         addRemove(event, guild, arguments, true)()
+                    }
+                }
+            }
+
+            publicSubCommand(::ResetScoreArguments) {
+                name = "reset"
+                description = "Reset score for a given carry type."
+
+                check {
+                    check {
+                        hasPermission(Permission.Administrator)
+                    }
+                }
+
+                action {
+                    respond {
+                        val carryType = CarryTypeConnection.getInstance(guild!!.id.value.toLong())
+                            .getByIdentifier(arguments.carryType)
+                            .orElseThrow { InvalidOptionException("carry-type") }
+
+                        val resetModel = ScoreConnection.getInstance(carryType)
+                            .resetScore(arguments.resetType)
+                            .orElseThrow { CommandExecutionException("Error while getting a response when resseting score.") }
+
+                        val embed = ApplicationService.embed
+                        embed.color = EmbedColor.INFORMATION.color
+                        embed.title = "Score for ${carryType.displayName} successfully reset!"
+                        embed.description = when(arguments.resetType) {
+                            ScoreResetType.Default -> "Default score of ${resetModel.defaultCount} users were reset. ${
+                                if(resetModel.eventCount != 0L) "\nSomehow also ${resetModel.eventCount} got their event score reset?" else ""
+                            }"
+                            ScoreResetType.Event -> "Event score of ${resetModel.eventCount} users were reset. ${
+                                if(resetModel.defaultCount != 0L) "\nSomehow also ${resetModel.defaultCount} got their default score reset?" else ""
+                            }"
+                            ScoreResetType.Both -> "Default score of ${resetModel.defaultCount} users and event score of ${resetModel.eventCount} were reset."
+                        }
+
+                        embeds = mutableListOf(embed)
                     }
                 }
             }
@@ -144,6 +186,21 @@ class ManageScoreCommand : Extension() {
             description = "The amount of score to add/remove."
             maxValue = 10000
             minValue = 0
+        }
+    }
+
+    inner class ResetScoreArguments : Arguments() {
+        val carryType by string {
+            name = "carry-type"
+            description = "The identifier of the carry type"
+            maxLength = 30
+            autoCompleteCallback = AutoCompletion.carryType
+        }
+
+        val resetType by enumChoice<ScoreResetType> {
+            name = "reset-type"
+            description = "Choose which score should be reset"
+            typeName = "ScoreResetType"
         }
     }
 }
