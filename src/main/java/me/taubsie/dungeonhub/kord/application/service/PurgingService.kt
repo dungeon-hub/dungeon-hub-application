@@ -103,6 +103,7 @@ object PurgingService : StartupListener {
                 purgeData.purgeThreshold
             )
             if (rolesRemoved.isNotEmpty()) {
+                //TODO request exception
                 member.dm {
                     val embed = ApplicationService.embed
                     embed.color = EmbedColor.NEGATIVE.color

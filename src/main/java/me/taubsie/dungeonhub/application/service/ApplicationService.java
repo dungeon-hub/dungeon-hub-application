@@ -1,27 +1,16 @@
 package me.taubsie.dungeonhub.application.service;
 
 import lombok.extern.slf4j.Slf4j;
-import me.taubsie.dungeonhub.application.connection.DiscordConnection;
 import me.taubsie.dungeonhub.application.enums.EmbedColor;
-import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.StrikeData;
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
-import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException;
-import org.javacord.api.entity.Nameable;
-import org.javacord.api.entity.message.MessageFlag;
-import org.javacord.api.entity.message.component.*;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
-import org.javacord.api.entity.user.User;
-import org.javacord.api.interaction.InteractionBase;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.Locale;
 
 @Slf4j
 public class ApplicationService {
@@ -85,123 +74,8 @@ public class ApplicationService {
         return String.valueOf(number);
     }
 
-    public EmbedBuilder getErrorEmbed() {
-        return getErrorEmbed(getEmbed());
-    }
-
     public EmbedBuilder getErrorEmbed(EmbedBuilder embed) {
         return embed.setTitle("Error").setColor(EmbedColor.NEGATIVE.getColor());
-    }
-
-    public EmbedBuilder getErrorEmbed(CommandExecutionException commandExecutionException) {
-        return getErrorEmbed().setDescription(commandExecutionException.getMessage());
-    }
-
-    public void respondWithError(InteractionBase interactionBase,
-                                 CommandExecutionException commandExecutionException) {
-        interactionBase.createImmediateResponder()
-                .setFlags(MessageFlag.EPHEMERAL)
-                .addEmbed(getErrorEmbed(commandExecutionException))
-                .respond();
-    }
-
-    public EmbedBuilder loadEmbedFromDiscordRole(DiscordRoleModel discordRoleModel) {
-        EmbedBuilder embed = getEmbed();
-
-        embed.addInlineField("Role", "<@&" + discordRoleModel.getId() + ">");
-        embed.addInlineField("Name schema", discordRoleModel.getNameSchema() != null ?
-                discordRoleModel.getNameSchema() : "none");
-        embed.addInlineField("Verified role", discordRoleModel.isVerifiedRole() ? "yes" : "no");
-
-        return embed;
-    }
-
-    public EmbedBuilder formatStrikes(List<StrikeData> strikeData, User user, int page) {
-        EmbedBuilder embedBuilder = getEmbed()
-                .setColor(EmbedColor.INFORMATION.getColor())
-                .setTitle("Strikes of user " + user.getDiscriminatedName());
-
-        if (strikeData.isEmpty()) {
-            embedBuilder.setDescription("User has no strikes!");
-            return embedBuilder;
-        }
-
-        strikeData.stream()
-                .skip(DungeonHubService.getInstance().getOffsetFromPageNumber(page))
-                .limit(10)
-                .forEach(strike -> {
-                    String striker = Optional.ofNullable(strike.getStriker())
-                            .map(strikerId -> DiscordConnection.getInstance().getBot().getUserById(strikerId))
-                            .map(CompletableFuture::join)
-                            .map(User::getDiscriminatedName)
-                            .orElse("CONSOLE");
-
-                    String reason = Optional.ofNullable(strike.getReason())
-                            .map(s -> " because of \"" + s + "\"")
-                            .orElse("");
-
-                    embedBuilder.addField("Strike #" + strike.getId(),
-                            "By " + striker + " at <t:" + strike.getStrikeTime().toEpochMilli() + ">" + reason);
-                });
-
-        return embedBuilder;
-    }
-
-    public EmbedBuilder formatStrikeLog(StrikeData strikeData) {
-        EmbedBuilder embedBuilder = getEmbed(strikeData.getStrikeTime())
-                .setColor(EmbedColor.INFORMATION.getColor())
-                .setTitle("Strike " +
-                        (strikeData.getId() != null
-                                ? "#" + strikeData.getId()
-                                :
-                                "for " + DiscordConnection.getInstance().getBot().getUserById(strikeData.getUser()).join()
-                                        .getDiscriminatedName()));
-
-        embedBuilder.addField("User", "<@" + strikeData.getUser() + ">");
-        embedBuilder.addField("Striker", strikeData.getStriker() != null ? "<@" + strikeData.getStriker() + ">" :
-                "CONSOLE");
-        embedBuilder.addField("Reason", strikeData.getReason() != null ? strikeData.getReason() : "No reason provided" +
-                ".");
-
-        return embedBuilder;
-    }
-
-    public EmbedBuilder formatStrikeDM(StrikeData strikeData) {
-        EmbedBuilder embedBuilder = getEmbed(strikeData.getStrikeTime())
-                .setColor(EmbedColor.INFORMATION.getColor())
-                .setTitle("You were striked on server `"
-                        + DiscordConnection.getInstance().getBot().getServerById(strikeData.getServer())
-                        .map(Nameable::getName).orElse("unknown")
-                        + "`");
-
-        embedBuilder.addField("You", "<@" + strikeData.getUser() + ">");
-        embedBuilder.addField("Reason", strikeData.getReason() != null ? strikeData.getReason() : "No reason provided" +
-                ".");
-
-        return embedBuilder;
-    }
-
-    public EmbedBuilder formatStrike(StrikeData strikeData) {
-        EmbedBuilder embedBuilder = getEmbed(strikeData.getStrikeTime())
-                .setColor(EmbedColor.INFORMATION.getColor())
-                .setTitle("Strike " +
-                        (strikeData.getId() != null
-                                ? "#" + strikeData.getId()
-                                :
-                                "for " + DiscordConnection.getInstance().getBot().getUserById(strikeData.getUser()).join()
-                                        .getDiscriminatedName())
-                        + " on server `"
-                        + DiscordConnection.getInstance().getBot().getServerById(strikeData.getServer())
-                        .map(Nameable::getName).orElse("unknown")
-                        + "`");
-
-        embedBuilder.addField("User", "<@" + strikeData.getUser() + ">");
-        embedBuilder.addField("Striker", strikeData.getStriker() != null ? "<@" + strikeData.getStriker() + ">" :
-                "CONSOLE");
-        embedBuilder.addField("Reason", strikeData.getReason() != null ? strikeData.getReason() : "No reason provided" +
-                ".");
-
-        return embedBuilder;
     }
 
     public EmbedBuilder getCarryTypeEmbed(CarryTypeModel carryType) {
@@ -258,22 +132,5 @@ public class ApplicationService {
         carryDifficulty.getActualPriceName().ifPresent(s -> embed.addInlineField("Price Title", s));
 
         return embed;
-    }
-
-    public HighLevelComponent getLinkButtons() {
-        return new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                        .setCustomId("link_user")
-                        .setEmoji("\uD83D\uDD17")
-                        .setLabel("Link")
-                        .setStyle(ButtonStyle.PRIMARY)
-                        .build(),
-                new ButtonBuilder()
-                        .setCustomId("show_help_linking")
-                        .setEmoji("❔")
-                        .setLabel("Help")
-                        .setStyle(ButtonStyle.SECONDARY)
-                        .build()
-        ).build();
     }
 }

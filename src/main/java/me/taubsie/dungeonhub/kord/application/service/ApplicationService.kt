@@ -7,13 +7,16 @@ import com.google.zxing.common.BitMatrix
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.QRCodeWriter
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.entity.User
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.EmbedBuilder.Footer
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.common.enums.ScoreType
@@ -24,6 +27,8 @@ import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
 import me.taubsie.dungeonhub.common.model.score.ScoreModel
+import me.taubsie.dungeonhub.common.model.warning.DetailedWarningModel
+import me.taubsie.dungeonhub.common.model.warning.WarningModel
 import me.taubsie.dungeonhub.kord.application.config.ConfigProperty
 import me.taubsie.dungeonhub.kord.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.kord.application.connection.HypixelConnection
@@ -213,100 +218,79 @@ object ApplicationService {
         return loadEmbedFromCarryQueue(carryQueue, getEmbed(Instant.fromEpochSeconds(carryQueue.time.epochSecond)))
     }
 
-    /*suspend fun formatStrikes(strikeData: List<StrikeData>, user: User, page: Int): EmbedBuilder {
-        val embedBuilder = embed
-            .setColor(EmbedColor.INFORMATION.color)
-            .setTitle("Strikes of user " + user.tag)
+    fun formatWarn(warningModel: WarningModel): EmbedBuilder {
+        val embed = getEmbed(warningModel.time.toKotlinInstant())
+        embed.color = EmbedColor.INFORMATION.color
+        embed.title = "Warning #${warningModel.id}"
 
-        if (strikeData.isEmpty()) {
-            embedBuilder.setDescription("User has no strikes!")
-            return embedBuilder
+        embed.field("User") { "<@${warningModel.user.id}>" }
+        embed.field("Striker") { warningModel.striker?.let { "<@${it.id}>" } ?: "CONSOLE" }
+        embed.field("Severity") { warningModel.warningType.name }
+        embed.field("Reason") { warningModel.reason ?: "No reason provided." }
+        embed.field("Active") { warningModel.isActive.toString() }
+
+        return embed
+    }
+
+    fun formatWarn(warningModel: DetailedWarningModel): EmbedBuilder {
+        val embed = getEmbed(warningModel.time.toKotlinInstant())
+        embed.color = EmbedColor.INFORMATION.color
+        embed.title = "Warning #${warningModel.id}"
+
+        embed.field("User") { "<@${warningModel.user.id}>" }
+        embed.field("Striker") { warningModel.striker?.let { "<@${it.id}>" } ?: "CONSOLE" }
+        embed.field("Severity") { warningModel.warningType.name }
+        embed.field("Reason") { warningModel.reason ?: "No reason provided." }
+        embed.field("Active") { warningModel.isActive.toString() }
+
+        if(warningModel.evidences.isNotEmpty()) {
+            val evidences = warningModel.evidences.stream().map {
+                "- ${it.evidence}"
+            }.toList().joinToString(separator = System.lineSeparator())
+
+            embed.field("Evidences") { evidences }
         }
 
-        strikeData.stream()
-            .skip(DungeonHubService.getInstance().getOffsetFromPageNumber(page).toLong())
-            .limit(10)
-            .forEach { strike: StrikeData ->
-                val striker: String = Optional.ofNullable<Long>(strike.striker)
-                    .map<User> { strikerId: Long ->
-                        runBlocking {
-                            DiscordConnection.bot?.getUser(
-                                Snowflake(strikerId)
-                            )
-                        }
-                    }
-                    .map { obj: User -> obj.tag }
-                    .orElse("CONSOLE")
-                val reason = Optional.ofNullable(strike.reason)
-                    .map { s: String -> " because of \"$s\"" }
-                    .orElse("")
-                embedBuilder.addField(
-                    "Strike #" + strike.id,
-                    "By " + striker + " at <t:" + strike.strikeTime.toEpochMilli() + ">" + reason
-                )
+        return embed
+    }
+
+    fun formatWarnDm(warningModel: WarningModel): EmbedBuilder {
+        val embedBuilder = getEmbed(warningModel.time.toKotlinInstant())
+        embedBuilder.color = EmbedColor.INFORMATION.color
+        embedBuilder.title = "You were warned on server `${
+            runBlocking {
+                DiscordConnection.bot!!.kordRef.getGuildOrNull(Snowflake(warningModel.server.id))?.name ?: "unknown"
             }
+        }`"
+
+        embedBuilder.field("You") { "<@${warningModel.user.id}>" }
+        embedBuilder.field("Id") { "#${warningModel.id}" }
+        embedBuilder.field("Severity") { warningModel.warningType.name }
+        embedBuilder.field("Reason") {
+            warningModel.reason ?: "No reason provided."
+        }
 
         return embedBuilder
     }
 
-    suspend fun formatStrikeLog(strikeData: StrikeData): EmbedBuilder {
-        val title =
-            "Strike " + (if (strikeData.id != null) "#$strikeData.id" else "for " + DiscordConnection.getInstance().bot.getUser(
-                Snowflake(strikeData.user)
-            )?.tag)
+    fun formatWarnLog(warningModel: WarningModel): EmbedBuilder {
+        val embed = getEmbed(warningModel.time.toKotlinInstant())
+        embed.color = EmbedColor.INFORMATION.color
+        embed.title = "Warning #${warningModel.id}"
 
-        val embedBuilder = getEmbed(strikeData.strikeTime)
-            .setColor(EmbedColor.INFORMATION.color)
-            .setTitle(title)
+        embed.field("User") { "<@${warningModel.user.id}>" }
+        embed.field("Striker") {
+            if(warningModel.striker != null) {
+                "<@${warningModel.striker.id}>"
+            } else {
+                "CONSOLE"
+            }
+        }
+        embed.field("Severity") { warningModel.warningType.name }
+        embed.field("Reason") { warningModel.reason ?: "No reason provided." }
 
-        embedBuilder.addField("User", "<@" + strikeData.user + ">")
-        embedBuilder.addField("Striker", if (strikeData.striker != null) "<@" + strikeData.striker + ">" else "CONSOLE")
-        embedBuilder.addField(
-            "Reason", if (strikeData.reason != null) strikeData.reason else "No reason provided" +
-                    "."
-        )
-
-        return embedBuilder
+        return embed
     }
-
-    suspend fun formatStrikeDM(strikeData: StrikeData): EmbedBuilder {
-        val embedBuilder = getEmbed(strikeData.strikeTime)
-            .setColor(EmbedColor.INFORMATION.color)
-            .setTitle(
-                "You were striked on server `"
-                        + (DiscordConnection.getInstance().bot.getGuildOrNull(Snowflake(strikeData.server))?.name
-                    ?: "unknown")
-                        + "`"
-            )
-
-        embedBuilder.addField("You", "<@" + strikeData.user + ">")
-        embedBuilder.addField(
-            "Reason", if (strikeData.reason != null) strikeData.reason else "No reason provided" +
-                    "."
-        )
-
-        return embedBuilder
-    }
-
-    suspend fun formatStrike(strikeData: StrikeData): EmbedBuilder {
-        val title =
-            "Strike " + (if (strikeData.id != null) "#$strikeData.id" else "for " + DiscordConnection.getInstance().bot.getUser(
-                Snowflake(strikeData.user)
-            )?.tag)
-
-        val embedBuilder = getEmbed(strikeData.strikeTime)
-            .setColor(EmbedColor.INFORMATION.color)
-            .setTitle(title)
-
-        embedBuilder.addField("User", "<@" + strikeData.user + ">")
-        embedBuilder.addField("Striker", if (strikeData.striker != null) "<@" + strikeData.striker + ">" else "CONSOLE")
-        embedBuilder.addField(
-            "Reason", if (strikeData.reason != null) strikeData.reason else "No reason provided" +
-                    "."
-        )
-
-        return embedBuilder
-    }*/
 
     val noCarryTypeFoundEmbed: EmbedBuilder
         get() {

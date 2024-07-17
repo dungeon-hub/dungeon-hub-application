@@ -46,7 +46,7 @@ import java.util.*
 @PrivilegedIntent
 @LoadExtension
 class LinkingSystem : Extension() {
-    override val name = "link-system"
+    override val name = "linking-system"
 
     override suspend fun setup() {
         publicSlashCommand(::LinkArguments) {
@@ -139,6 +139,8 @@ class LinkingSystem : Extension() {
         publicSlashCommand {
             name = "sync"
             description = "Update your roles and nickname based on your linked account."
+            //TODO maybe rewrite to also allow usage in dms
+            allowInDms = false
 
             action {
                 respond {

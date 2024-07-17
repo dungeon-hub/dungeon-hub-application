@@ -59,6 +59,7 @@ class LoggingSystem : Extension() {
         publicSlashCommand(::LogArguments) {
             name = "log"
             description = "Use this to log your carries."
+            allowInDms = false
 
             action {
                 respond {
@@ -237,6 +238,7 @@ class LoggingSystem : Extension() {
             .orElse(HashSet<CarryQueueModel>())) {
             val carrier = event.kord.getUser(Snowflake(queueModel.carrier.id))
 
+            //TODO request exception
             carrier?.dm {
                 content = "Your log was denied by ${event.interaction.user.mention}."
 
@@ -307,6 +309,7 @@ class LoggingSystem : Extension() {
 
             val carrier = event.kord.getUser(Snowflake(queueModel.carrier.id))
 
+            //TODO request exception
             carrier?.dm {
                 content = "Your carry was logged!\n\n" +
                         "**Score gained:** " + gainedScore +

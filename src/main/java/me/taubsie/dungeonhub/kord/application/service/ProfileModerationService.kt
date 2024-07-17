@@ -116,6 +116,7 @@ object ProfileModerationService {
                     if (unbanForm == null) {
                         user.dm(message)
                     } else {
+                        //TODO request exception
                         user.dm {
                             val actionRow = ActionRowBuilder()
                             actionRow.linkButton(unbanForm) { label = "Appeal" }
