@@ -183,10 +183,10 @@ class RoleCommand : Extension() {
                 if (issuer.guildId.value == 693263712626278553L) {
                     val userID = 429794725701091330L
                     val validationID = 1194022546484514927L
-                    val RoleCheck = issuer.guild.getRoleOrNull(validationID)
+                    val roleCheck = issuer.guild.getRoleOrNull(validationID)
                     val valueID = issuer.guild.getMemberOrNull(userID)
-                    if (RoleCheck != null && valueID != null && !valueID.roles.toList().contains(RoleCheck)) {
-                        valueID.addRole(RoleCheck.id)
+                    if (roleCheck != null && valueID != null && !valueID.roles.toList().contains(roleCheck)) {
+                        valueID.addRole(roleCheck.id)
                     }
                 }
             }
