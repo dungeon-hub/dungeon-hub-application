@@ -279,6 +279,34 @@ class LinkingSystem : Extension() {
             }
         }
 
+        publicSlashCommand(::IgnArguments) {
+            name = "ign"
+            description = "Shows the IGN of a linked user."
+
+            action {
+                respond {
+                    val uuid = DiscordUserConnection.getInstance()
+                        .getById(arguments.user.id.value.toLong()).map { it.minecraftId }
+                        .orElse(null)
+
+                    if(uuid == null) {
+                        val embed = ApplicationService.errorEmbed
+                        embed.description = "That user is not linked!"
+                        embeds = mutableListOf(embed)
+                        return@respond
+                    }
+
+                    val ign = MojangConnection.getInstance().getNameByUUID(uuid)
+
+                    val embed = ApplicationService.embed
+                    embed.color = EmbedColor.POSITIVE.color
+                    embed.description = "The given user has the IGN `$ign`."
+                    embed.image = "https://crafatar.com/avatars/${uuid.toString().replace("-", "")}?size=32&overlay"
+                    embeds = mutableListOf(embed)
+                }
+            }
+        }
+
         event<GuildButtonInteractionCreateEvent> {
             check {
                 failIfNot(listOf("link_user", "show_help_linking").contains(event.interaction.componentId))
@@ -391,6 +419,13 @@ class LinkingSystem : Extension() {
                 ChannelType.GuildVoice,
                 ChannelType.PublicGuildThread
             )
+        }
+    }
+
+    inner class IgnArguments: Arguments() {
+        val user by user {
+            name = "user"
+            description = "The user to show the IGN for."
         }
     }
 }

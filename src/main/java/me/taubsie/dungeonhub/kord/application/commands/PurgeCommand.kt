@@ -175,7 +175,7 @@ class PurgeCommand : Extension() {
                             .toList()
 
                         val purgeCarriers = rolesToRemove.stream()
-                            .map { um -> um.id }
+                            .map { it.id }
                             .distinct()
                             .flatMap { roleId ->
                                 runBlocking {
