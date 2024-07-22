@@ -7,9 +7,13 @@ import com.google.zxing.common.BitMatrix
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.QRCodeWriter
+import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
+import dev.kord.core.behavior.ban
+import dev.kord.core.behavior.edit
+import dev.kord.core.entity.Member
 import dev.kord.core.entity.User
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.EmbedBuilder.Footer
@@ -20,6 +24,7 @@ import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.common.enums.ScoreType
+import me.taubsie.dungeonhub.common.enums.WarningAction
 import me.taubsie.dungeonhub.common.model.carry.CarryModel
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel
 import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel
@@ -28,6 +33,7 @@ import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
 import me.taubsie.dungeonhub.common.model.score.ScoreModel
 import me.taubsie.dungeonhub.common.model.warning.DetailedWarningModel
+import me.taubsie.dungeonhub.common.model.warning.WarningActionModel
 import me.taubsie.dungeonhub.common.model.warning.WarningModel
 import me.taubsie.dungeonhub.kord.application.config.ConfigProperty
 import me.taubsie.dungeonhub.kord.application.connection.DiscordConnection
@@ -45,6 +51,8 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
 import javax.imageio.ImageIO
+import kotlin.concurrent.thread
+import kotlin.time.Duration
 
 object ApplicationService {
     const val MAX_MINECRAFT_USERNAME_LENGTH = 16
@@ -243,7 +251,7 @@ object ApplicationService {
         embed.field("Reason") { warningModel.reason ?: "No reason provided." }
         embed.field("Active") { warningModel.isActive.toString() }
 
-        if(warningModel.evidences.isNotEmpty()) {
+        if (warningModel.evidences.isNotEmpty()) {
             val evidences = warningModel.evidences.stream().map {
                 "- ${it.evidence}"
             }.toList().joinToString(separator = System.lineSeparator())
@@ -280,7 +288,7 @@ object ApplicationService {
 
         embed.field("User") { "<@${warningModel.user.id}>" }
         embed.field("Striker") {
-            if(warningModel.striker != null) {
+            if (warningModel.striker != null) {
                 "<@${warningModel.striker.id}>"
             } else {
                 "CONSOLE"
@@ -547,5 +555,90 @@ object ApplicationService {
         }
 
         return carryDifficulty.price.toLong()
+    }
+
+    suspend fun applyWarningActions(actions: List<WarningActionModel>, member: Member): String? {
+        if (actions.isEmpty()) {
+            return null
+        }
+
+        if (actions.any { it.warningAction == WarningAction.Ban }) {
+            member.ban {
+                reason = "Too many severe warnings."
+            }
+            return "- Permanent ban"
+        }
+
+        val reason = mutableListOf<String>()
+
+        val timeout = actions.filter { it.warningAction == WarningAction.Timeout }
+            .map { parseTimeoutDuration(it.data) }
+            .reduceOrNull { acc, duration -> acc.plus(duration) }
+
+        if (timeout != null && timeout.isPositive()) {
+            member.edit {
+                timeoutUntil = Clock.System.now().plus(timeout)
+                this.reason = "Too many warnings."
+            }
+
+            reason.add("- Timeout for `$timeout`")
+        }
+
+        for (action in actions) {
+            when (action.warningAction) {
+                WarningAction.AddRole -> {
+                    val role = member.guild.getRoleOrNull(Snowflake(action.data))
+
+                    if (role == null) {
+                        reason.add("- Tried to apply role with id `${action.data}`, but it couldn't be found.")
+                        continue
+                    }
+
+                    member.addRole(role.id, "Too many warnings.")
+                    reason.add("- Applied role `${role.name}`")
+                }
+
+                WarningAction.RemoveRole -> {
+                    val role = member.guild.getRoleOrNull(Snowflake(action.data))
+
+                    if (role == null) {
+                        reason.add("- Tried to remove role with id `${action.data}`, but it couldn't be found.")
+                        continue
+                    }
+
+                    member.removeRole(role.id, "Too many warnings.")
+                    reason.add("- Removed role `${role.name}`")
+                }
+
+                WarningAction.RemoveRoleGroup -> {
+                    val role = member.guild.getRoleOrNull(Snowflake(action.data))
+
+                    if (role == null) {
+                        reason.add("- Tried to remove role-group with id `${action.data}`, but it couldn't be found.")
+                        continue
+                    }
+
+                    RolesService.removeRoleGroup(member, role.id.value.toLong())
+                    reason.add("- Removed role `${role.name}` and all connected roles.")
+                }
+
+                WarningAction.Timeout, WarningAction.Ban -> { /* simply ignore, is already handled above */
+                }
+            }
+        }
+
+        thread {
+            runBlocking {
+                val roles = RolesService.updateRoles(member)
+
+                NicknameService.updateNickname(member, roles)
+            }
+        }
+
+        return reason.joinToString(System.lineSeparator())
+    }
+
+    fun parseTimeoutDuration(data: String): Duration {
+        return Duration.parse(data)
     }
 }
