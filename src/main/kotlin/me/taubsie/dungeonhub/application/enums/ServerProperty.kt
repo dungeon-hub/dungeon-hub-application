@@ -1,0 +1,76 @@
+package me.taubsie.dungeonhub.application.enums
+
+import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
+import me.taubsie.dungeonhub.application.service.ServerService.getActualServerProperty
+import me.taubsie.dungeonhub.common.Nameable
+import java.util.*
+
+//TODO implement related properties
+//TODO does it make sense to make relatedProperty object instead of array?
+/**
+ * This enum acts as a list of all properties that can be set on each server individually.
+ *
+ * Please try to use this instead of hardcoding values, as the bot should be able to be used on any server it is
+ * added to.
+ */
+enum class ServerProperty(
+    override val readableName: String,
+    val propertyType: ServerPropertyType = ServerPropertyType.STRING,
+    val enabled: Boolean = true,
+    val relatedProperties: Array<ServerProperty> = arrayOf()
+) : ChoiceEnum, Nameable {
+    PROFILE_MODERATION_BAN_MESSAGE("profile_moderation_message"),
+    BAN_MESSAGE("ban_message"),
+    UNBAN_FORM("unban_form"),
+
+    PROFILE_MODERATION_BAN("profile_moderation_ban", ServerPropertyType.BOOLEAN),
+    SCORE_ENABLED("score_enabled", ServerPropertyType.BOOLEAN, false),
+
+    MODERATION_LOGS_CHANNEL("id_moderation_logs_channel", ServerPropertyType.CHANNEL),
+    SCORE_LOGS_CHANNEL("id_score_logs_channel", ServerPropertyType.CHANNEL),
+    STRIKES_LOGS_CHANNEL("id_strikes_logs_channel", ServerPropertyType.CHANNEL),
+    LOG_APPROVING_CHANNEL("id_log_approving_channel", ServerPropertyType.CHANNEL),
+    TRANSCRIPTS_CHANNEL("id_transcripts_channel", ServerPropertyType.CHANNEL),
+    TOTAL_SCORE_LEADERBOARD_CHANNEL("id_total_score_leaderboard_channel", ServerPropertyType.CHANNEL),
+    SERVICE_TEAM_RULES_CHANNEL("id_service_team_rules_channel", ServerPropertyType.CHANNEL),
+
+    SCORE_MANAGEMENT_ROLE("id_score_management_score", ServerPropertyType.ROLE);
+
+    constructor(name: String, enabled: Boolean) : this(name, ServerPropertyType.STRING, enabled)
+
+    constructor(name: String, propertyType: ServerPropertyType, relatedProperties: Array<ServerProperty>) : this(
+        name,
+        propertyType,
+        true,
+        relatedProperties
+    )
+
+    override fun getName(): String {
+        return readableName
+    }
+
+    fun getValue(serverId: Long): Optional<String> {
+        return getActualServerProperty(serverId, this)
+    }
+
+    fun canAccept(value: String?): Boolean {
+        return propertyType.canAccept(value)
+    }
+
+    fun isEnabled(serverId: Long): Boolean {
+        return (enabled
+                && Arrays.stream(relatedProperties)
+            .flatMap { serverProperty: ServerProperty -> serverProperty.getValue(serverId).stream() }
+            .allMatch { s: String? -> s.equals("true", ignoreCase = true) }
+                && Arrays.stream(relatedProperties)
+            .allMatch { serverProperty: ServerProperty -> serverProperty.isEnabled(serverId) })
+    }
+
+    companion object {
+        fun getPropertyByName(name: String?): Optional<ServerProperty> {
+            return Arrays.stream(entries.toTypedArray())
+                .filter { serverProperty: ServerProperty -> serverProperty.getName().equals(name, ignoreCase = true) }
+                .findAny()
+        }
+    }
+}
