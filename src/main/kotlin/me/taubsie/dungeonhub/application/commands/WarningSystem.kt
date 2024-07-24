@@ -17,20 +17,20 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.channel.GuildMessageChannel
 import kotlinx.coroutines.runBlocking
+import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
+import me.taubsie.dungeonhub.application.connection.copy
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.WarningConnection
+import me.taubsie.dungeonhub.application.enums.EmbedColor
+import me.taubsie.dungeonhub.application.enums.ServerProperty
+import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
+import me.taubsie.dungeonhub.application.loader.LoadExtension
+import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.common.enums.WarningType
 import me.taubsie.dungeonhub.common.model.warning.WarningCreationModel
 import me.taubsie.dungeonhub.common.model.warning.WarningEvidenceCreationModel
-import me.taubsie.dungeonhub.kord.application.connection.DiscordConnection
-import me.taubsie.dungeonhub.kord.application.connection.copy
-import me.taubsie.dungeonhub.kord.application.enums.EmbedColor
-import me.taubsie.dungeonhub.kord.application.enums.ServerProperty
-import me.taubsie.dungeonhub.kord.application.exceptions.CommandExecutionException
-import me.taubsie.dungeonhub.kord.application.exceptions.InvalidOptionException
-import me.taubsie.dungeonhub.kord.application.loader.LoadExtension
-import me.taubsie.dungeonhub.kord.application.service.ApplicationService
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import org.slf4j.LoggerFactory
@@ -159,26 +159,30 @@ class WarningSystem : Extension() {
                                 .addWarning(creationModel)
                                 .orElseThrow { CommandExecutionException("Error while trying to add a warning") }
 
-                        val actionDescription = ApplicationService.applyWarningActions(addedWarning.warningActionModel, target.asMember(guild!!.id))
+                        val actionDescription = ApplicationService.applyWarningActions(
+                            addedWarning.warningActionModel,
+                            target.asMember(guild!!.id)
+                        )
 
                         val activeWarnings = WarningConnection.getInstance(guild!!.id.value.toLong())
                             .getActiveWarns(target.id.value.toLong())
                             .orElse(listOf())
 
                         val embed = ApplicationService.formatWarn(addedWarning.warningModel)
-                        embed.description = "That user now has ${activeWarnings.count()} active warnings, out of which **${activeWarnings.count { it.warningType == WarningType.Serious || it.warningType == WarningType.Major }}** are severe.${
-                            if(actionDescription != null) {
-                                "\nThe user got punished with the following actions:\n$actionDescription"
-                            } else {
-                                ""
-                            }
-                        }${
-                            if(addedWarning.warningModel.warningType == WarningType.Strike) {
-                                "\n\n*_Please note that strikes expire after 3 months._\n_If you want a related punishment removed **after the strikes have expired**, please contact server staff through the support._"
-                            } else {
-                                ""
-                            }
-                        }"
+                        embed.description =
+                            "That user now has ${activeWarnings.count()} active warnings, out of which **${activeWarnings.count { it.warningType == WarningType.Serious || it.warningType == WarningType.Major }}** are severe.${
+                                if (actionDescription != null) {
+                                    "\nThe user got punished with the following actions:\n$actionDescription"
+                                } else {
+                                    ""
+                                }
+                            }${
+                                if (addedWarning.warningModel.warningType == WarningType.Strike) {
+                                    "\n\n*_Please note that strikes expire after 3 months._\n_If you want a related punishment removed **after the strikes have expired**, please contact server staff through the support._"
+                                } else {
+                                    ""
+                                }
+                            }"
                         embeds = mutableListOf(embed)
 
                         getChannelProperty(addedWarning.warningModel.warningType)
@@ -193,8 +197,9 @@ class WarningSystem : Extension() {
                                 channel.createMessage {
                                     val logEmbed = ApplicationService.formatWarnLog(addedWarning.warningModel)
 
-                                    if(actionDescription != null) {
-                                        logEmbed.description = "The following actions were applied to the user:\n$actionDescription"
+                                    if (actionDescription != null) {
+                                        logEmbed.description =
+                                            "The following actions were applied to the user:\n$actionDescription"
                                     }
 
                                     this@createMessage.embeds = mutableListOf(logEmbed)
@@ -204,8 +209,9 @@ class WarningSystem : Extension() {
                         //TODO request exception
                         target.dm {
                             val dmEmbed = ApplicationService.formatWarnDm(addedWarning.warningModel)
-                            if(actionDescription != null) {
-                                dmEmbed.description = "You currently have ${activeWarnings.count()} active warnings, due to which you were punished with the following:\n$actionDescription"
+                            if (actionDescription != null) {
+                                dmEmbed.description =
+                                    "You currently have ${activeWarnings.count()} active warnings, due to which you were punished with the following:\n$actionDescription"
                             } else {
                                 dmEmbed.description = "You currently have ${activeWarnings.count()} active warnings."
                             }
