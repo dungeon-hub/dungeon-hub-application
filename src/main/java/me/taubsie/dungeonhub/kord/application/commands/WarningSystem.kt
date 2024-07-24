@@ -166,7 +166,13 @@ class WarningSystem : Extension() {
                         val embed = ApplicationService.formatWarn(addedWarning.warningModel)
                         embed.description = "That user now has ${activeWarnings.count()} active warnings, out of which **${activeWarnings.count { it.warningType == WarningType.Serious || it.warningType == WarningType.Major }}** are severe.${
                             if(actionDescription != null) {
-                                "The user got punished with the following actions:\n$actionDescription"
+                                "\nThe user got punished with the following actions:\n$actionDescription"
+                            } else {
+                                ""
+                            }
+                        }${
+                            if(addedWarning.warningModel.warningType == WarningType.Strike) {
+                                "\n\n*_Please note that strikes expire after 3 months._\n_If you want a related punishment removed **after the strikes have expired**, please contact server staff through the support._"
                             } else {
                                 ""
                             }
