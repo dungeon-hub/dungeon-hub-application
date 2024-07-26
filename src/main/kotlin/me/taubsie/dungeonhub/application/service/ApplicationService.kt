@@ -15,6 +15,7 @@ import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.User
+import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.EmbedBuilder.Footer
 import kotlinx.coroutines.runBlocking
@@ -558,6 +559,7 @@ object ApplicationService {
         return carryDifficulty.price.toLong()
     }
 
+    //TODO maybe make sure that multiple actions on roles don't override each other?
     suspend fun applyWarningActions(actions: List<WarningActionModel>, member: Member): String? {
         if (actions.isEmpty()) {
             return null
@@ -630,9 +632,11 @@ object ApplicationService {
 
         thread {
             runBlocking {
-                val roles = RolesService.updateRoles(member)
+                val reloadedMember = member.withStrategy(EntitySupplyStrategy.rest).fetchMember()
 
-                NicknameService.updateNickname(member, roles)
+                val roles = RolesService.updateRoles(reloadedMember)
+
+                NicknameService.updateNickname(reloadedMember, roles)
             }
         }
 
