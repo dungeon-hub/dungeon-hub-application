@@ -178,7 +178,7 @@ class WarningSystem : Extension() {
                                 }
                             }${
                                 if (addedWarning.warningModel.warningType == WarningType.Strike) {
-                                    "\n\n*_Please note that strikes expire after 3 months._"
+                                    "\n\n_Please note that strikes expire after 3 months._"
                                 } else {
                                     ""
                                 }
