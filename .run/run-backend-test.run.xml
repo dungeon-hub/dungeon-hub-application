@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="run-backend-test" type="Application" factoryName="Application">
+    <option name="ALTERNATIVE_JRE_PATH" value="jbr-17" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+    <envs>
+      <env name="spring_profiles_active" value="test" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="me.taubsie.dungeonhub.server.DungeonHubServerApplication" />
+    <module name="dungeon-hub-server" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
