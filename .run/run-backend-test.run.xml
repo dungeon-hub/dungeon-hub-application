@@ -8,7 +8,9 @@
     <option name="MAIN_CLASS_NAME" value="me.taubsie.dungeonhub.server.DungeonHubServerApplication" />
     <module name="dungeon-hub-server" />
     <method v="2">
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="build-common" run_configuration_type="MavenRunConfiguration" />
       <option name="Make" enabled="true" />
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="start-test-database" run_configuration_type="docker-deploy" />
     </method>
   </configuration>
 </component>
