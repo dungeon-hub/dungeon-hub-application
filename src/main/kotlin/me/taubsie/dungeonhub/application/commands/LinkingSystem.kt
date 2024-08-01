@@ -2,6 +2,7 @@ package me.taubsie.dungeonhub.application.commands
 
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.converters.impl.channel
+import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalBoolean
 import com.kotlindiscord.kord.extensions.commands.converters.impl.string
 import com.kotlindiscord.kord.extensions.commands.converters.impl.user
 import com.kotlindiscord.kord.extensions.extensions.Extension
@@ -19,13 +20,16 @@ import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.Role
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.interaction.ButtonInteraction
+import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
-import kotlinx.coroutines.flow.*
+import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import me.taubsie.dungeonhub.application.connection.HypixelConnection.getHypixelLinkedDiscord
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
@@ -276,7 +280,11 @@ class LinkingSystem : Extension() {
                         embeds = mutableListOf(embed)
 
                         actionRow {
-                            addLinkButtons()
+                            if (arguments.silent == true) {
+                                addSilentLinkButtons()
+                            } else {
+                                addLinkButtons()
+                            }
                         }
                     }
 
@@ -320,12 +328,18 @@ class LinkingSystem : Extension() {
 
         event<GuildButtonInteractionCreateEvent> {
             check {
-                failIfNot(listOf("link_user", "show_help_linking").contains(event.interaction.componentId))
+                failIfNot(
+                    listOf(
+                        "link_user",
+                        "link_user_silent",
+                        "show_help_linking"
+                    ).contains(event.interaction.componentId)
+                )
             }
 
             action {
                 when (event.interaction.componentId) {
-                    "link_user" -> {
+                    "link_user", "link_user_silent" -> {
                         val linkedTo =
                             DiscordUserConnection.getInstance()
                                 .getById(event.interaction.user.id.value.toLong())
@@ -346,7 +360,11 @@ class LinkingSystem : Extension() {
                             return@action
                         }
 
-                        event.interaction.sendLinkModal()
+                        if (event.interaction.componentId == "link_user") {
+                            event.interaction.sendLinkModal()
+                        } else {
+                            event.interaction.sendSilentLinkModal()
+                        }
                     }
 
                     "show_help_linking" -> {
@@ -375,7 +393,9 @@ class LinkingSystem : Extension() {
 
         event<ModalSubmitInteractionCreateEvent> {
             check {
-                failIfNot(event.interaction.modalId == "link_ign")
+                failIfNot(
+                    event.interaction.modalId == "link_ign" || event.interaction.modalId == "link_ign_silent"
+                )
             }
 
             action {
@@ -388,11 +408,9 @@ class LinkingSystem : Extension() {
                     )
                 }
 
-                val linkedId: UUID
+                val linkedId = NicknameService.linkToIgn(ign, event.interaction.user)
 
-                event.interaction.respondPublic {
-                    linkedId = NicknameService.linkToIgn(ign, event.interaction.user)
-
+                val response: InteractionResponseCreateBuilder.() -> Unit = {
                     val embed = ApplicationService.embed
                     embed.title = "Linked successfully"
                     embed.description = "Your UUID is now `$linkedId`"
@@ -401,9 +419,29 @@ class LinkingSystem : Extension() {
                     embeds = mutableListOf(embed)
                 }
 
+                if (event.interaction.modalId == "link_ign") {
+                    event.interaction.respondPublic(response)
+                } else {
+                    event.interaction.respondEphemeral(response)
+                }
+
                 val roles = RolesService.updateRoles(event.interaction.user)
 
                 NicknameService.updateNickname(event.interaction.user, roles)
+            }
+        }
+
+        event<MemberJoinEvent> {
+            action {
+                val roles = RolesService.updateRoles(event.member)
+
+                try {
+                    NicknameService.updateNickname(event.member, roles)
+                } catch (ignored: NoNameSchemaException) {
+                    //ignore, just don't do anything then
+                } catch (ignored: NotLinkedException) {
+                    //ignore, no name has to be applied
+                }
             }
         }
     }
@@ -433,6 +471,11 @@ class LinkingSystem : Extension() {
                 ChannelType.PublicGuildThread
             )
         }
+
+        val silent by optionalBoolean {
+            name = "silent"
+            description = "If the bot should reply silently (using ephemeral messages)"
+        }
     }
 
     inner class IgnArguments : Arguments() {
@@ -455,8 +498,32 @@ fun ActionRowBuilder.addLinkButtons() {
     }
 }
 
+fun ActionRowBuilder.addSilentLinkButtons() {
+    interactionButton(ButtonStyle.Primary, "link_user_silent") {
+        emoji(ReactionEmoji.Unicode("\uD83D\uDD17"))
+        label = "Link"
+    }
+
+    interactionButton(ButtonStyle.Secondary, "show_help_linking") {
+        emoji(ReactionEmoji.Unicode("❔"))
+        label = "Help"
+    }
+}
+
 suspend fun ButtonInteraction.sendLinkModal() {
     modal("Link your ingame-account.", "link_ign") {
+        actionRow {
+            textInput(TextInputStyle.Short, "ign", "Ingame-Name") {
+                allowedLength = 3..ApplicationService.MAX_MINECRAFT_USERNAME_LENGTH
+                placeholder = "For example: Taubsie"
+                required = true
+            }
+        }
+    }
+}
+
+suspend fun ButtonInteraction.sendSilentLinkModal() {
+    modal("Link your ingame-account.", "link_ign_silent") {
         actionRow {
             textInput(TextInputStyle.Short, "ign", "Ingame-Name") {
                 allowedLength = 3..ApplicationService.MAX_MINECRAFT_USERNAME_LENGTH
