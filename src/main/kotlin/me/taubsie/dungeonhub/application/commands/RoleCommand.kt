@@ -146,7 +146,8 @@ class RoleCommand : Extension() {
                     }
                 }
 
-                publicSubCommand(::RoleConfigResetArguments) {
+                //TODO finish implementation
+                /*publicSubCommand(::RoleConfigResetArguments) {
                     name = "reset"
                     description = "Reset a role config value"
 
@@ -160,7 +161,7 @@ class RoleCommand : Extension() {
                             throw CommandExecutionException("Command isn't implemented yet.")
                         }
                     }
-                }
+                }*/
             }
         }
     }
