@@ -63,6 +63,17 @@ class RoleCommand : Extension() {
                 }
             }
 
+            publicSubCommand(::RoleGroupRemoveArguments) {
+                name = "remove-group"
+                description = "Remove a role group from a user"
+
+                action {
+                    respond {
+                        embeds = mutableListOf(removeRoleGroup(user.asMember(guild!!.id), arguments))
+                    }
+                }
+            }
+
             group("config") {
                 description = "Change the settings of a role."
 
@@ -191,6 +202,37 @@ class RoleCommand : Extension() {
         return embed
     }
 
+    suspend fun removeRoleGroup(issuer: Member, arguments: RoleGroupRemoveArguments): EmbedBuilder {
+        if ((arguments.role.guild.asGuild().ownerId != issuer.id)
+            && (arguments.role.getPosition() >= (issuer.roles.map { it.getPosition() }.toList().maxOrNull() ?: 0))
+        ) {
+            throw CommandExecutionException("You aren't allowed to manage roles that are higher than those that you have.")
+        }
+
+        RolesService.removeRoleGroup(arguments.target.asMember(issuer.guildId), arguments.role.id.value.toLong())
+
+        val embed = ApplicationService.embed
+        embed.color = EmbedColor.POSITIVE.color
+        embed.description =
+            "Successfully removed the user ${arguments.target.mention} from the role-group ${arguments.role.mention}."
+
+        thread(start = true) {
+            runBlocking {
+                val member = arguments.target.fetchMember(issuer.guildId)
+
+                val updatedRoles = RolesService.updateRoles(member)
+
+                try {
+                    NicknameService.updateNickname(member, updatedRoles)
+                } catch (ignored: NoNameSchemaException) {
+                    //ignore this, in that case you just don't apply a nickname
+                }
+            }
+        }
+
+        return embed
+    }
+
     inner class RoleArguments : Arguments() {
         val user by user {
             name = "user"
@@ -200,6 +242,18 @@ class RoleCommand : Extension() {
         val role by role {
             name = "role"
             description = "Select which role you mean."
+        }
+    }
+
+    inner class RoleGroupRemoveArguments : Arguments() {
+        val target by user {
+            name = "user"
+            description = "Select which user to remove the role group of."
+        }
+
+        val role by role {
+            name = "role-group"
+            description = "The role group to remove from the given user."
         }
     }
 
