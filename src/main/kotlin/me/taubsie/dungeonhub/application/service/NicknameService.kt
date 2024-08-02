@@ -82,7 +82,6 @@ object NicknameService {
      *
      * @param user the Discord user for whom to update the nickname on all mutual servers
      * @throws NoNameSchemaException if no valid role with a non-blank name schema is found while updating the nickname
-     * @throws NullPointerException  if the user is `null`
      */
     suspend fun updateNickname(user: User, roles: Map<Long, List<Role>>) {
         user.getMutualServers().collect { member: Member ->
@@ -105,7 +104,6 @@ object NicknameService {
      * @param member  the discord server member for whom to update the nickname
      * @throws NoNameSchemaException if no valid role with a non-blank name schema is found while updating the nickname
      * @throws NotLinkedException    if the user is not linked to a Minecraft account
-     * @throws NullPointerException  if the user or server is `null`
      */
     @Throws(NoNameSchemaException::class, NotLinkedException::class)
     suspend fun updateNickname(member: Member, serverRoles: List<Role>?) {

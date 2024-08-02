@@ -159,17 +159,33 @@ class WarningSystem : Extension() {
                                 .addWarning(creationModel)
                                 .orElseThrow { CommandExecutionException("Error while trying to add a warning") }
 
-                        val activeWarnings =
-                            WarningConnection.getInstance(guild!!.id.value.toLong())
-                                .getActiveWarns(user.id.value.toLong())
-                                .orElse(listOf())
+                        val actionDescription = ApplicationService.applyWarningActions(
+                            addedWarning.warningActionModel,
+                            target.asMember(guild!!.id)
+                        )
 
-                        val embed = ApplicationService.formatWarn(addedWarning)
+                        val activeWarnings = WarningConnection.getInstance(guild!!.id.value.toLong())
+                            .getActiveWarns(target.id.value.toLong())
+                            .orElse(listOf())
+
+                        val embed = ApplicationService.formatWarn(addedWarning.warningModel)
                         embed.description =
-                            "That user now has ${activeWarnings.count()} active warnings, out of which **${activeWarnings.count { it.warningType == WarningType.Serious || it.warningType == WarningType.Major }}** are severe."
+                            "That user now has ${activeWarnings.count()} active warnings, out of which **${activeWarnings.count { it.warningType == WarningType.Serious || it.warningType == WarningType.Major }}** are severe.${
+                                if (actionDescription != null) {
+                                    "\nThe user got punished with the following actions:\n$actionDescription"
+                                } else {
+                                    ""
+                                }
+                            }${
+                                if (addedWarning.warningModel.warningType == WarningType.Strike) {
+                                    "\n\n_Please note that strikes expire after 3 months._"
+                                } else {
+                                    ""
+                                }
+                            }"
                         embeds = mutableListOf(embed)
 
-                        getChannelProperty(addedWarning.warningType)
+                        getChannelProperty(addedWarning.warningModel.warningType)
                             .getValue(guild!!.id.value.toLong())
                             .map {
                                 runBlocking {
@@ -179,7 +195,12 @@ class WarningSystem : Extension() {
                             .orElse(null)
                             ?.let { channel ->
                                 channel.createMessage {
-                                    val logEmbed = ApplicationService.formatWarnLog(addedWarning)
+                                    val logEmbed = ApplicationService.formatWarnLog(addedWarning.warningModel)
+
+                                    if (actionDescription != null) {
+                                        logEmbed.description =
+                                            "The following actions were applied to the user:\n$actionDescription"
+                                    }
 
                                     this@createMessage.embeds = mutableListOf(logEmbed)
                                 }
@@ -187,8 +208,18 @@ class WarningSystem : Extension() {
 
                         //TODO request exception
                         target.dm {
-                            val dmEmbed = ApplicationService.formatWarnDm(addedWarning)
-                            dmEmbed.description = "You currently have ${activeWarnings.count()} active warnings."
+                            val dmEmbed = ApplicationService.formatWarnDm(addedWarning.warningModel)
+                            if (actionDescription != null) {
+                                dmEmbed.description =
+                                    "You currently have ${activeWarnings.count()} active warnings, due to which you were punished with the following:\n$actionDescription"
+                            } else {
+                                dmEmbed.description = "You currently have ${activeWarnings.count()} active warnings."
+                            }
+
+                            if (addedWarning.warningModel.warningType == WarningType.Strike) {
+                                dmEmbed.description += "\n\n*_Please note that strikes expire after 3 months._\n_If you want a related punishment removed **after the strikes have expired**, please contact server staff through the support._"
+                            }
+
                             this@dm.embeds = mutableListOf(dmEmbed)
                         }
                     }

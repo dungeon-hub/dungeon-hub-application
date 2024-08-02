@@ -7,10 +7,15 @@ import com.google.zxing.common.BitMatrix
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.QRCodeWriter
+import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
+import dev.kord.core.behavior.ban
+import dev.kord.core.behavior.edit
+import dev.kord.core.entity.Member
 import dev.kord.core.entity.User
+import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.EmbedBuilder.Footer
 import kotlinx.coroutines.runBlocking
@@ -27,6 +32,7 @@ import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import me.taubsie.dungeonhub.application.misc.FlagResponse
 import me.taubsie.dungeonhub.common.enums.ScoreType
+import me.taubsie.dungeonhub.common.enums.WarningAction
 import me.taubsie.dungeonhub.common.model.carry.CarryModel
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel
 import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel
@@ -35,6 +41,7 @@ import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
 import me.taubsie.dungeonhub.common.model.score.ScoreModel
 import me.taubsie.dungeonhub.common.model.warning.DetailedWarningModel
+import me.taubsie.dungeonhub.common.model.warning.WarningActionModel
 import me.taubsie.dungeonhub.common.model.warning.WarningModel
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -45,6 +52,8 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
 import javax.imageio.ImageIO
+import kotlin.concurrent.thread
+import kotlin.time.Duration
 
 object ApplicationService {
     const val MAX_MINECRAFT_USERNAME_LENGTH = 16
@@ -548,5 +557,93 @@ object ApplicationService {
         }
 
         return carryDifficulty.price.toLong()
+    }
+
+    //TODO maybe make sure that multiple actions on roles don't override each other?
+    suspend fun applyWarningActions(actions: List<WarningActionModel>, member: Member): String? {
+        if (actions.isEmpty()) {
+            return null
+        }
+
+        if (actions.any { it.warningAction == WarningAction.Ban }) {
+            member.ban {
+                reason = "Too many severe warnings."
+            }
+            return "- Permanent ban"
+        }
+
+        val reason = mutableListOf<String>()
+
+        val timeout = actions.filter { it.warningAction == WarningAction.Timeout }
+            .map { parseTimeoutDuration(it.data) }
+            .reduceOrNull { acc, duration -> acc.plus(duration) }
+
+        if (timeout != null && timeout.isPositive()) {
+            member.edit {
+                timeoutUntil = Clock.System.now().plus(timeout)
+                this.reason = "Too many warnings."
+            }
+
+            reason.add("- Timeout for `$timeout`")
+        }
+
+        for (action in actions) {
+            when (action.warningAction) {
+                WarningAction.AddRole -> {
+                    val role = member.guild.getRoleOrNull(Snowflake(action.data))
+
+                    if (role == null) {
+                        reason.add("- Tried to apply role with id `${action.data}`, but it couldn't be found.")
+                        continue
+                    }
+
+                    member.addRole(role.id, "Too many warnings.")
+                    reason.add("- Applied role `${role.name}`")
+                }
+
+                WarningAction.RemoveRole -> {
+                    val role = member.guild.getRoleOrNull(Snowflake(action.data))
+
+                    if (role == null) {
+                        reason.add("- Tried to remove role with id `${action.data}`, but it couldn't be found.")
+                        continue
+                    }
+
+                    member.removeRole(role.id, "Too many warnings.")
+                    reason.add("- Removed role `${role.name}`")
+                }
+
+                WarningAction.RemoveRoleGroup -> {
+                    val role = member.guild.getRoleOrNull(Snowflake(action.data))
+
+                    if (role == null) {
+                        reason.add("- Tried to remove role-group with id `${action.data}`, but it couldn't be found.")
+                        continue
+                    }
+
+                    RolesService.removeRoleGroup(member, role.id.value.toLong())
+                    reason.add("- Removed role `${role.name}` and all connected roles.")
+                }
+
+                WarningAction.Timeout, WarningAction.Ban -> { /* simply ignore, is already handled above */
+                }
+            }
+        }
+
+        thread {
+            runBlocking {
+                val reloadedMember = member.withStrategy(EntitySupplyStrategy.rest).fetchMember()
+
+                val roles = RolesService.updateRoles(reloadedMember)
+
+                NicknameService.updateNickname(reloadedMember, roles)
+            }
+        }
+
+        return reason.joinToString(System.lineSeparator())
+    }
+
+    fun parseTimeoutDuration(data: String): Duration {
+        return Duration.parse(data)
     }
 }

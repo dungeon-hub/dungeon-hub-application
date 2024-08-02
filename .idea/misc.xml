@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="EntryPointsManager">
-    <list size="9">
+    <list size="10">
       <item index="0" class="java.lang.String" itemvalue="me.taubsie.carrylogs.application.command.CommandParameters" />
       <item index="1" class="java.lang.String" itemvalue="me.taubsie.carrylogs.application.listener.Listener" />
       <item index="2" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.application.command.CommandParameters" />
       <item index="3" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.application.listener.Listener" />
-      <item index="4" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.application.loader.OnStart" />
-      <item index="5" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.kord.application.loader.LoadExtension" />
-      <item index="6" class="java.lang.String" itemvalue="org.apache.logging.log4j.core.config.plugins.Plugin" />
-      <item index="7" class="java.lang.String" itemvalue="org.apache.logging.log4j.core.config.plugins.PluginFactory" />
-      <item index="8" class="java.lang.String" itemvalue="org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity" />
+      <item index="4" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.application.loader.LoadExtension" />
+      <item index="5" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.application.loader.OnStart" />
+      <item index="6" class="java.lang.String" itemvalue="me.taubsie.dungeonhub.kord.application.loader.LoadExtension" />
+      <item index="7" class="java.lang.String" itemvalue="org.apache.logging.log4j.core.config.plugins.Plugin" />
+      <item index="8" class="java.lang.String" itemvalue="org.apache.logging.log4j.core.config.plugins.PluginFactory" />
+      <item index="9" class="java.lang.String" itemvalue="org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity" />
     </list>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
