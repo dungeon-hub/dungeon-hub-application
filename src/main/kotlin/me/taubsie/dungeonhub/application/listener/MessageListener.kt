@@ -17,6 +17,7 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Message
+import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kord.core.entity.channel.DmChannel
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
@@ -360,6 +361,12 @@ class MessageListener : Extension() {
             || event.message.channel is DmChannel
             || event.guildId?.isDungeonHub() != true
         ) {
+            return
+        }
+
+        val categoryId = event.message.channel.asChannelOfOrNull<CategorizableChannel>()?.categoryId?.value?.toLong()
+
+        if(categoryId != null && listOf(796769131880906782, 1172688079262330900, 1168970186666283148, 992922801075912764, 992922867857641594, 1112458713958195250, 842840550704939053, 805833601748828200, 805833672678309908, 805833843633815664, 805834037108670464).contains(categoryId)) {
             return
         }
 
