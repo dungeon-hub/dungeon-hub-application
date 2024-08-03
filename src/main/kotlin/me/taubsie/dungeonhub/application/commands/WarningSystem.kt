@@ -279,6 +279,8 @@ class WarningSystem : Extension() {
                         } catch (exception: Exception) {
                             logger.error(null, exception)
                         }
+
+                        embeds = mutableListOf(embed)
                     }
                 }
             }
