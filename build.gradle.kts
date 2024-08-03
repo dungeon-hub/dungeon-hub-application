@@ -65,3 +65,12 @@ tasks.withType<JavaCompile> {
 tasks.withType<Javadoc> {
     options.encoding = "UTF-8"
 }
+
+//TODO remove this once all classes are written in Kotlin
+sourceSets {
+    main {
+        java {
+            srcDir("src")
+        }
+    }
+}
