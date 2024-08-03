@@ -106,7 +106,8 @@ class MessageListener : Extension() {
         )
     }
 
-    private suspend fun logTicket(message: Message, server: Guild?) {
+    @Synchronized
+    private fun logTicket(message: Message, server: Guild?) {
         if (server == null) {
             return
         }
@@ -190,30 +191,32 @@ class MessageListener : Extension() {
                             || queueModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
                     && approvingChannel.isPresent
                 ) {
-                    val createdMessage = approvingChannel.get()
-                        .createMessage {
-                            val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
-                            embed.title = "Accept carry-log?"
-                            embed.color = EmbedColor.DEFAULT.color
+                    runBlocking {
+                        val createdMessage = approvingChannel.get()
+                            .createMessage {
+                                val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                                embed.title = "Accept carry-log?"
+                                embed.color = EmbedColor.DEFAULT.color
 
-                            embeds = mutableListOf(embed)
+                                embeds = mutableListOf(embed)
 
-                            actionRow {
-                                interactionButton(ButtonStyle.Success, "accept_log") {
-                                    label = "Accept"
-                                }
+                                actionRow {
+                                    interactionButton(ButtonStyle.Success, "accept_log") {
+                                        label = "Accept"
+                                    }
 
-                                interactionButton(ButtonStyle.Danger, "deny") {
-                                    label = "Deny"
+                                    interactionButton(ButtonStyle.Danger, "deny") {
+                                        label = "Deny"
+                                    }
                                 }
                             }
-                        }
 
-                    updateModel.setQueueStep(QueueStep.APPROVING)
-                        .setRelationId(createdMessage.id.value.toLong())
+                        updateModel.setQueueStep(QueueStep.APPROVING)
+                            .setRelationId(createdMessage.id.value.toLong())
 
-                    QueueConnection.getInstance()
-                        .updateQueue(queueModel.id, updateModel)
+                        QueueConnection.getInstance()
+                            .updateQueue(queueModel.id, updateModel)
+                    }
                 } else {
                     val updatedScore =
                         QueueConnection.getInstance()
@@ -233,60 +236,62 @@ class MessageListener : Extension() {
                                     .orElse(0L)
                             }
 
-                    val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(queueModel.carrier.id))
+                    runBlocking {
+                        val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(queueModel.carrier.id))
 
-                    if (carrier != null) {
-                        carrier.dm {
-                            val gainedScore = queueModel.calculateScore()
+                        if (carrier != null) {
+                            carrier.dm {
+                                val gainedScore = queueModel.calculateScore()
 
-                            this.content = "Your carry was logged!\n\n" +
-                                    "**Score gained:** $gainedScore\n" +
-                                    "**Your Updated Score:** $updatedScore"
+                                this.content = "Your carry was logged!\n\n" +
+                                        "**Score gained:** $gainedScore\n" +
+                                        "**Your Updated Score:** $updatedScore"
 
-                            val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
-                            embed.title = "Information"
-                            embed.color = EmbedColor.DEFAULT.color
-
-                            embeds = mutableListOf(embed)
-                        }
-
-                        val logChannel = queueModel.carryTier
-                            .carryType
-                            .logChannel
-                            .map { id: Long ->
-                                runBlocking { server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id)) }
-                            }
-
-                        if (logChannel.isPresent) {
-                            logger.debug(
-                                "Carry logged: {}",
-                                DungeonHubService.getInstance().gson.toJson(queueModel)
-                            )
-
-                            logChannel.get().createMessage {
-                                val embed = ApplicationService.getEmbed(queueModel.time.toKotlinInstant())
-                                embed.title = "Carry accepted."
-                                embed.color = EmbedColor.POSITIVE.color
-                                embed.field("Number of carries", true) { queueModel.amount.toString() }
-                                embed.field("Type of carry", true) {
-                                    "${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName}"
-                                }
-                                embed.field("Player", true) {
-                                    "<@${queueModel.player.id}>"
-                                }
-                                embed.field("Carrier", true) {
-                                    "<@${queueModel.carrier.id}>"
-                                }
-                                embed.field("Transcript-Link", true) {
-                                    "[Click to open](${queueModel.attachmentLink})"
-                                }
+                                val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                                embed.title = "Information"
+                                embed.color = EmbedColor.DEFAULT.color
 
                                 embeds = mutableListOf(embed)
                             }
-                        }
 
-                        QueueConnection.getInstance()
-                            .deleteQueue(queueModel.id)
+                            val logChannel = queueModel.carryTier
+                                .carryType
+                                .logChannel
+                                .map { id: Long ->
+                                    runBlocking { server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id)) }
+                                }
+
+                            if (logChannel.isPresent) {
+                                logger.debug(
+                                    "Carry logged: {}",
+                                    DungeonHubService.getInstance().gson.toJson(queueModel)
+                                )
+
+                                logChannel.get().createMessage {
+                                    val embed = ApplicationService.getEmbed(queueModel.time.toKotlinInstant())
+                                    embed.title = "Carry accepted."
+                                    embed.color = EmbedColor.POSITIVE.color
+                                    embed.field("Number of carries", true) { queueModel.amount.toString() }
+                                    embed.field("Type of carry", true) {
+                                        "${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName}"
+                                    }
+                                    embed.field("Player", true) {
+                                        "<@${queueModel.player.id}>"
+                                    }
+                                    embed.field("Carrier", true) {
+                                        "<@${queueModel.carrier.id}>"
+                                    }
+                                    embed.field("Transcript-Link", true) {
+                                        "[Click to open](${queueModel.attachmentLink})"
+                                    }
+
+                                    embeds = mutableListOf(embed)
+                                }
+                            }
+
+                            QueueConnection.getInstance()
+                                .deleteQueue(queueModel.id)
+                        }
                     }
                 }
 
