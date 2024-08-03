@@ -93,18 +93,18 @@ class ManageScoreCommand : Extension() {
                                 carryType
                             )
                                 .resetScore(arguments.resetType)
-                                .orElseThrow { CommandExecutionException("Error while getting a response when resseting score.") }
+                                .orElseThrow { CommandExecutionException("Error while getting a response when resetting score.") }
 
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.INFORMATION.color
                         embed.title = "Score for ${carryType.displayName} successfully reset!"
                         embed.description = when (arguments.resetType) {
                             ScoreResetType.Default -> "Default score of ${resetModel.defaultCount} users were reset. ${
-                                if (resetModel.eventCount != 0L) "\nSomehow also ${resetModel.eventCount} got their event score reset?" else ""
+                                if (resetModel.eventCount != 0L) "\nSomehow also ${resetModel.eventCount} users got their event score reset?" else ""
                             }"
 
                             ScoreResetType.Event -> "Event score of ${resetModel.eventCount} users were reset. ${
-                                if (resetModel.defaultCount != 0L) "\nSomehow also ${resetModel.defaultCount} got their default score reset?" else ""
+                                if (resetModel.defaultCount != 0L) "\nSomehow also ${resetModel.defaultCount} users got their default score reset?" else ""
                             }"
 
                             ScoreResetType.Both -> "Default score of ${resetModel.defaultCount} users and event score of ${resetModel.eventCount} were reset."

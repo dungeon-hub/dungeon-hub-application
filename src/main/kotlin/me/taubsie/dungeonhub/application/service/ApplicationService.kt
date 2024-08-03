@@ -241,7 +241,7 @@ object ApplicationService {
         return embed
     }
 
-    fun formatWarn(warningModel: DetailedWarningModel): EmbedBuilder {
+    fun formatWarn(warningModel: DetailedWarningModel, showEvidences: Boolean = true): EmbedBuilder {
         val embed = getEmbed(warningModel.time.toKotlinInstant())
         embed.color = EmbedColor.INFORMATION.color
         embed.title = "Warning #${warningModel.id}"
@@ -252,7 +252,7 @@ object ApplicationService {
         embed.field("Reason") { warningModel.reason ?: "No reason provided." }
         embed.field("Active") { warningModel.isActive.toString() }
 
-        if (warningModel.evidences.isNotEmpty()) {
+        if (showEvidences && warningModel.evidences.isNotEmpty()) {
             val evidences = warningModel.evidences.stream().map {
                 "- ${it.evidence}"
             }.toList().joinToString(separator = System.lineSeparator())

@@ -107,14 +107,14 @@ class WarningSystem : Extension() {
                                 copy(embed)
                             }
 
-                            title = "Strikes of user ${target.tag}"
+                            title = "Warns of user ${target.tag}"
                         }
                     )
 
                     for (warning in warns) {
                         page(
                             Page {
-                                val embed = ApplicationService.formatWarn(warning)
+                                val embed = ApplicationService.formatWarn(warning, showEvidences = user.hasPermission(Permission.ModerateMembers))
 
                                 copy(embed)
                             }
@@ -217,7 +217,7 @@ class WarningSystem : Extension() {
                             }
 
                             if (addedWarning.warningModel.warningType == WarningType.Strike) {
-                                dmEmbed.description += "\n\n*_Please note that strikes expire after 3 months._\n_If you want a related punishment removed **after the strikes have expired**, please contact server staff through the support._"
+                                dmEmbed.description += "\n\n_Please note that strikes expire after 3 months._\n_If you want a related punishment removed **after the strikes have expired**, please contact server staff through the support._"
                             }
 
                             this@dm.embeds = mutableListOf(dmEmbed)
@@ -247,6 +247,7 @@ class WarningSystem : Extension() {
                         embed.color = EmbedColor.POSITIVE.color
                         embed.description =
                             "Deactivated warning #${arguments.id} from user <@${removedWarning.user.id}>."
+                        embeds = mutableListOf(embed)
 
                         getChannelProperty(removedWarning.warningType)
                             .getValue(guild!!.id.value.toLong())
@@ -279,8 +280,6 @@ class WarningSystem : Extension() {
                         } catch (exception: Exception) {
                             logger.error(null, exception)
                         }
-
-                        embeds = mutableListOf(embed)
                     }
                 }
             }
