@@ -137,7 +137,7 @@ object LeaderboardService : StartupListener {
 
         runBlocking {
             launch {
-                val message = channel.messages.filter { message -> message.author?.kord?.selfId == message.author?.id }
+                val message = channel.messages.filter { message -> message.kord.selfId == message.author?.id }
                     .firstOrNull()
 
                 if (message == null) {
