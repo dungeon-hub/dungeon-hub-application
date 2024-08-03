@@ -1,6 +1,7 @@
 package me.taubsie.dungeonhub.application.service
 
 import dev.kord.common.entity.Snowflake
+import dev.kord.common.exception.RequestException
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.channel.GuildMessageChannel
@@ -179,11 +180,15 @@ object LeaderboardService : StartupListener {
                 val leaderboardChannel = carryType.leaderboardChannel
                     .flatMap { id: Long? ->
                         runBlocking {
-                            Optional.ofNullable(
-                                DiscordConnection.bot
-                                    ?.kordRef
-                                    ?.getChannelOf<GuildMessageChannel>(Snowflake(id!!))
-                            )
+                            try {
+                                return@runBlocking Optional.ofNullable(
+                                    DiscordConnection.bot
+                                        ?.kordRef
+                                        ?.getChannelOf<GuildMessageChannel>(Snowflake(id!!))
+                                )
+                            } catch (exception: RequestException) {
+                                return@runBlocking Optional.empty()
+                            }
                         }
                     }
 
@@ -222,11 +227,15 @@ object LeaderboardService : StartupListener {
                 .flatMap { id: String? ->
                     try {
                         runBlocking {
-                            return@runBlocking Optional.ofNullable(
-                                DiscordConnection.bot
-                                    ?.kordRef
-                                    ?.getChannelOf<GuildMessageChannel>(Snowflake(id!!))
-                            )
+                            try {
+                                return@runBlocking Optional.ofNullable(
+                                    DiscordConnection.bot
+                                        ?.kordRef
+                                        ?.getChannelOf<GuildMessageChannel>(Snowflake(id!!))
+                                )
+                            } catch (exception: RequestException) {
+                                return@runBlocking Optional.empty()
+                            }
                         }
                     } catch (completionException: CompletionException) {
                         return@flatMap Optional.empty()
