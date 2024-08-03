@@ -19,7 +19,7 @@ class UserChangeListener : Extension() {
                     return@action
                 }
 
-                val result = ProfileModerationService.checkUserName(event.member.globalName)
+                val result = ProfileModerationService.checkUserName(event.member.globalName ?: event.member.username)
                 if (result != null) {
                     ProfileModerationService.handleUserBan(event.getGuild(), event.member, result)
                 }
@@ -33,7 +33,7 @@ class UserChangeListener : Extension() {
                         return@collect
                     }
 
-                    val result = ProfileModerationService.checkUserName(event.user.globalName)
+                    val result = ProfileModerationService.checkUserName(event.user.globalName ?: event.user.username)
 
                     if (result != null) {
                         ProfileModerationService.handleUserBan(member.guild.asGuild(), member, result)

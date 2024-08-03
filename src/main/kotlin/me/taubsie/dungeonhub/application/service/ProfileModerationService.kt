@@ -75,7 +75,7 @@ object ProfileModerationService {
         }
     }
 
-    fun checkUserName(userName: String?): String? {
+    fun checkUserName(userName: String): String? {
         val searchResults = homoglyph!!.search(userName, *forbiddenUsernames)
 
         if (searchResults.isEmpty()) {
