@@ -22,7 +22,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.getTotalAmountOfMoneySpent
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.listener.ServerJoinListener
 import me.taubsie.dungeonhub.application.loader.ClassLoader
@@ -90,9 +92,20 @@ object DiscordConnection : StartupListener {
             "Remember to close and /log"
         },
         AppearanceType.Listening to {
-            val time = Duration.between(uptime, Instant.now()).toKotlinDuration().toString()
+            val time = Duration.between(uptime, Instant.now())
+                .withNanos(0)
+                //TODO is this needed?
+                //.withSeconds(0)
+                .toKotlinDuration()
+                .toString()
 
             "discord events since $time"
+        },
+        AppearanceType.Custom to {
+            val amount = DiscordServerConnection.getInstance()
+                .getTotalAmountOfMoneySpent(693263712626278553L)
+
+            "${ApplicationService.makeNumberReadable(amount)} coins spent on Dungeon Hub!"
         }
     )
 
@@ -242,7 +255,7 @@ object DiscordConnection : StartupListener {
                     resetBotAppearance()
                 }
             }
-        }, Time(System.currentTimeMillis() + 1000), 1000 * 60 * 2)
+        }, Time(System.currentTimeMillis() + 5000), 1000 * 60 * 30)
     }
 }
 
