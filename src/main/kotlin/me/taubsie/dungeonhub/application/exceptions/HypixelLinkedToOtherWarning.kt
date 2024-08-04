@@ -1,6 +1,6 @@
 package me.taubsie.dungeonhub.application.exceptions
 
-class HypixelLinkedToOtherException : CommandExecutionException {
+class HypixelLinkedToOtherWarning : CommandExecutionWarning {
     constructor(ign: String) : super(
         """
     `$ign` has their ingame discord-account set to something else.

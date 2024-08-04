@@ -57,7 +57,7 @@ object NicknameService {
         }
 
         if (!hypixelName.get().equals(username, ignoreCase = true)) {
-            throw HypixelLinkedToOtherException(
+            throw HypixelLinkedToOtherWarning(
                 ign,
                 hypixelName.get(),
                 user.username

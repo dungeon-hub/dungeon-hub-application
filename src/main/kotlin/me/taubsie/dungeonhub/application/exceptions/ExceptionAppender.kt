@@ -1,8 +1,7 @@
 package me.taubsie.dungeonhub.application.exceptions
 
+import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.core.Kord
-import dev.kord.core.behavior.channel.createMessage
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
@@ -25,6 +24,10 @@ import java.util.stream.Collectors
 open class ExceptionAppender protected constructor(name: String?, filter: Filter?) :
     AbstractAppender(name, filter, null, true, Property.EMPTY_ARRAY) {
     override fun append(logEvent: LogEvent) {
+        if (logEvent.thrown is CommandExecutionWarning) {
+            return
+        }
+
         val embed = ApplicationService.embed
         embed.color = EmbedColor.NEGATIVE.color
         embed.title = logEvent.message.formattedMessage
@@ -34,16 +37,13 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
         }
 
         runBlocking {
-            launch {
-                val kord: Kord? = DiscordConnection.bot?.kordRef
+            val kord: Kord? = DiscordConnection.bot?.kordRef
 
-                if (kord != null) {
-                    ApplicationService.getBotOwner(kord)
-                        ?.getDmChannelOrNull()
-                        ?.createMessage {
-                            embeds = mutableListOf(embed)
-                        }
-                }
+            if (kord != null) {
+                ApplicationService.getBotOwner(kord)
+                    ?.dm {
+                        embeds = mutableListOf(embed)
+                    }
             }
         }
     }
@@ -72,7 +72,6 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
     }
 
     private fun getStacktrace(throwable: Throwable): String {
-
         return Arrays.stream(throwable.stackTrace)
             .map { obj: StackTraceElement -> obj.toString() }
             .map { s: String -> "> $s" }
