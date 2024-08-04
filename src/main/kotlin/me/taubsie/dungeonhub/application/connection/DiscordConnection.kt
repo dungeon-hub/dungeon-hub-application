@@ -243,12 +243,6 @@ object DiscordConnection : StartupListener {
                 }
             }
         }, Time(System.currentTimeMillis() + 1000), 1000 * 60 * 2)
-
-        //TODO delete this once complete
-        //do this to reset commands on all servers
-        ServerJoinListener.GUILD_ON_JOIN.forEach {
-            bot?.kordRef?.createGuildApplicationCommands(Snowflake(it)) {}?.collect()
-        }
     }
 }
 
