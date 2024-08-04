@@ -13,6 +13,7 @@ import dev.kord.core.entity.Message
 import dev.kord.core.entity.User
 import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.core.event.gateway.ReadyEvent
+import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.gateway.builder.PresenceBuilder
@@ -214,7 +215,7 @@ object DiscordConnection : StartupListener {
         message.add("Im on servers:")
         message.addAll(
             bot?.kordRef?.guilds?.map { server ->
-                "${server.name} with id '${server.id}' by ${server.getOwnerOrNull()?.effectiveName ?: "no-name"} (${server.ownerId})"
+                "${server.name} with id '${server.id}' by ${server.withStrategy(EntitySupplyStrategy.cache).getOwnerOrNull()?.effectiveName ?: "no-name"} (${server.ownerId})"
             }!!.toList()
         )
 
@@ -237,10 +238,6 @@ object DiscordConnection : StartupListener {
     }
 
     override suspend fun onStart() {
-        logger.info(LINE)
-        getServerListMessage().forEach(logger::info)
-        logger.info(LINE)
-
         ServerJoinListener.GUILD_ON_JOIN.addAll(
             bot?.kordRef?.guilds?.map { guild ->
                 guild.id.value
@@ -249,6 +246,10 @@ object DiscordConnection : StartupListener {
     }
 
     override suspend fun postStart() {
+        logger.info(LINE)
+        getServerListMessage().forEach(logger::info)
+        logger.info(LINE)
+
         Timer().scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
                 runBlocking {
