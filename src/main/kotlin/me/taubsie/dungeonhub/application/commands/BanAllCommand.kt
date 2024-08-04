@@ -7,8 +7,9 @@ import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.common.entity.Snowflake
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
+import dev.kord.core.supplier.EntitySupplyStrategy
 import me.taubsie.dungeonhub.application.enums.EmbedColor
+import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.ProfileModerationService
@@ -39,7 +40,11 @@ class BanAllCommand : Extension() {
                     }
 
                     for (userId in users) {
-                        val user = guild!!.getMemberOrNull(Snowflake(userId.trim()))
+                        val user = try {
+                            user.kord.getUser(Snowflake(userId.trim()), EntitySupplyStrategy.rest)
+                        } catch (exception: Exception) {
+                            null
+                        }
 
                         if (user == null) {
                             errors.add(userId)

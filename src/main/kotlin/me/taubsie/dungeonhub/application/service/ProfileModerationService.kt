@@ -97,13 +97,13 @@ object ProfileModerationService {
             .orElse(java.lang.Boolean.TRUE)
     }
 
-    fun handleUserBan(server: Guild, user: Member, executor: User, reason: String) {
+    fun handleUserBan(server: Guild, user: User, executor: User, reason: String) {
         dmBannedPerson(server, user, reason)
 
         executeBan(server, user, executor, reason)
     }
 
-    fun handleUserBan(server: Guild, user: Member, username: String) {
+    fun handleUserBan(server: Guild, user: User, username: String) {
         dmBannedPerson(server, user)
 
         executeBan(server, user, username)
@@ -211,12 +211,12 @@ object ProfileModerationService {
         }
     }
 
-    private fun executeBan(server: Guild, user: Member, executor: User, reason: String) {
+    private fun executeBan(server: Guild, user: User, executor: User, reason: String) {
         runBlocking {
             launch {
                 server.ban(user.id) {
                     deleteMessageDuration = Duration.of(6, ChronoUnit.DAYS).toKotlinDuration()
-                    this.reason = "Executor: " + executor.username + ", Reason:" + reason
+                    this.reason = "Executor: ${executor.username}, Reason: $reason"
                 }
             }
         }
