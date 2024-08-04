@@ -132,4 +132,28 @@ public class DiscordServerConnection implements ModuleConnection {
 
         return executeRequest(request, LeaderboardModel::fromJson);
     }
+
+    public Optional<Long> fetchTotalAmountOfMoneySpent(long serverId, @Nullable Long userId, @Nullable Long carrierId, @Nullable Long carryTypeId, @Nullable Long carryTierId) {
+        HttpUrl.Builder url = getApiUrl(serverId + "/total-amount-spent");
+
+        if (userId != null) {
+            url.addQueryParameter("user", String.valueOf(userId));
+        }
+
+        if (carrierId != null) {
+            url.addQueryParameter("carrier", String.valueOf(carrierId));
+        }
+
+        if (carryTypeId != null) {
+            url.addQueryParameter("carry-type", String.valueOf(carryTypeId));
+        }
+
+        if (carryTierId != null) {
+            url.addQueryParameter("carry-tier", String.valueOf(carryTierId));
+        }
+
+        Request request = getApiRequest(url.build()).get().build();
+
+        return executeRequest(request, Long::parseLong);
+    }
 }
