@@ -23,6 +23,8 @@ import java.util.function.Predicate
 object ServerService : StartupListener {
     private val logger: Logger = LoggerFactory.getLogger(ServerService::class.java)
     private val serverData: MutableSet<ServerData> = HashSet()
+        @Synchronized
+        get
     private var timer: Timer? = null
 
     init {

@@ -4,11 +4,13 @@ import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.asChannelOfOrNull
+import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.User
 import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.rest.builder.component.ActionRowBuilder
+import dev.kord.rest.builder.message.AllowedMentionsBuilder
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -195,13 +197,11 @@ object ProfileModerationService {
                         }
                     }
             }
-        }
 
-        if (isBanDisabled(server.id.value.toLong())) {
-            return
-        }
+            if (isBanDisabled(server.id.value.toLong())) {
+                return@runBlocking
+            }
 
-        runBlocking {
             launch {
                 server.ban(user.id) {
                     deleteMessageDuration = Duration.of(6, ChronoUnit.DAYS).toKotlinDuration()
@@ -219,27 +219,23 @@ object ProfileModerationService {
                     this.reason = "Executor: ${executor.username}, Reason: $reason"
                 }
             }
-        }
 
-        runBlocking {
-            launch {
-                ServerProperty.MODERATION_LOGS_CHANNEL
-                    .getValue(server.id.value.toLong())
-                    .map { s: String ->
-                        return@map async {
-                            server.getChannel(Snowflake(s))
+            ServerProperty.MODERATION_LOGS_CHANNEL
+                .getValue(server.id.value.toLong())
+                .map { s: String ->
+                    return@map async {
+                        server.getChannel(Snowflake(s))
+                    }
+                }
+                .ifPresent { serverTextChannel ->
+                    runBlocking {
+                        serverTextChannel.await().asChannelOfOrNull<MessageChannel>()?.createMessage {
+                            content =
+                                "User ${user.mention} got banned by ${executor.mention} for reason: \n$reason"
+                            allowedMentions = AllowedMentionsBuilder()
                         }
                     }
-                    .ifPresent { serverTextChannel ->
-                        runBlocking {
-                            launch {
-                                serverTextChannel.await().asChannelOfOrNull<MessageChannel>()?.createMessage(
-                                    content = "User ${user.mention} got banned by ${executor.mention} for reason: \n$reason"
-                                )
-                            }
-                        }
-                    }
-            }
+                }
         }
     }
 

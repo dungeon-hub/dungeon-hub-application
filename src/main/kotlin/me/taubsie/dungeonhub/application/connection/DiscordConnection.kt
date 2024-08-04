@@ -35,9 +35,11 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.sql.Time
+import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.regex.Pattern
+import kotlin.time.toKotlinDuration
 
 /**
  * This is the main-class for the application.
@@ -88,24 +90,7 @@ object DiscordConnection : StartupListener {
             "Remember to close and /log"
         },
         AppearanceType.Listening to {
-            val diff = Instant.now().toEpochMilli() - uptime.toEpochMilli()
-
-            val diffSeconds = diff / 1000 % 60
-            val diffMinutes = diff / (60 * 1000) % 60
-            val diffHours = diff / (60 * 60 * 1000) % 24
-            val diffDays = diff / (24 * 60 * 60 * 1000)
-
-            val time = if (diffDays > 0) {
-                "$diffDays days"
-            } else if (diffHours > 0) {
-                "$diffHours hours"
-            } else if (diffMinutes > 0) {
-                "$diffMinutes minutes"
-            } else if (diffSeconds > 0) {
-                "$diffSeconds seconds"
-            } else {
-                "just now"
-            }
+            val time = Duration.between(uptime, Instant.now()).toKotlinDuration().toString()
 
             "discord events since $time"
         }
