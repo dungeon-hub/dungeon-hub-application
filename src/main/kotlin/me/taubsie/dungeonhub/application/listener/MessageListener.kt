@@ -376,7 +376,7 @@ class MessageListener : Extension() {
 
         val firstMessage = event.message.channel.messages.reduce { _, message2 -> message2 }
 
-        if (firstMessage.mentionedUsers.count() != 1) {
+        if (firstMessage.mentionedUsers.count() != 1 || firstMessage.author?.isBot == false) {
             return
         }
 
