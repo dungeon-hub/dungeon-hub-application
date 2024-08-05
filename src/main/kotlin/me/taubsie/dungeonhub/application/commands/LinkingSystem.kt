@@ -396,7 +396,7 @@ class LinkingSystem : Extension() {
 
                     val embed = ApplicationService.embed
                     embed.title = "Linked successfully"
-                    embed.description = "Your UUID is now `$linkedId`"
+                    embed.description = "${event.interaction.user.mention}, your UUID is now `$linkedId`"
                     embed.color = EmbedColor.POSITIVE.color
 
                     embeds = mutableListOf(embed)
