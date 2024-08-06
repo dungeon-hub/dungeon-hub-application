@@ -20,6 +20,7 @@ import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaException
 import me.taubsie.dungeonhub.application.exceptions.NoOptionFoundException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
@@ -222,7 +223,7 @@ class RoleCommand : Extension() {
             && ((arguments.role.getPosition() >= highestIssuerRole)
                     || (highestTargetRole >= highestIssuerRole))
         ) {
-            throw CommandExecutionException("You aren't allowed to manage roles that are higher than those that you have.")
+            throw CommandExecutionWarning("You aren't allowed to manage roles that are higher than those that you have.")
         }
 
         RolesService.removeRoleGroup(target, arguments.role.id.value.toLong())
