@@ -29,6 +29,7 @@ import me.taubsie.dungeonhub.application.connection.HypixelConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import me.taubsie.dungeonhub.application.misc.FlagResponse
 import me.taubsie.dungeonhub.common.enums.ScoreType
@@ -157,6 +158,12 @@ object ApplicationService {
     fun getErrorEmbed(commandExecutionException: CommandExecutionException): EmbedBuilder {
         val embed = errorEmbed
         embed.description = commandExecutionException.message
+        return embed
+    }
+
+    fun getErrorEmbed(commandExecutionWarning: CommandExecutionWarning): EmbedBuilder {
+        val embed = errorEmbed
+        embed.description = commandExecutionWarning.message
         return embed
     }
 
