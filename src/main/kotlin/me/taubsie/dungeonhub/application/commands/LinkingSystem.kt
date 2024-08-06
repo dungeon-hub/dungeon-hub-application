@@ -231,7 +231,7 @@ class LinkingSystem : Extension() {
 
         publicUserCommand {
             name = "Force Sync"
-            guild(1023684107877761196)
+            allowInDms = false
             defaultMemberPermissions = Permissions(Permission.ManageNicknames, Permission.ManageRoles)
 
             action {
