@@ -7,6 +7,7 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.user
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
+import com.kotlindiscord.kord.extensions.extensions.publicUserCommand
 import dev.kord.common.entity.*
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
@@ -15,6 +16,7 @@ import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.respondPublic
 import dev.kord.core.behavior.requestMembers
 import dev.kord.core.builder.components.emoji
+import dev.kord.core.entity.Member
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.Role
 import dev.kord.core.entity.channel.GuildMessageChannel
@@ -25,6 +27,7 @@ import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
+import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import me.taubsie.dungeonhub.application.connection.HypixelConnection.getHypixelLinkedDiscord
@@ -191,31 +194,51 @@ class LinkingSystem : Extension() {
             }
         }
 
+        fun respondToForceSync(target: Member): suspend FollowupMessageCreateBuilder.() -> Unit {
+            return {
+                val roles = RolesService.updateRoles(target)
+
+                val embed = ApplicationService.embed
+
+                try {
+                    NicknameService.updateNickname(target, roles)
+
+                    embed.color = EmbedColor.POSITIVE.color
+                    embed.description = "Username and roles of ${target.mention} were synced!"
+                } catch (notLinkedException: NotLinkedException) {
+                    embed.color = EmbedColor.NEGATIVE.color
+                    embed.description = "${target.mention} is not linked, their roles were synced!"
+                }
+
+                embeds = mutableListOf(embed)
+            }
+        }
+
         publicSlashCommand(::ForceSyncArguments) {
             name = "force-sync"
             description = "Forces the update of the users roles and nickname."
-            defaultMemberPermissions = Permissions(Permission.ManageNicknames)
+            defaultMemberPermissions = Permissions(Permission.ManageNicknames, Permission.ManageRoles)
             allowInDms = false
 
             action {
                 respond {
                     val target = arguments.user.asMember(guild!!.id)
 
-                    val roles = RolesService.updateRoles(target)
+                    respondToForceSync(target)()
+                }
+            }
+        }
 
-                    val embed = ApplicationService.embed
+        publicUserCommand {
+            name = "Force Sync"
+            guild(1023684107877761196)
+            defaultMemberPermissions = Permissions(Permission.ManageNicknames, Permission.ManageRoles)
 
-                    try {
-                        NicknameService.updateNickname(target, roles)
+            action {
+                respond {
+                    val target = targetUsers.first().asMember(guild!!.id)
 
-                        embed.color = EmbedColor.POSITIVE.color
-                        embed.description = "Username and roles were synced!"
-                    } catch (notLinkedException: NotLinkedException) {
-                        embed.color = EmbedColor.NEGATIVE.color
-                        embed.description = "The user is not linked, their roles were synced!"
-                    }
-
-                    embeds = mutableListOf(embed)
+                    respondToForceSync(target)()
                 }
             }
         }
