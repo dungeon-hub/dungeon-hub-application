@@ -40,7 +40,7 @@ import java.util.stream.Collectors
 </pre> *
  */
 object NicknameService {
-    @Throws(CommandExecutionException::class)
+    @Throws(CommandExecutionWarning::class)
     fun linkToIgn(ign: String, user: User): UUID {
         val uuid = MojangConnection.getInstance().getUUIDByName(ign)
 
@@ -48,7 +48,7 @@ object NicknameService {
         val username = user.tag
 
         if (hypixelName.isEmpty) {
-            throw InvalidOptionException(
+            throw InvalidOptionWarning(
                 "ign", """
      Please add the correct discord-account (`${user.username}`) to your hypixel social menu.
      To learn more about how to do this, use `/help verification`.
