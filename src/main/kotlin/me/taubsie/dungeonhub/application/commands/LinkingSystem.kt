@@ -32,10 +32,7 @@ import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.HelpTopic
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
-import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaException
-import me.taubsie.dungeonhub.application.exceptions.NotLinkedException
+import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.NicknameService
@@ -383,7 +380,7 @@ class LinkingSystem : Extension() {
                 val ign = event.interaction.textInputs["ign"]?.value?.let { it.ifBlank { null } }
 
                 if (ign == null) {
-                    throw InvalidOptionException(
+                    throw InvalidOptionWarning(
                         "ign",
                         "Please enter a valid Ingame-Name."
                     )
