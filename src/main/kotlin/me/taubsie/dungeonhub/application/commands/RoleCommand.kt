@@ -204,14 +204,22 @@ class RoleCommand : Extension() {
     }
 
     suspend fun removeRoleGroup(issuer: Member, arguments: RoleGroupRemoveArguments): EmbedBuilder {
+        val guild = arguments.role.guild.asGuild()
+
         val target = arguments.target.asMember(issuer.guildId)
 
         val highestIssuerRole = issuer.roles.map { it.getPosition() }.toList().maxOrNull() ?: 0
         val highestTargetRole = target.roles.map { it.getPosition() }.toList().maxOrNull() ?: 0
 
-        if ((arguments.role.guild.asGuild().ownerId != issuer.id)
-            && (issuer.id != target.id
-                    || (arguments.role.getPosition() >= highestIssuerRole)
+        /*
+        fail if issuer:
+        - is not owner
+        - is not using command on himself / is not target
+        - is not above role (or highest role of target)
+        */
+        if ((guild.ownerId != issuer.id)
+            && issuer.id != target.id
+            && ((arguments.role.getPosition() >= highestIssuerRole)
                     || (highestTargetRole >= highestIssuerRole))
         ) {
             throw CommandExecutionException("You aren't allowed to manage roles that are higher than those that you have.")
