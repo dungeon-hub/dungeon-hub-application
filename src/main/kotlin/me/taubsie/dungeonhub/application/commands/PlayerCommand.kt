@@ -10,7 +10,7 @@ import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException
-import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundException
+import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundWarning
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import org.slf4j.LoggerFactory
@@ -48,9 +48,9 @@ class PlayerCommand : Extension() {
                         embeds = mutableListOf(
                             embed
                         )
-                    } catch (playerNotFoundException: PlayerNotFoundException) {
+                    } catch (playerNotFoundWarning: PlayerNotFoundWarning) {
                         embeds = mutableListOf(
-                            ApplicationService.getErrorEmbed(playerNotFoundException)
+                            ApplicationService.getErrorEmbed(playerNotFoundWarning)
                         )
                     } catch (commandExecutionException: CommandExecutionException) {
                         embeds = mutableListOf(

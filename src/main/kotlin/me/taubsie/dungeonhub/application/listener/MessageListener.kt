@@ -43,7 +43,7 @@ import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException
-import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundException
+import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundWarning
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.LeaderboardService
@@ -444,10 +444,10 @@ class MessageListener : Extension() {
                     }
                 }
             }
-        } catch (playerNotFoundException: PlayerNotFoundException) {
+        } catch (playerNotFoundWarning: PlayerNotFoundWarning) {
             //TODO load scammer data from discord?
 
-            channel.createEmbed { ApplicationService.getErrorEmbed(playerNotFoundException) }
+            channel.createEmbed { ApplicationService.getErrorEmbed(playerNotFoundWarning) }
         } catch (failedToLoadEmbedException: FailedToLoadEmbedException) {
             channel.createMessage {
                 embeds = mutableListOf(failedToLoadEmbedException.embed)

@@ -1,7 +1,7 @@
 package me.taubsie.dungeonhub.application.connection;
 
 import com.google.gson.JsonParser;
-import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundException;
+import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundWarning;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.slf4j.Logger;
@@ -33,7 +33,7 @@ public class MojangConnection {
     }
 
     //As this requests data from the Mojang API (aka slow), it is recommended to use UUIDs instead of names
-    public UUID getUUIDByName(String name) throws PlayerNotFoundException {
+    public UUID getUUIDByName(String name) throws PlayerNotFoundWarning {
         Request request = new Request.Builder()
                 .url("https://api.mojang.com/users/profiles/minecraft/" + name)
                 .get()
@@ -48,10 +48,10 @@ public class MojangConnection {
             logger.error(null, exception);
         }
 
-        throw new PlayerNotFoundException(name);
+        throw new PlayerNotFoundWarning(name);
     }
 
-    public String getNameByUUID(UUID uuid) throws PlayerNotFoundException {
+    public String getNameByUUID(UUID uuid) throws PlayerNotFoundWarning {
         Request request = new Request.Builder()
                 .url("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid.toString())
                 .get()
@@ -66,6 +66,6 @@ public class MojangConnection {
             logger.error(null, exception);
         }
 
-        throw new PlayerNotFoundException(uuid);
+        throw new PlayerNotFoundWarning(uuid);
     }
 }
