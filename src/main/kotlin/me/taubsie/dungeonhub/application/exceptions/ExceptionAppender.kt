@@ -53,7 +53,11 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
             return null
         }
 
-        val result = StringBuilder()
+        //TODO test
+        throwable.fillInStackTrace()
+        return throwable.stackTraceToString()
+
+        /*val result = StringBuilder()
             .append("Caused by ")
             .append(throwable.javaClass.name)
             .append(": ")
@@ -68,7 +72,7 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
                 .append(nextMessage)
         }
 
-        return result.toString()
+        return result.toString()*/
     }
 
     private fun getStacktrace(throwable: Throwable): String {
