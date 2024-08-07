@@ -54,7 +54,9 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
         }
 
         //TODO test
-        throwable.fillInStackTrace()
+        if(throwable.stackTrace.isEmpty()) {
+            throwable.fillInStackTrace()
+        }
         return throwable.stackTraceToString()
 
         /*val result = StringBuilder()
