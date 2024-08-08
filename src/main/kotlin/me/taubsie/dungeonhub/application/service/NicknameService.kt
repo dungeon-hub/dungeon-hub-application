@@ -244,3 +244,20 @@ object NicknameService {
             { discordRoleModel: DiscordRoleModel -> discordRoleModel })
     }
 }
+
+//TODO move to connection?
+fun User.getUUIDOrNull(): UUID? {
+    return DiscordUserConnection.getInstance()
+        .getById(id.value.toLong())
+        .map { it.minecraftId }
+        .orElse(null)
+}
+
+@Throws(NotLinkedException::class)
+fun User.getUUID(): UUID {
+    return getUUIDOrNull() ?: throw NotLinkedException()
+}
+
+fun UUID.fetchIgn(): String {
+    return MojangConnection.getInstance().getNameByUUID(this)
+}
