@@ -81,17 +81,25 @@ class MessageListener : Extension() {
     override suspend fun setup() {
         event<MessageCreateEvent> {
             action {
-                addReactionToPets(event)
+                thread {
+                    runBlocking {
+                        addReactionToPets(event)
 
-                logTicket(event)
+                        logTicket(event)
 
-                loadSkycryptFromTicket(event)
+                        loadSkycryptFromTicket(event)
+                    }
+                }
             }
         }
 
         event<MessageUpdateEvent> {
             action {
-                logTicket(event)
+                thread {
+                    runBlocking {
+                        logTicket(event)
+                    }
+                }
             }
         }
     }
