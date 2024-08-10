@@ -33,6 +33,7 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
         embed.title = logEvent.message.formattedMessage
 
         if (logEvent.thrown != null) {
+						//TODO check if description is too long, in that case upload it to the CDN.
             embed.description = getExceptionMessage(logEvent.thrown)
         }
 
