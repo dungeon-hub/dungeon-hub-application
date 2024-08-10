@@ -104,8 +104,11 @@ object DiscordConnection : StartupListener {
             "discord events since $time"
         },
         AppearanceType.Custom to {
-            val amount = DiscordServerConnection.getInstance()
-                .getTotalAmountOfMoneySpent(693263712626278553L)
+            val amount = try {
+                DiscordServerConnection.getInstance().getTotalAmountOfMoneySpent(693263712626278553L)
+            } catch (commandExecutionException: CommandExecutionException) {
+                0
+            }
 
             "${ApplicationService.makeNumberReadable(amount)} coins spent on Dungeon Hub!"
         }
@@ -166,7 +169,7 @@ object DiscordConnection : StartupListener {
             errorResponse { message, type ->
                 embeds = if (type.error is CommandExecutionException) {
                     mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionException))
-                } else if(type.error is CommandExecutionWarning) {
+                } else if (type.error is CommandExecutionWarning) {
                     mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionWarning))
                 } else {
                     val embed = ApplicationService.getErrorEmbed(CommandExecutionException(type.error))
@@ -218,7 +221,9 @@ object DiscordConnection : StartupListener {
         message.add("Im on servers:")
         message.addAll(
             bot?.kordRef?.guilds?.map { server ->
-                "${server.name} with id '${server.id}' by ${server.withStrategy(EntitySupplyStrategy.cache).getOwnerOrNull()?.effectiveName ?: "no-name"} (${server.ownerId})"
+                "${server.name} with id '${server.id}' by ${
+                    server.withStrategy(EntitySupplyStrategy.cache).getOwnerOrNull()?.effectiveName ?: "no-name"
+                } (${server.ownerId})"
             }!!.toList()
         )
 

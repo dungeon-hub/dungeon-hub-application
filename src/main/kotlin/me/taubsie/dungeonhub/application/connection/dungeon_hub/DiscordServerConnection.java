@@ -134,7 +134,7 @@ public class DiscordServerConnection implements ModuleConnection {
     }
 
     public Optional<Long> fetchTotalAmountOfMoneySpent(long serverId, @Nullable Long userId, @Nullable Long carrierId, @Nullable Long carryTypeId, @Nullable Long carryTierId) {
-        HttpUrl.Builder url = getApiUrl(serverId + "/total-amount-spent");
+        HttpUrl.Builder url = getApiUrl(serverId + "/total-money-spent");
 
         if (userId != null) {
             url.addQueryParameter("user", String.valueOf(userId));
