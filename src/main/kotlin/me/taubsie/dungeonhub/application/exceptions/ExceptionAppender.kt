@@ -4,6 +4,7 @@ import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.core.Kord
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import org.apache.logging.log4j.core.Appender
@@ -16,6 +17,7 @@ import org.apache.logging.log4j.core.config.plugins.Plugin
 import org.apache.logging.log4j.core.config.plugins.PluginAttribute
 import org.apache.logging.log4j.core.config.plugins.PluginElement
 import org.apache.logging.log4j.core.config.plugins.PluginFactory
+import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.stream.Collectors
 
@@ -33,8 +35,16 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
         embed.title = logEvent.message.formattedMessage
 
         if (logEvent.thrown != null) {
-						//TODO check if description is too long, in that case upload it to the CDN.
-            embed.description = getExceptionMessage(logEvent.thrown)
+            var description = getExceptionMessage(logEvent.thrown)
+
+            if(description != null && description.length > 4000) {
+                description = ContentConnection.getInstance()
+                    .uploadFile(description.toByteArray(StandardCharsets.UTF_8))
+                    .map { s -> ContentConnection.getInstance().getCdnUrl(s).toString() }
+                    .orElse(description)
+            }
+
+            embed.description = description
         }
 
         runBlocking {
