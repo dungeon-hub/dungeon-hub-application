@@ -236,11 +236,11 @@ object DiscordConnection : StartupListener {
 
             val appearance = possibleAppearances[currentAppearance]
 
-						try {
-		            appearance.first.apply(appearance.second())()
-						} catch (exception: Exception) {
-								logger.error("Error during reset of appearance.", exception)
-						}
+            try {
+                appearance.first.apply(appearance.second())()
+            } catch (exception: Exception) {
+                logger.error("Error during reset of appearance.", exception)
+            }
         }
     }
 
