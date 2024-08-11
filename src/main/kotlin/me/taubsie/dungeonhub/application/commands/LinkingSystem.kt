@@ -98,47 +98,49 @@ class LinkingSystem : Extension() {
             }
         }
 
-        publicSlashCommand(::LinkArguments) {
-            name = "manual-link"
-            description = "Manually link someone by IGN."
-            guild(693263712626278553L)
-            check {
-                failIfNot("You aren't allowed to use this command.") {
-                    event.interaction.user.id.value.toLong() == 356134481452597250L
+        listOf(693263712626278553L, 633621474183217163L, 1023684107877761196L).forEach { guildId ->
+            publicSlashCommand(::LinkArguments) {
+                name = "manual-link"
+                description = "Manually link someone by IGN."
+                guild(guildId)
+                check {
+                    failIfNot("You aren't allowed to use this command.") {
+                        event.interaction.user.id.value.toLong() == 356134481452597250L
+                    }
                 }
-            }
 
-            action {
-                respond {
-                    val uuid = MojangConnection.getInstance()
-                        .getUUIDByName(arguments.ign)
+                action {
+                    respond {
+                        val uuid = MojangConnection.getInstance()
+                            .getUUIDByName(arguments.ign)
 
-                    val discordUser = getHypixelLinkedDiscord(uuid)
-                        .orElseThrow {
-                            InvalidOptionException(
-                                "ign",
-                                "Please add the correct discord-account to your hypixel social menu.\n"
-                                        + "To learn more about how to do this, use `/help verification`."
-                            )
+                        val discordUser = getHypixelLinkedDiscord(uuid)
+                            .orElseThrow {
+                                InvalidOptionException(
+                                    "ign",
+                                    "Please add the correct discord-account to your hypixel social menu.\n"
+                                            + "To learn more about how to do this, use `/help verification`."
+                                )
+                            }
+
+                        val users = guild!!.requestMembers { query = discordUser; limit = 5 }
+                            .map { it.members }
+                            .toList()
+
+                        val user = users.map { members -> members.firstOrNull { it.username == discordUser } }.firstOrNull()
+
+                        if (user == null) {
+                            throw CommandExecutionException("The specified user (`$discordUser`) does not exist.")
                         }
 
-                    val users = guild!!.requestMembers { query = discordUser; limit = 5 }
-                        .map { it.members }
-                        .toList()
+                        NicknameService.linkToIgn(arguments.ign, user)
 
-                    val user = users.map { members -> members.firstOrNull { it.username == discordUser } }.firstOrNull()
+                        val embed = ApplicationService.embed
+                        embed.color = EmbedColor.POSITIVE.color
+                        embed.description = "Linked `${arguments.ign}` to: ${user.tag}"
 
-                    if (user == null) {
-                        throw CommandExecutionException("The specified user (`$discordUser`) does not exist.")
+                        embeds = mutableListOf(embed)
                     }
-
-                    NicknameService.linkToIgn(arguments.ign, user)
-
-                    val embed = ApplicationService.embed
-                    embed.color = EmbedColor.POSITIVE.color
-                    embed.description = "Linked `${arguments.ign}` to: ${user.tag}"
-
-                    embeds = mutableListOf(embed)
                 }
             }
         }
