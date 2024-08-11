@@ -76,7 +76,7 @@ object ServerStatsService : StartupListener {
         val linkedUsers = DiscordUserConnection.getInstance().countLinkedUsers().orElse("0")
         val spentMoney = try {
             ApplicationService.makeNumberReadable(
-                DiscordServerConnection.getInstance().getTotalAmountOfMoneySpent(guild.id.value.toLong())
+                DiscordServerConnection.getInstance().getTotalAmountOfMoneySpent(guild.id.value.toLong()), 3
             )
         } catch (ex: Exception) {
             0

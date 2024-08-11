@@ -118,28 +118,28 @@ object ApplicationService {
         return kord.getUser(ownerId)
     }
 
-    fun makeDoubleReadable(number: Double): String {
+    fun makeDoubleReadable(number: Double, maxFractionDigits: Int = 340): String {
         val df = DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.US))
-        df.setMaximumFractionDigits(340) //340 = DecimalFormat.DOUBLE_FRACTION_DIGITS
+        df.setMaximumFractionDigits(maxFractionDigits) //340 = DecimalFormat.DOUBLE_FRACTION_DIGITS
 
         return df.format(number)
     }
 
-    fun makeNumberReadable(number: Long): String {
+    fun makeNumberReadable(number: Long, maxFractionDigits: Int = 340): String {
         if (number >= 1000000000000L) {
-            return makeDoubleReadable(number / 1000000000000.0) + "t"
+            return makeDoubleReadable(number / 1000000000000.0, maxFractionDigits) + "t"
         }
 
         if (number >= 1000000000L) {
-            return makeDoubleReadable(number / 1000000000.0) + "b"
+            return makeDoubleReadable(number / 1000000000.0, maxFractionDigits) + "b"
         }
 
         if (number >= 1000000L) {
-            return makeDoubleReadable(number / 1000000.0) + "m"
+            return makeDoubleReadable(number / 1000000.0, maxFractionDigits) + "m"
         }
 
         if (number >= 1000L) {
-            return makeDoubleReadable(number / 1000.0) + "k"
+            return makeDoubleReadable(number / 1000.0, maxFractionDigits) + "k"
         }
 
         return number.toString()
