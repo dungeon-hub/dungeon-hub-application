@@ -209,6 +209,9 @@ object ApplicationService {
             embedBuilder.field("Transcript-Link", true) { "[Click to open]" + "(" + carry.attachmentLink() + ")" }
         }
 
+        //TODO test
+        embedBuilder.field("Amount of score", true) { (carry.carryDifficulty.score * carry.amount).toString() }
+
         return embedBuilder
     }
 
@@ -226,6 +229,8 @@ object ApplicationService {
         if (carryQueue.attachmentLink != null) {
             embedBuilder.field("Transcript-Link", true) { "[Click to open]" + "(" + carryQueue.attachmentLink + ")" }
         }
+
+        embedBuilder.field("Amount of score", true) { carryQueue.calculateScore().toString() }
 
         return embedBuilder
     }
