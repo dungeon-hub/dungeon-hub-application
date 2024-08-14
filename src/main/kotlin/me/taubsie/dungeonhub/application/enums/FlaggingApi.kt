@@ -70,7 +70,7 @@ enum class FlaggingApi(
                 }
 
                 return@runBlocking FlagResponse(
-                    name,
+                    displayName,
                     uuidFlagged?.await(),
                     discordIdFlagged?.await(),
                 )
