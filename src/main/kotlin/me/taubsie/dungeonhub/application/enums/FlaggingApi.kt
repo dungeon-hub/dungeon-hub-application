@@ -38,6 +38,14 @@ enum class FlaggingApi(
             FlaggingConnection.getInstance().isSafetyFlagged(discordId)
                 .orElse(null)
         }
+    ),
+    BLOCK_GAME(
+        "Block Game Bot",
+        { _ -> null },
+        { discordId: Long? ->
+            FlaggingConnection.getInstance().isBlockGameFlagged(discordId)
+                .orElse(null)
+        }
     );
 
     private val logger: Logger = LoggerFactory.getLogger(FlaggingApi::class.java)
