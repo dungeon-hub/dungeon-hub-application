@@ -26,12 +26,16 @@ object ServerStatsService : StartupListener {
     private val logger = LoggerFactory.getLogger(ServerStatsService::class.java)
     private var timer: Timer? = null
     private val serverStatChannels = listOf(
+        //DH Testing
         1023684107877761196L to listOf(
-            1272308210102964254L to "{linked_users} Linked Users",
-            1272323673457557616 to "{spent_money} coins spent"
+            1273562134948876380L to "{member_count} members",
+            1272308210102964254L to "{linked_users} linked Users",
+            1272323673457557616L to "{spent_money} coins spent"
         ),
+        //Dungeon Hub
         693263712626278553L to listOf(
-            1272331486154194984L to "{linked_users} Linked Users",
+            1273562347797090377L to "{member_count} members",
+            1272331486154194984L to "{linked_users} linked Users",
             1272331662772142081L to "{spent_money} coins spent"
         )
     )
@@ -88,6 +92,7 @@ object ServerStatsService : StartupListener {
                     val newName = channel.second
                         .replace("{linked_users}", linkedUsers)
                         .replace("{spent_money}", spentMoney.toString())
+                        .replace("{member_count}", guild.memberCount.toString())
 
                     guildChannel.asChannelOfOrNull<TextChannel>()?.let { textChannel ->
                         textChannel.edit {
