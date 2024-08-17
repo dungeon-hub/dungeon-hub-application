@@ -21,7 +21,7 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleConne
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
-import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaException
+import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaWarning
 import me.taubsie.dungeonhub.application.exceptions.NoOptionFoundException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
@@ -195,7 +195,7 @@ class RoleCommand : Extension() {
 
                 try {
                     NicknameService.updateNickname(member, updatedRoles)
-                } catch (ignored: NoNameSchemaException) {
+                } catch (ignored: NoNameSchemaWarning) {
                     //ignore this, in that case you just don't apply a nickname
                 }
             }
@@ -241,7 +241,7 @@ class RoleCommand : Extension() {
 
                 try {
                     NicknameService.updateNickname(member, updatedRoles)
-                } catch (ignored: NoNameSchemaException) {
+                } catch (ignored: NoNameSchemaWarning) {
                     //ignore this, in that case you just don't apply a nickname
                 }
             }

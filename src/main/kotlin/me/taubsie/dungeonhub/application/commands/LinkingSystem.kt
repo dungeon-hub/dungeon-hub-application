@@ -35,7 +35,10 @@ import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.HelpTopic
-import me.taubsie.dungeonhub.application.exceptions.*
+import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.application.exceptions.InvalidOptionWarning
+import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaWarning
+import me.taubsie.dungeonhub.application.exceptions.NotLinkedException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.NicknameService
@@ -116,7 +119,7 @@ class LinkingSystem : Extension() {
 
                         val discordUser = getHypixelLinkedDiscord(uuid)
                             .orElseThrow {
-                                InvalidOptionException(
+                                InvalidOptionWarning(
                                     "ign",
                                     "Please add the correct discord-account to your hypixel social menu.\n"
                                             + "To learn more about how to do this, use `/help verification`."
@@ -180,7 +183,7 @@ class LinkingSystem : Extension() {
                     var nicknameChanged = true
                     try {
                         NicknameService.updateNickname(member, userModel, roles)
-                    } catch (noNameSchemaException: NoNameSchemaException) {
+                    } catch (noNameSchemaWarning: NoNameSchemaWarning) {
                         nicknameChanged = false
                     } catch (notLinkedException: NotLinkedException) {
                         embeds = mutableListOf(ApplicationService.getErrorEmbed(notLinkedException))
