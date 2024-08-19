@@ -70,7 +70,7 @@ class LinkingSystem : Extension() {
                         embed.description = "You're already linked to user `${
                             MojangConnection.getInstance()
                                 .getNameByUUID(linkedTo.get())
-                        }!` If you think that's incorrect, try using ${"`/unlink`"}."
+                        }`! If you think that's incorrect, try using ${"`/unlink`"}."
 
                         embeds = mutableListOf(
                             embed
