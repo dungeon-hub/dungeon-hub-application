@@ -200,6 +200,7 @@ object ApplicationService {
         ) { carry.carryDifficulty().carryTier.displayName + " - " + carry.carryDifficulty().displayName }
         embedBuilder.field("Player", true) { "<@" + carry.player().id + ">" }
         embedBuilder.field("Carrier", true) { "<@" + carry.carrier().id + ">" }
+        embedBuilder.field("Gained Score", true) { carry.calculateScore().toString() }
 
         if (carry.approver() != null) {
             embedBuilder.field("Approved by", true) { "<@" + carry.approver() + ">" }
@@ -208,9 +209,6 @@ object ApplicationService {
         if (carry.attachmentLink() != null) {
             embedBuilder.field("Transcript-Link", true) { "[Click to open]" + "(" + carry.attachmentLink() + ")" }
         }
-
-        //TODO test
-        embedBuilder.field("Amount of score", true) { (carry.carryDifficulty.score * carry.amount).toString() }
 
         return embedBuilder
     }
@@ -225,12 +223,11 @@ object ApplicationService {
         ) { carryQueue.carryTier.displayName + " - " + carryQueue.carryDifficulty.displayName }
         embedBuilder.field("Player", true) { "<@" + carryQueue.player.id + ">" }
         embedBuilder.field("Carrier", true) { "<@" + carryQueue.carrier.id + ">" }
+        embedBuilder.field("Gained Score", true) { carryQueue.calculateScore().toString() }
 
         if (carryQueue.attachmentLink != null) {
             embedBuilder.field("Transcript-Link", true) { "[Click to open]" + "(" + carryQueue.attachmentLink + ")" }
         }
-
-        embedBuilder.field("Amount of score", true) { carryQueue.calculateScore().toString() }
 
         return embedBuilder
     }
