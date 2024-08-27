@@ -9,6 +9,7 @@ import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.supplier.EntitySupplyStrategy
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -98,15 +99,10 @@ class PurgeCommand : Extension() {
                         val purgeCarriers = rolesToRemove.stream()
                             .map { obj: DiscordRoleModel -> obj.id }
                             .distinct()
-                            .map { roleId ->
+                            .flatMap { roleId ->
                                 runBlocking {
-                                    guild!!.getRoleOrNull(Snowflake(roleId))
-                                }
-                            }
-                            .filter { it != null }
-                            .flatMap { role ->
-                                runBlocking {
-                                    guild!!.members.filter { it.roleIds.contains(role!!.id) }.toList().stream()
+                                    guild!!.withStrategy(EntitySupplyStrategy.cachingRest)
+                                        .members.filter { it.roleIds.contains(Snowflake(roleId)) }.toList().stream()
                                 }
                             }
                             .distinct()
@@ -198,7 +194,8 @@ class PurgeCommand : Extension() {
                             .distinct()
                             .flatMap { roleId ->
                                 runBlocking {
-                                    guild!!.members.filter { it.roleIds.contains(Snowflake(roleId)) }.toList().stream()
+                                    guild!!.withStrategy(EntitySupplyStrategy.cachingRest)
+                                        .members.filter { it.roleIds.contains(Snowflake(roleId)) }.toList().stream()
                                 }
                             }
                             .distinct()
