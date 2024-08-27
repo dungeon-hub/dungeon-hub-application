@@ -77,6 +77,7 @@ class LoggingSystem : Extension() {
                     if (QueueConnection.getInstance()
                             .getCarryQueueByRelatedIdAndQueueStep(channel.id.value.toLong(), QueueStep.CONFIRMATION)
                             .stream()
+                            .filter { it != null }
                             .flatMap<CarryQueueModel?> { obj: Set<CarryQueueModel?> -> obj.stream() }
                             .findFirst().isPresent
                     ) {
@@ -166,17 +167,24 @@ class LoggingSystem : Extension() {
                     val messageCount = channel.getMessagesBefore(interactionId, null).count()
 
                     val firstMessage = try {
-                        channel.withStrategy(EntitySupplyStrategy.rest)
+                        channel.withStrategy(EntitySupplyStrategy.cachingRest)
                             .getMessagesBefore(event.interaction.id, null)
                             .takeWhile { true }
                             .reduce { message1, message2 -> if (message1.timestamp < message2.timestamp) message1 else message2 }
+                    } catch (_: ArrayIndexOutOfBoundsException) {
+                        null
                     } catch (_: NoSuchElementException) {
                         null
                     }
 
-                    if (firstMessage == null || firstMessage.mentionedUsers.count() != 1) {
+                    if (firstMessage == null || try {
+                            firstMessage.mentionedUsers.count() != 1
+                        } catch (_: ArrayIndexOutOfBoundsException) {
+                            false
+                        }
+                    ) {
                         logger.error("Couldn't load bot message, I only found the message '${firstMessage?.content}' by ${firstMessage?.author?.id} when searching through $messageCount messages that were sent before $interactionId.")
-                        throw CommandExecutionException("Couldn't retrieve bot message, so this ticket can't be logged. Please report this.")
+                        throw CommandExecutionException("Couldn't retrieve bot message, so this ticket can't be logged - please retry this.\nIf you still have issues, please report this.")
                     }
 
                     val time = Instant.now()
