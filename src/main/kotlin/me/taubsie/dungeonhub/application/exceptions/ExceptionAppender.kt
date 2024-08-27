@@ -2,6 +2,7 @@ package me.taubsie.dungeonhub.application.exceptions
 
 import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.core.Kord
+import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
@@ -32,6 +33,20 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
 
         val embed = ApplicationService.embed
         embed.color = EmbedColor.NEGATIVE.color
+        val title = logEvent.message.formattedMessage
+
+        if(title.length < (EmbedBuilder.Limits.title - 3)) {
+            embed.title = title
+        } else {
+            embed.title = "Title would be too long, see field"
+            embed.field("Title") {
+                ContentConnection.getInstance()
+                    .uploadFile(title.toByteArray(StandardCharsets.UTF_8))
+                    .map { s -> ContentConnection.getInstance().getCdnUrl(s).toString() }
+                    .orElse(title)
+            }
+        }
+
         embed.title = logEvent.message.formattedMessage
 
         if (logEvent.thrown != null) {
