@@ -2,6 +2,7 @@ package me.taubsie.dungeonhub.application.commands
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.google.gson.JsonSyntaxException
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalStringChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
@@ -135,10 +136,10 @@ class EmbedCommand : Extension() {
                             source =
                                 ContentConnection.getInstance()
                                     .downloadFile(source).orElseThrow {
-                                    CommandExecutionException(
-                                        "Couldn't download the file correctly."
-                                    )
-                                }
+                                        CommandExecutionException(
+                                            "Couldn't download the file correctly."
+                                        )
+                                    }
                         }
 
                         val embedBuilders: MutableList<EmbedBuilder> = ArrayList()
@@ -181,6 +182,8 @@ class EmbedCommand : Extension() {
                                         }
                                     }
                             }
+                        } catch (jsonSyntaxException: JsonSyntaxException) {
+                            throw CommandExecutionException("The embed JSON you entered is invalid formatted.")
                         } catch (exception: Exception) {
                             throw CommandExecutionException(exception)
                         }
@@ -247,6 +250,8 @@ class EmbedCommand : Extension() {
                                         }
                                     }
                             }
+                        } catch (jsonSyntaxException: JsonSyntaxException) {
+                            throw CommandExecutionException("The embed JSON you entered is invalid formatted.")
                         } catch (exception: java.lang.Exception) {
                             throw CommandExecutionException(exception)
                         }
@@ -303,6 +308,8 @@ class EmbedCommand : Extension() {
                                     entry.value
                                 )
                             }
+                        } catch (jsonSyntaxException: JsonSyntaxException) {
+                            throw CommandExecutionException("The embed JSON you entered is invalid formatted.")
                         } catch (exception: Exception) {
                             throw CommandExecutionException(exception)
                         }
