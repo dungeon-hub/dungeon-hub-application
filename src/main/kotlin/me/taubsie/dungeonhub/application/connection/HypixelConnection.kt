@@ -247,50 +247,22 @@ object HypixelConnection : HypixelHttpClient {
     fun getSkyblockLevelByUUID(uuid: UUID): OptionalInt {
         val profiles = getProfiles(uuid)
 
+        if (profiles == null || profiles.isEmpty) {
+            return OptionalInt.empty()
+        }
+
         try {
-            return profiles!!.asList().stream()
+            return profiles.asList().stream()
                 .map { obj: JsonElement -> obj.asJsonObject }
-                .map { jsonObject: JsonObject ->
-                    jsonObject.getAsJsonObject(
-                        "members"
-                    )
-                }
-                .filter { obj: JsonObject? ->
-                    Objects.nonNull(
-                        obj
-                    )
-                }
-                .map { jsonObject: JsonObject ->
-                    jsonObject.getAsJsonObject(
-                        uuid.toString().replace("-", "")
-                    )
-                }
-                .filter { obj: JsonObject? ->
-                    Objects.nonNull(
-                        obj
-                    )
-                }
-                .map { jsonObject: JsonObject ->
-                    jsonObject.getAsJsonObject(
-                        "leveling"
-                    )
-                }
-                .filter { obj: JsonObject? ->
-                    Objects.nonNull(
-                        obj
-                    )
-                }
-                .map { jsonObject: JsonObject ->
-                    jsonObject.getAsJsonPrimitive(
-                        "experience"
-                    )
-                }
-                .filter { obj: JsonPrimitive? ->
-                    Objects.nonNull(
-                        obj
-                    )
-                }
-                .mapToInt { obj: JsonPrimitive -> obj.asInt }
+                .map { jsonObject -> jsonObject.getAsJsonObject("members") }
+                .filter { Objects.nonNull(it) }
+                .map { jsonObject -> jsonObject.getAsJsonObject(uuid.toString().replace("-", "")) }
+                .filter { Objects.nonNull(it) }
+                .map { jsonObject -> jsonObject.getAsJsonObject("leveling") }
+                .filter { Objects.nonNull(it) }
+                .map { jsonObject -> jsonObject.getAsJsonPrimitive("experience") }
+                .filter { Objects.nonNull(it) }
+                .mapToInt { it.asInt }
                 .map { operand: Int -> operand / 100 }
                 .max()
         } catch (nullPointerException: NullPointerException) {

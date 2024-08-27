@@ -27,7 +27,7 @@ dependencies {
     implementation("net.dungeon-hub:transcripts-kord:0.1")
     implementation("org.jsoup:jsoup:1.15.3")
     implementation("net.codebox:homoglyph:1.2.1")
-    implementation("net.hypixel:hypixel-api-core:4.3")
+    implementation("net.hypixel:hypixel-api-core:4.4")
     implementation("me.nullicorn:Nedit:2.2.0")
     implementation("com.google.zxing:javase:3.5.2")
 
