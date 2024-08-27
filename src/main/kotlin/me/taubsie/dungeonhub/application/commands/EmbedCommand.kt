@@ -22,10 +22,8 @@ import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
 import me.taubsie.dungeonhub.application.config.ConfigProperty
-import me.taubsie.dungeonhub.application.connection.applyJson
+import me.taubsie.dungeonhub.application.connection.*
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
-import me.taubsie.dungeonhub.application.connection.isSelf
-import me.taubsie.dungeonhub.application.connection.loadMessageByLink
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
@@ -95,8 +93,10 @@ class EmbedCommand : Extension() {
                                     }
                                 })
                         } else {
-                            val embedSource =
-                                DungeonHubService.getInstance().gson.toJson(if (embeds.size == 1) embeds[0] else embeds)
+                            val embedSource = DungeonHubService.getInstance().gson.toJson(
+                                if (embeds.size == 1) embeds[0].toModel()
+                                else embeds.map { it.toModel() }
+                            )
 
                             val description =
                                 if (embedSource.length >= 4000 || arguments.type.equals("cdn", ignoreCase = true)) {
@@ -279,12 +279,14 @@ class EmbedCommand : Extension() {
                         }
 
                         message.edit {
-                            embeds = ((embeds?.toMutableList() ?: mutableListOf()) + embedBuilders).toMutableList()
+                            this@edit.embeds =
+                                (message.embeds.toMutableList().map { it.toBuilder() } + embedBuilders).toMutableList()
                         }
 
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.POSITIVE.color
                         embed.description = "Embed(s) added to message " + message.getJumpUrl() + "!"
+                        embeds = mutableListOf(embed)
                     }
                 }
             }
@@ -333,7 +335,7 @@ class EmbedCommand : Extension() {
                         }
 
                         message.edit {
-                            val embedBuilders = embeds ?: mutableListOf()
+                            val embedBuilders = message.embeds.map { it.toBuilder() }.toMutableList()
                             if (count >= embedBuilders.size) {
                                 throw InvalidOptionException(
                                     "link",
@@ -389,7 +391,12 @@ class EmbedCommand : Extension() {
         }
     }
 
-    inner class SendArguments : MessageLinkEmbedArguments() {
+    inner class SendArguments : Arguments() {
+        val embed by string {
+            name = "embed"
+            description = "The embed data to send."
+        }
+
         val channel by optionalChannel {
             name = "channel"
             description = "The channel to send the embed into."

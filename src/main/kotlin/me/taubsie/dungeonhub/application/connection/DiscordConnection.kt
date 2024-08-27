@@ -7,10 +7,8 @@ import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.channel.asChannelOfOrNull
-import dev.kord.core.entity.Guild
-import dev.kord.core.entity.Member
-import dev.kord.core.entity.Message
-import dev.kord.core.entity.User
+import dev.kord.core.entity.*
+import dev.kord.core.entity.Embed.*
 import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
@@ -21,6 +19,7 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
@@ -33,8 +32,10 @@ import me.taubsie.dungeonhub.application.loader.ClassLoader
 import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartPriority
 import me.taubsie.dungeonhub.application.loader.StartupListener
+import me.taubsie.dungeonhub.application.misc.EmbedModel
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.common.DungeonHubService
+import net.dungeonhub.wrapper.kord.toJavaColor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.Color
@@ -395,6 +396,88 @@ fun EmbedBuilder.applyJson(key: String, value: JsonElement) {
 
         "thumbnail" -> setThumbnail(value)
     }
+}
+
+fun Embed.toBuilder(): EmbedBuilder {
+    val embed = EmbedBuilder()
+
+    embed.title = title
+    embed.description = description
+    embed.url = url
+    embed.timestamp = timestamp
+    embed.color = color
+    embed.image = image?.url
+    embed.footer = footer?.toBuilder()
+    embed.thumbnail = thumbnail?.toBuilder()
+    embed.author = author?.toBuilder()
+    embed.fields = fields.map { it.toBuilder() }.toMutableList()
+
+    return embed
+}
+
+fun Author.toBuilder(): EmbedBuilder.Author {
+    val author = EmbedBuilder.Author()
+
+    author.name = name
+    author.url = url
+    author.icon = iconUrl
+
+    return author
+}
+
+fun Field.toBuilder(): EmbedBuilder.Field {
+    val field = EmbedBuilder.Field()
+
+    field.name = name
+    field.inline = inline
+    field.value = value
+
+    return field
+}
+
+fun Embed.toModel(): EmbedModel {
+    val embed = EmbedModel(
+        title,
+        description,
+        url,
+        timestamp?.toJavaInstant(),
+        color?.toJavaColor(),
+        image?.url,
+        footer?.toBuilder(),
+        thumbnail?.toBuilder(),
+        author?.toModel()
+    )
+
+    embed.fields = fields.map { it.toModel() }.toMutableList()
+
+    return embed
+}
+
+fun Footer.toBuilder(): EmbedBuilder.Footer {
+    val footer = EmbedBuilder.Footer()
+
+    footer.text = text
+    footer.icon = iconUrl
+
+    return footer
+}
+
+fun Thumbnail.toBuilder(): EmbedBuilder.Thumbnail? {
+    val url = url ?: return null
+
+    val thumbnail = EmbedBuilder.Thumbnail()
+
+    thumbnail.url = url
+
+    return thumbnail
+}
+
+fun Author.toModel(): EmbedModel.Author {
+    return EmbedModel.Author(name, url, iconUrl)
+}
+
+fun Field.toModel(): EmbedModel.Field {
+    return EmbedModel.Field(name, inline, value)
 }
 
 fun User.isSelf(): Boolean {

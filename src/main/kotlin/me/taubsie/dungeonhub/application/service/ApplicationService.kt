@@ -641,7 +641,7 @@ object ApplicationService {
 
         thread {
             runBlocking {
-                val reloadedMember = member.withStrategy(EntitySupplyStrategy.rest).fetchMember()
+                val reloadedMember = member.withStrategy(EntitySupplyStrategy.cachingRest).fetchMember()
 
                 val roles = RolesService.updateRoles(reloadedMember)
 
