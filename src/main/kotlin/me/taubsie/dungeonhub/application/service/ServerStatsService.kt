@@ -8,6 +8,7 @@ import dev.kord.core.entity.Guild
 import dev.kord.core.entity.channel.GuildChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.VoiceChannel
+import dev.kord.core.supplier.EntitySupplyStrategy
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
@@ -69,7 +70,7 @@ object ServerStatsService : StartupListener {
 
     private suspend fun loadServerStatChannels() {
         serverStatChannels.forEach { server ->
-            DiscordConnection.bot!!.kordRef.getGuildOrNull(Snowflake(server.first))
+            DiscordConnection.bot!!.kordRef.with(EntitySupplyStrategy.cachingRest).getGuildOrNull(Snowflake(server.first))
                 ?.let {
                     updateStatChannels(it, server.second)
                 }
@@ -89,6 +90,10 @@ object ServerStatsService : StartupListener {
         channels.forEach { channel ->
             guild.getChannelOfOrNull<GuildChannel>(Snowflake(channel.first))
                 ?.let { guildChannel ->
+                    if(channel.second.contains("{member_count}") && guild.memberCount == null) {
+                        return@let
+                    }
+
                     val newName = channel.second
                         .replace("{linked_users}", linkedUsers)
                         .replace("{spent_money}", spentMoney.toString())
