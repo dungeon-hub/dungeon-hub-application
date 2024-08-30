@@ -40,9 +40,7 @@ import me.taubsie.dungeonhub.application.exceptions.InvalidOptionWarning
 import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaWarning
 import me.taubsie.dungeonhub.application.exceptions.NotLinkedException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
-import me.taubsie.dungeonhub.application.service.ApplicationService
-import me.taubsie.dungeonhub.application.service.NicknameService
-import me.taubsie.dungeonhub.application.service.RolesService
+import me.taubsie.dungeonhub.application.service.*
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel
 import java.util.*
@@ -340,6 +338,27 @@ class LinkingSystem : Extension() {
                     embed.description = "The given user has the IGN `$ign`."
                     embed.image = "https://crafatar.com/avatars/${uuid.toString().replace("-", "")}?size=32&overlay"
                     embeds = mutableListOf(embed)
+                }
+            }
+        }
+
+        //TODO maybe not reuse the link argument / rename it to sth more general
+        publicSlashCommand(::LinkArguments) {
+            name = "find-user"
+            description = "Shows which user is linked to the given IGN."
+
+            action {
+                respond {
+                    val uuid = MojangConnection.getInstance().getUUIDByName(arguments.ign)
+
+                    val userModel = DiscordUserConnection.getInstance()
+                        .findUserByUuid(uuid)
+                        .orElseThrow{ CommandExecutionException("Couldn't find who the given user is linked to.") }
+
+                    addEmbed {
+                        color(EmbedColor.POSITIVE)
+                        description = "The given player is linked to user <@${userModel.id}>."
+                    }
                 }
             }
         }
