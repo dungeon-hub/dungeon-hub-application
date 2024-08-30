@@ -174,17 +174,31 @@ class RoleCommand : Extension() {
             throw CommandExecutionException("You aren't allowed to manage roles that are higher than those that you have.")
         }
 
+        val target = arguments.user.asMember(issuer.guildId)
+
+        val hasRole = target.roleIds.contains(arguments.role.id)
+
         val embed = ApplicationService.embed
         embed.color = EmbedColor.POSITIVE.color
 
         if (add) {
-            arguments.user.asMember(issuer.guildId).addRole(arguments.role.id)
+            target.addRole(arguments.role.id)
 
-            embed.description = "Successfully added ${arguments.role.mention} to ${arguments.user.mention}."
+            if(!hasRole) {
+                embed.description = "Successfully added ${arguments.role.mention} to ${arguments.user.mention}."
+            } else {
+                embed.description = "The user ${arguments.user.mention} already had the role ${arguments.role.mention}, but I tried to add it anyway."
+                embed.color = EmbedColor.NEGATIVE.color
+            }
         } else {
-            arguments.user.asMember(issuer.guildId).removeRole(arguments.role.id)
+            target.removeRole(arguments.role.id)
 
-            embed.description = "Successfully removed ${arguments.role.mention} from ${arguments.user.mention}."
+            if(hasRole) {
+                embed.description = "Successfully removed ${arguments.role.mention} from ${arguments.user.mention}."
+            } else {
+                embed.description = "The user ${arguments.user.mention} didn't have the role ${arguments.role.mention}, but I tried to remove it anyway."
+                embed.color = EmbedColor.NEGATIVE.color
+            }
         }
 
         thread(start = true) {
