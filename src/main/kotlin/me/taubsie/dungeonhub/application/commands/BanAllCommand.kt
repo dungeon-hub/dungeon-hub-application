@@ -11,8 +11,9 @@ import dev.kord.core.supplier.EntitySupplyStrategy
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
-import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.ProfileModerationService
+import me.taubsie.dungeonhub.application.service.addEmbed
+import me.taubsie.dungeonhub.application.service.color
 
 @LoadExtension
 class BanAllCommand : Extension() {
@@ -41,7 +42,7 @@ class BanAllCommand : Extension() {
 
                     for (userId in users) {
                         val user = try {
-                            user.kord.getUser(Snowflake(userId.trim()), EntitySupplyStrategy.rest)
+                            user.kord.getUser(Snowflake(userId.trim()), EntitySupplyStrategy.cachingRest)
                         } catch (exception: Exception) {
                             null
                         }
@@ -55,19 +56,16 @@ class BanAllCommand : Extension() {
                     }
 
                     if (errors.isEmpty()) {
-                        val embed = ApplicationService.embed
-                        embed.color = EmbedColor.POSITIVE.color
-                        embed.description =
-                            "Successfully banned " + (if (users.size > 1) "all " else "") + users.size + " user" + (if (users.size > 1) "s." else ".")
-
-                        embeds = mutableListOf(embed)
+                        addEmbed {
+                            color(EmbedColor.POSITIVE)
+                            description =
+                                "Successfully banned " + (if (users.size > 1) "all " else "") + users.size + " user" + (if (users.size > 1) "s." else ".")
+                        }
                     } else {
-                        val embed = ApplicationService.embed
-                        embed.color = EmbedColor.NEGATIVE.color
-                        embed.description =
-                            "Couldn't ban the following user(s):\n${java.lang.String.join(", ", errors)}"
-
-                        embeds = mutableListOf(embed)
+                        addEmbed {
+                            color(EmbedColor.NEGATIVE)
+                            description = "Couldn't ban the following user(s):\n${java.lang.String.join(", ", errors)}"
+                        }
                     }
                 }
             }

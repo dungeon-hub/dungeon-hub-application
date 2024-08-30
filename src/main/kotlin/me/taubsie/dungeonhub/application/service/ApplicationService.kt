@@ -7,6 +7,7 @@ import com.google.zxing.common.BitMatrix
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.QRCodeWriter
+import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
@@ -18,6 +19,7 @@ import dev.kord.core.entity.User
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.EmbedBuilder.Footer
+import dev.kord.rest.builder.message.create.AbstractMessageCreateBuilder
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -655,4 +657,36 @@ object ApplicationService {
     fun parseTimeoutDuration(data: String): Duration {
         return Duration.parse(data)
     }
+}
+
+fun Extension.getEmbed(): EmbedBuilder {
+    return ApplicationService.getEmbed(Clock.System.now())
+}
+
+fun Extension.getEmbed(time: Instant?): EmbedBuilder {
+    return ApplicationService.getEmbed(time)
+}
+
+fun AbstractMessageCreateBuilder.addEmbed(function: EmbedBuilder.() -> Unit) {
+    this.addEmbed(Clock.System.now(), function)
+}
+
+fun AbstractMessageCreateBuilder.addEmbed(time: Instant?, function: EmbedBuilder.() -> Unit) {
+    val embed = ApplicationService.getEmbed(time)
+    function(embed)
+    embeds = ((embeds ?: mutableListOf()) + embed).toMutableList()
+}
+
+fun Extension.createEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {
+    return this.createEmbed(Clock.System.now(), function)
+}
+
+fun Extension.createEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): EmbedBuilder {
+    val embed = getEmbed(time)
+    function(embed)
+    return embed
+}
+
+fun EmbedBuilder.color(color: EmbedColor) {
+    this.color = color.color
 }
