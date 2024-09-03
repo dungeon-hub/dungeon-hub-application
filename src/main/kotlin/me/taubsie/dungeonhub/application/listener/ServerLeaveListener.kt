@@ -29,7 +29,6 @@ class ServerLeaveListener : Extension() {
                     event.guild?.ownerId ?: "unknown"
                 )
 
-
                 ApplicationService.getBotOwner(kord)?.dm(
                     "I just left server `${event.guild?.name}` by $ownerName (<@${event.guild?.ownerId}>)."
                 )

@@ -35,14 +35,14 @@ object ServerStatsService : StartupListener {
             1273562134948876380L to "{member_count} members",
             1272308210102964254L to "{linked_users} linked Users",
             1272323673457557616L to "{spent_money} coins spent",
-            1280463884003704874L to "{carry_count_monthly} carries since 30d ago"
+            1280463884003704874L to "{carry_count_monthly} carries last 30 days"
         ),
         //Dungeon Hub
         693263712626278553L to listOf(
             1273562347797090377L to "{member_count} members",
             1272331486154194984L to "{linked_users} linked Users",
             1272331662772142081L to "{spent_money} coins spent",
-            1280470213745184810L to "{carry_count_monthly} carries since 30d ago"
+            1280470213745184810L to "{carry_count_monthly} carries last 30 days"
         )
     )
 
