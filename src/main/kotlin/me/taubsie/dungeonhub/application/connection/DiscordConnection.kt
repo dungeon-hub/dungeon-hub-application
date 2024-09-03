@@ -6,16 +6,19 @@ import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.channel.asChannelOfOrNull
+import dev.kord.core.cache.data.toData
 import dev.kord.core.entity.*
 import dev.kord.core.entity.Embed.*
 import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kord.core.supplier.RestEntitySupplier
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.gateway.builder.PresenceBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.embed
+import dev.kord.rest.request.RestRequestException
 import dev.kordex.core.ExtensibleBot
 import dev.kordex.data.api.DataCollection
 import kotlinx.coroutines.flow.*
@@ -502,4 +505,13 @@ fun Field.toModel(): EmbedModel.Field {
 
 fun User.isSelf(): Boolean {
     return id == kord.selfId
+}
+
+suspend fun RestEntitySupplier.getGuildOrNull(id: Snowflake, withCounts: Boolean = false): Guild? {
+    return try {
+        Guild(kord.rest.guild.getGuild(id, withCounts).toData(), kord)
+    } catch (exception: RestRequestException) {
+        if (exception.status.code == 404) null
+        else throw exception
+    }
 }
