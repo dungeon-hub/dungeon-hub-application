@@ -1,13 +1,13 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.converters.impl.string
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension

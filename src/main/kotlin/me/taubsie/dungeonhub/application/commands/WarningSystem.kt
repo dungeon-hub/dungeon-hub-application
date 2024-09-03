@@ -1,21 +1,21 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.annotations.AlwaysPublicResponse
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.stringChoice
-import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.*
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
-import com.kotlindiscord.kord.extensions.pagination.pages.Page
-import com.kotlindiscord.kord.extensions.utils.dm
-import com.kotlindiscord.kord.extensions.utils.hasPermission
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.channel.GuildMessageChannel
+import dev.kordex.core.annotations.AlwaysPublicResponse
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.converters.impl.stringChoice
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.*
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.ephemeralSlashCommand
+import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.pagination.pages.Page
+import dev.kordex.core.utils.dm
+import dev.kordex.core.utils.hasPermission
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
@@ -114,7 +114,10 @@ class WarningSystem : Extension() {
                     for (warning in warns) {
                         page(
                             Page {
-                                val embed = ApplicationService.formatWarn(warning, showEvidences = user.hasPermission(Permission.ModerateMembers))
+                                val embed = ApplicationService.formatWarn(
+                                    warning,
+                                    showEvidences = user.hasPermission(Permission.ModerateMembers)
+                                )
 
                                 copy(embed)
                             }

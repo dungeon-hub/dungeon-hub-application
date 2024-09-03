@@ -1,8 +1,8 @@
 package me.taubsie.dungeonhub.application.exceptions
 
-import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.core.Kord
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kordex.core.utils.dm
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
@@ -35,7 +35,7 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
         embed.color = EmbedColor.NEGATIVE.color
         val title = logEvent.message.formattedMessage
 
-        if(title.length < (EmbedBuilder.Limits.title - 3)) {
+        if (title.length < (EmbedBuilder.Limits.title - 3)) {
             embed.title = title
         } else {
             embed.title = "Title would be too long, see field"
@@ -52,7 +52,7 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
         if (logEvent.thrown != null) {
             var description = getExceptionMessage(logEvent.thrown)
 
-            if(description != null && description.length > 4000) {
+            if (description != null && description.length > 4000) {
                 description = ContentConnection.getInstance()
                     .uploadFile(description.toByteArray(StandardCharsets.UTF_8))
                     .map { s -> ContentConnection.getInstance().getCdnUrl(s).toString() }
@@ -80,7 +80,7 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
         }
 
         //TODO test
-        if(throwable.stackTrace.isEmpty()) {
+        if (throwable.stackTrace.isEmpty()) {
             throwable.fillInStackTrace()
         }
         return throwable.stackTraceToString()

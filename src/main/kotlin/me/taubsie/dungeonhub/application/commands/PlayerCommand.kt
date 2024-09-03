@@ -1,11 +1,11 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.converters.impl.string
-import com.kotlindiscord.kord.extensions.components.components
-import com.kotlindiscord.kord.extensions.components.linkButton
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.components.components
+import dev.kordex.core.components.linkButton
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException

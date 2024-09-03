@@ -1,6 +1,5 @@
 package me.taubsie.dungeonhub.application.service
 
-import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.asChannelOfOrNull
@@ -11,6 +10,7 @@ import dev.kord.core.entity.User
 import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.AllowedMentionsBuilder
+import dev.kordex.core.utils.dm
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking

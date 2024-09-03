@@ -7,8 +7,6 @@ import com.google.zxing.common.BitMatrix
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.QRCodeWriter
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
@@ -20,6 +18,8 @@ import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.EmbedBuilder.Footer
 import dev.kord.rest.builder.message.create.AbstractMessageCreateBuilder
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.utils.timeoutUntil
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant

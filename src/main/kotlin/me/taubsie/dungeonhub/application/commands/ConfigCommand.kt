@@ -1,16 +1,16 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.stringChoice
-import com.kotlindiscord.kord.extensions.commands.application.slash.group
-import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.*
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.converters.impl.stringChoice
+import dev.kordex.core.commands.application.slash.group
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.*
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
 import me.taubsie.dungeonhub.application.enums.ServerPropertyType

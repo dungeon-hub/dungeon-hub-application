@@ -1,9 +1,9 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.entity.channel.GuildMessageChannel
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.ephemeralSlashCommand
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.loader.LoadExtension

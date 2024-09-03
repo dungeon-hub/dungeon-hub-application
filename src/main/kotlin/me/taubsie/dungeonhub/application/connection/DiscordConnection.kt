@@ -2,7 +2,6 @@ package me.taubsie.dungeonhub.application.connection
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.kotlindiscord.kord.extensions.ExtensibleBot
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
@@ -16,6 +15,9 @@ import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.gateway.builder.PresenceBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kord.rest.builder.message.embed
+import dev.kordex.core.ExtensibleBot
+import dev.kordex.data.api.DataCollection
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -25,6 +27,7 @@ import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.getTotalAmountOfMoneySpent
+import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.listener.ServerJoinListener
@@ -34,6 +37,7 @@ import me.taubsie.dungeonhub.application.loader.StartPriority
 import me.taubsie.dungeonhub.application.loader.StartupListener
 import me.taubsie.dungeonhub.application.misc.EmbedModel
 import me.taubsie.dungeonhub.application.service.ApplicationService
+import me.taubsie.dungeonhub.application.service.color
 import me.taubsie.dungeonhub.common.DungeonHubService
 import net.dungeonhub.wrapper.kord.toJavaColor
 import org.slf4j.Logger
@@ -167,6 +171,22 @@ object DiscordConnection : StartupListener {
      */
     override suspend fun preStart() {
         bot = ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value!!) {
+            dataCollectionMode = DataCollection.Extra
+
+            about {
+                general {
+                    ephemeral = true
+
+                    message {
+                        embed {
+                            color(EmbedColor.DEFAULT)
+                            title = "Dungeon Hub"
+                            description = "Soon you can see more here!"
+                        }
+                    }
+                }
+            }
+
             errorResponse { message, type ->
                 embeds = if (type.error is CommandExecutionException) {
                     mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionException))

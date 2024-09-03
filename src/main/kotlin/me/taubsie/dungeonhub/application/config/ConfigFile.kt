@@ -1,6 +1,6 @@
 package me.taubsie.dungeonhub.application.config
 
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
+import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartPriority
 import me.taubsie.dungeonhub.application.loader.StartupListener

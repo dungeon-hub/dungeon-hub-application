@@ -1,6 +1,6 @@
 package me.taubsie.dungeonhub.application.enums
 
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
+import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import me.taubsie.dungeonhub.application.service.ServerService.getActualServerProperty
 import me.taubsie.dungeonhub.common.Nameable
 import java.util.*

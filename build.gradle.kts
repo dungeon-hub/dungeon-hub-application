@@ -13,6 +13,18 @@ repositories {
         url = uri("https://repo.hypixel.net/repository/Hypixel/")
         name = "Hypixel Repository"
     }
+    maven {
+        url = uri("https://repo.kordex.dev/releases")
+        name = "KordEx (Releases)"
+    }
+    maven {
+        url = uri("https://repo.kordex.dev/snapshots")
+        name = "KordEx (Snapshots)"
+    }
+    maven {
+        url = uri("https://oss.sonatype.org/content/repositories/snapshots")
+        name = "Sonatype Snapshots (Legacy)"
+    }
     mavenLocal()
 }
 
@@ -35,8 +47,8 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
 
     //Discord Framework
-    implementation("dev.kord:kord-core:0.13.1")
-    implementation("com.kotlindiscord.kord.extensions:kord-extensions:1.6.0")
+    implementation("dev.kord:kord-core:0.15.0-SNAPSHOT")
+    implementation("dev.kordex:kord-extensions:2.2.1-SNAPSHOT")
 
     //Logging
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")
