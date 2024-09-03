@@ -35,10 +35,7 @@ import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.HelpTopic
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionWarning
-import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaWarning
-import me.taubsie.dungeonhub.application.exceptions.NotLinkedException
+import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.*
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel
@@ -355,7 +352,7 @@ class LinkingSystem : Extension() {
 
                     val userModel = DiscordUserConnection.getInstance()
                         .findUserByUuid(uuid)
-                        .orElseThrow { CommandExecutionException("Couldn't find who the given user is linked to.") }
+                        .orElseThrow { CommandExecutionWarning("Couldn't find who the given user is linked to.") }
 
                     addEmbed {
                         color(EmbedColor.POSITIVE)
