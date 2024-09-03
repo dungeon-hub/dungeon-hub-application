@@ -1,9 +1,9 @@
 package me.taubsie.dungeonhub.application.listener
 
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.event
 import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.user.UserUpdateEvent
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.event
 import me.taubsie.dungeonhub.application.connection.getMutualServers
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ProfileModerationService

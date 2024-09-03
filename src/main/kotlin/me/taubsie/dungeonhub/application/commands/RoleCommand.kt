@@ -1,19 +1,19 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.checks.hasPermission
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.group
-import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalBoolean
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
-import com.kotlindiscord.kord.extensions.commands.converters.impl.role
-import com.kotlindiscord.kord.extensions.commands.converters.impl.user
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.core.entity.Member
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kordex.core.checks.hasPermission
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.group
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.optionalBoolean
+import dev.kordex.core.commands.converters.impl.optionalString
+import dev.kordex.core.commands.converters.impl.role
+import dev.kordex.core.commands.converters.impl.user
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -184,19 +184,21 @@ class RoleCommand : Extension() {
         if (add) {
             target.addRole(arguments.role.id)
 
-            if(!hasRole) {
+            if (!hasRole) {
                 embed.description = "Successfully added ${arguments.role.mention} to ${arguments.user.mention}."
             } else {
-                embed.description = "The user ${arguments.user.mention} already had the role ${arguments.role.mention}, but I tried to add it anyway."
+                embed.description =
+                    "The user ${arguments.user.mention} already had the role ${arguments.role.mention}, but I tried to add it anyway."
                 embed.color = EmbedColor.NEGATIVE.color
             }
         } else {
             target.removeRole(arguments.role.id)
 
-            if(hasRole) {
+            if (hasRole) {
                 embed.description = "Successfully removed ${arguments.role.mention} from ${arguments.user.mention}."
             } else {
-                embed.description = "The user ${arguments.user.mention} didn't have the role ${arguments.role.mention}, but I tried to remove it anyway."
+                embed.description =
+                    "The user ${arguments.user.mention} didn't have the role ${arguments.role.mention}, but I tried to remove it anyway."
                 embed.color = EmbedColor.NEGATIVE.color
             }
         }

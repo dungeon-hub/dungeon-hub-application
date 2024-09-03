@@ -1,8 +1,8 @@
 package me.taubsie.dungeonhub.application.enums
 
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.User
+import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import lombok.Getter
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection

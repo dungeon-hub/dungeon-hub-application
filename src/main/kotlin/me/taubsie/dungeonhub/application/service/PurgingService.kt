@@ -1,9 +1,9 @@
 package me.taubsie.dungeonhub.application.service
 
-import com.kotlindiscord.kord.extensions.utils.dm
-import com.kotlindiscord.kord.extensions.utils.hasRole
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
+import dev.kordex.core.utils.dm
+import dev.kordex.core.utils.hasRole
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor

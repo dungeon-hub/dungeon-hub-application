@@ -2,8 +2,8 @@ package me.taubsie.dungeonhub.application.loader
 
 import com.google.common.reflect.ClassPath
 import com.google.errorprone.annotations.DoNotCall
-import com.kotlindiscord.kord.extensions.ExtensibleBot
-import com.kotlindiscord.kord.extensions.extensions.Extension
+import dev.kordex.core.ExtensibleBot
+import dev.kordex.core.extensions.Extension
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger

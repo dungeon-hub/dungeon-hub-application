@@ -1,13 +1,5 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.converters.impl.channel
-import com.kotlindiscord.kord.extensions.commands.converters.impl.string
-import com.kotlindiscord.kord.extensions.commands.converters.impl.user
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.event
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
-import com.kotlindiscord.kord.extensions.extensions.publicUserCommand
 import dev.kord.common.entity.*
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
@@ -28,6 +20,14 @@ import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.converters.impl.channel
+import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.commands.converters.impl.user
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.event
+import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.extensions.publicUserCommand
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import me.taubsie.dungeonhub.application.connection.HypixelConnection.getHypixelLinkedDiscord
@@ -35,10 +35,7 @@ import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.HelpTopic
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionWarning
-import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaWarning
-import me.taubsie.dungeonhub.application.exceptions.NotLinkedException
+import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.*
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel
@@ -99,52 +96,54 @@ class LinkingSystem : Extension() {
             }
         }
 
-        listOf(693263712626278553L, 633621474183217163L, 1023684107877761196L).forEach { guildId ->
-            publicSlashCommand(::LinkArguments) {
-                name = "manual-link"
-                description = "Manually link someone by IGN."
-                guild(guildId)
-                check {
-                    failIfNot("You aren't allowed to use this command.") {
-                        event.interaction.user.id.value.toLong() == 356134481452597250L
+        listOf(693263712626278553L, 633621474183217163L, 1023684107877761196L).map { Snowflake(it) }
+            .forEach { guildId ->
+                publicSlashCommand(::LinkArguments) {
+                    name = "manual-link"
+                    description = "Manually link someone by IGN."
+                    guild(guildId)
+                    check {
+                        failIfNot("You aren't allowed to use this command.") {
+                            event.interaction.user.id.value.toLong() == 356134481452597250L
+                        }
                     }
-                }
 
-                action {
-                    respond {
-                        val uuid = MojangConnection.getInstance()
-                            .getUUIDByName(arguments.ign)
+                    action {
+                        respond {
+                            val uuid = MojangConnection.getInstance()
+                                .getUUIDByName(arguments.ign)
 
-                        val discordUser = getHypixelLinkedDiscord(uuid)
-                            .orElseThrow {
-                                InvalidOptionWarning(
-                                    "ign",
-                                    "Please add the correct discord-account to your hypixel social menu.\n"
-                                            + "To learn more about how to do this, use `/help verification`."
-                                )
+                            val discordUser = getHypixelLinkedDiscord(uuid)
+                                .orElseThrow {
+                                    InvalidOptionWarning(
+                                        "ign",
+                                        "Please add the correct discord-account to your hypixel social menu.\n"
+                                                + "To learn more about how to do this, use `/help verification`."
+                                    )
+                                }
+
+                            val users = guild!!.requestMembers { query = discordUser; limit = 5 }
+                                .map { it.members }
+                                .toList()
+
+                            val user = users.map { members -> members.firstOrNull { it.username == discordUser } }
+                                .firstOrNull()
+
+                            if (user == null) {
+                                throw CommandExecutionException("The specified user (`$discordUser`) does not exist.")
                             }
 
-                        val users = guild!!.requestMembers { query = discordUser; limit = 5 }
-                            .map { it.members }
-                            .toList()
+                            NicknameService.linkToIgn(arguments.ign, user)
 
-                        val user = users.map { members -> members.firstOrNull { it.username == discordUser } }.firstOrNull()
+                            val embed = ApplicationService.embed
+                            embed.color = EmbedColor.POSITIVE.color
+                            embed.description = "Linked `${arguments.ign}` to: ${user.tag}"
 
-                        if (user == null) {
-                            throw CommandExecutionException("The specified user (`$discordUser`) does not exist.")
+                            embeds = mutableListOf(embed)
                         }
-
-                        NicknameService.linkToIgn(arguments.ign, user)
-
-                        val embed = ApplicationService.embed
-                        embed.color = EmbedColor.POSITIVE.color
-                        embed.description = "Linked `${arguments.ign}` to: ${user.tag}"
-
-                        embeds = mutableListOf(embed)
                     }
                 }
             }
-        }
 
         publicSlashCommand {
             name = "sync"
@@ -353,7 +352,7 @@ class LinkingSystem : Extension() {
 
                     val userModel = DiscordUserConnection.getInstance()
                         .findUserByUuid(uuid)
-                        .orElseThrow{ CommandExecutionException("Couldn't find who the given user is linked to.") }
+                        .orElseThrow { CommandExecutionWarning("Couldn't find who the given user is linked to.") }
 
                     addEmbed {
                         color(EmbedColor.POSITIVE)

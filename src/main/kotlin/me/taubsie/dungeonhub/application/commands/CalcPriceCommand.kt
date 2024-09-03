@@ -1,12 +1,12 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.converters.impl.long
-import com.kotlindiscord.kord.extensions.commands.converters.impl.string
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.entity.channel.CategorizableChannel
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.converters.impl.long
+import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection

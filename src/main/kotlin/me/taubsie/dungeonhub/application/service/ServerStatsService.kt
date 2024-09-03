@@ -9,12 +9,14 @@ import dev.kord.core.entity.channel.GuildChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.VoiceChannel
 import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kord.core.supplier.RestEntitySupplier
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.getTotalAmountOfMoneySpent
+import me.taubsie.dungeonhub.application.connection.getGuildOrNull
 import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartupListener
 import org.slf4j.LoggerFactory
@@ -73,8 +75,9 @@ object ServerStatsService : StartupListener {
 
     private suspend fun loadServerStatChannels() {
         serverStatChannels.forEach { server ->
-            DiscordConnection.bot!!.kordRef.with(EntitySupplyStrategy.cachingRest)
-                .getGuildOrNull(Snowflake(server.first))
+            val supplier: RestEntitySupplier = DiscordConnection.bot!!.kordRef.with(EntitySupplyStrategy.rest)
+
+            supplier.getGuildOrNull(Snowflake(server.first), true)
                 ?.let {
                     updateStatChannels(it, server.second)
                 }
@@ -98,14 +101,14 @@ object ServerStatsService : StartupListener {
         channels.forEach { channel ->
             guild.getChannelOfOrNull<GuildChannel>(Snowflake(channel.first))
                 ?.let { guildChannel ->
-                    if (channel.second.contains("{member_count}") && guild.memberCount == null) {
+                    if (channel.second.contains("{member_count}") && guild.approximateMemberCount == null) {
                         return@let
                     }
 
                     val newName = channel.second
                         .replace("{linked_users}", linkedUsers.toString())
                         .replace("{spent_money}", spentMoney.toString())
-                        .replace("{member_count}", guild.memberCount.toString())
+                        .replace("{member_count}", guild.approximateMemberCount.toString())
                         .replace("{carry_count_monthly}", monthlyCarries.toString())
 
                     guildChannel.asChannelOfOrNull<TextChannel>()?.let { textChannel ->
