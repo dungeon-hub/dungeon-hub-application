@@ -63,7 +63,7 @@ object DiscordConnection : StartupListener {
         AppearanceType.Custom to {
             "Handling ${
                 DiscordUserConnection.getInstance()
-                    .countLinkedUsers().orElse("0")
+                    .countLinkedUsers().orElse(0)
             } linked users!"
         },
         AppearanceType.Watching to {

@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -151,6 +152,16 @@ public class DiscordServerConnection implements ModuleConnection {
         if (carryTierId != null) {
             url.addQueryParameter("carry-tier", String.valueOf(carryTierId));
         }
+
+        Request request = getApiRequest(url.build()).get().build();
+
+        return executeRequest(request, Long::parseLong);
+    }
+
+    public Optional<Long> getCarryAmountSince(long serverId, Instant since) {
+        HttpUrl.Builder url = getApiUrl(serverId + "/count-carries");
+
+        url.addQueryParameter("since", String.valueOf(since.toEpochMilli()));
 
         Request request = getApiRequest(url.build()).get().build();
 

@@ -36,12 +36,12 @@ public class DiscordUserConnection implements ModuleConnection {
         return logger;
     }
 
-    public Optional<String> countLinkedUsers() {
+    public Optional<Long> countLinkedUsers() {
         HttpUrl url = getApiUrl("count-linked").build();
 
         Request request = new Request.Builder().url(url).build();
 
-        return executeRequest(request);
+        return executeRequest(request, Long::parseLong);
     }
 
     public Optional<DiscordUserModel> getById(long id) {

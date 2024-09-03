@@ -657,6 +657,10 @@ object ApplicationService {
     fun parseTimeoutDuration(data: String): Duration {
         return Duration.parse(data)
     }
+
+    fun getFirstOfMonth(): java.time.LocalDate {
+        return java.time.LocalDate.now().withDayOfMonth(1)
+    }
 }
 
 fun Extension.getEmbed(): EmbedBuilder {

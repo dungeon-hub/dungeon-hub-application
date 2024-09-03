@@ -19,6 +19,7 @@ import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartupListener
 import org.slf4j.LoggerFactory
 import java.sql.Time
+import java.time.ZoneId
 import java.util.*
 import kotlin.concurrent.thread
 
@@ -31,13 +32,15 @@ object ServerStatsService : StartupListener {
         1023684107877761196L to listOf(
             1273562134948876380L to "{member_count} members",
             1272308210102964254L to "{linked_users} linked Users",
-            1272323673457557616L to "{spent_money} coins spent"
+            1272323673457557616L to "{spent_money} coins spent",
+            1280463884003704874L to "{carry_count_monthly} carries this month"
         ),
         //Dungeon Hub
         693263712626278553L to listOf(
             1273562347797090377L to "{member_count} members",
             1272331486154194984L to "{linked_users} linked Users",
-            1272331662772142081L to "{spent_money} coins spent"
+            1272331662772142081L to "{spent_money} coins spent",
+            1280470213745184810L to "{carry_count_monthly} carries this month"
         )
     )
 
@@ -70,7 +73,8 @@ object ServerStatsService : StartupListener {
 
     private suspend fun loadServerStatChannels() {
         serverStatChannels.forEach { server ->
-            DiscordConnection.bot!!.kordRef.with(EntitySupplyStrategy.cachingRest).getGuildOrNull(Snowflake(server.first))
+            DiscordConnection.bot!!.kordRef.with(EntitySupplyStrategy.cachingRest)
+                .getGuildOrNull(Snowflake(server.first))
                 ?.let {
                     updateStatChannels(it, server.second)
                 }
@@ -78,7 +82,7 @@ object ServerStatsService : StartupListener {
     }
 
     private suspend fun updateStatChannels(guild: Guild, channels: List<Pair<Long, String>>) {
-        val linkedUsers = DiscordUserConnection.getInstance().countLinkedUsers().orElse("0")
+        val linkedUsers = DiscordUserConnection.getInstance().countLinkedUsers().orElse(0)
         val spentMoney = try {
             ApplicationService.makeNumberReadable(
                 DiscordServerConnection.getInstance().getTotalAmountOfMoneySpent(guild.id.value.toLong()), 3
@@ -86,18 +90,23 @@ object ServerStatsService : StartupListener {
         } catch (ex: Exception) {
             0
         }
+        val monthlyCarries = DiscordServerConnection.getInstance().getCarryAmountSince(
+            guild.id.value.toLong(),
+            ApplicationService.getFirstOfMonth().atStartOfDay(ZoneId.systemDefault()).toInstant()
+        ).orElse(0)
 
         channels.forEach { channel ->
             guild.getChannelOfOrNull<GuildChannel>(Snowflake(channel.first))
                 ?.let { guildChannel ->
-                    if(channel.second.contains("{member_count}") && guild.memberCount == null) {
+                    if (channel.second.contains("{member_count}") && guild.memberCount == null) {
                         return@let
                     }
 
                     val newName = channel.second
-                        .replace("{linked_users}", linkedUsers)
+                        .replace("{linked_users}", linkedUsers.toString())
                         .replace("{spent_money}", spentMoney.toString())
                         .replace("{member_count}", guild.memberCount.toString())
+                        .replace("{carry_count_monthly}", monthlyCarries.toString())
 
                     guildChannel.asChannelOfOrNull<TextChannel>()?.let { textChannel ->
                         textChannel.edit {
