@@ -47,6 +47,7 @@ import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundWarning
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.LeaderboardService
+import me.taubsie.dungeonhub.application.service.color
 import me.taubsie.dungeonhub.common.DungeonHubService
 import me.taubsie.dungeonhub.common.enums.QueueStep
 import me.taubsie.dungeonhub.common.enums.ScoreType
@@ -220,6 +221,25 @@ class MessageListener : Extension() {
                                 }
                             }
 
+                        thread(start = true) {
+                            runBlocking {
+                                DiscordConnection.bot?.kordRef
+                                    ?.getUser(Snowflake(queueModel.carrier.id))
+                                    ?.dm {
+                                        this.content =
+                                            "Due to the high number of score or carries, your carry has to be manually approved by our server's staff team.\n" +
+                                                    "You will be notified once it was approved or denied.\n" +
+                                                    "Your score only gets awarded if the log was approved."
+
+                                        val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                                        embed.title = "Approval needed"
+                                        embed.color(EmbedColor.INFORMATION)
+
+                                        embeds = mutableListOf(embed)
+                                    }
+                            }
+                        }
+
                         updateModel.setQueueStep(QueueStep.APPROVING)
                             .setRelationId(createdMessage.id.value.toLong())
 
@@ -316,16 +336,13 @@ class MessageListener : Extension() {
             if ((serverId.value.toLong() == 1023684107877761196L && channelId.value.toLong() == 1220895875102937098L)
                 || (serverId.value.toLong() == 693263712626278553L && channelId.value.toLong() == 1219427157655289908L)
             ) {
-                if (event.message.attachments.isEmpty()) {
-                    if (
-                        event.message.author?.isBot == false &&
-                        event.message.embeds.stream()
-                            .map { embed -> embed.thumbnail }
-                            .filter { it != null }
-                            .findFirst().isEmpty
-                    ) {
-                        return
-                    }
+                if (event.message.attachments.isEmpty() && event.message.author?.isBot == false &&
+                    event.message.embeds.stream()
+                        .map { embed -> embed.thumbnail }
+                        .filter { it != null }
+                        .findFirst().isEmpty
+                ) {
+                    return
                 }
 
                 val emoji: String = getRandomEmoji()
