@@ -15,6 +15,7 @@ import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.getCarryAmountOrNull
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.getTotalAmountOfMoneySpent
 import me.taubsie.dungeonhub.application.connection.getGuildOrNull
 import me.taubsie.dungeonhub.application.loader.OnStart
@@ -93,10 +94,10 @@ object ServerStatsService : StartupListener {
         } catch (ex: Exception) {
             0
         }
-        val monthlyCarries = DiscordServerConnection.getInstance().getCarryAmountSince(
+        val monthlyCarries = DiscordServerConnection.getInstance().getCarryAmountOrNull(
             guild.id.value.toLong(),
             ZonedDateTime.now().minusDays(30).toInstant()
-        ).orElse(0)
+        ) ?: 0
 
         channels.forEach { channel ->
             guild.getChannelOfOrNull<GuildChannel>(Snowflake(channel.first))
