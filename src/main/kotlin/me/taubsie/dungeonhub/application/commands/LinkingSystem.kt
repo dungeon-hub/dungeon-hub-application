@@ -13,6 +13,7 @@ import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.Role
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.interaction.ButtonInteraction
+import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.gateway.PrivilegedIntent
@@ -30,6 +31,7 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.extensions.publicUserCommand
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.HypixelConnection.getHypixelLinkedDiscord
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
@@ -41,6 +43,7 @@ import me.taubsie.dungeonhub.application.service.*
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel
 import java.util.*
+import kotlin.concurrent.thread
 
 @PrivilegedIntent
 @LoadExtension
@@ -448,6 +451,24 @@ class LinkingSystem : Extension() {
                 val roles = RolesService.updateRoles(event.interaction.user)
 
                 NicknameService.updateNickname(event.interaction.user, roles)
+            }
+        }
+
+        event<MemberJoinEvent> {
+            action {
+                val linkedUser = DiscordUserConnection.getInstance().getLinkedById(event.member.id.value.toLong())
+
+                if (linkedUser.isEmpty) {
+                    return@action
+                }
+
+                thread(start = true) {
+                    runBlocking {
+                        val roles: List<Role> = RolesService.updateRoles(event.member)
+
+                        NicknameService.updateNickname(event.member, roles)
+                    }
+                }
             }
         }
     }
