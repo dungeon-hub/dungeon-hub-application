@@ -321,14 +321,12 @@ class LoggingSystem : Extension() {
                         .map { obj: ScoreModel -> obj.scoreAmount }
                         .orElse(0L)
                 }
-            val gainedScore = queueModel.calculateScore()
 
             val carrier = event.kord.getUser(Snowflake(queueModel.carrier.id))
 
             //TODO request exception
             carrier?.dm {
                 content = "Your carry was logged!\n\n" +
-                        "**Score gained:** " + gainedScore +
                         "\n**Your Updated Score:** " + updatedScore
 
                 val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)

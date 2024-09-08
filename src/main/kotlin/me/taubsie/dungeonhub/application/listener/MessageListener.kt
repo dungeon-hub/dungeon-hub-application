@@ -191,12 +191,12 @@ class MessageListener : Extension() {
                     attachmentLink =
                         ContentConnection.getInstance()
                             .getCdnUrl(attachmentUrl.get()).toString()
-                }
 
-                thread(start = true) {
-                    runBlocking {
-                        message.respond {
-                            this.content = attachmentLink
+                    thread(start = true) {
+                        runBlocking {
+                            message.respond {
+                                this.content = attachmentLink
+                            }
                         }
                     }
                 }
@@ -237,8 +237,7 @@ class MessageListener : Extension() {
                                     ?.dm {
                                         this.content =
                                             "Due to the high number of score or carries, your carry has to be manually approved by our server's staff team.\n" +
-                                                    "You will be notified once it was approved or denied.\n" +
-                                                    "Your score only gets awarded if the log was approved."
+                                                    "You will be notified once it was approved or denied."
 
                                         val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
                                         embed.title = "Approval needed"
@@ -279,10 +278,7 @@ class MessageListener : Extension() {
 
                         if (carrier != null) {
                             carrier.dm {
-                                val gainedScore = queueModel.calculateScore()
-
                                 this.content = "Your carry was logged!\n\n" +
-                                        "**Score gained:** $gainedScore\n" +
                                         "**Your Updated Score:** $updatedScore"
 
                                 val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
