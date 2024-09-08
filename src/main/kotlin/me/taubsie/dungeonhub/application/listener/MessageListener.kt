@@ -24,6 +24,7 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.utils.addReaction
 import dev.kordex.core.utils.dm
+import dev.kordex.core.utils.respond
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.reduce
@@ -190,6 +191,14 @@ class MessageListener : Extension() {
                     attachmentLink =
                         ContentConnection.getInstance()
                             .getCdnUrl(attachmentUrl.get()).toString()
+                }
+
+                thread(start = true) {
+                    runBlocking {
+                        message.respond {
+                            this.content = attachmentLink
+                        }
+                    }
                 }
 
                 queueModel.attachmentLink = attachmentLink
