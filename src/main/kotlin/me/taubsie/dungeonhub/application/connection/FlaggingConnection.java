@@ -10,6 +10,7 @@ import me.taubsie.dungeonhub.application.misc.FlagDetail;
 import me.taubsie.dungeonhub.application.misc.FlagResponse;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,15 +41,15 @@ public class FlaggingConnection implements Connection {
         return logger;
     }
 
-    public List<FlagResponse> isFlagged(Long id) {
+    public List<FlagResponse> isFlagged(@Nullable Long id) {
         return isFlagged(null, id);
     }
 
-    public List<FlagResponse> isFlagged(UUID uuid) {
+    public List<FlagResponse> isFlagged(@Nullable UUID uuid) {
         return isFlagged(uuid, null);
     }
 
-    public List<FlagResponse> isFlagged(UUID uuid, Long id) {
+    public List<FlagResponse> isFlagged(@Nullable UUID uuid, @Nullable Long id) {
         return FlaggingApi.getEntries().stream()
                 .parallel()
                 .map(flaggingApi -> flaggingApi.execute(uuid, id))
