@@ -585,11 +585,21 @@ object ApplicationService {
 
         val reason = mutableListOf<String>()
 
-        val timeout = actions.filter { it.warningAction == WarningAction.Timeout }
+        var timeout = actions.filter { it.warningAction == WarningAction.Timeout }
             .map { parseTimeoutDuration(it.data) }
             .reduceOrNull { acc, duration -> acc.plus(duration) }
 
         if (timeout != null && timeout.isPositive()) {
+            val currentTimeout = member.timeoutUntil
+
+            if (currentTimeout != null) {
+                val currentTimeoutDuration = member.timeoutUntil!! - Clock.System.now()
+
+                if (currentTimeoutDuration.isPositive()) {
+                    timeout += currentTimeoutDuration
+                }
+            }
+
             member.edit {
                 timeoutUntil = Clock.System.now().plus(timeout)
                 this.reason = "Too many warnings."
