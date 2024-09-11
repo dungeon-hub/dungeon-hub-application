@@ -55,10 +55,10 @@ class LookupCommand : Extension() {
                                 color(EmbedColor.POSITIVE)
                                 description = "The given user (${arguments.ign})${
                                     if (discordId != null)
-                                        " and the discord user they're linked to (<@$discordId>)"
+                                        " and the discord user they're linked to (<@$discordId>) are"
                                     else
-                                        ""
-                                } is not flagged"
+                                        " is"
+                                } not flagged"
                             }
                             return@respond
                         }
@@ -140,10 +140,10 @@ class LookupCommand : Extension() {
                 color(EmbedColor.POSITIVE)
                 description = "The given user (${target.mention})${
                     if (ign != null)
-                        " and the minecraft user they're linked to ($ign)"
+                        " and the minecraft user they're linked to ($ign) are"
                     else
-                        ""
-                } is not flagged"
+                        " is"
+                } not flagged"
             }
         }
     }
