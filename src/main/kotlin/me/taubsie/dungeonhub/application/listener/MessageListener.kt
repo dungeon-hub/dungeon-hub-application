@@ -235,13 +235,11 @@ class MessageListener : Extension() {
                                 DiscordConnection.bot?.kordRef
                                     ?.getUser(Snowflake(queueModel.carrier.id))
                                     ?.dm {
-                                        this.content =
-                                            "Due to the high number of score or carries, your carry has to be manually approved by our server's staff team.\n" +
-                                                    "You will be notified once it was approved or denied."
-
-                                        val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
-                                        embed.title = "Approval needed"
+                                        val embed = ApplicationService.embed
                                         embed.color(EmbedColor.INFORMATION)
+                                        embed.title = "Approval needed"
+                                        embed.description = "Due to the high number of score (${queueModel.calculateScore()}) or carries (${queueModel.amount}), your ${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
+                                                "You will be notified here once it was approved or denied."
 
                                         embeds = mutableListOf(embed)
                                     }
