@@ -70,8 +70,8 @@ import kotlin.time.toKotlinDuration
 @LoadExtension
 class MessageListener : Extension() {
     companion object {
-        private const val APPROVE_AMOUNT_THRESHOLD: Long = 8
-        private const val APPROVE_SCORE_THRESHOLD: Long = 30
+        private const val APPROVE_AMOUNT_THRESHOLD: Long = 11
+        private const val APPROVE_SCORE_THRESHOLD: Long = 34
 
         private val CHANNEL_FROM_TRANSCRIPT: Pattern = Pattern.compile("^\\s*Channel: [^(]*\\((?<channel>\\d*)\\)")
 
