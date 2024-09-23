@@ -214,7 +214,7 @@ object HypixelConnection : HypixelHttpClient {
     fun getProfiles(uuid: UUID): JsonArray? {
         val request: Request = Request.Builder()
             .addHeader("API-Key", ConfigProperty.HYPIXEL_API_KEY.value!!)
-            .url("https://api.hypixel.net/skyblock/profiles?uuid=$uuid")
+            .url("https://api.hypixel.net/v2/skyblock/profiles?uuid=$uuid")
             .get()
             .build()
         try {
