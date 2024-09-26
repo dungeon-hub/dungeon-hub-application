@@ -1,14 +1,17 @@
 package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
+import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestCreationModel;
 import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestModel;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class CntRequestConnection implements ModuleConnection {
     private static final Logger logger = LoggerFactory.getLogger(CntRequestConnection.class);
@@ -40,6 +43,21 @@ public class CntRequestConnection implements ModuleConnection {
 
         Request request = getApiRequest(url)
                 .get()
+                .build();
+
+        return executeRequest(request, s -> CntRequestModel::fromJson);
+    }
+
+    public Optional<CntRequestModel> createCntRequest(CntRequestCreationModel creationModel) {
+        HttpUrl url = getApiUrl().build();
+
+        RequestBody requestBody = RequestBody.create(
+                creationModel.toJson(),
+                getJsonMediaType()
+        );
+
+        Request request = getApiRequest(url)
+                .post(requestBody)
                 .build();
 
         return executeRequest(request, s -> CntRequestModel::fromJson);
