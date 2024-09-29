@@ -45,7 +45,7 @@ public class CntRequestConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> CntRequestModel::fromJson);
+        return executeRequest(request, CntRequestModel::fromJson);
     }
 
     public Optional<CntRequestModel> createCntRequest(CntRequestCreationModel creationModel) {
@@ -60,6 +60,6 @@ public class CntRequestConnection implements ModuleConnection {
                 .post(requestBody)
                 .build();
 
-        return executeRequest(request, s -> CntRequestModel::fromJson);
+        return executeRequest(request, CntRequestModel::fromJson);
     }
 }
