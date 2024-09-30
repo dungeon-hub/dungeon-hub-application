@@ -18,14 +18,16 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CntRequestConnection
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
+import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestCreationModel
 import java.time.Instant
 
-class CraftsAndTransfersButtonExtension : Extension() {
-    override val name = "send-cnt-message"
+@LoadExtension
+class CntSystem : Extension() {
+    override val name = "cnt-system"
 
     override suspend fun setup() {
-        val buttonIds = listOf("<3", "3-5", "5-10", "10-15", "15-20", "20-25", "25-50", "50-100", "100-200", "200-400", "400m+")
+        val buttonIds = listOf("cnt_<3", "cnt_3-5", "cnt_5-10", "cnt_10-15", "cnt_15-20", "cnt_20-25", "cnt_25-50", "cnt_50-100", "cnt_100-200", "cnt_200-400", "cnt_400m+")
 
         buttonIds.forEach { id ->
             event<GuildButtonInteractionCreateEvent> {
@@ -228,11 +230,11 @@ class CraftsAndTransfersButtonExtension : Extension() {
                         buttonIds.take(5).forEach { id ->
                             interactionButton(ButtonStyle.Secondary, id) {
                                 label = when (id) {
-                                    "<3" -> "Less than 3m"
-                                    "3-5" -> "3m-5m"
-                                    "5-10" -> "5m-10m"
-                                    "10-15" -> "10m-15m"
-                                    "15-20" -> "15m-20m"
+                                    "cnt_<3" -> "Less than 3m"
+                                    "cnt_3-5" -> "3m-5m"
+                                    "cnt_5-10" -> "5m-10m"
+                                    "cnt_10-15" -> "10m-15m"
+                                    "cnt_15-20" -> "15m-20m"
                                     else -> id
                                 }
                             }
@@ -243,12 +245,12 @@ class CraftsAndTransfersButtonExtension : Extension() {
                         buttonIds.drop(6).forEach { id ->
                             interactionButton(ButtonStyle.Secondary, id) {
                                 label = when (id) {
-                                    "20-25" -> "20m-25m"
-                                    "25-50" -> "25m-50m"
-                                    "50-100" -> "50m-100m"
-                                    "100-200" -> "100m-200m"
-                                    "200-400" -> "200m-400m"
-                                    "400+" -> "400m+"
+                                    "cnt_20-25" -> "20m-25m"
+                                    "cnt_25-50" -> "25m-50m"
+                                    "cnt_50-100" -> "50m-100m"
+                                    "cnt_100-200" -> "100m-200m"
+                                    "cnt_200-400" -> "200m-400m"
+                                    "cnt_400+" -> "400m+"
                                     else -> id
                                 }
                             }
