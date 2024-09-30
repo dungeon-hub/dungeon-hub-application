@@ -36,7 +36,7 @@ dependencies {
     implementation("me.taubsie:dungeon-hub-common:1.0.0")
 
     //Functionality
-    implementation("net.dungeon-hub:transcripts-kord:0.1")
+    implementation("net.dungeon-hub:transcripts-kord:0.1.1")
     implementation("org.jsoup:jsoup:1.15.3")
     implementation("net.codebox:homoglyph:1.2.1")
     implementation("net.hypixel:hypixel-api-core:4.4")
