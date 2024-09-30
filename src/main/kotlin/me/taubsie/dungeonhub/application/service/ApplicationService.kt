@@ -671,6 +671,21 @@ object ApplicationService {
     fun getFirstOfMonth(): java.time.LocalDate {
         return java.time.LocalDate.now().withDayOfMonth(1)
     }
+
+    fun getErrorEmbeds(throwable: Throwable, message: String): MutableList<EmbedBuilder> {
+        return if (throwable is CommandExecutionException) {
+            mutableListOf(getErrorEmbed(throwable))
+        } else if (throwable is CommandExecutionWarning) {
+            mutableListOf(getErrorEmbed(throwable))
+        } else {
+            val embed = getErrorEmbed(CommandExecutionException(throwable))
+            if (message.isNotBlank()) {
+                embed.title = message
+            }
+
+            mutableListOf(embed)
+        }
+    }
 }
 
 fun Extension.getEmbed(): EmbedBuilder {

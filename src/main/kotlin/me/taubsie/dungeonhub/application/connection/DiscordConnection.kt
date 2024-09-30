@@ -32,7 +32,6 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConne
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.getTotalAmountOfMoneySpent
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.listener.ServerJoinListener
 import me.taubsie.dungeonhub.application.loader.ClassLoader
 import me.taubsie.dungeonhub.application.loader.OnStart
@@ -191,18 +190,7 @@ object DiscordConnection : StartupListener {
             }
 
             errorResponse { message, type ->
-                embeds = if (type.error is CommandExecutionException) {
-                    mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionException))
-                } else if (type.error is CommandExecutionWarning) {
-                    mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionWarning))
-                } else {
-                    val embed = ApplicationService.getErrorEmbed(CommandExecutionException(type.error))
-                    if (message.isNotBlank()) {
-                        embed.title = message
-                    }
-
-                    mutableListOf(embed)
-                }
+                embeds = ApplicationService.getErrorEmbeds(type.error, message)
             }
 
             hooks {
