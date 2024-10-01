@@ -99,17 +99,20 @@ object ApplicationService {
     val embedWithoutTimestamp: EmbedBuilder
         get() {
             val embed = EmbedBuilder()
-            embed.footer { footer }
+            embed.footer = footer
             return embed
         }
 
     fun getEmbed(time: Instant?): EmbedBuilder {
-        val embed = EmbedBuilder()
+        val embed = embedWithoutTimestamp
         embed.timestamp = time
-        embed.footer = footer
         return embed
     }
 
+    /**
+     * This returns the owner of the bot as a discord user.
+     * If the bot is part of an application team, the owner of the team is returned, otherwise the bot owner is returned.
+     */
     suspend fun getBotOwner(kord: Kord): User? {
         val ownerId = kord.getApplicationInfo().team?.ownerUserId ?: kord.getApplicationInfo().ownerId
 
@@ -120,13 +123,24 @@ object ApplicationService {
         return kord.getUser(ownerId)
     }
 
-    fun makeDoubleReadable(number: Double, maxFractionDigits: Int = 340): String {
-        val df = DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.US))
+    /**
+     * This formats a decimal number as a String.
+     */
+    fun makeDoubleReadable(number: Double, maxFractionDigits: Int = 340, locale: Locale = Locale.US): String {
+        val df = DecimalFormat("0", DecimalFormatSymbols.getInstance(locale))
         df.setMaximumFractionDigits(maxFractionDigits) //340 = DecimalFormat.DOUBLE_FRACTION_DIGITS
 
         return df.format(number)
     }
 
+    /**
+     * Returns a (large) number as a readable String.
+     * Numbers < 1000 are returned as is, simply formatted as a String.
+     * Numbers >= 1000 are returned with the respective extension:
+     * 1312.1852 -> "1.3121852k"
+     * 3882761 -> "3.882761m"
+     * 45544000000 -> "45.544b"
+     */
     fun makeNumberReadable(number: Long, maxFractionDigits: Int = 340): String {
         if (number >= 1000000000000L) {
             return makeDoubleReadable(number / 1000000000000.0, maxFractionDigits) + "t"
