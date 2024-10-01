@@ -264,6 +264,7 @@ class EmbedCommand : Extension() {
                             "link"
                         )
 
+                        //TODO how to handle interaction responses?
                         if (message.author?.isSelf() != true) {
                             throw InvalidOptionException(
                                 "link",
@@ -320,6 +321,7 @@ class EmbedCommand : Extension() {
 
                         val message = arguments.getMessage()
 
+                        //TODO how to handle interaction responses?
                         if (message?.author?.isSelf() != true) {
                             throw InvalidOptionException(
                                 "link",
