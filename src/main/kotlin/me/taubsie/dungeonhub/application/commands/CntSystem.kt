@@ -2,6 +2,7 @@ package me.taubsie.dungeonhub.application.commands
 
 import com.google.common.collect.Iterables
 import dev.kord.common.entity.ButtonStyle
+import dev.kord.common.entity.Permission
 import dev.kord.common.entity.TextInputStyle
 import dev.kord.core.behavior.channel.GuildChannelBehavior
 import dev.kord.core.behavior.edit
@@ -12,13 +13,14 @@ import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kord.rest.builder.message.MessageBuilder
 import dev.kord.rest.builder.message.actionRow
 import dev.kordex.core.components.components
-import dev.kordex.core.components.disabledButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.utils.dm
+import dev.kordex.core.utils.hasPermission
 import kotlinx.datetime.Clock
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CntRequestConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
@@ -69,7 +71,10 @@ class CntSystem : Extension() {
                         event.interaction.respondEphemeral {
                             content =
                                 "An error occurred while processing your request. Please try again later. Error code 1"
-                            embeds = ApplicationService.getErrorEmbeds(throwable, "An error occured while processing your CNT request.")
+                            embeds = ApplicationService.getErrorEmbeds(
+                                throwable,
+                                "An error occured while processing your CNT request."
+                            )
                         }
                     }
                 }
@@ -87,7 +92,7 @@ class CntSystem : Extension() {
                         .findCntRequest(event.interaction.message.id.value.toLong())
                         .orElseThrow { CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?") }
 
-                    if(cntRequest.claimer != null) {
+                    if (cntRequest.claimer != null) {
                         event.interaction.respondEphemeral {
                             content = "This request has already been claimed!"
                         }
@@ -125,18 +130,7 @@ class CntSystem : Extension() {
                         embeds = mutableListOf(ApplicationService.getCntEmbed(updatedCntRequest))
 
                         components {
-                            actionRow {
-                                disabledButton {
-                                    style = ButtonStyle.Primary
-                                    label = "Claimed"
-                                }
-                                interactionButton(ButtonStyle.Secondary, "cnt_unclaim") {
-                                    label = "Unclaim"
-                                }
-                                interactionButton(ButtonStyle.Secondary, "cnt_done") {
-                                    label = "Done"
-                                }
-                            }
+                            addClaimedCntButtons()
                         }
                     }
                 } catch (e: Exception) {
@@ -153,12 +147,21 @@ class CntSystem : Extension() {
             }
 
             action {
-                //TODO check if cnt is currently claimed by issuer
-
                 val cntRequest = CntRequestConnection
                     .getInstance(event.interaction.guild.id.value.toLong())
                     .findCntRequest(event.interaction.message.id.value.toLong())
                     .orElseThrow { CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?") }
+
+                if (event.interaction.user.id.value.toLong() != cntRequest.claimer.id
+                    && !event.interaction.user.hasPermission(Permission.Administrator)
+                ) {
+                    val embed = ApplicationService
+                        .getErrorEmbed(CommandExecutionWarning("The CNT request is claimed by someone else!"))
+
+                    event.interaction.respondEphemeral { embeds = mutableListOf(embed) }
+
+                    return@action
+                }
 
                 val unclaimMessage = EmbedBuilder()
                 unclaimMessage.title = "Unclaimed!"
@@ -175,17 +178,7 @@ class CntSystem : Extension() {
                 event.interaction.message.edit {
                     embeds = mutableListOf(ApplicationService.getCntEmbed(updatedCntRequest))
                     components {
-                        actionRow {
-                            interactionButton(ButtonStyle.Secondary, "cnt_claim") {
-                                label = "Claim"
-                            }
-                            interactionButton(ButtonStyle.Secondary, "cnt_unclaim") {
-                                label = "Unclaim"
-                            }
-                            interactionButton(ButtonStyle.Secondary, "cnt_done") {
-                                label = "Done"
-                            }
-                        }
+                        addUnclaimedCntButtons()
                     }
                 }
             }
@@ -215,17 +208,7 @@ class CntSystem : Extension() {
                         val response = event.interaction.deferPublicResponse().respond {
                             embeds = mutableListOf(cntEmbed)
 
-                            actionRow {
-                                interactionButton(ButtonStyle.Secondary, "cnt_claim") {
-                                    label = "Claim"
-                                }
-                                interactionButton(ButtonStyle.Secondary, "cnt_unclaim") {
-                                    label = "Unclaim"
-                                }
-                                interactionButton(ButtonStyle.Secondary, "cnt_done") {
-                                    label = "Done"
-                                }
-                            }
+                            addUnclaimedCntButtons()
                         }
 
                         val messageId = response.message.id
@@ -252,7 +235,12 @@ class CntSystem : Extension() {
                             .getInstance(channel.guildId.value.toLong())
                             .createCntRequest(creationModel)
                             .map { mutableListOf(ApplicationService.getCntEmbed(it)) }
-                            .orElseGet { ApplicationService.getErrorEmbeds(CommandExecutionException("Could not persist CNT request."), "Could not persist CNT request.") }
+                            .orElseGet {
+                                ApplicationService.getErrorEmbeds(
+                                    CommandExecutionException("Could not persist CNT request."),
+                                    "Could not persist CNT request."
+                                )
+                            }
 
                         response.edit {
                             embeds = embed
@@ -268,20 +256,20 @@ class CntSystem : Extension() {
         }
 
         publicSlashCommand {
-            name = "send-CNT-message"
+            name = "send-cnt-message"
             description = "Send the CNT message with this bot!"
 
             action {
                 respond {
-                    val CNTCommandMessage = EmbedBuilder()
-                    CNTCommandMessage.title = "Crafts and Transfers Request"
-                    CNTCommandMessage.description = """
+                    val cntEmbed = ApplicationService.embedWithoutTimestamp
+                    cntEmbed.title = "Crafts and Transfers Request"
+                    cntEmbed.description = """
                             Requests will be sent to (add channel here).
                             The craft and transfer service is free, although **collateral is NOT allowed**.
                             Please read (crafts and transfers info) before requesting.
                             Click the buttons below depending on the value of your request.
                         """
-                    embeds = mutableListOf(CNTCommandMessage)
+                    embeds = mutableListOf(cntEmbed)
 
                     Iterables.partition(CntRequestType.entries.asIterable(), 5).forEach { requestTypes ->
                         actionRow {
@@ -293,6 +281,37 @@ class CntSystem : Extension() {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private fun MessageBuilder.addClaimedCntButtons() {
+        actionRow {
+            interactionButton(ButtonStyle.Primary, "cnt_claim") {
+                disabled = true
+                label = "Claimed"
+            }
+
+            interactionButton(ButtonStyle.Secondary, "cnt_unclaim") {
+                label = "Unclaim"
+            }
+            interactionButton(ButtonStyle.Secondary, "cnt_done") {
+                label = "Done"
+            }
+        }
+    }
+
+    private fun MessageBuilder.addUnclaimedCntButtons() {
+        actionRow {
+            interactionButton(ButtonStyle.Primary, "cnt_claim") {
+                label = "Claim"
+            }
+            interactionButton(ButtonStyle.Secondary, "cnt_unclaim") {
+                disabled = true
+                label = "Unclaim"
+            }
+            interactionButton(ButtonStyle.Secondary, "cnt_done") {
+                label = "Done"
             }
         }
     }
