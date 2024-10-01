@@ -41,6 +41,7 @@ import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel
 import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
+import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestModel
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
 import me.taubsie.dungeonhub.common.model.score.ScoreModel
 import me.taubsie.dungeonhub.common.model.warning.DetailedWarningModel
@@ -662,6 +663,38 @@ object ApplicationService {
         }
 
         return reason.joinToString(System.lineSeparator())
+    }
+
+    fun getCntEmbed(
+        description: String,
+        coinValue: String,
+        requirement: String,
+        time: Instant,
+        userId: Long
+    ): EmbedBuilder {
+        val embed = getEmbed(time)
+        embed.color = EmbedColor.DEFAULT.color
+        embed.description = "### Craft and Transfers Request by <@${userId}>"
+
+        embed.field("Description", true) { description }
+        embed.field("Value", true) { coinValue }
+        embed.field("Requirement", true) { requirement }
+
+        return embed
+    }
+
+    fun getCntEmbed(cntRequest: CntRequestModel): EmbedBuilder {
+        val embed = getCntEmbed(
+            cntRequest.description,
+            cntRequest.coinValue,
+            cntRequest.requirement,
+            cntRequest.time.toKotlinInstant(),
+            cntRequest.user.id
+        )
+
+        cntRequest.claimer?.let { embed.field("Claimed by", true) { "<@${it.id}>" } }
+
+        return embed
     }
 
     fun parseTimeoutDuration(data: String): Duration {

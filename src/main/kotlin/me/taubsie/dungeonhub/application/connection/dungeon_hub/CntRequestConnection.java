@@ -3,6 +3,7 @@ package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
 import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestCreationModel;
 import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestModel;
+import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestUpdateModel;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -58,6 +59,21 @@ public class CntRequestConnection implements ModuleConnection {
 
         Request request = getApiRequest(url)
                 .post(requestBody)
+                .build();
+
+        return executeRequest(request, CntRequestModel::fromJson);
+    }
+
+    public Optional<CntRequestModel> updateCntRequest(long id, CntRequestUpdateModel updateModel) {
+        HttpUrl url = getApiUrl(id).build();
+
+        RequestBody requestBody = RequestBody.create(
+                updateModel.toJson(),
+                getJsonMediaType()
+        );
+
+        Request request = getApiRequest(url)
+                .put(requestBody)
                 .build();
 
         return executeRequest(request, CntRequestModel::fromJson);
