@@ -33,6 +33,8 @@ enum class ServerProperty(
     TRANSCRIPTS_CHANNEL("id_transcripts_channel", ServerPropertyType.CHANNEL),
     TOTAL_SCORE_LEADERBOARD_CHANNEL("id_total_score_leaderboard_channel", ServerPropertyType.CHANNEL),
     SERVICE_TEAM_RULES_CHANNEL("id_service_team_rules_channel", ServerPropertyType.CHANNEL),
+    CNT_MESSAGES_CHANNEL("cnt_messages_channel", ServerPropertyType.CHANNEL),
+    CNT_INFORMATION_CHANNEL("cnt_information_channel", ServerPropertyType.CHANNEL),
 
     SCORE_MANAGEMENT_ROLE("id_score_management_score", ServerPropertyType.ROLE);
 

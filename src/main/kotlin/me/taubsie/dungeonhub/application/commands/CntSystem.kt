@@ -1,15 +1,18 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.google.common.collect.Iterables
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Permission
+import dev.kord.common.entity.Snowflake
 import dev.kord.common.entity.TextInputStyle
-import dev.kord.core.behavior.channel.GuildChannelBehavior
+import dev.kord.core.behavior.channel.GuildMessageChannelBehavior
+import dev.kord.core.behavior.channel.asChannelOfOrNull
+import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.modal
 import dev.kord.core.behavior.interaction.respondEphemeral
-import dev.kord.core.behavior.interaction.response.edit
 import dev.kord.core.behavior.interaction.response.respond
+import dev.kord.core.entity.Message
+import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -18,17 +21,18 @@ import dev.kord.rest.builder.message.actionRow
 import dev.kordex.core.components.components
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
-import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasPermission
 import kotlinx.datetime.Clock
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CntRequestConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.enums.CntRequestType
+import me.taubsie.dungeonhub.application.enums.EmbedColor
+import me.taubsie.dungeonhub.application.enums.ServerProperty
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
+import me.taubsie.dungeonhub.application.service.color
 import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestCreationModel
 import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestUpdateModel
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel
@@ -45,27 +49,18 @@ class CntSystem : Extension() {
                     failIfNot(requestType.buttonId == event.interaction.componentId)
                 }
                 action {
-                    val requesterUser = event.interaction.user
+                    event.interaction.user
                     try {
                         event.interaction.modal("Crafts And Transfers", requestType.modalId) {
                             actionRow {
-                                textInput(TextInputStyle.Short, requestType.descriptionId, "Request Description") {}
+                                textInput(TextInputStyle.Short, requestType.descriptionId, "Request Description")
                             }
                             actionRow {
-                                textInput(TextInputStyle.Short, requestType.valueId, "Value") {}
+                                textInput(TextInputStyle.Short, requestType.valueId, "Value")
                             }
                             actionRow {
-                                textInput(TextInputStyle.Short, requestType.requirementId, "Craft Requirement") {}
+                                textInput(TextInputStyle.Short, requestType.requirementId, "Craft Requirement")
                             }
-                        }
-
-                        //TODO is this needed?
-                        requesterUser.dm {
-                            val requesterUserDm = EmbedBuilder()
-                            requesterUserDm.title = "test"
-                            requesterUserDm.description = "hi"
-
-                            embeds = mutableListOf(requesterUserDm)
                         }
                     } catch (throwable: Throwable) {
                         event.interaction.respondEphemeral {
@@ -197,6 +192,22 @@ class CntSystem : Extension() {
                         val coinValue = event.interaction.textInputs[requestType.valueId]?.value!!
                         val requirement = event.interaction.textInputs[requestType.requirementId]?.value!!
 
+                        val channel = event.interaction.channel
+                        if (channel !is GuildMessageChannelBehavior) {
+                            event.interaction.respondEphemeral {
+                                content = "Please use this on a server, DMs are not supported."
+                            }
+                            return@action
+                        }
+
+                        val channelId =
+                            ServerProperty.CNT_MESSAGES_CHANNEL.getValue(channel.guildId.value.toLong()).orElse(null)
+
+                        val responseEmbed = ApplicationService.embed
+                        responseEmbed.color(EmbedColor.DEFAULT)
+                        responseEmbed.description =
+                            "Thanks for trusting in our service! I'm now trying to send your CNT request into <#$channelId>"
+
                         val cntEmbed = ApplicationService.getCntEmbed(
                             requestDescription,
                             coinValue,
@@ -205,13 +216,31 @@ class CntSystem : Extension() {
                             requesterUser.id.value.toLong()
                         )
 
-                        val response = event.interaction.deferPublicResponse().respond {
-                            embeds = mutableListOf(cntEmbed)
+                        val response: Message
 
-                            addUnclaimedCntButtons()
+                        if (channelId != null) {
+                            event.interaction.respondEphemeral {
+                                embeds = mutableListOf(responseEmbed)
+                            }
+
+                            val cntChannel = channel.guild.getChannelOrNull(Snowflake(channelId))
+                                ?.asChannelOfOrNull<GuildMessageChannel>() ?: channel
+
+                            response = cntChannel.createMessage {
+                                embeds = mutableListOf(cntEmbed)
+
+                                addUnclaimedCntButtons()
+                            }
+                        } else {
+                            response = event.interaction.deferPublicResponse().respond {
+                                embeds = mutableListOf(cntEmbed)
+
+                                addUnclaimedCntButtons()
+                            }.message
+
                         }
 
-                        val messageId = response.message.id
+                        val messageId = response.id
 
                         val creationModel = CntRequestCreationModel(
                             messageId.value.toLong(),
@@ -222,14 +251,6 @@ class CntSystem : Extension() {
                             requestDescription,
                             requirement
                         )
-
-                        val channel = event.interaction.channel
-                        if (channel !is GuildChannelBehavior) {
-                            event.interaction.respondEphemeral {
-                                content = "Please use this on a server, DMs are not supported."
-                            }
-                            return@action
-                        }
 
                         val embed = CntRequestConnection
                             .getInstance(channel.guildId.value.toLong())
@@ -249,35 +270,6 @@ class CntSystem : Extension() {
                         event.interaction.respondEphemeral {
                             content =
                                 "An error occurred while processing your request. Please try again later. Error code 3"
-                        }
-                    }
-                }
-            }
-        }
-
-        publicSlashCommand {
-            name = "send-cnt-message"
-            description = "Send the CNT message with this bot!"
-
-            action {
-                respond {
-                    val cntEmbed = ApplicationService.embedWithoutTimestamp
-                    cntEmbed.title = "Crafts and Transfers Request"
-                    cntEmbed.description = """
-                            Requests will be sent to (add channel here).
-                            The craft and transfer service is free, although **collateral is NOT allowed**.
-                            Please read (crafts and transfers info) before requesting.
-                            Click the buttons below depending on the value of your request.
-                        """
-                    embeds = mutableListOf(cntEmbed)
-
-                    Iterables.partition(CntRequestType.entries.asIterable(), 5).forEach { requestTypes ->
-                        actionRow {
-                            requestTypes.forEach { requestType ->
-                                interactionButton(ButtonStyle.Secondary, requestType.buttonId) {
-                                    label = requestType.description
-                                }
-                            }
                         }
                     }
                 }
