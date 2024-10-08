@@ -20,7 +20,11 @@ abstract class ConfigFile<T : ChoiceEnum?> : StartupListener {
     protected abstract val configFile: File
 
     fun setConfig(property: T, value: String?) {
-        properties.setProperty(property!!.readableName, value)
+        if(value == null) {
+            properties.remove(property!!.readableName)
+        } else {
+            properties.setProperty(property!!.readableName, value)
+        }
 
         saveProperties()
     }
