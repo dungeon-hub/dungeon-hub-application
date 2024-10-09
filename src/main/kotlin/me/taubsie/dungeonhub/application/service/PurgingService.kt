@@ -3,9 +3,10 @@ package me.taubsie.dungeonhub.application.service
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.exception.RequestException
 import dev.kord.core.entity.Member
-import dev.kord.core.entity.Role
+import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasRole
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
@@ -108,9 +109,11 @@ object PurgingService : StartupListener {
 
             thread(start = true) {
                 runBlocking {
-                    val roles: List<Role> = RolesService.updateRoles(member)
+                    delay(5000)
 
-                    NicknameService.updateNickname(member, roles)
+                    val reloadedMember = member.withStrategy(EntitySupplyStrategy.cachingRest).fetchMember()
+
+                    RolesService.updateRoles(reloadedMember)
                 }
             }
 
