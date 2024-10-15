@@ -55,6 +55,7 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
 import javax.imageio.ImageIO
+import kotlin.Throws
 import kotlin.concurrent.thread
 import kotlin.time.Duration
 
@@ -684,6 +685,15 @@ object ApplicationService {
 
     fun getFirstOfMonth(): java.time.LocalDate {
         return java.time.LocalDate.now().withDayOfMonth(1)
+    }
+
+    fun getOffsetFromPageNumber(page: Int): Int {
+        // 0 -> 0
+        // 1 -> 10
+        // 2 -> 20
+        // 3 -> 30
+
+        return 10 * (page)
     }
 }
 
