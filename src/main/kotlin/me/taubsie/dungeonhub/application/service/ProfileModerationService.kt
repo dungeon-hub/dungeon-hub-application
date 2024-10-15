@@ -1,6 +1,7 @@
 package me.taubsie.dungeonhub.application.service
 
 import dev.kord.common.entity.Snowflake
+import dev.kord.common.exception.RequestException
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
@@ -25,7 +26,6 @@ import java.io.IOException
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 import java.util.*
-import java.util.concurrent.CompletionException
 import java.util.stream.Collectors
 import kotlin.time.toKotlinDuration
 
@@ -112,13 +112,12 @@ object ProfileModerationService {
     }
 
     private fun sendDm(user: User, message: String, unbanForm: String?) {
-        try {
-            runBlocking {
-                launch {
+        runBlocking {
+            launch {
+                try {
                     if (unbanForm == null) {
                         user.dm(message)
                     } else {
-                        //TODO request exception
                         user.dm {
                             val actionRow = ActionRowBuilder()
                             actionRow.linkButton(unbanForm) { label = "Appeal" }
@@ -127,10 +126,10 @@ object ProfileModerationService {
                             components?.add(actionRow)
                         }
                     }
+                } catch (_: RequestException) {
+                    //ignored since this doesn't matter
                 }
             }
-        } catch (completionException: CompletionException) {
-            //ignored since this just means that the user couldn't be dmed
         }
     }
 

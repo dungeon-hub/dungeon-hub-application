@@ -1,7 +1,6 @@
 package me.taubsie.dungeonhub.application.connection;
 
 import lombok.Getter;
-import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import okhttp3.*;
 import okio.Buffer;
@@ -116,10 +115,5 @@ public class DungeonHubConnection {
     public HttpUrl.Builder getApiUrl(String uri) {
         return HttpUrl.get(ConfigProperty.API_URL + API_PREFIX + uri)
                 .newBuilder();
-    }
-
-    public Optional<CarryTierModel> removeCarryTier(CarryTierModel carryTier) {
-        //TODO implement
-        return Optional.empty();
     }
 }

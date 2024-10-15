@@ -52,7 +52,7 @@ class LookupCommand : Extension() {
 
                         if (flagResponses.isEmpty()) {
                             addEmbed {
-                                color(EmbedColor.POSITIVE)
+                                color(EmbedColor.Positive)
                                 description = "The given user (${arguments.ign})${
                                     if (discordId != null)
                                         " and the discord user they're linked to (<@$discordId>) are"
@@ -64,7 +64,7 @@ class LookupCommand : Extension() {
                         }
 
                         addEmbed {
-                            color(EmbedColor.NEGATIVE)
+                            color(EmbedColor.Negative)
                             description =
                                 "The given user (${arguments.ign}) **is flagged**${
                                     if (discordId != null)
@@ -122,7 +122,7 @@ class LookupCommand : Extension() {
 
         if (flagResponses.isNotEmpty()) {
             addEmbed {
-                color(EmbedColor.NEGATIVE)
+                color(EmbedColor.Negative)
                 description =
                     "The given user (${target.mention}) **is flagged**${
                         if (ign != null)
@@ -137,7 +137,7 @@ class LookupCommand : Extension() {
             }
         } else {
             addEmbed {
-                color(EmbedColor.POSITIVE)
+                color(EmbedColor.Positive)
                 description = "The given user (${target.mention})${
                     if (ign != null)
                         " and the minecraft user they're linked to ($ign) are"

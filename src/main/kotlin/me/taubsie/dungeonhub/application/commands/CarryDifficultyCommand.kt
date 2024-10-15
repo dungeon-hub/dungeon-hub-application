@@ -12,7 +12,7 @@ import dev.kordex.core.extensions.publicSlashCommand
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidSubCommandException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
@@ -20,6 +20,11 @@ import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyUpdateModel
 
+/**
+ * Command to manage carry difficulties.
+ * This command allows you to create, delete, get, edit and reset information of a carry difficulty.
+ * The command is only available for users with the Administrator permission and is not available in DMs.
+ */
 @LoadExtension
 class CarryDifficultyCommand : Extension() {
     override val name = "carry-difficulty-command"
@@ -65,8 +70,7 @@ class CarryDifficultyCommand : Extension() {
                                 .orElse(null)
 
                         if (carryType == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("That carry type doesn't exists!")
+                            throw CommandExecutionWarning("That carry type doesn't exists!")
                         }
 
                         val carryTier =
@@ -77,8 +81,7 @@ class CarryDifficultyCommand : Extension() {
                                 .orElse(null)
 
                         if (carryTier == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("That carry tier doesn't exists!")
+                            throw CommandExecutionWarning("That carry tier doesn't exists!")
                         }
 
                         val carryDifficulty =
@@ -112,8 +115,7 @@ class CarryDifficultyCommand : Extension() {
                                 .orElse(null)
 
                         if (carryType == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("That carry type doesn't exists!")
+                            throw CommandExecutionWarning("That carry type doesn't exists!")
                         }
 
                         val carryTier =
@@ -139,8 +141,7 @@ class CarryDifficultyCommand : Extension() {
                         }
 
                         if (arguments.displayName == null && arguments.price == null && arguments.score == null && arguments.bulkAmount == null && arguments.bulkPrice == null && arguments.thumbnailUrl == null && arguments.priceName == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("Please provide something you want to edit.")
+                            throw CommandExecutionWarning("Please provide something you want to edit.")
                         }
 
                         val updateModel = CarryDifficultyUpdateModel()
@@ -181,8 +182,7 @@ class CarryDifficultyCommand : Extension() {
                                 .orElse(null)
 
                         if (updatedCarryDifficulty == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("Couldn't update carry difficulty.")
+                            throw CommandExecutionWarning("Couldn't update carry difficulty.")
                         }
 
                         val embed = ApplicationService.getCarryDifficultyEmbed(updatedCarryDifficulty)

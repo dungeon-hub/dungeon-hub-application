@@ -33,6 +33,15 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
 
+/**
+ * The /purge command allows you to purge inactive carriers (which means to remove their carrier roles).
+ * It has the following subcommands:
+ * - `show`: Shows which users would be affected by the purge.
+ * - `add`: Adds the users to the current purge wave.
+ * - `start`: Starts the current purge wave on the server.
+ * - `progress`: Shows you the progress of the current purge wave.
+ * - `clear`: Clears the current purge wave.
+ */
 @LoadExtension
 class PurgeCommand : Extension() {
     private val logger: Logger =
@@ -138,9 +147,9 @@ class PurgeCommand : Extension() {
 
                         val embed = ApplicationService.embed
                         if (queue.any { queueModel -> queueModel.carryType.id == carryType.id }) {
-                            embed.color(EmbedColor.NEGATIVE)
+                            embed.color(EmbedColor.Negative)
                         } else {
-                            embed.color(EmbedColor.DEFAULT)
+                            embed.color(EmbedColor.Default)
                         }
                         embed.title = "The following $amount carriers would be purged."
                         embed.description = description
@@ -172,7 +181,7 @@ class PurgeCommand : Extension() {
 
                         if (queue.any { queueModel -> queueModel.carryType.id == carryType.id }) {
                             val embed = ApplicationService.embed
-                            embed.color(EmbedColor.NEGATIVE)
+                            embed.color(EmbedColor.Negative)
                             embed.description =
                                 "There are still unapproved logs waiting in the queue. Please make sure to clear them before starting a purge."
                             embeds = mutableListOf(embed)
@@ -255,7 +264,7 @@ class PurgeCommand : Extension() {
                         logger.info(purgedList)
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.DEFAULT.color
+                        embed.color = EmbedColor.Default.color
                         embed.title = "Added the roles of $amount carriers to removal-list."
                         embed.description = description
 
@@ -273,7 +282,7 @@ class PurgeCommand : Extension() {
                         PurgingService.enablePurge(guild!!.id.value.toLong())
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.NEGATIVE.color
+                        embed.color = EmbedColor.Negative.color
                         embed.title = "Purge started."
 
                         embeds = mutableListOf(embed)
@@ -296,7 +305,7 @@ class PurgeCommand : Extension() {
 
                         val embed = ApplicationService.embed
                         embed.title = "Current purge"
-                        embed.color = EmbedColor.DEFAULT.color
+                        embed.color = EmbedColor.Default.color
 
                         if (PurgingService.isPurgeActive(guild!!.id.value.toLong())) {
                             embed.description = "$userProgress users are left. ($progress actions)"
@@ -317,7 +326,7 @@ class PurgeCommand : Extension() {
                     respond {
                         if (PurgingService.isPurgeActive(guild!!.id.value.toLong())) {
                             val embed = ApplicationService.embed
-                            embed.color = EmbedColor.NEGATIVE.color
+                            embed.color = EmbedColor.Negative.color
                             embed.description = "The purge is already ongoing, it isn't possible to stop it."
 
                             embeds = mutableListOf(embed)
@@ -328,7 +337,7 @@ class PurgeCommand : Extension() {
 
                         val embed = ApplicationService.embed
                         embed.title = "Purge cleared"
-                        embed.color = EmbedColor.DEFAULT.color
+                        embed.color = EmbedColor.Default.color
 
                         embeds = mutableListOf(embed)
                     }

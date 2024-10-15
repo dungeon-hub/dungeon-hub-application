@@ -50,7 +50,7 @@ class StatsCommand : Extension() {
                     ) ?: 0
 
                     addEmbed {
-                        color(EmbedColor.DEFAULT)
+                        color(EmbedColor.Default)
                         title = "Stats for server ${guild.name}"
 
                         field("Member count", true) { memberCount.toString() }

@@ -10,6 +10,7 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
@@ -18,6 +19,18 @@ import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeCreationModel
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeUpdateModel
 import java.util.*
 
+/**
+ * Command to manage carry types.
+ * This command allows the user to create, delete, get and edit carry types.
+ * The user can also reset the log channel and leaderboard channel of a carry type.
+ * The user can also set if an event is active for a carry type.
+ * It has the following subcommands:
+ * - `create`: Create a new carry type
+ * - `delete`: Delete a carry type
+ * - `get`: Get information about a carry type
+ * - `edit`: Edit a carry type
+ * - `reset`: Reset properties of a carry type
+ */
 @LoadExtension
 class CarryTypeCommand : Extension() {
     override val name = "carry-type-command"
@@ -70,8 +83,7 @@ class CarryTypeCommand : Extension() {
                                 .orElse(null)
 
                         if (carryTypeModel == null) {
-                            //TODO custom class?
-                            throw CommandExecutionException("Couldn't add that carry type.")
+                            throw CommandExecutionWarning("Couldn't add that carry type.")
                         }
 
                         val embed = ApplicationService.getCarryTypeEmbed(carryTypeModel)
@@ -96,8 +108,7 @@ class CarryTypeCommand : Extension() {
                                 .getByIdentifier(identifier)
 
                         if (carryType.isEmpty) {
-                            //TODO custom class
-                            throw CommandExecutionException("That carry type doesn't exists!")
+                            throw CommandExecutionWarning("That carry type doesn't exists!")
                         }
 
                         val deletedCarryType =
@@ -108,8 +119,7 @@ class CarryTypeCommand : Extension() {
                                 .orElse(null)
 
                         if (deletedCarryType == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("Carry type couldn't be deleted!")
+                            throw CommandExecutionWarning("Carry type couldn't be deleted!")
                         }
 
                         val embed = ApplicationService.getCarryTypeEmbed(deletedCarryType)
@@ -133,8 +143,7 @@ class CarryTypeCommand : Extension() {
                                 .orElse(null)
 
                         if (carryType == null) {
-                            //TODO custom exception class
-                            throw CommandExecutionException("Carry type not found.")
+                            throw CommandExecutionWarning("Carry type not found.")
                         }
 
                         val embed = ApplicationService.getCarryTypeEmbed(carryType)
@@ -157,13 +166,11 @@ class CarryTypeCommand : Extension() {
                                 .orElse(null)
 
                         if (carryType == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("That carry type doesn't exists!")
+                            throw CommandExecutionWarning("That carry type doesn't exists!")
                         }
 
                         if (arguments.displayName == null && arguments.logChannel == null && arguments.leaderboardChannel == null && arguments.eventActive == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("Please provide something you want to edit.")
+                            throw CommandExecutionWarning("Please provide something you want to edit.")
                         }
 
                         val updateModel = CarryTypeUpdateModel()
@@ -192,7 +199,6 @@ class CarryTypeCommand : Extension() {
                                 .orElse(null)
 
                         if (updatedCarryType == null) {
-                            //TODO custom class
                             throw CommandExecutionException("Couldn't update carry type.")
                         }
 
@@ -217,13 +223,11 @@ class CarryTypeCommand : Extension() {
                                 .orElse(null)
 
                         if (carryType == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("That carry type doesn't exists!")
+                            throw CommandExecutionWarning("That carry type doesn't exists!")
                         }
 
                         if (!arguments.logChannel && !arguments.leaderboardChannel) {
-                            //TODO custom class
-                            throw CommandExecutionException("Please provide something you want to reset.")
+                            throw CommandExecutionWarning("Please provide something you want to reset.")
                         }
 
                         val updateModel = CarryTypeUpdateModel()
@@ -244,7 +248,6 @@ class CarryTypeCommand : Extension() {
                                 .orElse(null)
 
                         if (updatedCarryType == null) {
-                            //TODO custom class
                             throw CommandExecutionException("Couldn't update carry type.")
                         }
 

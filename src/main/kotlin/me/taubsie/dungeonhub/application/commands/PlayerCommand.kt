@@ -44,7 +44,7 @@ class PlayerCommand : Extension() {
                         )
                     } catch (failedToLoadEmbedException: FailedToLoadEmbedException) {
                         val embed = failedToLoadEmbedException.embed
-                        embed.color = EmbedColor.NEGATIVE.color
+                        embed.color = EmbedColor.Negative.color
                         embeds = mutableListOf(
                             embed
                         )

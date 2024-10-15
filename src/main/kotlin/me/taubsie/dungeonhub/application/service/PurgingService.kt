@@ -27,8 +27,6 @@ object PurgingService : StartupListener {
     private val purgeDataList: MutableList<PurgeData> = ArrayList()
     private val purgeEnabled: MutableList<Long> = ArrayList()
 
-    //TODO probably increase time to prevent it getting stuck and to have too many open threads.
-    //TODO also try limiting the amount of requests of the same purge type and maybe also to the same user
     override suspend fun postStart() {
         Timer().scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
@@ -121,7 +119,7 @@ object PurgingService : StartupListener {
                 try {
                     member.dm {
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.NEGATIVE.color
+                        embed.color = EmbedColor.Negative.color
                         embed.title = "Inactivity Purge"
                         embed.description =
                             "Your ${purgeData.purgeType.displayName}-carry roles on `${server.name}` were removed since you only reached ${purgeData.score}/${purgeData.purgeThreshold} score."

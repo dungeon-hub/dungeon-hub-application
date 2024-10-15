@@ -215,7 +215,7 @@ class MessageListener : Extension() {
                             .createMessage {
                                 val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
                                 embed.title = "Accept carry-log?"
-                                embed.color = EmbedColor.DEFAULT.color
+                                embed.color = EmbedColor.Default.color
 
                                 embeds = mutableListOf(embed)
 
@@ -236,7 +236,7 @@ class MessageListener : Extension() {
                                     ?.getUser(Snowflake(queueModel.carrier.id))
                                     ?.dm {
                                         val embed = ApplicationService.embed
-                                        embed.color(EmbedColor.INFORMATION)
+                                        embed.color(EmbedColor.Information)
                                         embed.title = "Approval needed"
                                         embed.description = "Due to the high number of score (${queueModel.calculateScore()}) or carries (${queueModel.amount}), your ${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
                                                 "You will be notified here once it was approved or denied."
@@ -281,7 +281,7 @@ class MessageListener : Extension() {
 
                                 val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
                                 embed.title = "Information"
-                                embed.color = EmbedColor.DEFAULT.color
+                                embed.color = EmbedColor.Default.color
 
                                 embeds = mutableListOf(embed)
                             }
@@ -302,7 +302,7 @@ class MessageListener : Extension() {
                                 logChannel.get().createMessage {
                                     val embed = ApplicationService.getEmbed(queueModel.time.toKotlinInstant())
                                     embed.title = "Carry accepted."
-                                    embed.color = EmbedColor.POSITIVE.color
+                                    embed.color = EmbedColor.Positive.color
                                     embed.field("Number of carries", true) { queueModel.amount.toString() }
                                     embed.field("Type of carry", true) {
                                         "${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName}"

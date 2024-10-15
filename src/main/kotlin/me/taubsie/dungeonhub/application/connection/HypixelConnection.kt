@@ -204,7 +204,7 @@ object HypixelConnection : HypixelHttpClient {
                 highestXP = max(highestXP, thisXP)
                 // null if profile hasn't entered dungeons
             } catch (ignored: NullPointerException) {
-                //TODO this happens if the profile hasn't entered dungeons. Custom exception?
+                return 0
             }
         }
 

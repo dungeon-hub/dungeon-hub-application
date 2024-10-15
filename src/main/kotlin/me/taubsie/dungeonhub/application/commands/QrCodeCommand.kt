@@ -39,7 +39,7 @@ class QrCodeCommand : Extension() {
                             val image = ApplicationService.generateQRCodeImage(arguments.url)
 
                             val embed = ApplicationService.embed
-                            embed.color = EmbedColor.DEFAULT.color
+                            embed.color = EmbedColor.Default.color
 
                             val cdnLink =
                                 ContentConnection.getInstance()
@@ -87,7 +87,7 @@ class QrCodeCommand : Extension() {
                                 val embed = ApplicationService.embed
                                 embed.url = result
                                 embed.description = "The given QR code leads to the site:\n$result"
-                                embed.color = EmbedColor.DEFAULT.color
+                                embed.color = EmbedColor.Default.color
                                 embeds = mutableListOf(embed)
 
                                 actionRow {

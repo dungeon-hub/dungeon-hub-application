@@ -51,7 +51,7 @@ class LinkingSystem : Extension() {
     override val name = "linking-system"
 
     override suspend fun setup() {
-        publicSlashCommand(::LinkArguments) {
+        publicSlashCommand(::SingleIgnArguments) {
             name = "link"
             description = "Link your discord to your hypixel account."
             allowInDms = true
@@ -64,7 +64,7 @@ class LinkingSystem : Extension() {
 
                     if (linkedTo.isPresent) {
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.INFORMATION.color
+                        embed.color = EmbedColor.Information.color
                         embed.description = "You're already linked to user `${
                             MojangConnection.getInstance()
                                 .getNameByUUID(linkedTo.get())
@@ -86,7 +86,7 @@ class LinkingSystem : Extension() {
                             MojangConnection.getInstance()
                                 .getNameByUUID(linkedId)
                         }`."
-                    embed.color = EmbedColor.POSITIVE.color
+                    embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
                 }
@@ -101,7 +101,7 @@ class LinkingSystem : Extension() {
 
         listOf(693263712626278553L, 633621474183217163L, 1023684107877761196L).map { Snowflake(it) }
             .forEach { guildId ->
-                publicSlashCommand(::LinkArguments) {
+                publicSlashCommand(::SingleIgnArguments) {
                     name = "manual-link"
                     description = "Manually link someone by IGN."
                     guild(guildId)
@@ -139,7 +139,7 @@ class LinkingSystem : Extension() {
                             NicknameService.linkToIgn(arguments.ign, user)
 
                             val embed = ApplicationService.embed
-                            embed.color = EmbedColor.POSITIVE.color
+                            embed.color = EmbedColor.Positive.color
                             embed.description = "Linked `${arguments.ign}` to: ${user.tag}"
 
                             embeds = mutableListOf(embed)
@@ -164,7 +164,7 @@ class LinkingSystem : Extension() {
 
                     if (userModel == null) {
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.NEGATIVE.color
+                        embed.color = EmbedColor.Negative.color
                         embed.description = "Please link your ingame-account before using this command again."
 
                         embeds = mutableListOf(embed)
@@ -192,7 +192,7 @@ class LinkingSystem : Extension() {
 
                     val embed = ApplicationService.embed
                     embed.description = "Updating your ${if (nicknameChanged) "nickname and " else ""}roles."
-                    embed.color = EmbedColor.POSITIVE.color
+                    embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
                 }
@@ -208,10 +208,10 @@ class LinkingSystem : Extension() {
                 try {
                     NicknameService.updateNickname(target, roles)
 
-                    embed.color = EmbedColor.POSITIVE.color
+                    embed.color = EmbedColor.Positive.color
                     embed.description = "Username and roles of ${target.mention} were synced!"
                 } catch (notLinkedException: NotLinkedException) {
-                    embed.color = EmbedColor.NEGATIVE.color
+                    embed.color = EmbedColor.Negative.color
                     embed.description = "${target.mention} is not linked, their roles were synced!"
                 }
 
@@ -269,7 +269,7 @@ class LinkingSystem : Extension() {
                         MojangConnection.getInstance()
                             .getNameByUUID(oldUserModel.minecraftId)
                     }`."
-                    embed.color = EmbedColor.POSITIVE.color
+                    embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
                 }
@@ -295,7 +295,7 @@ class LinkingSystem : Extension() {
 
                     channel.createMessage {
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.DEFAULT.color
+                        embed.color = EmbedColor.Default.color
                         embed.title = "Linking"
                         embed.description =
                             "Please link to your Minecraft account using the buttons below.\nRemember to never give out the email connected to your Microsoft account and to never click any links!\n\nCheck out this video if you're still unsure if messages similar to this are legit: https://youtu.be/WRRIOkM8oe8?t=743&si=oc71yA9h-XJUsGpX"
@@ -307,7 +307,7 @@ class LinkingSystem : Extension() {
                     }
 
                     val embed = ApplicationService.embed
-                    embed.color = EmbedColor.POSITIVE.color
+                    embed.color = EmbedColor.Positive.color
                     embed.description = "Trying to send message..."
                     embeds = mutableListOf(embed)
                 }
@@ -336,7 +336,7 @@ class LinkingSystem : Extension() {
                         MojangConnection.getInstance().getNameByUUID(uuid)
 
                     val embed = ApplicationService.embed
-                    embed.color = EmbedColor.POSITIVE.color
+                    embed.color = EmbedColor.Positive.color
                     embed.description = "The given user has the IGN `$ign`."
                     embed.image = "https://crafatar.com/avatars/${uuid.toString().replace("-", "")}?size=32&overlay"
                     embeds = mutableListOf(embed)
@@ -344,8 +344,7 @@ class LinkingSystem : Extension() {
             }
         }
 
-        //TODO maybe not reuse the link argument / rename it to sth more general
-        publicSlashCommand(::LinkArguments) {
+        publicSlashCommand(::SingleIgnArguments) {
             name = "find-user"
             description = "Shows which user is linked to the given IGN."
 
@@ -358,7 +357,7 @@ class LinkingSystem : Extension() {
                         .orElseThrow { CommandExecutionWarning("Couldn't find who the given user is linked to.") }
 
                     addEmbed {
-                        color(EmbedColor.POSITIVE)
+                        color(EmbedColor.Positive)
                         description = "The given player is linked to user <@${userModel.id}>."
                     }
                 }
@@ -381,7 +380,7 @@ class LinkingSystem : Extension() {
                         if (linkedTo.isPresent) {
                             event.interaction.respondEphemeral {
                                 val embed = ApplicationService.embed
-                                embed.color = EmbedColor.INFORMATION.color
+                                embed.color = EmbedColor.Information.color
                                 embed.description = "You're already linked to user `${
                                     MojangConnection.getInstance()
                                         .getNameByUUID(linkedTo.get())
@@ -443,7 +442,7 @@ class LinkingSystem : Extension() {
                     val embed = ApplicationService.embed
                     embed.title = "Linked successfully"
                     embed.description = "${event.interaction.user.mention}, your UUID is now `$linkedId`"
-                    embed.color = EmbedColor.POSITIVE.color
+                    embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
                 }
@@ -473,7 +472,7 @@ class LinkingSystem : Extension() {
         }
     }
 
-    inner class LinkArguments : Arguments() {
+    inner class SingleIgnArguments : Arguments() {
         val ign by string {
             name = "ign"
             description = "The users ingame-name"

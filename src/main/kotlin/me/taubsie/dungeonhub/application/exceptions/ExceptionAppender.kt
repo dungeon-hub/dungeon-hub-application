@@ -32,7 +32,7 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
         }
 
         val embed = ApplicationService.embed
-        embed.color = EmbedColor.NEGATIVE.color
+        embed.color = EmbedColor.Negative.color
         val title = logEvent.message.formattedMessage
 
         if (title.length < (EmbedBuilder.Limits.title - 3)) {
@@ -79,7 +79,6 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
             return null
         }
 
-        //TODO test
         if (throwable.stackTrace.isEmpty()) {
             throwable.fillInStackTrace()
         }

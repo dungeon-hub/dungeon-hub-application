@@ -132,7 +132,7 @@ class RoleCommand : Extension() {
 
                             if (modifiedRole == null) {
                                 val embed = ApplicationService.embed
-                                embed.color = EmbedColor.NEGATIVE.color
+                                embed.color = EmbedColor.Negative.color
                                 embed.description = "Couldn't modify the given role."
                                 embeds = mutableListOf(embed)
 
@@ -140,7 +140,7 @@ class RoleCommand : Extension() {
                             }
 
                             val embed = ApplicationService.loadEmbedFromDiscordRole(modifiedRole)
-                            embed.color = EmbedColor.POSITIVE.color
+                            embed.color = EmbedColor.Positive.color
                             embed.title = "Modified role"
                             embeds = mutableListOf(embed)
                         }
@@ -179,7 +179,7 @@ class RoleCommand : Extension() {
         val hasRole = target.roleIds.contains(arguments.role.id)
 
         val embed = ApplicationService.embed
-        embed.color = EmbedColor.POSITIVE.color
+        embed.color = EmbedColor.Positive.color
 
         if (add) {
             target.addRole(arguments.role.id)
@@ -189,7 +189,7 @@ class RoleCommand : Extension() {
             } else {
                 embed.description =
                     "The user ${arguments.user.mention} already had the role ${arguments.role.mention}, but I tried to add it anyway."
-                embed.color = EmbedColor.NEGATIVE.color
+                embed.color = EmbedColor.Negative.color
             }
         } else {
             target.removeRole(arguments.role.id)
@@ -199,7 +199,7 @@ class RoleCommand : Extension() {
             } else {
                 embed.description =
                     "The user ${arguments.user.mention} didn't have the role ${arguments.role.mention}, but I tried to remove it anyway."
-                embed.color = EmbedColor.NEGATIVE.color
+                embed.color = EmbedColor.Negative.color
             }
         }
 
@@ -245,7 +245,7 @@ class RoleCommand : Extension() {
         RolesService.removeRoleGroup(target, arguments.role.id.value.toLong())
 
         val embed = ApplicationService.embed
-        embed.color = EmbedColor.POSITIVE.color
+        embed.color = EmbedColor.Positive.color
         embed.description =
             "Successfully removed the user ${arguments.target.mention} from the role-group ${arguments.role.mention}."
 

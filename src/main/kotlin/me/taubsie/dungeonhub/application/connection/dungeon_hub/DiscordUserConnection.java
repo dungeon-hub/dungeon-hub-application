@@ -83,7 +83,6 @@ public class DiscordUserConnection implements ModuleConnection {
         return executeRequest(request, DiscordUserModel::fromJson);
     }
 
-    //TODO test
     public Optional<Integer> getCarryCount(long id, long guildId) {
         HttpUrl url = getApiUrl(id + "/carries/" + guildId).build();
 

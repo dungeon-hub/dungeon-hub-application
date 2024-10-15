@@ -166,7 +166,7 @@ object ApplicationService {
 
     fun getErrorEmbed(embed: EmbedBuilder): EmbedBuilder {
         embed.title = "Error"
-        embed.color = EmbedColor.NEGATIVE.color
+        embed.color = EmbedColor.Negative.color
 
         return embed
     }
@@ -207,7 +207,7 @@ object ApplicationService {
         carry: CarryModel,
         embedBuilder: EmbedBuilder = getEmbed(Instant.fromEpochSeconds(carry.time().epochSecond))
     ): EmbedBuilder {
-        embedBuilder.color = EmbedColor.INFORMATION.color
+        embedBuilder.color = EmbedColor.Information.color
 
         embedBuilder.field("Number of carries", true) { carry.amount.toString() }
         embedBuilder.field(
@@ -230,7 +230,7 @@ object ApplicationService {
     }
 
     fun loadEmbedFromCarryQueue(carryQueue: CarryQueueModel, embedBuilder: EmbedBuilder): EmbedBuilder {
-        embedBuilder.color = EmbedColor.INFORMATION.color
+        embedBuilder.color = EmbedColor.Information.color
 
         embedBuilder.field("Number of carries", true) { carryQueue.amount.toString() }
         embedBuilder.field(
@@ -254,7 +254,7 @@ object ApplicationService {
 
     fun formatWarn(warningModel: WarningModel): EmbedBuilder {
         val embed = getEmbed(warningModel.time.toKotlinInstant())
-        embed.color = EmbedColor.INFORMATION.color
+        embed.color = EmbedColor.Information.color
         embed.title = "Warning #${warningModel.id}"
 
         embed.field("User") { "<@${warningModel.user.id}>" }
@@ -268,7 +268,7 @@ object ApplicationService {
 
     fun formatWarn(warningModel: DetailedWarningModel, showEvidences: Boolean = true): EmbedBuilder {
         val embed = getEmbed(warningModel.time.toKotlinInstant())
-        embed.color = EmbedColor.INFORMATION.color
+        embed.color = EmbedColor.Information.color
         embed.title = "Warning #${warningModel.id}"
 
         embed.field("User") { "<@${warningModel.user.id}>" }
@@ -290,7 +290,7 @@ object ApplicationService {
 
     fun formatWarnDm(warningModel: WarningModel): EmbedBuilder {
         val embedBuilder = getEmbed(warningModel.time.toKotlinInstant())
-        embedBuilder.color = EmbedColor.INFORMATION.color
+        embedBuilder.color = EmbedColor.Information.color
         embedBuilder.title = "You were warned on server `${
             runBlocking {
                 DiscordConnection.bot!!.kordRef.getGuildOrNull(Snowflake(warningModel.server.id))?.name ?: "unknown"
@@ -309,7 +309,7 @@ object ApplicationService {
 
     fun formatWarnLog(warningModel: WarningModel): EmbedBuilder {
         val embed = getEmbed(warningModel.time.toKotlinInstant())
-        embed.color = EmbedColor.INFORMATION.color
+        embed.color = EmbedColor.Information.color
         embed.title = "Warning #${warningModel.id}"
 
         embed.field("User") { "<@${warningModel.user.id}>" }
@@ -333,7 +333,7 @@ object ApplicationService {
             embed.description =
                 "Please make sure that a carry type is setup on this server.\n" +
                         "For more information about how to do this, contact `@taubsie` (<@356134481452597250>)!"
-            embed.color = EmbedColor.NEGATIVE.color
+            embed.color = EmbedColor.Negative.color
 
             return embed
         }
@@ -356,7 +356,7 @@ object ApplicationService {
         } else {
             "Your score${if (carryCount != null) " from $carryCount carries" else ""}:"
         }
-        embed.color = EmbedColor.DEFAULT.color
+        embed.color = EmbedColor.Default.color
 
         val scoreDescriptions: EnumMap<ScoreType, MutableList<String>> = EnumMap<ScoreType, MutableList<String>>(
             ScoreType::class.java
@@ -395,7 +395,7 @@ object ApplicationService {
         )
 
         val embed = embed
-        embed.color = EmbedColor.INFORMATION.color
+        embed.color = EmbedColor.Information.color
         embed.description = description
         embed.title = skycryptData.getOrDefault("title", ign)
         embed.url = ConfigProperty.SKYCRYPT_API_URL.toString() + "stats/" + ign
@@ -425,9 +425,9 @@ object ApplicationService {
                 }"
             }
 
-            embed.color = EmbedColor.NEGATIVE.color
+            embed.color = EmbedColor.Negative.color
         } else {
-            embed.color = EmbedColor.POSITIVE.color
+            embed.color = EmbedColor.Positive.color
         }
 
         if (!skycryptData.containsKey("description") || !skycryptData.containsKey("title")) {
@@ -455,7 +455,7 @@ object ApplicationService {
 
     fun getCarryTypeEmbed(carryType: CarryTypeModel): EmbedBuilder {
         val embed = embed
-        embed.color = EmbedColor.DEFAULT.color
+        embed.color = EmbedColor.Default.color
         embed.field("Identifier", true) { carryType.identifier }
         embed.field("Display Name", true) { carryType.displayName }
 
@@ -475,7 +475,7 @@ object ApplicationService {
     fun getCarryTierEmbed(carryTier: CarryTierModel): EmbedBuilder {
         val embed = embed
 
-        embed.color = EmbedColor.DEFAULT.color
+        embed.color = EmbedColor.Default.color
         embed.field("Identifier", true) { carryTier.identifier }
         embed.field("Display Name", true) { carryTier.displayName }
         embed.field("Descriptive Name", true) { carryTier.descriptiveName }
@@ -502,7 +502,7 @@ object ApplicationService {
 
     fun getCarryDifficultyEmbed(carryDifficulty: CarryDifficultyModel): EmbedBuilder {
         val embed = embed
-        embed.color = EmbedColor.DEFAULT.color
+        embed.color = EmbedColor.Default.color
 
         embed.field("Identifier", true) { carryDifficulty.identifier }
         embed.field("Display Name", true) { carryDifficulty.displayName }

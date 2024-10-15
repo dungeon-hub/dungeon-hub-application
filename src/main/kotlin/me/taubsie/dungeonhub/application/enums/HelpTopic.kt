@@ -147,7 +147,7 @@ enum class HelpTopic(
                 embedFields[key.displayName] = value
             }
 
-            HelpDisplay(description, EmbedColor.DEFAULT, embedFields)
+            HelpDisplay(description, EmbedColor.Default, embedFields)
         }),
     VERIFICATION("verification", "How to verify",
         DescriptionSupplier { user: User, _: Guild? ->
