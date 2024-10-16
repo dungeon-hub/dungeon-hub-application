@@ -347,7 +347,9 @@ class LinkingSystem : Extension() {
                     val embed = ApplicationService.embed
                     embed.color = EmbedColor.Positive.color
                     embed.description = "The given user has the IGN `$ign`."
-                    embed.image = "https://crafatar.com/avatars/${uuid.toString().replace("-", "")}?size=32&overlay"
+                    embed.thumbnail {
+                        url = "https://visage.surgeplay.com/face/${uuid.toString().replace("-", "")}"
+                    }
                     embeds = mutableListOf(embed)
                 }
             }
