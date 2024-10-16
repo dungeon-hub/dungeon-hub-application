@@ -91,11 +91,20 @@ class LinkingSystem : Extension() {
                     embeds = mutableListOf(embed)
                 }
 
-                val member = user.asMember(guild!!.id)
+                if(guild != null) {
+                    val member = user.asMember(guild!!.id)
 
-                val roles = RolesService.updateRoles(member)
+                    val roles = RolesService.updateRoles(member)
 
-                NicknameService.updateNickname(member, roles)
+                    NicknameService.updateNickname(member, roles)
+                } else {
+                    val user = user.asUser()
+
+                    val roles = RolesService.updateRoles(user)
+
+                    NicknameService.updateNickname(user, roles)
+                }
+
             }
         }
 
@@ -276,7 +285,7 @@ class LinkingSystem : Extension() {
 
                 val user = user.asUser()
 
-                val roles: Map<Long, List<Role>> = RolesService.updateRoles(user)
+                val roles = RolesService.updateRoles(user)
 
                 NicknameService.updateNickname(user, roles)
             }
