@@ -1,12 +1,12 @@
 package me.taubsie.dungeonhub.application.service
 
-import com.kotlindiscord.kord.extensions.commands.converters.AutoCompleteCallback
 import dev.kord.common.entity.Choice
 import dev.kord.common.entity.optional.Optional
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.interaction.suggest
 import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kord.core.event.interaction.AutoCompleteInteractionCreateEvent
+import dev.kordex.core.commands.converters.AutoCompleteCallback
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.*
 
 object AutoCompletionService {

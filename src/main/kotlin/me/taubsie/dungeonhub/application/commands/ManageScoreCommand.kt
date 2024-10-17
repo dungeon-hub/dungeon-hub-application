@@ -1,14 +1,5 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.checks.hasPermission
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
-import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.long
-import com.kotlindiscord.kord.extensions.commands.converters.impl.string
-import com.kotlindiscord.kord.extensions.commands.converters.impl.user
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.common.entity.Snowflake
@@ -18,6 +9,15 @@ import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
+import dev.kordex.core.checks.hasPermission
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.long
+import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.commands.converters.impl.user
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection
@@ -93,18 +93,18 @@ class ManageScoreCommand : Extension() {
                                 carryType
                             )
                                 .resetScore(arguments.resetType)
-                                .orElseThrow { CommandExecutionException("Error while getting a response when resseting score.") }
+                                .orElseThrow { CommandExecutionException("Error while getting a response when resetting score.") }
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.INFORMATION.color
+                        embed.color = EmbedColor.Information.color
                         embed.title = "Score for ${carryType.displayName} successfully reset!"
                         embed.description = when (arguments.resetType) {
                             ScoreResetType.Default -> "Default score of ${resetModel.defaultCount} users were reset. ${
-                                if (resetModel.eventCount != 0L) "\nSomehow also ${resetModel.eventCount} got their event score reset?" else ""
+                                if (resetModel.eventCount != 0L) "\nSomehow also ${resetModel.eventCount} users got their event score reset?" else ""
                             }"
 
                             ScoreResetType.Event -> "Event score of ${resetModel.eventCount} users were reset. ${
-                                if (resetModel.defaultCount != 0L) "\nSomehow also ${resetModel.defaultCount} got their default score reset?" else ""
+                                if (resetModel.defaultCount != 0L) "\nSomehow also ${resetModel.defaultCount} users got their default score reset?" else ""
                             }"
 
                             ScoreResetType.Both -> "Default score of ${resetModel.defaultCount} users and event score of ${resetModel.eventCount} were reset."
@@ -157,7 +157,7 @@ class ManageScoreCommand : Extension() {
             runBlocking {
                 serverTextChannel.createMessage {
                     val embed = ApplicationService.embed
-                    embed.color = EmbedColor.INFORMATION.color
+                    embed.color = EmbedColor.Information.color
                     embed.title = "Score-Management"
                     embed.description =
                         "${event.interaction.user.mention} edited the ${carryType.displayName}-score of ${arguments.user.mention}.\nThey ${(if (remove) "removed" else "added")} ${arguments.amount} score, the user now has $updatedScore score."
@@ -170,7 +170,7 @@ class ManageScoreCommand : Extension() {
         LeaderboardService.refreshLeaderboard()
 
         val embed = ApplicationService.embed
-        embed.color = EmbedColor.INFORMATION.color
+        embed.color = EmbedColor.Information.color
         embed.title = "Score-Management"
         embed.description =
             "${event.interaction.user.mention}, the user ${arguments.user.mention} now has $updatedScore ${carryType.displayName}-score.\nYou ${(if (remove) "removed" else "added")} ${arguments.amount} of that score."

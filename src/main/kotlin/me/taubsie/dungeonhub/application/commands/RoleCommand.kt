@@ -1,26 +1,27 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.checks.hasPermission
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.group
-import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalBoolean
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
-import com.kotlindiscord.kord.extensions.commands.converters.impl.role
-import com.kotlindiscord.kord.extensions.commands.converters.impl.user
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.core.entity.Member
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kordex.core.checks.hasPermission
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.group
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.optionalBoolean
+import dev.kordex.core.commands.converters.impl.optionalString
+import dev.kordex.core.commands.converters.impl.role
+import dev.kordex.core.commands.converters.impl.user
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
-import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaException
+import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
+import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaWarning
 import me.taubsie.dungeonhub.application.exceptions.NoOptionFoundException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
@@ -59,6 +60,17 @@ class RoleCommand : Extension() {
                 action {
                     respond {
                         embeds = mutableListOf(addRemove(false, user.asMember(guild!!.id), arguments))
+                    }
+                }
+            }
+
+            publicSubCommand(::RoleGroupRemoveArguments) {
+                name = "remove-group"
+                description = "Remove a role group from a user"
+
+                action {
+                    respond {
+                        embeds = mutableListOf(removeRoleGroup(user.asMember(guild!!.id), arguments))
                     }
                 }
             }
@@ -120,7 +132,7 @@ class RoleCommand : Extension() {
 
                             if (modifiedRole == null) {
                                 val embed = ApplicationService.embed
-                                embed.color = EmbedColor.NEGATIVE.color
+                                embed.color = EmbedColor.Negative.color
                                 embed.description = "Couldn't modify the given role."
                                 embeds = mutableListOf(embed)
 
@@ -128,14 +140,15 @@ class RoleCommand : Extension() {
                             }
 
                             val embed = ApplicationService.loadEmbedFromDiscordRole(modifiedRole)
-                            embed.color = EmbedColor.POSITIVE.color
+                            embed.color = EmbedColor.Positive.color
                             embed.title = "Modified role"
                             embeds = mutableListOf(embed)
                         }
                     }
                 }
 
-                publicSubCommand(::RoleConfigResetArguments) {
+                //TODO finish implementation
+                /*publicSubCommand(::RoleConfigResetArguments) {
                     name = "reset"
                     description = "Reset a role config value"
 
@@ -149,7 +162,7 @@ class RoleCommand : Extension() {
                             throw CommandExecutionException("Command isn't implemented yet.")
                         }
                     }
-                }
+                }*/
             }
         }
     }
@@ -161,17 +174,33 @@ class RoleCommand : Extension() {
             throw CommandExecutionException("You aren't allowed to manage roles that are higher than those that you have.")
         }
 
+        val target = arguments.user.asMember(issuer.guildId)
+
+        val hasRole = target.roleIds.contains(arguments.role.id)
+
         val embed = ApplicationService.embed
-        embed.color = EmbedColor.POSITIVE.color
+        embed.color = EmbedColor.Positive.color
 
         if (add) {
-            arguments.user.asMember(issuer.guildId).addRole(arguments.role.id)
+            target.addRole(arguments.role.id)
 
-            embed.description = "Successfully added ${arguments.role.mention} to ${arguments.user.mention}."
+            if (!hasRole) {
+                embed.description = "Successfully added ${arguments.role.mention} to ${arguments.user.mention}."
+            } else {
+                embed.description =
+                    "The user ${arguments.user.mention} already had the role ${arguments.role.mention}, but I tried to add it anyway."
+                embed.color = EmbedColor.Negative.color
+            }
         } else {
-            arguments.user.asMember(issuer.guildId).removeRole(arguments.role.id)
+            target.removeRole(arguments.role.id)
 
-            embed.description = "Successfully removed ${arguments.role.mention} from ${arguments.user.mention}."
+            if (hasRole) {
+                embed.description = "Successfully removed ${arguments.role.mention} from ${arguments.user.mention}."
+            } else {
+                embed.description =
+                    "The user ${arguments.user.mention} didn't have the role ${arguments.role.mention}, but I tried to remove it anyway."
+                embed.color = EmbedColor.Negative.color
+            }
         }
 
         thread(start = true) {
@@ -182,7 +211,53 @@ class RoleCommand : Extension() {
 
                 try {
                     NicknameService.updateNickname(member, updatedRoles)
-                } catch (ignored: NoNameSchemaException) {
+                } catch (ignored: NoNameSchemaWarning) {
+                    //ignore this, in that case you just don't apply a nickname
+                }
+            }
+        }
+
+        return embed
+    }
+
+    suspend fun removeRoleGroup(issuer: Member, arguments: RoleGroupRemoveArguments): EmbedBuilder {
+        val guild = arguments.role.guild.asGuild()
+
+        val target = arguments.target.asMember(issuer.guildId)
+
+        val highestIssuerRole = issuer.roles.map { it.getPosition() }.toList().maxOrNull() ?: 0
+        val highestTargetRole = target.roles.map { it.getPosition() }.toList().maxOrNull() ?: 0
+
+        /*
+        fail if issuer:
+        - is not owner
+        - is not using command on himself / is not target
+        - is not above role (or highest role of target)
+        */
+        if ((guild.ownerId != issuer.id)
+            && issuer.id != target.id
+            && ((arguments.role.getPosition() >= highestIssuerRole)
+                    || (highestTargetRole >= highestIssuerRole))
+        ) {
+            throw CommandExecutionWarning("You aren't allowed to manage roles that are higher than those that you have.")
+        }
+
+        RolesService.removeRoleGroup(target, arguments.role.id.value.toLong())
+
+        val embed = ApplicationService.embed
+        embed.color = EmbedColor.Positive.color
+        embed.description =
+            "Successfully removed the user ${arguments.target.mention} from the role-group ${arguments.role.mention}."
+
+        thread(start = true) {
+            runBlocking {
+                val member = arguments.target.fetchMember(issuer.guildId)
+
+                val updatedRoles = RolesService.updateRoles(member)
+
+                try {
+                    NicknameService.updateNickname(member, updatedRoles)
+                } catch (ignored: NoNameSchemaWarning) {
                     //ignore this, in that case you just don't apply a nickname
                 }
             }
@@ -200,6 +275,18 @@ class RoleCommand : Extension() {
         val role by role {
             name = "role"
             description = "Select which role you mean."
+        }
+    }
+
+    inner class RoleGroupRemoveArguments : Arguments() {
+        val target by user {
+            name = "user"
+            description = "Select which user to remove the role group of."
+        }
+
+        val role by role {
+            name = "role-group"
+            description = "The role group to remove from the given user."
         }
     }
 

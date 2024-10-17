@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -131,5 +132,45 @@ public class DiscordServerConnection implements ModuleConnection {
                 .build();
 
         return executeRequest(request, LeaderboardModel::fromJson);
+    }
+
+    public Optional<Long> fetchTotalAmountOfMoneySpent(long serverId, @Nullable Long userId, @Nullable Long carrierId, @Nullable Long carryTypeId, @Nullable Long carryTierId, @Nullable Instant since) {
+        HttpUrl.Builder url = getApiUrl(serverId + "/total-money-spent");
+
+        if (userId != null) {
+            url.addQueryParameter("user", String.valueOf(userId));
+        }
+
+        if (carrierId != null) {
+            url.addQueryParameter("carrier", String.valueOf(carrierId));
+        }
+
+        if (carryTypeId != null) {
+            url.addQueryParameter("carry-type", String.valueOf(carryTypeId));
+        }
+
+        if (carryTierId != null) {
+            url.addQueryParameter("carry-tier", String.valueOf(carryTierId));
+        }
+
+        if (since != null) {
+            url.addQueryParameter("since", String.valueOf(since.toEpochMilli()));
+        }
+
+        Request request = getApiRequest(url.build()).get().build();
+
+        return executeRequest(request, Long::parseLong);
+    }
+
+    public Optional<Long> fetchCarryAmount(long serverId, @Nullable Instant since) {
+        HttpUrl.Builder url = getApiUrl(serverId + "/count-carries");
+
+        if (since != null) {
+            url.addQueryParameter("since", String.valueOf(since.toEpochMilli()));
+        }
+
+        Request request = getApiRequest(url.build()).get().build();
+
+        return executeRequest(request, Long::parseLong);
     }
 }

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public class DiscordUserConnection implements ModuleConnection {
     private static final Logger logger = LoggerFactory.getLogger(DiscordUserConnection.class);
@@ -35,12 +36,12 @@ public class DiscordUserConnection implements ModuleConnection {
         return logger;
     }
 
-    public Optional<String> countLinkedUsers() {
+    public Optional<Long> countLinkedUsers() {
         HttpUrl url = getApiUrl("count-linked").build();
 
         Request request = new Request.Builder().url(url).build();
 
-        return executeRequest(request);
+        return executeRequest(request, Long::parseLong);
     }
 
     public Optional<DiscordUserModel> getById(long id) {
@@ -82,7 +83,6 @@ public class DiscordUserConnection implements ModuleConnection {
         return executeRequest(request, DiscordUserModel::fromJson);
     }
 
-    //TODO test
     public Optional<Integer> getCarryCount(long id, long guildId) {
         HttpUrl url = getApiUrl(id + "/carries/" + guildId).build();
 
@@ -91,5 +91,17 @@ public class DiscordUserConnection implements ModuleConnection {
                 .build();
 
         return executeRequest(request, Integer::parseInt);
+    }
+
+    public Optional<DiscordUserModel> findUserByUuid(UUID uuid) {
+        HttpUrl url = getApiUrl("find")
+                .addQueryParameter("uuid", uuid.toString())
+                .build();
+
+        Request request = getApiRequest(url)
+                .get()
+                .build();
+
+        return executeRequest(request, DiscordUserModel::fromJson);
     }
 }

@@ -10,9 +10,16 @@ import com.google.zxing.qrcode.QRCodeWriter
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
+import dev.kord.core.behavior.ban
+import dev.kord.core.behavior.edit
+import dev.kord.core.entity.Member
 import dev.kord.core.entity.User
+import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.EmbedBuilder.Footer
+import dev.kord.rest.builder.message.create.AbstractMessageCreateBuilder
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.utils.timeoutUntil
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -24,9 +31,11 @@ import me.taubsie.dungeonhub.application.connection.HypixelConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import me.taubsie.dungeonhub.application.misc.FlagResponse
 import me.taubsie.dungeonhub.common.enums.ScoreType
+import me.taubsie.dungeonhub.common.enums.WarningAction
 import me.taubsie.dungeonhub.common.model.carry.CarryModel
 import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel
 import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel
@@ -35,6 +44,7 @@ import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
 import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
 import me.taubsie.dungeonhub.common.model.score.ScoreModel
 import me.taubsie.dungeonhub.common.model.warning.DetailedWarningModel
+import me.taubsie.dungeonhub.common.model.warning.WarningActionModel
 import me.taubsie.dungeonhub.common.model.warning.WarningModel
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -45,6 +55,9 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
 import javax.imageio.ImageIO
+import kotlin.Throws
+import kotlin.concurrent.thread
+import kotlin.time.Duration
 
 object ApplicationService {
     const val MAX_MINECRAFT_USERNAME_LENGTH = 16
@@ -87,17 +100,20 @@ object ApplicationService {
     val embedWithoutTimestamp: EmbedBuilder
         get() {
             val embed = EmbedBuilder()
-            embed.footer { footer }
+            embed.footer = footer
             return embed
         }
 
     fun getEmbed(time: Instant?): EmbedBuilder {
-        val embed = EmbedBuilder()
+        val embed = embedWithoutTimestamp
         embed.timestamp = time
-        embed.footer = footer
         return embed
     }
 
+    /**
+     * This returns the owner of the bot as a discord user.
+     * If the bot is part of an application team, the owner of the team is returned, otherwise the bot owner is returned.
+     */
     suspend fun getBotOwner(kord: Kord): User? {
         val ownerId = kord.getApplicationInfo().team?.ownerUserId ?: kord.getApplicationInfo().ownerId
 
@@ -108,28 +124,39 @@ object ApplicationService {
         return kord.getUser(ownerId)
     }
 
-    fun makeDoubleReadable(number: Double): String {
-        val df = DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.US))
-        df.setMaximumFractionDigits(340) //340 = DecimalFormat.DOUBLE_FRACTION_DIGITS
+    /**
+     * This formats a decimal number as a String.
+     */
+    fun makeDoubleReadable(number: Double, maxFractionDigits: Int = 340, locale: Locale = Locale.US): String {
+        val df = DecimalFormat("0", DecimalFormatSymbols.getInstance(locale))
+        df.setMaximumFractionDigits(maxFractionDigits) //340 = DecimalFormat.DOUBLE_FRACTION_DIGITS
 
         return df.format(number)
     }
 
-    fun makeNumberReadable(number: Long): String {
+    /**
+     * Returns a (large) number as a readable String.
+     * Numbers < 1000 are returned as is, simply formatted as a String.
+     * Numbers >= 1000 are returned with the respective extension:
+     * 1312.1852 -> "1.3121852k"
+     * 3882761 -> "3.882761m"
+     * 45544000000 -> "45.544b"
+     */
+    fun makeNumberReadable(number: Long, maxFractionDigits: Int = 340): String {
         if (number >= 1000000000000L) {
-            return makeDoubleReadable(number / 1000000000000.0) + "t"
+            return makeDoubleReadable(number / 1000000000000.0, maxFractionDigits) + "t"
         }
 
         if (number >= 1000000000L) {
-            return makeDoubleReadable(number / 1000000000.0) + "b"
+            return makeDoubleReadable(number / 1000000000.0, maxFractionDigits) + "b"
         }
 
         if (number >= 1000000L) {
-            return makeDoubleReadable(number / 1000000.0) + "m"
+            return makeDoubleReadable(number / 1000000.0, maxFractionDigits) + "m"
         }
 
         if (number >= 1000L) {
-            return makeDoubleReadable(number / 1000.0) + "k"
+            return makeDoubleReadable(number / 1000.0, maxFractionDigits) + "k"
         }
 
         return number.toString()
@@ -140,7 +167,7 @@ object ApplicationService {
 
     fun getErrorEmbed(embed: EmbedBuilder): EmbedBuilder {
         embed.title = "Error"
-        embed.color = EmbedColor.NEGATIVE.color
+        embed.color = EmbedColor.Negative.color
 
         return embed
     }
@@ -148,6 +175,12 @@ object ApplicationService {
     fun getErrorEmbed(commandExecutionException: CommandExecutionException): EmbedBuilder {
         val embed = errorEmbed
         embed.description = commandExecutionException.message
+        return embed
+    }
+
+    fun getErrorEmbed(commandExecutionWarning: CommandExecutionWarning): EmbedBuilder {
+        val embed = errorEmbed
+        embed.description = commandExecutionWarning.message
         return embed
     }
 
@@ -175,7 +208,7 @@ object ApplicationService {
         carry: CarryModel,
         embedBuilder: EmbedBuilder = getEmbed(Instant.fromEpochSeconds(carry.time().epochSecond))
     ): EmbedBuilder {
-        embedBuilder.color = EmbedColor.INFORMATION.color
+        embedBuilder.color = EmbedColor.Information.color
 
         embedBuilder.field("Number of carries", true) { carry.amount.toString() }
         embedBuilder.field(
@@ -184,6 +217,7 @@ object ApplicationService {
         ) { carry.carryDifficulty().carryTier.displayName + " - " + carry.carryDifficulty().displayName }
         embedBuilder.field("Player", true) { "<@" + carry.player().id + ">" }
         embedBuilder.field("Carrier", true) { "<@" + carry.carrier().id + ">" }
+        embedBuilder.field("Gained Score", true) { carry.calculateScore().toString() }
 
         if (carry.approver() != null) {
             embedBuilder.field("Approved by", true) { "<@" + carry.approver() + ">" }
@@ -197,7 +231,7 @@ object ApplicationService {
     }
 
     fun loadEmbedFromCarryQueue(carryQueue: CarryQueueModel, embedBuilder: EmbedBuilder): EmbedBuilder {
-        embedBuilder.color = EmbedColor.INFORMATION.color
+        embedBuilder.color = EmbedColor.Information.color
 
         embedBuilder.field("Number of carries", true) { carryQueue.amount.toString() }
         embedBuilder.field(
@@ -206,6 +240,7 @@ object ApplicationService {
         ) { carryQueue.carryTier.displayName + " - " + carryQueue.carryDifficulty.displayName }
         embedBuilder.field("Player", true) { "<@" + carryQueue.player.id + ">" }
         embedBuilder.field("Carrier", true) { "<@" + carryQueue.carrier.id + ">" }
+        embedBuilder.field("Gained Score", true) { carryQueue.calculateScore().toString() }
 
         if (carryQueue.attachmentLink != null) {
             embedBuilder.field("Transcript-Link", true) { "[Click to open]" + "(" + carryQueue.attachmentLink + ")" }
@@ -220,7 +255,7 @@ object ApplicationService {
 
     fun formatWarn(warningModel: WarningModel): EmbedBuilder {
         val embed = getEmbed(warningModel.time.toKotlinInstant())
-        embed.color = EmbedColor.INFORMATION.color
+        embed.color = EmbedColor.Information.color
         embed.title = "Warning #${warningModel.id}"
 
         embed.field("User") { "<@${warningModel.user.id}>" }
@@ -232,9 +267,9 @@ object ApplicationService {
         return embed
     }
 
-    fun formatWarn(warningModel: DetailedWarningModel): EmbedBuilder {
+    fun formatWarn(warningModel: DetailedWarningModel, showEvidences: Boolean = true): EmbedBuilder {
         val embed = getEmbed(warningModel.time.toKotlinInstant())
-        embed.color = EmbedColor.INFORMATION.color
+        embed.color = EmbedColor.Information.color
         embed.title = "Warning #${warningModel.id}"
 
         embed.field("User") { "<@${warningModel.user.id}>" }
@@ -243,7 +278,7 @@ object ApplicationService {
         embed.field("Reason") { warningModel.reason ?: "No reason provided." }
         embed.field("Active") { warningModel.isActive.toString() }
 
-        if (warningModel.evidences.isNotEmpty()) {
+        if (showEvidences && warningModel.evidences.isNotEmpty()) {
             val evidences = warningModel.evidences.stream().map {
                 "- ${it.evidence}"
             }.toList().joinToString(separator = System.lineSeparator())
@@ -256,7 +291,7 @@ object ApplicationService {
 
     fun formatWarnDm(warningModel: WarningModel): EmbedBuilder {
         val embedBuilder = getEmbed(warningModel.time.toKotlinInstant())
-        embedBuilder.color = EmbedColor.INFORMATION.color
+        embedBuilder.color = EmbedColor.Information.color
         embedBuilder.title = "You were warned on server `${
             runBlocking {
                 DiscordConnection.bot!!.kordRef.getGuildOrNull(Snowflake(warningModel.server.id))?.name ?: "unknown"
@@ -275,7 +310,7 @@ object ApplicationService {
 
     fun formatWarnLog(warningModel: WarningModel): EmbedBuilder {
         val embed = getEmbed(warningModel.time.toKotlinInstant())
-        embed.color = EmbedColor.INFORMATION.color
+        embed.color = EmbedColor.Information.color
         embed.title = "Warning #${warningModel.id}"
 
         embed.field("User") { "<@${warningModel.user.id}>" }
@@ -299,7 +334,7 @@ object ApplicationService {
             embed.description =
                 "Please make sure that a carry type is setup on this server.\n" +
                         "For more information about how to do this, contact `@taubsie` (<@356134481452597250>)!"
-            embed.color = EmbedColor.NEGATIVE.color
+            embed.color = EmbedColor.Negative.color
 
             return embed
         }
@@ -322,7 +357,7 @@ object ApplicationService {
         } else {
             "Your score${if (carryCount != null) " from $carryCount carries" else ""}:"
         }
-        embed.color = EmbedColor.DEFAULT.color
+        embed.color = EmbedColor.Default.color
 
         val scoreDescriptions: EnumMap<ScoreType, MutableList<String>> = EnumMap<ScoreType, MutableList<String>>(
             ScoreType::class.java
@@ -361,7 +396,7 @@ object ApplicationService {
         )
 
         val embed = embed
-        embed.color = EmbedColor.INFORMATION.color
+        embed.color = EmbedColor.Information.color
         embed.description = description
         embed.title = skycryptData.getOrDefault("title", ign)
         embed.url = ConfigProperty.SKYCRYPT_API_URL.toString() + "stats/" + ign
@@ -391,9 +426,9 @@ object ApplicationService {
                 }"
             }
 
-            embed.color = EmbedColor.NEGATIVE.color
+            embed.color = EmbedColor.Negative.color
         } else {
-            embed.color = EmbedColor.POSITIVE.color
+            embed.color = EmbedColor.Positive.color
         }
 
         if (!skycryptData.containsKey("description") || !skycryptData.containsKey("title")) {
@@ -421,7 +456,7 @@ object ApplicationService {
 
     fun getCarryTypeEmbed(carryType: CarryTypeModel): EmbedBuilder {
         val embed = embed
-        embed.color = EmbedColor.DEFAULT.color
+        embed.color = EmbedColor.Default.color
         embed.field("Identifier", true) { carryType.identifier }
         embed.field("Display Name", true) { carryType.displayName }
 
@@ -441,7 +476,7 @@ object ApplicationService {
     fun getCarryTierEmbed(carryTier: CarryTierModel): EmbedBuilder {
         val embed = embed
 
-        embed.color = EmbedColor.DEFAULT.color
+        embed.color = EmbedColor.Default.color
         embed.field("Identifier", true) { carryTier.identifier }
         embed.field("Display Name", true) { carryTier.displayName }
         embed.field("Descriptive Name", true) { carryTier.descriptiveName }
@@ -468,7 +503,7 @@ object ApplicationService {
 
     fun getCarryDifficultyEmbed(carryDifficulty: CarryDifficultyModel): EmbedBuilder {
         val embed = embed
-        embed.color = EmbedColor.DEFAULT.color
+        embed.color = EmbedColor.Default.color
 
         embed.field("Identifier", true) { carryDifficulty.identifier }
         embed.field("Display Name", true) { carryDifficulty.displayName }
@@ -549,4 +584,147 @@ object ApplicationService {
 
         return carryDifficulty.price.toLong()
     }
+
+    //TODO maybe make sure that multiple actions on roles don't override each other?
+    suspend fun applyWarningActions(actions: List<WarningActionModel>, member: Member): String? {
+        if (actions.isEmpty()) {
+            return null
+        }
+
+        if (actions.any { it.warningAction == WarningAction.Ban }) {
+            member.ban {
+                reason = "Too many severe warnings."
+            }
+            return "- Permanent ban"
+        }
+
+        val reason = mutableListOf<String>()
+
+        var timeout = actions.filter { it.warningAction == WarningAction.Timeout }
+            .map { parseTimeoutDuration(it.data) }
+            .reduceOrNull { acc, duration -> acc.plus(duration) }
+
+        if (timeout != null && timeout.isPositive()) {
+            val currentTimeout = member.timeoutUntil
+
+            if (currentTimeout != null) {
+                val currentTimeoutDuration = member.timeoutUntil!! - Clock.System.now()
+
+                if (currentTimeoutDuration.isPositive()) {
+                    timeout += currentTimeoutDuration
+                }
+            }
+
+            member.edit {
+                timeoutUntil = Clock.System.now().plus(timeout)
+                this.reason = "Too many warnings."
+            }
+
+            reason.add("- Timeout for `$timeout`")
+        }
+
+        for (action in actions) {
+            when (action.warningAction) {
+                WarningAction.AddRole -> {
+                    val role = member.guild.getRoleOrNull(Snowflake(action.data))
+
+                    if (role == null) {
+                        reason.add("- Tried to apply role with id `${action.data}`, but it couldn't be found.")
+                        continue
+                    }
+
+                    member.addRole(role.id, "Too many warnings.")
+                    reason.add("- Applied role `${role.name}`")
+                }
+
+                WarningAction.RemoveRole -> {
+                    val role = member.guild.getRoleOrNull(Snowflake(action.data))
+
+                    if (role == null) {
+                        reason.add("- Tried to remove role with id `${action.data}`, but it couldn't be found.")
+                        continue
+                    }
+
+                    member.removeRole(role.id, "Too many warnings.")
+                    reason.add("- Removed role `${role.name}`")
+                }
+
+                WarningAction.RemoveRoleGroup -> {
+                    val role = member.guild.getRoleOrNull(Snowflake(action.data))
+
+                    if (role == null) {
+                        reason.add("- Tried to remove role-group with id `${action.data}`, but it couldn't be found.")
+                        continue
+                    }
+
+                    RolesService.removeRoleGroup(member, role.id.value.toLong())
+                    reason.add("- Removed role `${role.name}` and all connected roles.")
+                }
+
+                WarningAction.Timeout, WarningAction.Ban -> { /* simply ignore, is already handled above */
+                }
+            }
+        }
+
+        thread {
+            runBlocking {
+                val reloadedMember = member.withStrategy(EntitySupplyStrategy.cachingRest).fetchMember()
+
+                val roles = RolesService.updateRoles(reloadedMember)
+
+                NicknameService.updateNickname(reloadedMember, roles)
+            }
+        }
+
+        return reason.joinToString(System.lineSeparator())
+    }
+
+    fun parseTimeoutDuration(data: String): Duration {
+        return Duration.parse(data)
+    }
+
+    fun getFirstOfMonth(): java.time.LocalDate {
+        return java.time.LocalDate.now().withDayOfMonth(1)
+    }
+
+    fun getOffsetFromPageNumber(page: Int): Int {
+        // 0 -> 0
+        // 1 -> 10
+        // 2 -> 20
+        // 3 -> 30
+
+        return 10 * (page)
+    }
+}
+
+fun Extension.getEmbed(): EmbedBuilder {
+    return ApplicationService.getEmbed(Clock.System.now())
+}
+
+fun Extension.getEmbed(time: Instant?): EmbedBuilder {
+    return ApplicationService.getEmbed(time)
+}
+
+fun AbstractMessageCreateBuilder.addEmbed(function: EmbedBuilder.() -> Unit) {
+    this.addEmbed(Clock.System.now(), function)
+}
+
+fun AbstractMessageCreateBuilder.addEmbed(time: Instant?, function: EmbedBuilder.() -> Unit) {
+    val embed = ApplicationService.getEmbed(time)
+    function(embed)
+    embeds = ((embeds ?: mutableListOf()) + embed).toMutableList()
+}
+
+fun Extension.createEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {
+    return this.createEmbed(Clock.System.now(), function)
+}
+
+fun Extension.createEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): EmbedBuilder {
+    val embed = getEmbed(time)
+    function(embed)
+    return embed
+}
+
+fun EmbedBuilder.color(color: EmbedColor) {
+    this.color = color.color
 }

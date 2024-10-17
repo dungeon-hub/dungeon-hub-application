@@ -1,16 +1,16 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.converters.impl.string
-import com.kotlindiscord.kord.extensions.components.components
-import com.kotlindiscord.kord.extensions.components.linkButton
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.components.components
+import dev.kordex.core.components.linkButton
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException
-import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundException
+import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundWarning
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import org.slf4j.LoggerFactory
@@ -44,13 +44,13 @@ class PlayerCommand : Extension() {
                         )
                     } catch (failedToLoadEmbedException: FailedToLoadEmbedException) {
                         val embed = failedToLoadEmbedException.embed
-                        embed.color = EmbedColor.NEGATIVE.color
+                        embed.color = EmbedColor.Negative.color
                         embeds = mutableListOf(
                             embed
                         )
-                    } catch (playerNotFoundException: PlayerNotFoundException) {
+                    } catch (playerNotFoundWarning: PlayerNotFoundWarning) {
                         embeds = mutableListOf(
-                            ApplicationService.getErrorEmbed(playerNotFoundException)
+                            ApplicationService.getErrorEmbed(playerNotFoundWarning)
                         )
                     } catch (commandExecutionException: CommandExecutionException) {
                         embeds = mutableListOf(

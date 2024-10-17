@@ -1,21 +1,21 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.annotations.AlwaysPublicResponse
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.stringChoice
-import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.*
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
-import com.kotlindiscord.kord.extensions.pagination.pages.Page
-import com.kotlindiscord.kord.extensions.utils.dm
-import com.kotlindiscord.kord.extensions.utils.hasPermission
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.channel.GuildMessageChannel
+import dev.kordex.core.annotations.AlwaysPublicResponse
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.converters.impl.stringChoice
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.*
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.ephemeralSlashCommand
+import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.pagination.pages.Page
+import dev.kordex.core.utils.dm
+import dev.kordex.core.utils.hasPermission
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
@@ -64,7 +64,7 @@ class WarningSystem : Extension() {
                 }
 
                 val noPermissionEmbed = ApplicationService.embed
-                noPermissionEmbed.color = EmbedColor.NEGATIVE.color
+                noPermissionEmbed.color = EmbedColor.Negative.color
                 noPermissionEmbed.description =
                     "You don't have the permission to see the warns of other people, so you're seeing your own."
 
@@ -75,7 +75,7 @@ class WarningSystem : Extension() {
 
                 if (warns.isEmpty()) {
                     val embed = ApplicationService.embed
-                    embed.color = EmbedColor.INFORMATION.color
+                    embed.color = EmbedColor.Information.color
                     embed.title = "Warns of user ${target.tag}"
                     embed.description = "User hasn't been warned yet!"
 
@@ -102,19 +102,22 @@ class WarningSystem : Extension() {
                                 copy(noPermissionEmbed)
                             } else {
                                 val embed = ApplicationService.embed
-                                embed.color = EmbedColor.DEFAULT.color
+                                embed.color = EmbedColor.Default.color
                                 embed.description = description
                                 copy(embed)
                             }
 
-                            title = "Strikes of user ${target.tag}"
+                            title = "Warns of user ${target.tag}"
                         }
                     )
 
                     for (warning in warns) {
                         page(
                             Page {
-                                val embed = ApplicationService.formatWarn(warning)
+                                val embed = ApplicationService.formatWarn(
+                                    warning,
+                                    showEvidences = user.hasPermission(Permission.ModerateMembers)
+                                )
 
                                 copy(embed)
                             }
@@ -159,17 +162,33 @@ class WarningSystem : Extension() {
                                 .addWarning(creationModel)
                                 .orElseThrow { CommandExecutionException("Error while trying to add a warning") }
 
-                        val activeWarnings =
-                            WarningConnection.getInstance(guild!!.id.value.toLong())
-                                .getActiveWarns(user.id.value.toLong())
-                                .orElse(listOf())
+                        val actionDescription = ApplicationService.applyWarningActions(
+                            addedWarning.warningActionModel,
+                            target.asMember(guild!!.id)
+                        )
 
-                        val embed = ApplicationService.formatWarn(addedWarning)
+                        val activeWarnings = WarningConnection.getInstance(guild!!.id.value.toLong())
+                            .getActiveWarns(target.id.value.toLong())
+                            .orElse(listOf())
+
+                        val embed = ApplicationService.formatWarn(addedWarning.warningModel)
                         embed.description =
-                            "That user now has ${activeWarnings.count()} active warnings, out of which **${activeWarnings.count { it.warningType == WarningType.Serious || it.warningType == WarningType.Major }}** are severe."
+                            "That user now has ${activeWarnings.count()} active warnings, out of which **${activeWarnings.count { it.warningType == WarningType.Serious || it.warningType == WarningType.Major }}** are severe.${
+                                if (actionDescription != null) {
+                                    "\nThe user got punished with the following actions:\n$actionDescription"
+                                } else {
+                                    ""
+                                }
+                            }${
+                                if (addedWarning.warningModel.warningType == WarningType.Strike) {
+                                    "\n\n_Please note that strikes expire after 3 months._"
+                                } else {
+                                    ""
+                                }
+                            }"
                         embeds = mutableListOf(embed)
 
-                        getChannelProperty(addedWarning.warningType)
+                        getChannelProperty(addedWarning.warningModel.warningType)
                             .getValue(guild!!.id.value.toLong())
                             .map {
                                 runBlocking {
@@ -179,7 +198,12 @@ class WarningSystem : Extension() {
                             .orElse(null)
                             ?.let { channel ->
                                 channel.createMessage {
-                                    val logEmbed = ApplicationService.formatWarnLog(addedWarning)
+                                    val logEmbed = ApplicationService.formatWarnLog(addedWarning.warningModel)
+
+                                    if (actionDescription != null) {
+                                        logEmbed.description =
+                                            "The following actions were applied to the user:\n$actionDescription"
+                                    }
 
                                     this@createMessage.embeds = mutableListOf(logEmbed)
                                 }
@@ -187,8 +211,18 @@ class WarningSystem : Extension() {
 
                         //TODO request exception
                         target.dm {
-                            val dmEmbed = ApplicationService.formatWarnDm(addedWarning)
-                            dmEmbed.description = "You currently have ${activeWarnings.count()} active warnings."
+                            val dmEmbed = ApplicationService.formatWarnDm(addedWarning.warningModel)
+                            if (actionDescription != null) {
+                                dmEmbed.description =
+                                    "You currently have ${activeWarnings.count()} active warnings, due to which you were punished with the following:\n$actionDescription"
+                            } else {
+                                dmEmbed.description = "You currently have ${activeWarnings.count()} active warnings."
+                            }
+
+                            if (addedWarning.warningModel.warningType == WarningType.Strike) {
+                                dmEmbed.description += "\n\n_Please note that strikes expire after 3 months._\n_If you want a related punishment removed **after the strikes have expired**, please contact server staff through the support._"
+                            }
+
                             this@dm.embeds = mutableListOf(dmEmbed)
                         }
                     }
@@ -213,9 +247,10 @@ class WarningSystem : Extension() {
                                 }
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.POSITIVE.color
+                        embed.color = EmbedColor.Positive.color
                         embed.description =
                             "Deactivated warning #${arguments.id} from user <@${removedWarning.user.id}>."
+                        embeds = mutableListOf(embed)
 
                         getChannelProperty(removedWarning.warningType)
                             .getValue(guild!!.id.value.toLong())
@@ -228,7 +263,7 @@ class WarningSystem : Extension() {
                             ?.let { channel ->
                                 channel.createMessage {
                                     val logEmbed = ApplicationService.embed
-                                    logEmbed.color = EmbedColor.INFORMATION.color
+                                    logEmbed.color = EmbedColor.Information.color
                                     logEmbed.description = "<@${user.id}> deactivated warning #${removedWarning.id}."
 
                                     this@createMessage.embeds = mutableListOf(logEmbed)
@@ -240,7 +275,7 @@ class WarningSystem : Extension() {
                             DiscordConnection.bot!!.kordRef.getUser(Snowflake(removedWarning.user.id))
                                 ?.dm {
                                     val dmEmbed = ApplicationService.embed
-                                    dmEmbed.color = EmbedColor.POSITIVE.color
+                                    dmEmbed.color = EmbedColor.Positive.color
                                     dmEmbed.description =
                                         "The warning with id ${removedWarning.id} was removed from you!"
                                     this@dm.embeds = mutableListOf(embed)
@@ -265,7 +300,7 @@ class WarningSystem : Extension() {
                     if (warns.isEmpty()) {
                         respond {
                             val embed = ApplicationService.embed
-                            embed.color = EmbedColor.INFORMATION.color
+                            embed.color = EmbedColor.Information.color
                             embed.title = "Warns of user ${arguments.user.tag}"
                             embed.description = "User has no warns!"
 
@@ -327,7 +362,7 @@ class WarningSystem : Extension() {
 
                         if (arguments.attachment != null && arguments.text != null) {
                             val embed = ApplicationService.embedWithoutTimestamp
-                            embed.color = EmbedColor.NEGATIVE.color
+                            embed.color = EmbedColor.Negative.color
                             embed.description =
                                 "Please only provide either an attachment or a text. The given text wasn't added as evidence: ```\n${arguments.text}\n```"
                             embed.footer = null
@@ -348,7 +383,7 @@ class WarningSystem : Extension() {
                             ?.let { channel ->
                                 channel.createMessage {
                                     val logEmbed = ApplicationService.embed
-                                    logEmbed.color = EmbedColor.INFORMATION.color
+                                    logEmbed.color = EmbedColor.Information.color
                                     logEmbed.description =
                                         "<@${user.id}> added an evidence to warning #${warning.id}:\n\n$evidence"
 

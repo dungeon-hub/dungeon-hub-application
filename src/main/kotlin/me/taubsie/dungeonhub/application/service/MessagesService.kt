@@ -70,7 +70,7 @@ object MessagesService : StartupListener {
                 }.collect(Collectors.joining("\n"))
 
         val embed = ApplicationService.embedWithoutTimestamp
-        embed.color = EmbedColor.DEFAULT.color
+        embed.color = EmbedColor.Default.color
         embed.description = description
 
         carryTier.thumbnailUrl.ifPresent { embed.thumbnail { this.url = it } }
@@ -82,15 +82,6 @@ object MessagesService : StartupListener {
         refreshPriceMessages(
             DiscordServerConnection.getInstance()
                 .getAllCarryTiers(serverId)
-                .orElse(ArrayList())
-                .stream()
-        )
-    }
-
-    suspend fun refreshPriceMessages(server: Guild) {
-        refreshPriceMessages(
-            DiscordServerConnection.getInstance()
-                .getAllCarryTiers(server.id.value.toLong())
                 .orElse(ArrayList())
                 .stream()
         )

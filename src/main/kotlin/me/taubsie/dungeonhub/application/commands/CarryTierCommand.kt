@@ -1,21 +1,20 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.boolean
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalChannel
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
-import com.kotlindiscord.kord.extensions.commands.converters.impl.string
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.boolean
+import dev.kordex.core.commands.converters.impl.optionalChannel
+import dev.kordex.core.commands.converters.impl.optionalString
+import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
@@ -24,6 +23,19 @@ import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierCreationModel
 import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierUpdateModel
 import java.util.*
 
+/**
+ * This extension provides the slash commands for the carry tier management.
+ * It allows the creation, deletion, editing and resetting of carry tiers.
+ * The commands are only available in guilds and require the administrator permission.
+ * The commands are:
+ * - `/carry-tier create`
+ * - `/carry-tier delete`
+ * - `/carry-tier get`
+ * - `/carry-tier edit`
+ * - `/carry-tier reset`
+ *
+ * These commands are used to create, delete, get, edit and reset carry tiers.
+ */
 @LoadExtension
 class CarryTierCommand : Extension() {
     override val name = "carry-tier-command"
@@ -105,8 +117,7 @@ class CarryTierCommand : Extension() {
                                 .orElse(null)
 
                         if (carryTier == null) {
-                            //TODO custom class?
-                            throw CommandExecutionException("Couldn't add that carry tier.")
+                            throw CommandExecutionWarning("Couldn't add that carry tier.")
                         }
 
                         val embed = ApplicationService.getCarryTierEmbed(carryTier)
@@ -130,8 +141,7 @@ class CarryTierCommand : Extension() {
                                 .orElse(null)
 
                         if (carryType == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("That carry type doesn't exists!")
+                            throw CommandExecutionWarning("That carry type doesn't exists!")
                         }
 
                         val carryTier =
@@ -146,18 +156,15 @@ class CarryTierCommand : Extension() {
                         }
 
                         if (carryTier.carryType != carryType) {
-                            //TODO custom class
-                            throw CommandExecutionException("Well this is weird.. Something doesn't really add up!")
+                            throw CommandExecutionWarning("Well this is weird.. Something doesn't really add up!")
                         }
 
-                        val deletedCarryTier =
-                            DungeonHubConnection.getInstance()
-                                .removeCarryTier(carryTier)
-                                .orElse(null)
+                        val deletedCarryTier = CarryTierConnection.getInstance(carryType)
+                            .deleteCarryTier(carryTier)
+                            .orElse(null)
 
                         if (deletedCarryTier == null) {
-                            //TODO custom class
-                            throw CommandExecutionException()
+                            throw CommandExecutionWarning("Couldn't delete that carry tier.")
                         }
 
                         val embed = ApplicationService.getCarryTierEmbed(deletedCarryTier)
@@ -181,8 +188,7 @@ class CarryTierCommand : Extension() {
                                 .orElse(null)
 
                         if (carryType == null) {
-                            //TODO custom exception class
-                            throw CommandExecutionException("Carry type not found.")
+                            throw CommandExecutionWarning("Carry type not found.")
                         }
 
                         val carryTier =
@@ -216,8 +222,7 @@ class CarryTierCommand : Extension() {
                                 .orElse(null)
 
                         if (carryType == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("That carry type doesn't exists!")
+                            throw CommandExecutionWarning("That carry type doesn't exists!")
                         }
 
                         val carryTier =
@@ -232,8 +237,7 @@ class CarryTierCommand : Extension() {
                         }
 
                         if (arguments.displayName == null && arguments.category == null && arguments.priceChannel == null && arguments.descriptiveName == null && arguments.thumbnailUrl == null && arguments.priceTitle == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("Please provide something you want to edit.")
+                            throw CommandExecutionWarning("Please provide something you want to edit.")
                         }
 
                         if (arguments.category != null) {
@@ -289,8 +293,7 @@ class CarryTierCommand : Extension() {
                                 .orElse(null)
 
                         if (updatedCarryTier == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("Couldn't update carry tier.")
+                            throw CommandExecutionWarning("Couldn't update carry tier.")
                         }
 
                         val embed = ApplicationService.getCarryTierEmbed(updatedCarryTier)
@@ -314,8 +317,7 @@ class CarryTierCommand : Extension() {
                                 .orElse(null)
 
                         if (carryType == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("That carry type doesn't exists!")
+                            throw CommandExecutionWarning("That carry type doesn't exists!")
                         }
 
                         val carryTier =
@@ -330,8 +332,7 @@ class CarryTierCommand : Extension() {
                         }
 
                         if (!arguments.category && !arguments.priceChannel && !arguments.descriptiveName && !arguments.thumbnailUrl && !arguments.priceTitle) {
-                            //TODO custom class
-                            throw CommandExecutionException("Please provide something you want to reset.")
+                            throw CommandExecutionWarning("Please provide something you want to reset.")
                         }
 
                         val updateModel = CarryTierUpdateModel.fromCarryTier(carryTier)
@@ -364,8 +365,7 @@ class CarryTierCommand : Extension() {
                                 .orElse(null)
 
                         if (updatedCarryTier == null) {
-                            //TODO custom class
-                            throw CommandExecutionException("Couldn't update carry tier.")
+                            throw CommandExecutionWarning("Couldn't update carry tier.")
                         }
 
                         val embed = ApplicationService.getCarryTierEmbed(updatedCarryTier)

@@ -2,15 +2,7 @@ package me.taubsie.dungeonhub.application.commands
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalStringChoice
-import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalChannel
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalInt
-import com.kotlindiscord.kord.extensions.commands.converters.impl.string
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
-import com.kotlindiscord.kord.extensions.utils.getJumpUrl
+import com.google.gson.JsonSyntaxException
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
@@ -20,11 +12,18 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.converters.impl.optionalStringChoice
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.optionalChannel
+import dev.kordex.core.commands.converters.impl.optionalInt
+import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.utils.getJumpUrl
 import me.taubsie.dungeonhub.application.config.ConfigProperty
-import me.taubsie.dungeonhub.application.connection.applyJson
+import me.taubsie.dungeonhub.application.connection.*
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
-import me.taubsie.dungeonhub.application.connection.isSelf
-import me.taubsie.dungeonhub.application.connection.loadMessageByLink
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
@@ -34,6 +33,13 @@ import me.taubsie.dungeonhub.common.DungeonHubService
 import java.nio.charset.StandardCharsets
 import java.util.function.Consumer
 
+/**
+ * This extension provides the ability to manage embeds.
+ * It allows you to get the embed data of a message, send a custom embed, add an embed to a message sent by this bot, and edit an embed sent by this bot.
+ * The embed data can be provided in a JSON format.
+ * The embed data can be displayed as a beautiful embed (all fields of the embed class are mapped to embed fields), as source code, or as a CDN link (which contains the source code).
+ * The embed data can be sent to a specific channel and defaults to the channel where the command was executed.
+ */
 @LoadExtension
 class EmbedCommand : Extension() {
     override val name = "embed-command"
@@ -78,7 +84,7 @@ class EmbedCommand : Extension() {
                         val embeds = if (count == -1) message.embeds else mutableListOf(message.embeds[count])
 
                         val embedBuilder = ApplicationService.embed
-                        embedBuilder.color = EmbedColor.DEFAULT.color
+                        embedBuilder.color = EmbedColor.Default.color
 
                         if (beautiful && embeds.size == 1) {
                             DungeonHubService.getInstance().gson.toJsonTree(embeds[0])
@@ -94,8 +100,10 @@ class EmbedCommand : Extension() {
                                     }
                                 })
                         } else {
-                            val embedSource =
-                                DungeonHubService.getInstance().gson.toJson(if (embeds.size == 1) embeds[0] else embeds)
+                            val embedSource = DungeonHubService.getInstance().gson.toJson(
+                                if (embeds.size == 1) embeds[0].toModel()
+                                else embeds.map { it.toModel() }
+                            )
 
                             val description =
                                 if (embedSource.length >= 4000 || arguments.type.equals("cdn", ignoreCase = true)) {
@@ -135,10 +143,10 @@ class EmbedCommand : Extension() {
                             source =
                                 ContentConnection.getInstance()
                                     .downloadFile(source).orElseThrow {
-                                    CommandExecutionException(
-                                        "Couldn't download the file correctly."
-                                    )
-                                }
+                                        CommandExecutionException(
+                                            "Couldn't download the file correctly."
+                                        )
+                                    }
                         }
 
                         val embedBuilders: MutableList<EmbedBuilder> = ArrayList()
@@ -181,6 +189,8 @@ class EmbedCommand : Extension() {
                                         }
                                     }
                             }
+                        } catch (jsonSyntaxException: JsonSyntaxException) {
+                            throw CommandExecutionException("The embed JSON you entered is invalid formatted.")
                         } catch (exception: Exception) {
                             throw CommandExecutionException(exception)
                         }
@@ -194,7 +204,7 @@ class EmbedCommand : Extension() {
                         }
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.POSITIVE.color
+                        embed.color = EmbedColor.Positive.color
                         embed.description = "Embed sent into <#${channel.id}>!"
                         embeds = mutableListOf(embed)
                     }
@@ -247,6 +257,8 @@ class EmbedCommand : Extension() {
                                         }
                                     }
                             }
+                        } catch (jsonSyntaxException: JsonSyntaxException) {
+                            throw CommandExecutionException("The embed JSON you entered is invalid formatted.")
                         } catch (exception: java.lang.Exception) {
                             throw CommandExecutionException(exception)
                         }
@@ -259,6 +271,7 @@ class EmbedCommand : Extension() {
                             "link"
                         )
 
+                        //TODO how to handle interaction responses?
                         if (message.author?.isSelf() != true) {
                             throw InvalidOptionException(
                                 "link",
@@ -274,12 +287,14 @@ class EmbedCommand : Extension() {
                         }
 
                         message.edit {
-                            embeds = ((embeds?.toMutableList() ?: mutableListOf()) + embedBuilders).toMutableList()
+                            this@edit.embeds =
+                                (message.embeds.toMutableList().map { it.toBuilder() } + embedBuilders).toMutableList()
                         }
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.POSITIVE.color
+                        embed.color = EmbedColor.Positive.color
                         embed.description = "Embed(s) added to message " + message.getJumpUrl() + "!"
+                        embeds = mutableListOf(embed)
                     }
                 }
             }
@@ -303,6 +318,8 @@ class EmbedCommand : Extension() {
                                     entry.value
                                 )
                             }
+                        } catch (jsonSyntaxException: JsonSyntaxException) {
+                            throw CommandExecutionException("The embed JSON you entered is invalid formatted.")
                         } catch (exception: Exception) {
                             throw CommandExecutionException(exception)
                         }
@@ -310,6 +327,9 @@ class EmbedCommand : Extension() {
                         val count = arguments.count ?: 0
 
                         val message = arguments.getMessage()
+
+                        //TODO how to handle interaction responses?
+
 
                         if (message?.author?.isSelf() != true) {
                             throw InvalidOptionException(
@@ -326,7 +346,7 @@ class EmbedCommand : Extension() {
                         }
 
                         message.edit {
-                            val embedBuilders = embeds ?: mutableListOf()
+                            val embedBuilders = message.embeds.map { it.toBuilder() }.toMutableList()
                             if (count >= embedBuilders.size) {
                                 throw InvalidOptionException(
                                     "link",
@@ -339,7 +359,7 @@ class EmbedCommand : Extension() {
                         }
 
                         val response = ApplicationService.embed
-                        response.color = EmbedColor.POSITIVE.color
+                        response.color = EmbedColor.Positive.color
                         response.description = "Embed in message ${message.getJumpUrl()} edited!"
 
                         embeds = mutableListOf(response)
@@ -382,7 +402,12 @@ class EmbedCommand : Extension() {
         }
     }
 
-    inner class SendArguments : MessageLinkEmbedArguments() {
+    inner class SendArguments : Arguments() {
+        val embed by string {
+            name = "embed"
+            description = "The embed data to send."
+        }
+
         val channel by optionalChannel {
             name = "channel"
             description = "The channel to send the embed into."

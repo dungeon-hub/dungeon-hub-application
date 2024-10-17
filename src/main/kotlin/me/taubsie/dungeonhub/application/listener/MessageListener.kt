@@ -1,13 +1,5 @@
 package me.taubsie.dungeonhub.application.listener
 
-import com.kotlindiscord.kord.extensions.components.components
-import com.kotlindiscord.kord.extensions.components.disabledButton
-import com.kotlindiscord.kord.extensions.components.ephemeralButton
-import com.kotlindiscord.kord.extensions.components.linkButton
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.event
-import com.kotlindiscord.kord.extensions.utils.addReaction
-import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.MessageChannelBehavior
@@ -17,12 +9,22 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Message
+import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kord.core.entity.channel.DmChannel
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.rest.builder.message.actionRow
+import dev.kordex.core.components.components
+import dev.kordex.core.components.disabledButton
+import dev.kordex.core.components.ephemeralButton
+import dev.kordex.core.components.linkButton
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.event
+import dev.kordex.core.utils.addReaction
+import dev.kordex.core.utils.dm
+import dev.kordex.core.utils.respond
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.reduce
@@ -42,10 +44,11 @@ import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException
-import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundException
+import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundWarning
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.LeaderboardService
+import me.taubsie.dungeonhub.application.service.color
 import me.taubsie.dungeonhub.common.DungeonHubService
 import me.taubsie.dungeonhub.common.enums.QueueStep
 import me.taubsie.dungeonhub.common.enums.ScoreType
@@ -67,8 +70,8 @@ import kotlin.time.toKotlinDuration
 @LoadExtension
 class MessageListener : Extension() {
     companion object {
-        private const val APPROVE_AMOUNT_THRESHOLD: Long = 8
-        private const val APPROVE_SCORE_THRESHOLD: Long = 30
+        private const val APPROVE_AMOUNT_THRESHOLD: Long = 11
+        private const val APPROVE_SCORE_THRESHOLD: Long = 34
 
         private val CHANNEL_FROM_TRANSCRIPT: Pattern = Pattern.compile("^\\s*Channel: [^(]*\\((?<channel>\\d*)\\)")
 
@@ -80,17 +83,25 @@ class MessageListener : Extension() {
     override suspend fun setup() {
         event<MessageCreateEvent> {
             action {
-                addReactionToPets(event)
+                thread {
+                    runBlocking {
+                        addReactionToPets(event)
 
-                logTicket(event)
+                        logTicket(event)
 
-                loadSkycryptFromTicket(event)
+                        loadSkycryptFromTicket(event)
+                    }
+                }
             }
         }
 
         event<MessageUpdateEvent> {
             action {
-                logTicket(event)
+                thread {
+                    runBlocking {
+                        logTicket(event)
+                    }
+                }
             }
         }
     }
@@ -106,7 +117,8 @@ class MessageListener : Extension() {
         )
     }
 
-    private suspend fun logTicket(message: Message, server: Guild?) {
+    @Synchronized
+    private fun logTicket(message: Message, server: Guild?) {
         if (server == null) {
             return
         }
@@ -179,6 +191,14 @@ class MessageListener : Extension() {
                     attachmentLink =
                         ContentConnection.getInstance()
                             .getCdnUrl(attachmentUrl.get()).toString()
+
+                    thread(start = true) {
+                        runBlocking {
+                            message.respond {
+                                this.content = attachmentLink
+                            }
+                        }
+                    }
                 }
 
                 queueModel.attachmentLink = attachmentLink
@@ -190,30 +210,48 @@ class MessageListener : Extension() {
                             || queueModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
                     && approvingChannel.isPresent
                 ) {
-                    val createdMessage = approvingChannel.get()
-                        .createMessage {
-                            val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
-                            embed.title = "Accept carry-log?"
-                            embed.color = EmbedColor.DEFAULT.color
+                    runBlocking {
+                        val createdMessage = approvingChannel.get()
+                            .createMessage {
+                                val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                                embed.title = "Accept carry-log?"
+                                embed.color = EmbedColor.Default.color
 
-                            embeds = mutableListOf(embed)
+                                embeds = mutableListOf(embed)
 
-                            actionRow {
-                                interactionButton(ButtonStyle.Success, "accept_log") {
-                                    label = "Accept"
+                                actionRow {
+                                    interactionButton(ButtonStyle.Success, "accept_log") {
+                                        label = "Accept"
+                                    }
+
+                                    interactionButton(ButtonStyle.Danger, "deny") {
+                                        label = "Deny"
+                                    }
                                 }
+                            }
 
-                                interactionButton(ButtonStyle.Danger, "deny") {
-                                    label = "Deny"
-                                }
+                        thread(start = true) {
+                            runBlocking {
+                                DiscordConnection.bot?.kordRef
+                                    ?.getUser(Snowflake(queueModel.carrier.id))
+                                    ?.dm {
+                                        val embed = ApplicationService.embed
+                                        embed.color(EmbedColor.Information)
+                                        embed.title = "Approval needed"
+                                        embed.description = "Due to the high number of score (${queueModel.calculateScore()}) or carries (${queueModel.amount}), your ${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
+                                                "You will be notified here once it was approved or denied."
+
+                                        embeds = mutableListOf(embed)
+                                    }
                             }
                         }
 
-                    updateModel.setQueueStep(QueueStep.APPROVING)
-                        .setRelationId(createdMessage.id.value.toLong())
+                        updateModel.setQueueStep(QueueStep.APPROVING)
+                            .setRelationId(createdMessage.id.value.toLong())
 
-                    QueueConnection.getInstance()
-                        .updateQueue(queueModel.id, updateModel)
+                        QueueConnection.getInstance()
+                            .updateQueue(queueModel.id, updateModel)
+                    }
                 } else {
                     val updatedScore =
                         QueueConnection.getInstance()
@@ -233,60 +271,59 @@ class MessageListener : Extension() {
                                     .orElse(0L)
                             }
 
-                    val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(queueModel.carrier.id))
+                    runBlocking {
+                        val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(queueModel.carrier.id))
 
-                    if (carrier != null) {
-                        carrier.dm {
-                            val gainedScore = queueModel.calculateScore()
+                        if (carrier != null) {
+                            carrier.dm {
+                                this.content = "Your carry was logged!\n\n" +
+                                        "**Your Updated Score:** $updatedScore"
 
-                            this.content = "Your carry was logged!\n\n" +
-                                    "**Score gained:** $gainedScore\n" +
-                                    "**Your Updated Score:** $updatedScore"
-
-                            val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
-                            embed.title = "Information"
-                            embed.color = EmbedColor.DEFAULT.color
-
-                            embeds = mutableListOf(embed)
-                        }
-
-                        val logChannel = queueModel.carryTier
-                            .carryType
-                            .logChannel
-                            .map { id: Long ->
-                                runBlocking { server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id)) }
-                            }
-
-                        if (logChannel.isPresent) {
-                            logger.debug(
-                                "Carry logged: {}",
-                                DungeonHubService.getInstance().gson.toJson(queueModel)
-                            )
-
-                            logChannel.get().createMessage {
-                                val embed = ApplicationService.getEmbed(queueModel.time.toKotlinInstant())
-                                embed.title = "Carry accepted."
-                                embed.color = EmbedColor.POSITIVE.color
-                                embed.field("Number of carries", true) { queueModel.amount.toString() }
-                                embed.field("Type of carry", true) {
-                                    "${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName}"
-                                }
-                                embed.field("Player", true) {
-                                    "<@${queueModel.player.id}>"
-                                }
-                                embed.field("Carrier", true) {
-                                    "<@${queueModel.carrier.id}>"
-                                }
-                                embed.field("Transcript-Link", true) {
-                                    "[Click to open](${queueModel.attachmentLink})"
-                                }
+                                val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                                embed.title = "Information"
+                                embed.color = EmbedColor.Default.color
 
                                 embeds = mutableListOf(embed)
                             }
-                        }
 
-                        QueueConnection.getInstance()
-                            .deleteQueue(queueModel.id)
+                            val logChannel = queueModel.carryTier
+                                .carryType
+                                .logChannel
+                                .map { id: Long ->
+                                    runBlocking { server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id)) }
+                                }
+
+                            if (logChannel.isPresent) {
+                                logger.debug(
+                                    "Carry logged: {}",
+                                    DungeonHubService.getInstance().gson.toJson(queueModel)
+                                )
+
+                                logChannel.get().createMessage {
+                                    val embed = ApplicationService.getEmbed(queueModel.time.toKotlinInstant())
+                                    embed.title = "Carry accepted."
+                                    embed.color = EmbedColor.Positive.color
+                                    embed.field("Number of carries", true) { queueModel.amount.toString() }
+                                    embed.field("Type of carry", true) {
+                                        "${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName}"
+                                    }
+                                    embed.field("Player", true) {
+                                        "<@${queueModel.player.id}>"
+                                    }
+                                    embed.field("Carrier", true) {
+                                        "<@${queueModel.carrier.id}>"
+                                    }
+                                    embed.field("Transcript-Link", true) {
+                                        "[Click to open](${queueModel.attachmentLink})"
+                                    }
+
+                                    embeds = mutableListOf(embed)
+                                }
+                            }
+
+                            QueueConnection.getInstance()
+                                .deleteQueue(queueModel.id)
+                        }
                     }
                 }
 
@@ -302,16 +339,13 @@ class MessageListener : Extension() {
             if ((serverId.value.toLong() == 1023684107877761196L && channelId.value.toLong() == 1220895875102937098L)
                 || (serverId.value.toLong() == 693263712626278553L && channelId.value.toLong() == 1219427157655289908L)
             ) {
-                if (event.message.attachments.isEmpty()) {
-                    if (
-                        event.message.author?.isBot == false &&
-                        event.message.embeds.stream()
-                            .map { embed -> embed.thumbnail }
-                            .filter { it != null }
-                            .findFirst().isEmpty
-                    ) {
-                        return
-                    }
+                if (event.message.attachments.isEmpty() && event.message.author?.isBot == false &&
+                    event.message.embeds.stream()
+                        .map { embed -> embed.thumbnail }
+                        .filter { it != null }
+                        .findFirst().isEmpty
+                ) {
+                    return
                 }
 
                 val emoji: String = getRandomEmoji()
@@ -358,13 +392,32 @@ class MessageListener : Extension() {
             return
         }
 
+        val categoryId = event.message.channel.asChannelOfOrNull<CategorizableChannel>()?.categoryId?.value?.toLong()
+
+        if (categoryId != null && !listOf(
+                796769131880906782,
+                1172688079262330900,
+                1168970186666283148,
+                992922801075912764,
+                992922867857641594,
+                1112458713958195250,
+                842840550704939053,
+                805833601748828200,
+                805833672678309908,
+                805833843633815664,
+                805834037108670464
+            ).contains(categoryId)
+        ) {
+            return
+        }
+
         if (event.message.channel.getMessagesAfter(Snowflake.min, 5).count() != 1) {
             return
         }
 
         val firstMessage = event.message.channel.messages.reduce { _, message2 -> message2 }
 
-        if (firstMessage.mentionedUsers.count() != 1) {
+        if (firstMessage.mentionedUsers.count() != 1 || firstMessage.author?.isBot == false) {
             return
         }
 
@@ -432,10 +485,10 @@ class MessageListener : Extension() {
                     }
                 }
             }
-        } catch (playerNotFoundException: PlayerNotFoundException) {
+        } catch (playerNotFoundWarning: PlayerNotFoundWarning) {
             //TODO load scammer data from discord?
 
-            channel.createEmbed { ApplicationService.getErrorEmbed(playerNotFoundException) }
+            channel.createEmbed { ApplicationService.getErrorEmbed(playerNotFoundWarning) }
         } catch (failedToLoadEmbedException: FailedToLoadEmbedException) {
             channel.createMessage {
                 embeds = mutableListOf(failedToLoadEmbedException.embed)

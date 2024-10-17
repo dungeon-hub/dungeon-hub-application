@@ -1,14 +1,17 @@
 package me.taubsie.dungeonhub.application.service
 
-import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.common.entity.Snowflake
+import dev.kord.common.exception.RequestException
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.asChannelOfOrNull
+import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.User
 import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.rest.builder.component.ActionRowBuilder
+import dev.kord.rest.builder.message.AllowedMentionsBuilder
+import dev.kordex.core.utils.dm
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -23,7 +26,6 @@ import java.io.IOException
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 import java.util.*
-import java.util.concurrent.CompletionException
 import java.util.stream.Collectors
 import kotlin.time.toKotlinDuration
 
@@ -75,7 +77,7 @@ object ProfileModerationService {
         }
     }
 
-    fun checkUserName(userName: String?): String? {
+    fun checkUserName(userName: String): String? {
         val searchResults = homoglyph!!.search(userName, *forbiddenUsernames)
 
         if (searchResults.isEmpty()) {
@@ -97,26 +99,25 @@ object ProfileModerationService {
             .orElse(java.lang.Boolean.TRUE)
     }
 
-    fun handleUserBan(server: Guild, user: Member, executor: User, reason: String) {
+    fun handleUserBan(server: Guild, user: User, executor: User, reason: String) {
         dmBannedPerson(server, user, reason)
 
         executeBan(server, user, executor, reason)
     }
 
-    fun handleUserBan(server: Guild, user: Member, username: String) {
+    fun handleUserBan(server: Guild, user: User, username: String) {
         dmBannedPerson(server, user)
 
         executeBan(server, user, username)
     }
 
     private fun sendDm(user: User, message: String, unbanForm: String?) {
-        try {
-            runBlocking {
-                launch {
+        runBlocking {
+            launch {
+                try {
                     if (unbanForm == null) {
                         user.dm(message)
                     } else {
-                        //TODO request exception
                         user.dm {
                             val actionRow = ActionRowBuilder()
                             actionRow.linkButton(unbanForm) { label = "Appeal" }
@@ -125,10 +126,10 @@ object ProfileModerationService {
                             components?.add(actionRow)
                         }
                     }
+                } catch (_: RequestException) {
+                    //ignored since this doesn't matter
                 }
             }
-        } catch (completionException: CompletionException) {
-            //ignored since this just means that the user couldn't be dmed
         }
     }
 
@@ -195,13 +196,11 @@ object ProfileModerationService {
                         }
                     }
             }
-        }
 
-        if (isBanDisabled(server.id.value.toLong())) {
-            return
-        }
+            if (isBanDisabled(server.id.value.toLong())) {
+                return@runBlocking
+            }
 
-        runBlocking {
             launch {
                 server.ban(user.id) {
                     deleteMessageDuration = Duration.of(6, ChronoUnit.DAYS).toKotlinDuration()
@@ -211,35 +210,31 @@ object ProfileModerationService {
         }
     }
 
-    private fun executeBan(server: Guild, user: Member, executor: User, reason: String) {
+    private fun executeBan(server: Guild, user: User, executor: User, reason: String) {
         runBlocking {
             launch {
                 server.ban(user.id) {
                     deleteMessageDuration = Duration.of(6, ChronoUnit.DAYS).toKotlinDuration()
-                    this.reason = "Executor: " + executor.username + ", Reason:" + reason
+                    this.reason = "Executor: ${executor.username}, Reason: $reason"
                 }
             }
-        }
 
-        runBlocking {
-            launch {
-                ServerProperty.MODERATION_LOGS_CHANNEL
-                    .getValue(server.id.value.toLong())
-                    .map { s: String ->
-                        return@map async {
-                            server.getChannel(Snowflake(s))
+            ServerProperty.MODERATION_LOGS_CHANNEL
+                .getValue(server.id.value.toLong())
+                .map { s: String ->
+                    return@map async {
+                        server.getChannel(Snowflake(s))
+                    }
+                }
+                .ifPresent { serverTextChannel ->
+                    runBlocking {
+                        serverTextChannel.await().asChannelOfOrNull<MessageChannel>()?.createMessage {
+                            content =
+                                "User ${user.mention} got banned by ${executor.mention} for reason: \n$reason"
+                            allowedMentions = AllowedMentionsBuilder()
                         }
                     }
-                    .ifPresent { serverTextChannel ->
-                        runBlocking {
-                            launch {
-                                serverTextChannel.await().asChannelOfOrNull<MessageChannel>()?.createMessage(
-                                    content = "User ${user.mention} got banned by ${executor.mention} for reason: \n$reason"
-                                )
-                            }
-                        }
-                    }
-            }
+                }
         }
     }
 

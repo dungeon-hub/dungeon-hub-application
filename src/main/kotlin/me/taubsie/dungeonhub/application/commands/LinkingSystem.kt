@@ -1,13 +1,5 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.converters.impl.channel
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalBoolean
-import com.kotlindiscord.kord.extensions.commands.converters.impl.string
-import com.kotlindiscord.kord.extensions.commands.converters.impl.user
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.event
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.common.entity.*
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
@@ -16,6 +8,7 @@ import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.respondPublic
 import dev.kord.core.behavior.requestMembers
 import dev.kord.core.builder.components.emoji
+import dev.kord.core.entity.Member
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.Role
 import dev.kord.core.entity.channel.GuildMessageChannel
@@ -27,25 +20,30 @@ import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
-import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
+import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.converters.impl.channel
+import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.commands.converters.impl.user
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.event
+import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.extensions.publicUserCommand
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.HypixelConnection.getHypixelLinkedDiscord
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.HelpTopic
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
-import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
-import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaException
-import me.taubsie.dungeonhub.application.exceptions.NotLinkedException
+import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.loader.LoadExtension
-import me.taubsie.dungeonhub.application.service.ApplicationService
-import me.taubsie.dungeonhub.application.service.NicknameService
-import me.taubsie.dungeonhub.application.service.RolesService
+import me.taubsie.dungeonhub.application.service.*
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel
 import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel
 import java.util.*
+import kotlin.concurrent.thread
 
 @PrivilegedIntent
 @LoadExtension
@@ -53,7 +51,7 @@ class LinkingSystem : Extension() {
     override val name = "linking-system"
 
     override suspend fun setup() {
-        publicSlashCommand(::LinkArguments) {
+        publicSlashCommand(::SingleIgnArguments) {
             name = "link"
             description = "Link your discord to your hypixel account."
             allowInDms = true
@@ -66,11 +64,11 @@ class LinkingSystem : Extension() {
 
                     if (linkedTo.isPresent) {
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.INFORMATION.color
+                        embed.color = EmbedColor.Information.color
                         embed.description = "You're already linked to user `${
                             MojangConnection.getInstance()
                                 .getNameByUUID(linkedTo.get())
-                        }!` If you think that's incorrect, try using ${"`/unlink`"}."
+                        }`! If you think that's incorrect, try using ${"`/unlink`"}."
 
                         embeds = mutableListOf(
                             embed
@@ -88,63 +86,76 @@ class LinkingSystem : Extension() {
                             MojangConnection.getInstance()
                                 .getNameByUUID(linkedId)
                         }`."
-                    embed.color = EmbedColor.POSITIVE.color
+                    embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
                 }
 
-                val member = user.asMember(guild!!.id)
+                if(guild != null) {
+                    val member = user.asMember(guild!!.id)
 
-                val roles = RolesService.updateRoles(member)
+                    val roles = RolesService.updateRoles(member)
 
-                NicknameService.updateNickname(member, roles)
+                    NicknameService.updateNickname(member, roles)
+                } else {
+                    val user = user.asUser()
+
+                    val roles = RolesService.updateRoles(user)
+
+                    NicknameService.updateNickname(user, roles)
+                }
+
             }
         }
 
-        publicSlashCommand(::LinkArguments) {
-            name = "manual-link"
-            description = "Manually link someone by IGN."
-            guild(693263712626278553L)
-            check {
-                failIfNot("You aren't allowed to use this command.") {
-                    event.interaction.user.id.value.toLong() == 356134481452597250L
-                }
-            }
-
-            action {
-                respond {
-                    val uuid = MojangConnection.getInstance()
-                        .getUUIDByName(arguments.ign)
-
-                    val discordUser = getHypixelLinkedDiscord(uuid)
-                        .orElseThrow {
-                            InvalidOptionException(
-                                "ign",
-                                "Please add the correct discord-account to your hypixel social menu.\n"
-                                        + "To learn more about how to do this, use `/help verification`."
-                            )
+        listOf(693263712626278553L, 633621474183217163L, 1023684107877761196L).map { Snowflake(it) }
+            .forEach { guildId ->
+                publicSlashCommand(::SingleIgnArguments) {
+                    name = "manual-link"
+                    description = "Manually link someone by IGN."
+                    guild(guildId)
+                    check {
+                        failIfNot("You aren't allowed to use this command.") {
+                            event.interaction.user.id.value.toLong() == 356134481452597250L
                         }
-
-                    val users = guild!!.requestMembers { query = discordUser; limit = 5 }
-                        .map { it.members }
-                        .toList()
-
-                    val user = users.map { members -> members.firstOrNull { it.username == discordUser } }.firstOrNull()
-
-                    if (user == null) {
-                        throw CommandExecutionException("The specified user (`$discordUser`) does not exist.")
                     }
 
-                    NicknameService.linkToIgn(arguments.ign, user)
+                    action {
+                        respond {
+                            val uuid = MojangConnection.getInstance()
+                                .getUUIDByName(arguments.ign)
 
-                    val embed = ApplicationService.embed
-                    embed.color = EmbedColor.POSITIVE.color
-                    embed.description = "Linked `${arguments.ign}` to: ${user.tag}"
+                            val discordUser = getHypixelLinkedDiscord(uuid)
+                                .orElseThrow {
+                                    InvalidOptionWarning(
+                                        "ign",
+                                        "Please add the correct discord-account to your hypixel social menu.\n"
+                                                + "To learn more about how to do this, use `/help verification`."
+                                    )
+                                }
 
-                    embeds = mutableListOf(embed)
+                            val users = guild!!.requestMembers { query = discordUser; limit = 5 }
+                                .map { it.members }
+                                .toList()
+
+                            val user = users.map { members -> members.firstOrNull { it.username == discordUser } }
+                                .firstOrNull()
+
+                            if (user == null) {
+                                throw CommandExecutionException("The specified user (`$discordUser`) does not exist.")
+                            }
+
+                            NicknameService.linkToIgn(arguments.ign, user)
+
+                            val embed = ApplicationService.embed
+                            embed.color = EmbedColor.Positive.color
+                            embed.description = "Linked `${arguments.ign}` to: ${user.tag}"
+
+                            embeds = mutableListOf(embed)
+                        }
+                    }
                 }
             }
-        }
 
         publicSlashCommand {
             name = "sync"
@@ -162,7 +173,7 @@ class LinkingSystem : Extension() {
 
                     if (userModel == null) {
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.NEGATIVE.color
+                        embed.color = EmbedColor.Negative.color
                         embed.description = "Please link your ingame-account before using this command again."
 
                         embeds = mutableListOf(embed)
@@ -181,7 +192,7 @@ class LinkingSystem : Extension() {
                     var nicknameChanged = true
                     try {
                         NicknameService.updateNickname(member, userModel, roles)
-                    } catch (noNameSchemaException: NoNameSchemaException) {
+                    } catch (noNameSchemaWarning: NoNameSchemaWarning) {
                         nicknameChanged = false
                     } catch (notLinkedException: NotLinkedException) {
                         embeds = mutableListOf(ApplicationService.getErrorEmbed(notLinkedException))
@@ -190,38 +201,58 @@ class LinkingSystem : Extension() {
 
                     val embed = ApplicationService.embed
                     embed.description = "Updating your ${if (nicknameChanged) "nickname and " else ""}roles."
-                    embed.color = EmbedColor.POSITIVE.color
+                    embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
                 }
             }
         }
 
+        fun respondToForceSync(target: Member): suspend FollowupMessageCreateBuilder.() -> Unit {
+            return {
+                val roles = RolesService.updateRoles(target)
+
+                val embed = ApplicationService.embed
+
+                try {
+                    NicknameService.updateNickname(target, roles)
+
+                    embed.color = EmbedColor.Positive.color
+                    embed.description = "Username and roles of ${target.mention} were synced!"
+                } catch (notLinkedException: NotLinkedException) {
+                    embed.color = EmbedColor.Negative.color
+                    embed.description = "${target.mention} is not linked, their roles were synced!"
+                }
+
+                embeds = mutableListOf(embed)
+            }
+        }
+
         publicSlashCommand(::ForceSyncArguments) {
             name = "force-sync"
             description = "Forces the update of the users roles and nickname."
-            defaultMemberPermissions = Permissions(Permission.ManageNicknames)
+            defaultMemberPermissions = Permissions(Permission.ManageNicknames, Permission.ManageRoles)
             allowInDms = false
 
             action {
                 respond {
                     val target = arguments.user.asMember(guild!!.id)
 
-                    val roles = RolesService.updateRoles(target)
+                    respondToForceSync(target)()
+                }
+            }
+        }
 
-                    val embed = ApplicationService.embed
+        publicUserCommand {
+            name = "Force Sync"
+            allowInDms = false
+            defaultMemberPermissions = Permissions(Permission.ManageNicknames, Permission.ManageRoles)
 
-                    try {
-                        NicknameService.updateNickname(target, roles)
+            action {
+                respond {
+                    val target = targetUsers.first().asMember(guild!!.id)
 
-                        embed.color = EmbedColor.POSITIVE.color
-                        embed.description = "Username and roles were synced!"
-                    } catch (notLinkedException: NotLinkedException) {
-                        embed.color = EmbedColor.NEGATIVE.color
-                        embed.description = "The user is not linked, their roles were synced!"
-                    }
-
-                    embeds = mutableListOf(embed)
+                    respondToForceSync(target)()
                 }
             }
         }
@@ -247,14 +278,14 @@ class LinkingSystem : Extension() {
                         MojangConnection.getInstance()
                             .getNameByUUID(oldUserModel.minecraftId)
                     }`."
-                    embed.color = EmbedColor.POSITIVE.color
+                    embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
                 }
 
                 val user = user.asUser()
 
-                val roles: Map<Long, List<Role>> = RolesService.updateRoles(user)
+                val roles = RolesService.updateRoles(user)
 
                 NicknameService.updateNickname(user, roles)
             }
@@ -273,10 +304,10 @@ class LinkingSystem : Extension() {
 
                     channel.createMessage {
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.DEFAULT.color
+                        embed.color = EmbedColor.Default.color
                         embed.title = "Linking"
                         embed.description =
-                            "Please link to your Minecraft account using the buttons below.\nRemember to never give out the email connected to your Microsoft account and to never click any links!\nCheck this video if you're still unsure if messages similar to this are legit: https://youtu.be/WRRIOkM8oe8?t=743&si=oc71yA9h-XJUsGpX"
+                            "Please link to your Minecraft account using the buttons below.\nRemember to never give out the email connected to your Microsoft account and to never click any links!\n\nCheck out this video if you're still unsure if messages similar to this are legit: https://youtu.be/WRRIOkM8oe8?t=743&si=oc71yA9h-XJUsGpX"
                         embeds = mutableListOf(embed)
 
                         actionRow {
@@ -289,7 +320,7 @@ class LinkingSystem : Extension() {
                     }
 
                     val embed = ApplicationService.embed
-                    embed.color = EmbedColor.POSITIVE.color
+                    embed.color = EmbedColor.Positive.color
                     embed.description = "Trying to send message..."
                     embeds = mutableListOf(embed)
                 }
@@ -318,10 +349,32 @@ class LinkingSystem : Extension() {
                         MojangConnection.getInstance().getNameByUUID(uuid)
 
                     val embed = ApplicationService.embed
-                    embed.color = EmbedColor.POSITIVE.color
+                    embed.color = EmbedColor.Positive.color
                     embed.description = "The given user has the IGN `$ign`."
-                    embed.image = "https://crafatar.com/avatars/${uuid.toString().replace("-", "")}?size=32&overlay"
+                    embed.thumbnail {
+                        url = "https://visage.surgeplay.com/face/${uuid.toString().replace("-", "")}"
+                    }
                     embeds = mutableListOf(embed)
+                }
+            }
+        }
+
+        publicSlashCommand(::SingleIgnArguments) {
+            name = "find-user"
+            description = "Shows which user is linked to the given IGN."
+
+            action {
+                respond {
+                    val uuid = MojangConnection.getInstance().getUUIDByName(arguments.ign)
+
+                    val userModel = DiscordUserConnection.getInstance()
+                        .findUserByUuid(uuid)
+                        .orElseThrow { CommandExecutionWarning("Couldn't find who the given user is linked to.") }
+
+                    addEmbed {
+                        color(EmbedColor.Positive)
+                        description = "The given player is linked to user <@${userModel.id}>."
+                    }
                 }
             }
         }
@@ -348,7 +401,7 @@ class LinkingSystem : Extension() {
                         if (linkedTo.isPresent) {
                             event.interaction.respondEphemeral {
                                 val embed = ApplicationService.embed
-                                embed.color = EmbedColor.INFORMATION.color
+                                embed.color = EmbedColor.Information.color
                                 embed.description = "You're already linked to user `${
                                     MojangConnection.getInstance()
                                         .getNameByUUID(linkedTo.get())
@@ -402,7 +455,7 @@ class LinkingSystem : Extension() {
                 val ign = event.interaction.textInputs["ign"]?.value?.let { it.ifBlank { null } }
 
                 if (ign == null) {
-                    throw InvalidOptionException(
+                    throw InvalidOptionWarning(
                         "ign",
                         "Please enter a valid Ingame-Name."
                     )
@@ -413,8 +466,8 @@ class LinkingSystem : Extension() {
                 val response: InteractionResponseCreateBuilder.() -> Unit = {
                     val embed = ApplicationService.embed
                     embed.title = "Linked successfully"
-                    embed.description = "Your UUID is now `$linkedId`"
-                    embed.color = EmbedColor.POSITIVE.color
+                    embed.description = "${event.interaction.user.mention}, your UUID is now `$linkedId`"
+                    embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
                 }
@@ -433,20 +486,24 @@ class LinkingSystem : Extension() {
 
         event<MemberJoinEvent> {
             action {
-                val roles = RolesService.updateRoles(event.member)
+                val linkedUser = DiscordUserConnection.getInstance().getLinkedById(event.member.id.value.toLong())
 
-                try {
-                    NicknameService.updateNickname(event.member, roles)
-                } catch (ignored: NoNameSchemaException) {
-                    //ignore, just don't do anything then
-                } catch (ignored: NotLinkedException) {
-                    //ignore, no name has to be applied
+                if (linkedUser.isEmpty) {
+                    return@action
+                }
+
+                thread(start = true) {
+                    runBlocking {
+                        val roles: List<Role> = RolesService.updateRoles(event.member)
+
+                        NicknameService.updateNickname(event.member, roles)
+                    }
                 }
             }
         }
     }
 
-    inner class LinkArguments : Arguments() {
+    inner class SingleIgnArguments : Arguments() {
         val ign by string {
             name = "ign"
             description = "The users ingame-name"

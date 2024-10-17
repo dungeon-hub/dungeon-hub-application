@@ -161,4 +161,46 @@ object RolesService {
 
         return roles
     }
+
+    suspend fun removeRoleGroup(member: Member, roleGroupId: Long) {
+        var userRoles = member.roleIds.toMutableSet()
+
+        val roleGroups = DiscordRoleGroupConnection.getInstance(member.guild.id.value.toLong()).all.orElse(listOf())
+
+        var lastRoles = 0
+        while (lastRoles != userRoles.size) {
+            lastRoles = userRoles.size
+
+            userRoles = removeRoleGroups(userRoles, roleGroups, setOf(roleGroupId))
+        }
+
+        member.edit {
+            roles = userRoles
+        }
+    }
+
+    private fun removeRoleGroups(
+        userRoles: MutableSet<Snowflake>,
+        roleGroups: List<DiscordRoleGroupModel>,
+        removeRoleGroups: Set<Long>
+    ): MutableSet<Snowflake> {
+        if(removeRoleGroups.isEmpty()) {
+            return userRoles
+        }
+
+        val newRoleGroups = roleGroups.stream().filter {
+            userRoles.contains(Snowflake(it.discordRole.id)) || userRoles.contains(Snowflake(it.roleGroup.id))
+        }.toList()
+
+        val toRemove = roleGroups.stream()
+            .filter { roleGroup ->
+                removeRoleGroups.any { roleGroup.roleGroup.id == it }
+            }
+            .map { Snowflake(it.discordRole.id) }
+            .collect(Collectors.toSet())
+
+        userRoles.removeAll(toRemove)
+
+        return removeRoleGroups(userRoles, newRoleGroups, toRemove.map { it.value.toLong() }.toSet())
+    }
 }

@@ -1,15 +1,15 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
-import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.attachment
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
-import com.kotlindiscord.kord.extensions.components.components
-import com.kotlindiscord.kord.extensions.components.linkButton
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
+import dev.kordex.core.commands.application.slash.ephemeralSubCommand
+import dev.kordex.core.commands.converters.impl.attachment
+import dev.kordex.core.commands.converters.impl.optionalString
+import dev.kordex.core.components.components
+import dev.kordex.core.components.linkButton
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.ephemeralSlashCommand
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
@@ -20,6 +20,13 @@ import me.taubsie.dungeonhub.application.service.ApplicationService
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 
+/**
+ * A command to access the CDN using the slash command /cdn.
+ * This command is only available to a few users: @see [allowedUsers]
+ * The command has two subcommands:
+ * - `add`: Add a file to the CDN.
+ * - `static`: Get a static file from the CDN.
+ */
 @LoadExtension
 class CdnCommand : Extension() {
     override val name = "cdn-command"
@@ -74,7 +81,7 @@ class CdnCommand : Extension() {
 
                             embedBuilder = ApplicationService.embed
                             embedBuilder.title = "File added."
-                            embedBuilder.color = EmbedColor.POSITIVE.color
+                            embedBuilder.color = EmbedColor.Positive.color
                             embedBuilder.image = url
                             embedBuilder.footer {
                                 text = ApplicationService.unstableFooter
@@ -109,7 +116,7 @@ class CdnCommand : Extension() {
                                 .getStaticUrl(arguments.resource.path).toString()
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.POSITIVE.color
+                        embed.color = EmbedColor.Positive.color
                         embed.title = "Static resource"
                         embed.field("Name", true) { arguments.resource.loadDisplayName() }
                         embed.field("File name", true) { arguments.resource.getName() }

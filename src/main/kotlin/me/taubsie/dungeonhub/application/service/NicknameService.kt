@@ -40,7 +40,7 @@ import java.util.stream.Collectors
 </pre> *
  */
 object NicknameService {
-    @Throws(CommandExecutionException::class)
+    @Throws(CommandExecutionWarning::class)
     fun linkToIgn(ign: String, user: User): UUID {
         val uuid = MojangConnection.getInstance().getUUIDByName(ign)
 
@@ -48,7 +48,7 @@ object NicknameService {
         val username = user.tag
 
         if (hypixelName.isEmpty) {
-            throw InvalidOptionException(
+            throw InvalidOptionWarning(
                 "ign", """
      Please add the correct discord-account (`${user.username}`) to your hypixel social menu.
      To learn more about how to do this, use `/help verification`.
@@ -57,7 +57,7 @@ object NicknameService {
         }
 
         if (!hypixelName.get().equals(username, ignoreCase = true)) {
-            throw HypixelLinkedToOtherException(
+            throw HypixelLinkedToOtherWarning(
                 ign,
                 hypixelName.get(),
                 user.username
@@ -81,15 +81,14 @@ object NicknameService {
      * the [.updateNickname] method for each server.
      *
      * @param user the Discord user for whom to update the nickname on all mutual servers
-     * @throws NoNameSchemaException if no valid role with a non-blank name schema is found while updating the nickname
-     * @throws NullPointerException  if the user is `null`
+     * @throws NoNameSchemaWarning if no valid role with a non-blank name schema is found while updating the nickname
      */
     suspend fun updateNickname(user: User, roles: Map<Long, List<Role>>) {
         user.getMutualServers().collect { member: Member ->
             val serverRoles = roles.getOrDefault(member.guild.id.value.toLong(), null)
             try {
                 updateNickname(member, serverRoles)
-            } catch (ignored: NoNameSchemaException) {
+            } catch (ignored: NoNameSchemaWarning) {
                 //ignored, just don't set a username
             }
         }
@@ -103,11 +102,10 @@ object NicknameService {
      * validates the user's link status, and then calls the [.updateNickname] method.
      *
      * @param member  the discord server member for whom to update the nickname
-     * @throws NoNameSchemaException if no valid role with a non-blank name schema is found while updating the nickname
+     * @throws NoNameSchemaWarning if no valid role with a non-blank name schema is found while updating the nickname
      * @throws NotLinkedException    if the user is not linked to a Minecraft account
-     * @throws NullPointerException  if the user or server is `null`
      */
-    @Throws(NoNameSchemaException::class, NotLinkedException::class)
+    @Throws(NoNameSchemaWarning::class, NotLinkedException::class)
     suspend fun updateNickname(member: Member, serverRoles: List<Role>?) {
         val discordUserModel =
             DiscordUserConnection.getInstance()
@@ -128,9 +126,9 @@ object NicknameService {
      *
      * @param member           the discord server member for whom to update the nickname
      * @param discordUserModel the Discord user model providing additional information
-     * @throws NoNameSchemaException if no valid role with a non-blank name schema is found while determining the role model
+     * @throws NoNameSchemaWarning if no valid role with a non-blank name schema is found while determining the role model
      */
-    @Throws(NoNameSchemaException::class)
+    @Throws(NoNameSchemaWarning::class)
     suspend fun updateNickname(member: Member, discordUserModel: DiscordUserModel, serverRoles: List<Role>?) {
         val roles: List<Role> = serverRoles ?: member.roles.toList()
         val sortedRoles = roles.sortedWith(
@@ -197,12 +195,12 @@ object NicknameService {
      *
      * The `getRoleModel` method takes a Discord server and a list of roles as input, retrieves the associated role models
      * for the server, and finds the first valid role in the list using the [.validateRole] predicate. If a valid role is
-     * found, the corresponding DiscordRoleModel is returned; otherwise, a [NoNameSchemaException] is thrown.
+     * found, the corresponding DiscordRoleModel is returned; otherwise, a [NoNameSchemaWarning] is thrown.
      *
      * @param member the discord server member for which to retrieve role models and validate roles
      * @param roles  the list of roles to be validated and for which to find the corresponding role model
      * @return the DiscordRoleModel of the first valid role in the list
-     * @throws NoNameSchemaException if no valid role with a non-blank name schema is found
+     * @throws NoNameSchemaWarning if no valid role with a non-blank name schema is found
      * @throws NullPointerException  if the server or roles are `null`
      */
     @Contract(pure = true)
@@ -210,7 +208,7 @@ object NicknameService {
         val discordRoles = getRoleModels(member.guild)
         val toModel = Function { role: Role -> discordRoles[role.id.value.toLong()] }
         val roleOptional = roles.parallelStream().filter(validateRole(discordRoles)).findFirst()
-        return roleOptional.map(toModel).orElseThrow { NoNameSchemaException() }!!
+        return roleOptional.map(toModel).orElseThrow { NoNameSchemaWarning() }!!
     }
 
     /**
@@ -245,4 +243,21 @@ object NicknameService {
         return Collectors.toMap({ obj: DiscordRoleModel -> obj.id },
             { discordRoleModel: DiscordRoleModel -> discordRoleModel })
     }
+}
+
+//TODO move to connection?
+fun User.getUUIDOrNull(): UUID? {
+    return DiscordUserConnection.getInstance()
+        .getById(id.value.toLong())
+        .map { it.minecraftId }
+        .orElse(null)
+}
+
+@Throws(NotLinkedException::class)
+fun User.getUUID(): UUID {
+    return getUUIDOrNull() ?: throw NotLinkedException()
+}
+
+fun UUID.fetchIgn(): String {
+    return MojangConnection.getInstance().getNameByUUID(this)
 }

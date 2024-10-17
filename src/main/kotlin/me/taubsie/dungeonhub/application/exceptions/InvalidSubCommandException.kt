@@ -1,4 +1,4 @@
 package me.taubsie.dungeonhub.application.exceptions
 
-//TODO remove?
-class InvalidSubCommandException : me.taubsie.dungeonhub.application.exceptions.CommandExecutionException("Unknown or missing sub-command")
+//TODO remove once carry difficulty is fully implemented
+class InvalidSubCommandException : CommandExecutionException("Unknown or missing sub-command")

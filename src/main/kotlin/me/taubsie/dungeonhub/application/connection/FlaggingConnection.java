@@ -1,15 +1,21 @@
 package me.taubsie.dungeonhub.application.connection;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.application.enums.FlaggingApi;
 import me.taubsie.dungeonhub.application.misc.FlagDetail;
 import me.taubsie.dungeonhub.application.misc.FlagResponse;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +24,9 @@ import java.util.UUID;
 public class FlaggingConnection implements Connection {
     private static final Logger logger = LoggerFactory.getLogger(FlaggingConnection.class);
     private static FlaggingConnection instance;
+
+    private Instant lastBlockGameRefresh;
+    private List<JsonObject> blockGameData;
 
     public static FlaggingConnection getInstance() {
         if (instance == null) {
@@ -32,18 +41,80 @@ public class FlaggingConnection implements Connection {
         return logger;
     }
 
-    public List<FlagResponse> isFlagged(Long id) {
+    public List<FlagResponse> isFlagged(@Nullable Long id) {
         return isFlagged(null, id);
     }
 
-    public List<FlagResponse> isFlagged(UUID uuid) {
+    public List<FlagResponse> isFlagged(@Nullable UUID uuid) {
         return isFlagged(uuid, null);
     }
 
-    public List<FlagResponse> isFlagged(UUID uuid, Long id) {
+    public List<FlagResponse> isFlagged(@Nullable UUID uuid, @Nullable Long id) {
         return FlaggingApi.getEntries().stream()
                 .parallel()
                 .map(flaggingApi -> flaggingApi.execute(uuid, id))
+                .toList();
+    }
+
+    public Optional<FlagDetail> isBlockGameFlagged(Long id) {
+        if (lastBlockGameRefresh == null
+                || blockGameData == null
+                || lastBlockGameRefresh.isBefore(Instant.now().minus(5, ChronoUnit.MINUTES))) {
+            refreshBlockGameData();
+        }
+
+        return blockGameData.parallelStream()
+                .filter(jsonObject -> jsonObject.has("id")
+                        && jsonObject.get("id").isJsonPrimitive()
+                        && jsonObject.getAsJsonPrimitive("id").getAsLong() == id)
+                .findFirst()
+                .map(this::loadFlagDetailFromBlockGameData);
+    }
+
+    private FlagDetail loadFlagDetailFromBlockGameData(JsonObject blockGameData) {
+        StringBuilder reason = new StringBuilder();
+
+        JsonPrimitive scammedAmount = blockGameData.getAsJsonPrimitive("scammed");
+        JsonPrimitive method = blockGameData.getAsJsonPrimitive("method");
+
+        if(scammedAmount != null && scammedAmount.isString()) {
+            reason.append("(").append(scammedAmount.getAsString()).append(")");
+
+            if(method != null && method.isString()) {
+                reason.append(" -> ");
+            }
+        }
+
+        if(method != null && method.isString()) {
+            reason.append(method.getAsString());
+        }
+
+
+        return FlagDetail.FlagDetailBuilder.builder()
+                .flagged(true)
+                .reason(reason.toString())
+                .build();
+    }
+
+    public void refreshBlockGameData() {
+        lastBlockGameRefresh = Instant.now();
+
+        HttpUrl httpUrl = HttpUrl.get("https://block.lenny.ie/scammers");
+
+        Request request = new Request.Builder()
+                .url(httpUrl)
+                .get()
+                .build();
+
+        JsonArray jsonArray = executeRequest(request, s -> fromJson(s, JsonArray.class))
+                .orElse(null);
+
+        if (jsonArray == null) {
+            return;
+        }
+
+        blockGameData = jsonArray.asList().parallelStream()
+                .map(JsonElement::getAsJsonObject)
                 .toList();
     }
 

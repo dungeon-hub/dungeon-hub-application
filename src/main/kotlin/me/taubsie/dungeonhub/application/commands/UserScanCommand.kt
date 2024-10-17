@@ -1,11 +1,5 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.checks.hasPermission
-import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
-import com.kotlindiscord.kord.extensions.components.components
-import com.kotlindiscord.kord.extensions.components.ephemeralButton
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
@@ -15,6 +9,12 @@ import dev.kord.core.entity.User
 import dev.kord.core.entity.effectiveName
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
+import dev.kordex.core.checks.hasPermission
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.components.components
+import dev.kordex.core.components.ephemeralButton
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -65,7 +65,7 @@ class UserScanCommand : Extension() {
 
         for (member in guild.members.toList()) {
             if (!member.isBot) {
-                val checkResult = ProfileModerationService.checkUserName(member.globalName)
+                val checkResult = ProfileModerationService.checkUserName(member.globalName ?: member.username)
                 if (checkResult != null) {
                     if (ProfileModerationService.isExcluded(member)) {
                         excluded[member] = checkResult
@@ -83,7 +83,7 @@ class UserScanCommand : Extension() {
         }
 
         val embed = ApplicationService.embed
-        embed.color = EmbedColor.NEGATIVE.color
+        embed.color = EmbedColor.Negative.color
         embed.description = ((if (ban) "Banned" else "Flagged")
                 + ":\n" + result.entries
             .stream()

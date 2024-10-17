@@ -1,6 +1,6 @@
 package me.taubsie.dungeonhub.application.config
 
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
+import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import lombok.Getter
 import java.util.*
 import java.util.stream.Collectors

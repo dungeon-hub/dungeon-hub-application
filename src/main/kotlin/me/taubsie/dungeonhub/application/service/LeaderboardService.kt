@@ -1,6 +1,7 @@
 package me.taubsie.dungeonhub.application.service
 
 import dev.kord.common.entity.Snowflake
+import dev.kord.common.exception.RequestException
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.channel.GuildMessageChannel
@@ -22,7 +23,6 @@ import me.taubsie.dungeonhub.application.loader.StartupListener
 import me.taubsie.dungeonhub.application.misc.Leaderboard
 import me.taubsie.dungeonhub.application.service.ApplicationService.embed
 import me.taubsie.dungeonhub.application.service.ApplicationService.footer
-import me.taubsie.dungeonhub.common.DungeonHubService
 import me.taubsie.dungeonhub.common.enums.ScoreType
 import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
 import me.taubsie.dungeonhub.common.model.score.LeaderboardModel
@@ -59,9 +59,9 @@ object LeaderboardService : StartupListener {
         val embed = embed
         embed.title = title
         embed.description = LEADERBOARD_DESCRIPTION
-        embed.color = EmbedColor.DEFAULT.color
+        embed.color = EmbedColor.Default.color
 
-        var counter = DungeonHubService.getInstance().getOffsetFromPageNumber(leaderboardModel.page)
+        var counter = ApplicationService.getOffsetFromPageNumber(leaderboardModel.page)
 
         for (score in leaderboardModel.scores) {
             embed.field(
@@ -89,7 +89,7 @@ object LeaderboardService : StartupListener {
     fun getEmptyLeaderboardEmbed(title: String?): EmbedBuilder {
         val embed = embed
         embed.title = title
-        embed.color = EmbedColor.NEGATIVE.color
+        embed.color = EmbedColor.Negative.color
         embed.description = """
              No score has been gained yet!
              $LEADERBOARD_DESCRIPTION
@@ -137,7 +137,7 @@ object LeaderboardService : StartupListener {
 
         runBlocking {
             launch {
-                val message = channel.messages.filter { message -> message.author?.kord?.selfId == message.author?.id }
+                val message = channel.messages.filter { message -> message.kord.selfId == message.author?.id }
                     .firstOrNull()
 
                 if (message == null) {
@@ -179,11 +179,15 @@ object LeaderboardService : StartupListener {
                 val leaderboardChannel = carryType.leaderboardChannel
                     .flatMap { id: Long? ->
                         runBlocking {
-                            Optional.ofNullable(
-                                DiscordConnection.bot
-                                    ?.kordRef
-                                    ?.getChannelOf<GuildMessageChannel>(Snowflake(id!!))
-                            )
+                            try {
+                                return@runBlocking Optional.ofNullable(
+                                    DiscordConnection.bot
+                                        ?.kordRef
+                                        ?.getChannelOf<GuildMessageChannel>(Snowflake(id!!))
+                                )
+                            } catch (exception: RequestException) {
+                                return@runBlocking Optional.empty()
+                            }
                         }
                     }
 
@@ -222,11 +226,15 @@ object LeaderboardService : StartupListener {
                 .flatMap { id: String? ->
                     try {
                         runBlocking {
-                            return@runBlocking Optional.ofNullable(
-                                DiscordConnection.bot
-                                    ?.kordRef
-                                    ?.getChannelOf<GuildMessageChannel>(Snowflake(id!!))
-                            )
+                            try {
+                                return@runBlocking Optional.ofNullable(
+                                    DiscordConnection.bot
+                                        ?.kordRef
+                                        ?.getChannelOf<GuildMessageChannel>(Snowflake(id!!))
+                                )
+                            } catch (exception: RequestException) {
+                                return@runBlocking Optional.empty()
+                            }
                         }
                     } catch (completionException: CompletionException) {
                         return@flatMap Optional.empty()

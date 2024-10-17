@@ -1,6 +1,6 @@
 package me.taubsie.dungeonhub.application.enums
 
-import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
+import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import me.taubsie.dungeonhub.application.service.ServerService.getActualServerProperty
 import me.taubsie.dungeonhub.common.Nameable
 import java.util.*
@@ -69,7 +69,7 @@ enum class ServerProperty(
     companion object {
         fun getPropertyByName(name: String?): Optional<ServerProperty> {
             return Arrays.stream(entries.toTypedArray())
-                .filter { serverProperty: ServerProperty -> serverProperty.getName().equals(name, ignoreCase = true) }
+                .filter { serverProperty: ServerProperty -> serverProperty.name.equals(name, ignoreCase = true) }
                 .findAny()
         }
     }

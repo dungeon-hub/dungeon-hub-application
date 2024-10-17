@@ -2,42 +2,56 @@ package me.taubsie.dungeonhub.application.connection
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.kotlindiscord.kord.extensions.ExtensibleBot
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.channel.asChannelOfOrNull
-import dev.kord.core.entity.Guild
-import dev.kord.core.entity.Member
-import dev.kord.core.entity.Message
-import dev.kord.core.entity.User
+import dev.kord.core.cache.data.toData
+import dev.kord.core.entity.*
+import dev.kord.core.entity.Embed.*
 import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.core.event.gateway.ReadyEvent
+import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kord.core.supplier.RestEntitySupplier
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.gateway.builder.PresenceBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kord.rest.builder.message.embed
+import dev.kord.rest.request.RestRequestException
+import dev.kordex.core.ExtensibleBot
+import dev.kordex.data.api.DataCollection
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.getTotalAmountOfMoneySpent
+import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.listener.ServerJoinListener
 import me.taubsie.dungeonhub.application.loader.ClassLoader
 import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartPriority
 import me.taubsie.dungeonhub.application.loader.StartupListener
+import me.taubsie.dungeonhub.application.misc.EmbedModel
 import me.taubsie.dungeonhub.application.service.ApplicationService
+import me.taubsie.dungeonhub.application.service.color
 import me.taubsie.dungeonhub.common.DungeonHubService
+import net.dungeonhub.wrapper.kord.toJavaColor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.sql.Time
+import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.regex.Pattern
+import kotlin.time.toKotlinDuration
 
 /**
  * This is the main-class for the application.
@@ -56,7 +70,7 @@ object DiscordConnection : StartupListener {
         AppearanceType.Custom to {
             "Handling ${
                 DiscordUserConnection.getInstance()
-                    .countLinkedUsers().orElse("0")
+                    .countLinkedUsers().orElse(0)
             } linked users!"
         },
         AppearanceType.Watching to {
@@ -88,26 +102,22 @@ object DiscordConnection : StartupListener {
             "Remember to close and /log"
         },
         AppearanceType.Listening to {
-            val diff = Instant.now().toEpochMilli() - uptime.toEpochMilli()
-
-            val diffSeconds = diff / 1000 % 60
-            val diffMinutes = diff / (60 * 1000) % 60
-            val diffHours = diff / (60 * 60 * 1000) % 24
-            val diffDays = diff / (24 * 60 * 60 * 1000)
-
-            val time = if (diffDays > 0) {
-                "$diffDays days"
-            } else if (diffHours > 0) {
-                "$diffHours hours"
-            } else if (diffMinutes > 0) {
-                "$diffMinutes minutes"
-            } else if (diffSeconds > 0) {
-                "$diffSeconds seconds"
-            } else {
-                "just now"
-            }
+            val time = Duration.between(uptime, Instant.now())
+                .withNanos(0)
+                .withSeconds(0)
+                .toKotlinDuration()
+                .toString()
 
             "discord events since $time"
+        },
+        AppearanceType.Custom to {
+            val amount = try {
+                DiscordServerConnection.getInstance().getTotalAmountOfMoneySpent(693263712626278553L)
+            } catch (commandExecutionException: CommandExecutionException) {
+                0
+            }
+
+            "${ApplicationService.makeNumberReadable(amount)} coins spent on Dungeon Hub!"
         }
     )
 
@@ -163,9 +173,27 @@ object DiscordConnection : StartupListener {
      */
     override suspend fun preStart() {
         bot = ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value!!) {
+            dataCollectionMode = DataCollection.Extra
+
+            about {
+                general {
+                    ephemeral = true
+
+                    message {
+                        embed {
+                            color(EmbedColor.Default)
+                            title = "Dungeon Hub"
+                            description = "Soon you can see more here!"
+                        }
+                    }
+                }
+            }
+
             errorResponse { message, type ->
                 embeds = if (type.error is CommandExecutionException) {
                     mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionException))
+                } else if (type.error is CommandExecutionWarning) {
+                    mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionWarning))
                 } else {
                     val embed = ApplicationService.getErrorEmbed(CommandExecutionException(type.error))
                     if (message.isNotBlank()) {
@@ -216,7 +244,9 @@ object DiscordConnection : StartupListener {
         message.add("Im on servers:")
         message.addAll(
             bot?.kordRef?.guilds?.map { server ->
-                "${server.name} with id '${server.id}' by ${server.getOwnerOrNull()?.effectiveName ?: "no-name"} (${server.ownerId})"
+                "${server.name} with id '${server.id}' by ${
+                    server.withStrategy(EntitySupplyStrategy.cache).getOwnerOrNull()?.effectiveName ?: "no-name"
+                } (${server.ownerId})"
             }!!.toList()
         )
 
@@ -234,15 +264,15 @@ object DiscordConnection : StartupListener {
 
             val appearance = possibleAppearances[currentAppearance]
 
-            appearance.first.apply(appearance.second())()
+            try {
+                appearance.first.apply(appearance.second())()
+            } catch (exception: Exception) {
+                logger.error("Error during reset of appearance.", exception)
+            }
         }
     }
 
     override suspend fun onStart() {
-        logger.info(LINE)
-        getServerListMessage().forEach(logger::info)
-        logger.info(LINE)
-
         ServerJoinListener.GUILD_ON_JOIN.addAll(
             bot?.kordRef?.guilds?.map { guild ->
                 guild.id.value
@@ -251,19 +281,17 @@ object DiscordConnection : StartupListener {
     }
 
     override suspend fun postStart() {
+        logger.info(LINE)
+        getServerListMessage().forEach(logger::info)
+        logger.info(LINE)
+
         Timer().scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
                 runBlocking {
                     resetBotAppearance()
                 }
             }
-        }, Time(System.currentTimeMillis() + 1000), 1000 * 60 * 2)
-
-        //TODO delete this once complete
-        //do this to reset commands on all servers
-        ServerJoinListener.GUILD_ON_JOIN.forEach {
-            bot?.kordRef?.createGuildApplicationCommands(Snowflake(it)) {}?.collect()
-        }
+        }, Time(System.currentTimeMillis() + 5000), 1000 * 60 * 30)
     }
 }
 
@@ -392,6 +420,97 @@ fun EmbedBuilder.applyJson(key: String, value: JsonElement) {
     }
 }
 
+fun Embed.toBuilder(): EmbedBuilder {
+    val embed = EmbedBuilder()
+
+    embed.title = title
+    embed.description = description
+    embed.url = url
+    embed.timestamp = timestamp
+    embed.color = color
+    embed.image = image?.url
+    embed.footer = footer?.toBuilder()
+    embed.thumbnail = thumbnail?.toBuilder()
+    embed.author = author?.toBuilder()
+    embed.fields = fields.map { it.toBuilder() }.toMutableList()
+
+    return embed
+}
+
+fun Author.toBuilder(): EmbedBuilder.Author {
+    val author = EmbedBuilder.Author()
+
+    author.name = name
+    author.url = url
+    author.icon = iconUrl
+
+    return author
+}
+
+fun Field.toBuilder(): EmbedBuilder.Field {
+    val field = EmbedBuilder.Field()
+
+    field.name = name
+    field.inline = inline
+    field.value = value
+
+    return field
+}
+
+fun Embed.toModel(): EmbedModel {
+    val embed = EmbedModel(
+        title,
+        description,
+        url,
+        timestamp?.toJavaInstant(),
+        color?.toJavaColor(),
+        image?.url,
+        footer?.toBuilder(),
+        thumbnail?.toBuilder(),
+        author?.toModel()
+    )
+
+    embed.fields = fields.map { it.toModel() }.toMutableList()
+
+    return embed
+}
+
+fun Footer.toBuilder(): EmbedBuilder.Footer {
+    val footer = EmbedBuilder.Footer()
+
+    footer.text = text
+    footer.icon = iconUrl
+
+    return footer
+}
+
+fun Thumbnail.toBuilder(): EmbedBuilder.Thumbnail? {
+    val url = url ?: return null
+
+    val thumbnail = EmbedBuilder.Thumbnail()
+
+    thumbnail.url = url
+
+    return thumbnail
+}
+
+fun Author.toModel(): EmbedModel.Author {
+    return EmbedModel.Author(name, url, iconUrl)
+}
+
+fun Field.toModel(): EmbedModel.Field {
+    return EmbedModel.Field(name, inline, value)
+}
+
 fun User.isSelf(): Boolean {
     return id == kord.selfId
+}
+
+suspend fun RestEntitySupplier.getGuildOrNull(id: Snowflake, withCounts: Boolean = false): Guild? {
+    return try {
+        Guild(kord.rest.guild.getGuild(id, withCounts).toData(), kord)
+    } catch (exception: RestRequestException) {
+        if (exception.status.code == 404) null
+        else throw exception
+    }
 }

@@ -6,10 +6,18 @@ import me.taubsie.dungeonhub.common.DungeonHubService;
 import me.taubsie.dungeonhub.common.model.JwtTokenModel;
 import okhttp3.FormBody;
 import okhttp3.Request;
+import okhttp3.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Optional;
 
 public class AuthorizationConnection {
+    private static final Logger logger = LoggerFactory.getLogger(AuthorizationConnection.class);
+
     private static AuthorizationConnection instance;
     private JwtTokenModel jwtToken;
 
@@ -50,8 +58,33 @@ public class AuthorizationConnection {
                 .post(requestBody)
                 .build();
 
-        //TODO maybe write own request, since in case of errors this could leak the credentials
-        String resultString = DungeonHubConnection.getInstance().executeRequest(request).orElseThrow();
+        Optional<String> responseBody;
+
+        try (Response response = DungeonHubConnection.getInstance().getHttpClient().newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                responseBody = Optional.ofNullable(response.body()).map(body -> {
+                    try {
+                        return body.bytes();
+                    }
+                    catch (IOException ioException) {
+                        return null;
+                    }
+                }).map(bytes -> new String(bytes, StandardCharsets.UTF_8));
+            } else {
+                responseBody = Optional.empty();
+            }
+        }
+        catch (IOException ioException) {
+            logger.error(null, ioException);
+            responseBody = Optional.empty();
+        }
+
+
+
+
+
+
+        String resultString = responseBody.orElseThrow();
         JsonObject result = DungeonHubService.getInstance().getGson().fromJson(resultString, JsonObject.class);
 
         String token = result.getAsJsonPrimitive("access_token").getAsString();

@@ -1,9 +1,9 @@
 package me.taubsie.dungeonhub.application.listener
 
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.event
-import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.core.event.guild.GuildDeleteEvent
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.event
+import dev.kordex.core.utils.dm
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.ServerService
@@ -28,7 +28,6 @@ class ServerLeaveListener : Extension() {
                     ownerName,
                     event.guild?.ownerId ?: "unknown"
                 )
-
 
                 ApplicationService.getBotOwner(kord)?.dm(
                     "I just left server `${event.guild?.name}` by $ownerName (<@${event.guild?.ownerId}>)."

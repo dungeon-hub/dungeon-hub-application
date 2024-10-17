@@ -1,10 +1,11 @@
 package me.taubsie.dungeonhub.application.exceptions
 
 import dev.kord.core.Kord
-import dev.kord.core.behavior.channel.createMessage
-import kotlinx.coroutines.launch
+import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kordex.core.utils.dm
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
+import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import org.apache.logging.log4j.core.Appender
@@ -17,6 +18,7 @@ import org.apache.logging.log4j.core.config.plugins.Plugin
 import org.apache.logging.log4j.core.config.plugins.PluginAttribute
 import org.apache.logging.log4j.core.config.plugins.PluginElement
 import org.apache.logging.log4j.core.config.plugins.PluginFactory
+import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.stream.Collectors
 
@@ -25,25 +27,49 @@ import java.util.stream.Collectors
 open class ExceptionAppender protected constructor(name: String?, filter: Filter?) :
     AbstractAppender(name, filter, null, true, Property.EMPTY_ARRAY) {
     override fun append(logEvent: LogEvent) {
+        if (logEvent.thrown is CommandExecutionWarning) {
+            return
+        }
+
         val embed = ApplicationService.embed
-        embed.color = EmbedColor.NEGATIVE.color
+        embed.color = EmbedColor.Negative.color
+        val title = logEvent.message.formattedMessage
+
+        if (title.length < (EmbedBuilder.Limits.title - 3)) {
+            embed.title = title
+        } else {
+            embed.title = "Title would be too long, see field"
+            embed.field("Title") {
+                ContentConnection.getInstance()
+                    .uploadFile(title.toByteArray(StandardCharsets.UTF_8))
+                    .map { s -> ContentConnection.getInstance().getCdnUrl(s).toString() }
+                    .orElse(title)
+            }
+        }
+
         embed.title = logEvent.message.formattedMessage
 
         if (logEvent.thrown != null) {
-            embed.description = getExceptionMessage(logEvent.thrown)
+            var description = getExceptionMessage(logEvent.thrown)
+
+            if (description != null && description.length > 4000) {
+                description = ContentConnection.getInstance()
+                    .uploadFile(description.toByteArray(StandardCharsets.UTF_8))
+                    .map { s -> ContentConnection.getInstance().getCdnUrl(s).toString() }
+                    .orElse(description)
+            }
+
+            embed.description = description
         }
 
         runBlocking {
-            launch {
-                val kord: Kord? = DiscordConnection.bot?.kordRef
+            val kord: Kord? = DiscordConnection.bot?.kordRef
 
-                if (kord != null) {
-                    ApplicationService.getBotOwner(kord)
-                        ?.getDmChannelOrNull()
-                        ?.createMessage {
-                            embeds = mutableListOf(embed)
-                        }
-                }
+            if (kord != null) {
+                ApplicationService.getBotOwner(kord)
+                    ?.dm {
+                        embeds = mutableListOf(embed)
+                    }
             }
         }
     }
@@ -53,7 +79,12 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
             return null
         }
 
-        val result = StringBuilder()
+        if (throwable.stackTrace.isEmpty()) {
+            throwable.fillInStackTrace()
+        }
+        return throwable.stackTraceToString()
+
+        /*val result = StringBuilder()
             .append("Caused by ")
             .append(throwable.javaClass.name)
             .append(": ")
@@ -68,11 +99,10 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
                 .append(nextMessage)
         }
 
-        return result.toString()
+        return result.toString()*/
     }
 
     private fun getStacktrace(throwable: Throwable): String {
-
         return Arrays.stream(throwable.stackTrace)
             .map { obj: StackTraceElement -> obj.toString() }
             .map { s: String -> "> $s" }

@@ -1,9 +1,9 @@
 package me.taubsie.dungeonhub.application.listener
 
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.event
 import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.user.UserUpdateEvent
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.event
 import me.taubsie.dungeonhub.application.connection.getMutualServers
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ProfileModerationService
@@ -19,7 +19,7 @@ class UserChangeListener : Extension() {
                     return@action
                 }
 
-                val result = ProfileModerationService.checkUserName(event.member.globalName)
+                val result = ProfileModerationService.checkUserName(event.member.globalName ?: event.member.username)
                 if (result != null) {
                     ProfileModerationService.handleUserBan(event.getGuild(), event.member, result)
                 }
@@ -33,7 +33,7 @@ class UserChangeListener : Extension() {
                         return@collect
                     }
 
-                    val result = ProfileModerationService.checkUserName(event.user.globalName)
+                    val result = ProfileModerationService.checkUserName(event.user.globalName ?: event.user.username)
 
                     if (result != null) {
                         ProfileModerationService.handleUserBan(member.guild.asGuild(), member, result)

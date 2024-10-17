@@ -1,9 +1,12 @@
 package me.taubsie.dungeonhub.application.service
 
-import com.kotlindiscord.kord.extensions.utils.dm
-import com.kotlindiscord.kord.extensions.utils.hasRole
 import dev.kord.common.entity.Snowflake
+import dev.kord.common.exception.RequestException
 import dev.kord.core.entity.Member
+import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kordex.core.utils.dm
+import dev.kordex.core.utils.hasRole
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
@@ -16,6 +19,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Time
 import java.util.*
+import kotlin.concurrent.thread
 
 @OnStart
 object PurgingService : StartupListener {
@@ -23,8 +27,6 @@ object PurgingService : StartupListener {
     private val purgeDataList: MutableList<PurgeData> = ArrayList()
     private val purgeEnabled: MutableList<Long> = ArrayList()
 
-    //TODO probably increase time to prevent it getting stuck and to have too many open threads.
-    //TODO also try limiting the amount of requests of the same purge type and maybe also to the same user
     override suspend fun postStart() {
         Timer().scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
@@ -102,15 +104,29 @@ object PurgingService : StartupListener {
                 purgeData.purgeType,
                 purgeData.purgeThreshold
             )
+
+            thread(start = true) {
+                runBlocking {
+                    delay(5000)
+
+                    val reloadedMember = member.withStrategy(EntitySupplyStrategy.cachingRest).fetchMember()
+
+                    RolesService.updateRoles(reloadedMember)
+                }
+            }
+
             if (rolesRemoved.isNotEmpty()) {
-                //TODO request exception
-                member.dm {
-                    val embed = ApplicationService.embed
-                    embed.color = EmbedColor.NEGATIVE.color
-                    embed.title = "Inactivity Purge"
-                    embed.description =
-                        "Your ${purgeData.purgeType.displayName}-carry roles on `${server.name}` were removed since you only reached ${purgeData.score}/${purgeData.purgeThreshold} score."
-                    embed.field("Roles removed", false) { rolesRemoved.joinToString(System.lineSeparator()) }
+                try {
+                    member.dm {
+                        val embed = ApplicationService.embed
+                        embed.color = EmbedColor.Negative.color
+                        embed.title = "Inactivity Purge"
+                        embed.description =
+                            "Your ${purgeData.purgeType.displayName}-carry roles on `${server.name}` were removed since you only reached ${purgeData.score}/${purgeData.purgeThreshold} score."
+                        embed.field("Roles removed", false) { rolesRemoved.joinToString(System.lineSeparator()) }
+                    }
+                } catch (_: RequestException) {
+                    // ignore since member doesn't need to know
                 }
             }
         }

@@ -1,14 +1,5 @@
 package me.taubsie.dungeonhub.application.commands
 
-import com.kotlindiscord.kord.extensions.commands.Arguments
-import com.kotlindiscord.kord.extensions.commands.converters.impl.long
-import com.kotlindiscord.kord.extensions.commands.converters.impl.string
-import com.kotlindiscord.kord.extensions.components.components
-import com.kotlindiscord.kord.extensions.components.ephemeralButton
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.event
-import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
-import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.asChannelOfOrNull
@@ -21,6 +12,15 @@ import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.actionRow
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.converters.impl.long
+import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.components.components
+import dev.kordex.core.components.ephemeralButton
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.event
+import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.utils.dm
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.reduce
@@ -77,11 +77,12 @@ class LoggingSystem : Extension() {
                     if (QueueConnection.getInstance()
                             .getCarryQueueByRelatedIdAndQueueStep(channel.id.value.toLong(), QueueStep.CONFIRMATION)
                             .stream()
+                            .filter { it != null }
                             .flatMap<CarryQueueModel?> { obj: Set<CarryQueueModel?> -> obj.stream() }
                             .findFirst().isPresent
                     ) {
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.NEGATIVE.color
+                        embed.color = EmbedColor.Negative.color
                         embed.description = " Someone is already logging this carry.\n" +
                                 "If you think this is a mistake, clear the log using the buttons below.\n" +
                                 "Otherwise, simply click dismiss to delete this message."
@@ -107,7 +108,7 @@ class LoggingSystem : Extension() {
 
                                         if (carryQueue.isEmpty) {
                                             val innerEmbed = ApplicationService.embed
-                                            innerEmbed.color = EmbedColor.INFORMATION.color
+                                            innerEmbed.color = EmbedColor.Information.color
                                             innerEmbed.description = "That log request was already cleared."
 
                                             embeds = mutableListOf(innerEmbed)
@@ -119,7 +120,7 @@ class LoggingSystem : Extension() {
                                             .deleteQueue(carryQueue.get().id)
 
                                         val innerEmbed = ApplicationService.embed
-                                        innerEmbed.color = EmbedColor.POSITIVE.color
+                                        innerEmbed.color = EmbedColor.Positive.color
                                         innerEmbed.description = "The log request was cleared, you can now log again!"
 
                                         embeds = mutableListOf(innerEmbed)
@@ -166,17 +167,24 @@ class LoggingSystem : Extension() {
                     val messageCount = channel.getMessagesBefore(interactionId, null).count()
 
                     val firstMessage = try {
-                        channel.withStrategy(EntitySupplyStrategy.rest)
+                        channel.withStrategy(EntitySupplyStrategy.cachingRest)
                             .getMessagesBefore(event.interaction.id, null)
                             .takeWhile { true }
                             .reduce { message1, message2 -> if (message1.timestamp < message2.timestamp) message1 else message2 }
+                    } catch (_: ArrayIndexOutOfBoundsException) {
+                        null
                     } catch (_: NoSuchElementException) {
                         null
                     }
 
-                    if (firstMessage == null || firstMessage.mentionedUsers.count() != 1) {
+                    if (firstMessage == null || try {
+                            firstMessage.mentionedUsers.count() != 1
+                        } catch (_: ArrayIndexOutOfBoundsException) {
+                            false
+                        }
+                    ) {
                         logger.error("Couldn't load bot message, I only found the message '${firstMessage?.content}' by ${firstMessage?.author?.id} when searching through $messageCount messages that were sent before $interactionId.")
-                        throw CommandExecutionException("Couldn't retrieve bot message, so this ticket can't be logged. Please report this.")
+                        throw CommandExecutionException("Couldn't retrieve bot message, so this ticket can't be logged - please retry this.\nIf you still have issues, please report this.")
                     }
 
                     val time = Instant.now()
@@ -249,7 +257,7 @@ class LoggingSystem : Extension() {
                 content = "Your log was denied by ${event.interaction.user.mention}."
 
                 val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
-                embed.color = EmbedColor.NEGATIVE.color
+                embed.color = EmbedColor.Negative.color
                 embed.title = "Information"
 
                 embeds = mutableListOf(embed)
@@ -264,7 +272,7 @@ class LoggingSystem : Extension() {
                     runBlocking {
                         serverTextChannel.createMessage {
                             val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
-                            embed.color = EmbedColor.NEGATIVE.color
+                            embed.color = EmbedColor.Negative.color
                             embed.title = "Carry denied"
                             embed.field("Denied by", true) { event.interaction.user.mention }
 
@@ -313,19 +321,17 @@ class LoggingSystem : Extension() {
                         .map { obj: ScoreModel -> obj.scoreAmount }
                         .orElse(0L)
                 }
-            val gainedScore = queueModel.calculateScore()
 
             val carrier = event.kord.getUser(Snowflake(queueModel.carrier.id))
 
             //TODO request exception
             carrier?.dm {
                 content = "Your carry was logged!\n\n" +
-                        "**Score gained:** " + gainedScore +
                         "\n**Your Updated Score:** " + updatedScore
 
                 val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
                 embed.title = "Information"
-                embed.color = EmbedColor.DEFAULT.color
+                embed.color = EmbedColor.Default.color
 
                 embeds = mutableListOf(embed)
             }
@@ -342,7 +348,7 @@ class LoggingSystem : Extension() {
                             serverTextChannel.createMessage {
                                 val embed = ApplicationService.loadEmbedFromCarry(loggedCarryModel.get().carryModel)
                                 embed.title = "Carry accepted."
-                                embed.color = EmbedColor.POSITIVE.color
+                                embed.color = EmbedColor.Positive.color
 
                                 embeds = mutableListOf(embed)
                             }

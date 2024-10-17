@@ -2,10 +2,7 @@ package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
 import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.model.warning.DetailedWarningModel;
-import me.taubsie.dungeonhub.common.model.warning.WarningCreationModel;
-import me.taubsie.dungeonhub.common.model.warning.WarningEvidenceCreationModel;
-import me.taubsie.dungeonhub.common.model.warning.WarningModel;
+import me.taubsie.dungeonhub.common.model.warning.*;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -60,7 +57,7 @@ public class WarningConnection implements ModuleConnection {
         return executeRequest(request, s -> fromJson(s, DungeonHubService.getInstance().getDetailedWarningModelListType()));
     }
 
-    public Optional<WarningModel> addWarning(WarningCreationModel creationModel) {
+    public Optional<AddedWarningModel> addWarning(WarningCreationModel creationModel) {
         HttpUrl url = getApiUrl().build();
 
         RequestBody requestBody = RequestBody.create(
@@ -70,7 +67,7 @@ public class WarningConnection implements ModuleConnection {
 
         Request request = getApiRequest(url).post(requestBody).build();
 
-        return executeRequest(request, WarningModel::fromJson);
+        return executeRequest(request, AddedWarningModel::fromJson);
     }
 
     public Optional<DetailedWarningModel> deactivateWarning(long id) {
@@ -81,7 +78,6 @@ public class WarningConnection implements ModuleConnection {
         return executeRequest(request, DetailedWarningModel::fromJson);
     }
 
-    //TODO test and implement to command
     public Optional<DetailedWarningModel> addEvidence(long warningId, WarningEvidenceCreationModel evidenceCreationModel) {
         HttpUrl url = getApiUrl(warningId + "/evidence").build();
 
