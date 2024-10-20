@@ -55,8 +55,9 @@ object RolesService {
 
         val isVerified = DiscordUserConnection.getInstance()
             .getLinkedById(member.id.value.toLong()).isPresent
-        val verifiedRoles = serverRoles.values.stream()
-            .filter { obj: DiscordRoleModel -> obj.isVerifiedRole }
+
+        val rolesToAdd = serverRoles.values.stream()
+            .filter { roleModel -> roleModel.shouldBeAdded(isVerified) }
             .map { obj: DiscordRoleModel -> obj.id }
             .map { id: Long? ->
                 runBlocking {
@@ -67,14 +68,24 @@ object RolesService {
                     }
                 }
             }
-            .map { obj -> obj }
             .toList()
 
-        if (isVerified) {
-            discordRoles.addAll(verifiedRoles.map { role -> role.await()?.id!! })
-        } else {
-            discordRoles.removeAll(verifiedRoles.map { role -> role.await()?.id!! }.toSet())
-        }
+        val rolesToRemove = serverRoles.values.stream()
+            .filter { roleModel -> roleModel.shouldBeRemoved(isVerified) }
+            .map { obj: DiscordRoleModel -> obj.id }
+            .map { id: Long? ->
+                runBlocking {
+                    async {
+                        member.guild.getRoleOrNull(
+                            Snowflake(id!!)
+                        )
+                    }
+                }
+            }
+            .toList()
+
+        discordRoles.addAll(rolesToAdd.map { role -> role.await()?.id!! })
+        discordRoles.removeAll(rolesToRemove.map { role -> role.await()?.id!! }.toSet())
 
         var lastRoles = 0
         while (lastRoles != discordRoles.size) {

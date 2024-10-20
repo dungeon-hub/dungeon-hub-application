@@ -285,11 +285,19 @@ class LinkingSystem : Extension() {
                     embeds = mutableListOf(embed)
                 }
 
-                val user = user.asUser()
+                thread(start = true) {
+                    runBlocking {
+                        val user = user.asUser()
 
-                val roles = RolesService.updateRoles(user)
+                        val roles = RolesService.updateRoles(user)
 
-                NicknameService.updateNickname(user, roles)
+                        try {
+                            NicknameService.updateNickname(user, roles)
+                        } catch (_: NotLinkedException) {
+                            // Do nothing
+                        }
+                    }
+                }
             }
         }
 
@@ -488,12 +496,6 @@ class LinkingSystem : Extension() {
 
         event<MemberJoinEvent> {
             action {
-                val linkedUser = DiscordUserConnection.getInstance().getLinkedById(event.member.id.value.toLong())
-
-                if (linkedUser.isEmpty) {
-                    return@action
-                }
-
                 thread(start = true) {
                     runBlocking {
                         val roles: List<Role> = RolesService.updateRoles(event.member)
