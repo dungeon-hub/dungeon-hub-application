@@ -105,22 +105,25 @@ class LinkingSystem : Extension() {
                     embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
+
+                    thread(start = true) {
+                        runBlocking {
+                            if(guild != null) {
+                                val member = user.asMember(guild!!.id)
+
+                                val roles = RolesService.updateRoles(member)
+
+                                NicknameService.updateNickname(member, roles)
+                            } else {
+                                val user = user.asUser()
+
+                                val roles = RolesService.updateRoles(user)
+
+                                NicknameService.updateNickname(user, roles)
+                            }
+                        }
+                    }
                 }
-
-                if(guild != null) {
-                    val member = user.asMember(guild!!.id)
-
-                    val roles = RolesService.updateRoles(member)
-
-                    NicknameService.updateNickname(member, roles)
-                } else {
-                    val user = user.asUser()
-
-                    val roles = RolesService.updateRoles(user)
-
-                    NicknameService.updateNickname(user, roles)
-                }
-
             }
         }
 
