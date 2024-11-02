@@ -23,7 +23,6 @@ import me.taubsie.dungeonhub.application.loader.StartupListener
 import me.taubsie.dungeonhub.application.misc.Leaderboard
 import me.taubsie.dungeonhub.application.service.ApplicationService.embed
 import me.taubsie.dungeonhub.application.service.ApplicationService.footer
-import me.taubsie.dungeonhub.common.DungeonHubService
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.score.LeaderboardModel
@@ -62,7 +61,8 @@ object LeaderboardService : StartupListener {
         embed.description = LEADERBOARD_DESCRIPTION
         embed.color = EmbedColor.DEFAULT.color
 
-        var counter = DungeonHubService.getInstance().getOffsetFromPageNumber(leaderboardModel.page)
+        // 0 -> starts with 1; 1 -> starts with 11; 2 -> starts with 21; etc.
+        var counter = 10 * leaderboardModel.page
 
         for (score in leaderboardModel.scores) {
             embed.field(
