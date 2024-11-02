@@ -1,10 +1,10 @@
 package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
-import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleCreationModel;
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel;
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleUpdateModel;
+import net.dungeonhub.model.discord_role.DiscordRoleCreationModel;
+import net.dungeonhub.model.discord_role.DiscordRoleModel;
+import net.dungeonhub.model.discord_role.DiscordRoleUpdateModel;
+import net.dungeonhub.service.MoshiService;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -46,7 +46,7 @@ public class DiscordRoleConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, DiscordRoleModel::fromJson);
+        return executeRequest(request, DiscordRoleModel.Companion::fromJson);
     }
 
     public Optional<DiscordRoleModel> addNewRole(DiscordRoleCreationModel creationModel) {
@@ -61,7 +61,7 @@ public class DiscordRoleConnection implements ModuleConnection {
                 .post(requestBody)
                 .build();
 
-        return executeRequest(request, DiscordRoleModel::fromJson);
+        return executeRequest(request, DiscordRoleModel.Companion::fromJson);
     }
 
     public Optional<DiscordRoleModel> updateRole(long id, DiscordRoleUpdateModel updateModel) {
@@ -76,7 +76,7 @@ public class DiscordRoleConnection implements ModuleConnection {
                 .put(requestBody)
                 .build();
 
-        return executeRequest(request, DiscordRoleModel::fromJson);
+        return executeRequest(request, DiscordRoleModel.Companion::fromJson);
     }
 
     public Optional<List<DiscordRoleModel>> getAllRoles() {
@@ -84,7 +84,6 @@ public class DiscordRoleConnection implements ModuleConnection {
 
         Request request = getApiRequest(url).get().build();
 
-        return executeRequest(request, s -> getGson().fromJson(s,
-                DungeonHubService.getInstance().getDiscordRoleModelListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getDiscordRoleListMoshi()::fromJson);
     }
 }

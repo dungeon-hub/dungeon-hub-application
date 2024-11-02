@@ -24,10 +24,10 @@ import me.taubsie.dungeonhub.application.misc.Leaderboard
 import me.taubsie.dungeonhub.application.service.ApplicationService.embed
 import me.taubsie.dungeonhub.application.service.ApplicationService.footer
 import me.taubsie.dungeonhub.common.DungeonHubService
-import me.taubsie.dungeonhub.common.enums.ScoreType
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
-import me.taubsie.dungeonhub.common.model.score.LeaderboardModel
-import me.taubsie.dungeonhub.common.model.score.ScoreModel
+import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.model.carry_type.CarryTypeModel
+import net.dungeonhub.model.score.LeaderboardModel
+import net.dungeonhub.model.score.ScoreModel
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Time
@@ -68,13 +68,13 @@ object LeaderboardService : StartupListener {
             embed.field(
                 "#" + ++counter + " Carrier",
                 false
-            ) { getPlayerScore(score!!) }
+            ) { getPlayerScore(score) }
         }
 
-        leaderboardModel.playerScore.ifPresent { playerScore: ScoreModel? ->
-            leaderboardModel.playerPosition.filter { pos -> pos != -1 }.ifPresent { position: Int ->
+        leaderboardModel.playerScore?.let { playerScore: ScoreModel? ->
+            if(leaderboardModel.playerPosition?.let { it != -1 } == true) {
                 embed.field(
-                    "__**Your rank:**__ #" + (position + 1),
+                    "__**Your rank:**__ #" + (leaderboardModel.playerPosition!! + 1),
                     false
                 ) { getPlayerScore(playerScore!!) }
             }
@@ -177,8 +177,7 @@ object LeaderboardService : StartupListener {
             for (carryType in CarryTypeConnection.getInstance(
                 serverModel.id
             ).allCarryTypes.orElse(listOf<CarryTypeModel>())) {
-                val leaderboardChannel = carryType.leaderboardChannel
-                    .flatMap { id: Long? ->
+                val leaderboardChannel = carryType.leaderboardChannel?.let { id: Long? ->
                         runBlocking {
                             try {
                                 return@runBlocking Optional.ofNullable(
@@ -192,12 +191,12 @@ object LeaderboardService : StartupListener {
                         }
                     }
 
-                if (leaderboardChannel.isEmpty) {
+                if (leaderboardChannel == null) {
                     continue
                 }
 
                 for (scoreType in ScoreType.entries) {
-                    if (scoreType == ScoreType.EVENT && !carryType.isEventActive) {
+                    if (scoreType == ScoreType.Event && carryType.isEventActive == false) {
                         continue
                     }
 

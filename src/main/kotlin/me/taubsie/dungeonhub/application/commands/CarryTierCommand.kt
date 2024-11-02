@@ -20,8 +20,7 @@ import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
-import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierCreationModel
-import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierUpdateModel
+import net.dungeonhub.model.carry_tier.CarryTierCreationModel
 import java.util.*
 
 @LoadExtension
@@ -64,45 +63,32 @@ class CarryTierCommand : Extension() {
                             throw InvalidOptionException("identifier", "That carry tier already exists!")
                         }
 
-                        val creationModel = CarryTierCreationModel()
-                        creationModel.identifier = identifier
-                        creationModel.displayName = arguments.displayName
-
-                        if (arguments.descriptiveName != null) {
-                            creationModel.descriptiveName = arguments.descriptiveName
-                        }
-
                         if (arguments.category != null && DiscordServerConnection.getInstance()
                                 .getCarryTierFromCategory(
                                     guild!!.id.value.toLong(),
                                     arguments.category!!.id.value.toLong()
                                 ).isEmpty
                         ) {
-                            creationModel.category = arguments.category!!.id.value.toLong()
-                        }
-
-                        if (arguments.priceChannel != null) {
-                            creationModel.priceChannel = arguments.priceChannel!!.id.value.toLong()
-                        }
-
-                        if (arguments.thumbnailUrl != null) {
-                            creationModel.thumbnailUrl = arguments.thumbnailUrl
-                        }
-
-                        if (arguments.priceTitle != null) {
-                            creationModel.priceTitle = arguments.priceTitle
-                        }
-
-                        if (arguments.priceDescription != null) {
-                            creationModel.priceDescription = arguments.priceDescription
-                        }
-
-                        val carryTier =
-                            CarryTierConnection.getInstance(
-                                carryType
+                            throw InvalidOptionException(
+                                "category",
+                                "That category is already assigned to another carry tier!"
                             )
-                                .createCarryTier(creationModel)
-                                .orElse(null)
+                        }
+
+                        val creationModel = CarryTierCreationModel(
+                            identifier = identifier,
+                            displayName = arguments.displayName,
+                            category = arguments.category!!.id.value.toLong(),
+                            priceChannel = arguments.priceChannel!!.id.value.toLong(),
+                            descriptiveName = arguments.descriptiveName,
+                            thumbnailUrl = arguments.thumbnailUrl,
+                            priceTitle = arguments.priceTitle,
+                            priceDescription = arguments.priceDescription
+                        )
+
+                        val carryTier = CarryTierConnection.getInstance(carryType)
+                            .createCarryTier(creationModel)
+                            .orElse(null)
 
                         if (carryTier == null) {
                             //TODO custom class?
@@ -150,14 +136,14 @@ class CarryTierCommand : Extension() {
                             throw CommandExecutionException("Well this is weird.. Something doesn't really add up!")
                         }
 
-                        val deletedCarryTier =
-                            DungeonHubConnection.getInstance()
-                                .removeCarryTier(carryTier)
-                                .orElse(null)
+                        //TODO implement
+                        val deletedCarryTier = DungeonHubConnection.getInstance()
+                            .removeCarryTier(carryTier)
+                            .orElse(null)
 
                         if (deletedCarryTier == null) {
                             //TODO custom class
-                            throw CommandExecutionException()
+                            throw CommandExecutionException("Couldn't delete the carry tier.")
                         }
 
                         val embed = ApplicationService.getCarryTierEmbed(deletedCarryTier)
@@ -208,12 +194,9 @@ class CarryTierCommand : Extension() {
 
                 action {
                     respond {
-                        val carryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(arguments.carryType)
-                                .orElse(null)
+                        val carryType = CarryTypeConnection.getInstance(guild!!.id.value.toLong())
+                            .getByIdentifier(arguments.carryType)
+                            .orElse(null)
 
                         if (carryType == null) {
                             //TODO custom class
@@ -255,7 +238,7 @@ class CarryTierCommand : Extension() {
                             }
                         }
 
-                        val updateModel = CarryTierUpdateModel.fromCarryTier(carryTier)
+                        val updateModel = carryTier.getUpdateModel()
 
                         if (arguments.displayName != null) {
                             updateModel.displayName = arguments.displayName
@@ -334,14 +317,14 @@ class CarryTierCommand : Extension() {
                             throw CommandExecutionException("Please provide something you want to reset.")
                         }
 
-                        val updateModel = CarryTierUpdateModel.fromCarryTier(carryTier)
+                        val updateModel = carryTier.getUpdateModel()
 
                         if (arguments.category) {
-                            updateModel.category = -1L
+                            updateModel.category = null
                         }
 
                         if (arguments.priceChannel) {
-                            updateModel.priceChannel = -1L
+                            updateModel.priceChannel = null
                         }
 
                         if (arguments.descriptiveName) {

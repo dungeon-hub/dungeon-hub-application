@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.reduce
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
@@ -50,12 +51,11 @@ import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.LeaderboardService
 import me.taubsie.dungeonhub.application.service.color
 import me.taubsie.dungeonhub.common.DungeonHubService
-import me.taubsie.dungeonhub.common.enums.QueueStep
-import me.taubsie.dungeonhub.common.enums.ScoreType
-import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel
-import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueUpdateModel
-import me.taubsie.dungeonhub.common.model.score.LoggedCarryModel
-import me.taubsie.dungeonhub.common.model.score.ScoreModel
+import net.dungeonhub.enums.QueueStep
+import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.model.carry_queue.CarryQueueModel
+import net.dungeonhub.model.score.LoggedCarryModel
+import net.dungeonhub.model.score.ScoreModel
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import org.slf4j.LoggerFactory
@@ -168,7 +168,7 @@ class MessageListener : Extension() {
                 }
 
             for (queueModel in QueueConnection.getInstance()
-                .getCarryQueuesByQueueStep(QueueStep.TRANSCRIPT)
+                .getCarryQueuesByQueueStep(QueueStep.Transcript)
                 .orElse(HashSet())
                 .stream().filter { carryQueueModel: CarryQueueModel ->
                     channelId.map { aLong: Long -> aLong == carryQueueModel.relationId }
@@ -201,10 +201,8 @@ class MessageListener : Extension() {
                     }
                 }
 
-                queueModel.attachmentLink = attachmentLink
-
-                val updateModel = CarryQueueUpdateModel()
-                    .setAttachmentLink(attachmentLink)
+                val updateModel = queueModel.getUpdateModel()
+                updateModel.attachmentLink = attachmentLink
 
                 if ((queueModel.amount >= APPROVE_AMOUNT_THRESHOLD
                             || queueModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
@@ -238,16 +236,17 @@ class MessageListener : Extension() {
                                         val embed = ApplicationService.embed
                                         embed.color(EmbedColor.INFORMATION)
                                         embed.title = "Approval needed"
-                                        embed.description = "Due to the high number of score (${queueModel.calculateScore()}) or carries (${queueModel.amount}), your ${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
-                                                "You will be notified here once it was approved or denied."
+                                        embed.description =
+                                            "Due to the high number of score (${queueModel.calculateScore()}) or carries (${queueModel.amount}), your ${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
+                                                    "You will be notified here once it was approved or denied."
 
                                         embeds = mutableListOf(embed)
                                     }
                             }
                         }
 
-                        updateModel.setQueueStep(QueueStep.APPROVING)
-                            .setRelationId(createdMessage.id.value.toLong())
+                        updateModel.queueStep = QueueStep.Approving
+                        updateModel.relationId = createdMessage.id.value.toLong()
 
                         QueueConnection.getInstance()
                             .updateQueue(queueModel.id, updateModel)
@@ -259,7 +258,7 @@ class MessageListener : Extension() {
                             .stream()
                             .map(LoggedCarryModel::scoreModels)
                             .flatMap { obj: List<ScoreModel> -> obj.stream() }
-                            .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.DEFAULT }
+                            .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
                             .findFirst()
                             .map { obj: ScoreModel -> obj.scoreAmount }
                             .orElseGet {
@@ -289,18 +288,18 @@ class MessageListener : Extension() {
                             val logChannel = queueModel.carryTier
                                 .carryType
                                 .logChannel
-                                .map { id: Long ->
+                                ?.let { id: Long ->
                                     runBlocking { server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id)) }
                                 }
 
-                            if (logChannel.isPresent) {
+                            if (logChannel != null) {
                                 logger.debug(
                                     "Carry logged: {}",
                                     DungeonHubService.getInstance().gson.toJson(queueModel)
                                 )
 
-                                logChannel.get().createMessage {
-                                    val embed = ApplicationService.getEmbed(queueModel.time.toKotlinInstant())
+                                logChannel.createMessage {
+                                    val embed = ApplicationService.getEmbed(queueModel.time?.toKotlinInstant() ?: Clock.System.now())
                                     embed.title = "Carry accepted."
                                     embed.color = EmbedColor.POSITIVE.color
                                     embed.field("Number of carries", true) { queueModel.amount.toString() }

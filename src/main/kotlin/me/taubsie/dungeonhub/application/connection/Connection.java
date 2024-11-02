@@ -33,7 +33,7 @@ public interface Connection {
         return MediaType.parse("application/json; charset=utf-8");
     }
 
-    default <T> Optional<T> executeRequest(Request request, Function<String, T> function) {
+    default <T> Optional<T> executeRequest(Request request, MappingFunction<String, T> function) {
         return DungeonHubConnection.getInstance().executeRequest(request, function);
     }
 

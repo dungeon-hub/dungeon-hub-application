@@ -14,9 +14,9 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
 import me.taubsie.dungeonhub.application.service.LeaderboardService
-import me.taubsie.dungeonhub.common.enums.ScoreType
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
-import me.taubsie.dungeonhub.common.model.score.LeaderboardModel
+import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.model.carry_type.CarryTypeModel
+import net.dungeonhub.model.score.LeaderboardModel
 
 @LoadExtension
 class LeaderboardCommand : Extension() {
@@ -34,7 +34,7 @@ class LeaderboardCommand : Extension() {
                     CarryTypeConnection.getInstance(guild?.id?.value!!.toLong())
                         .getByIdentifier(arguments.carryType)?.orElse(null)
 
-                val scoreType: ScoreType = arguments.scoreType ?: ScoreType.DEFAULT
+                val scoreType: ScoreType = arguments.scoreType ?: ScoreType.Default
 
                 val leaderboardTitle = LeaderboardService.getLeaderboardTitle(carryType, scoreType)
 

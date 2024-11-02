@@ -88,7 +88,7 @@ class CalcPriceCommand : Extension() {
                     embed.field("Price", true) { priceText }
                     embed.field("Price per Carry", true) { pricePerCarryText }
 
-                    carryDifficulty.thumbnailUrl.ifPresent { thumbnail -> embed.thumbnail { url = thumbnail } }
+                    carryDifficulty.thumbnailUrl?.let { embed.thumbnail { url = it } }
 
                     embeds = mutableListOf(embed)
                 }

@@ -23,12 +23,12 @@ import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
 import me.taubsie.dungeonhub.application.service.PurgingService
 import me.taubsie.dungeonhub.application.service.color
-import me.taubsie.dungeonhub.common.enums.QueueStep
-import me.taubsie.dungeonhub.common.enums.ScoreType
-import me.taubsie.dungeonhub.common.model.PurgeTypeRoleModel
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel
-import me.taubsie.dungeonhub.common.model.score.ScoreModel
+import net.dungeonhub.enums.QueueStep
+import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.model.discord_role.DiscordRoleModel
+import net.dungeonhub.model.discord_user.DiscordUserModel
+import net.dungeonhub.model.purge_type.PurgeTypeRoleModel
+import net.dungeonhub.model.score.ScoreModel
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
@@ -65,7 +65,7 @@ class PurgeCommand : Extension() {
                         }
 
                         val queue =
-                            QueueConnection.getInstance().getCarryQueuesByQueueStep(QueueStep.APPROVING).orElse(setOf())
+                            QueueConnection.getInstance().getCarryQueuesByQueueStep(QueueStep.Approving).orElse(setOf())
 
                         val purgeType = PurgeTypeConnection.getInstance(carryType)
                             .getByIdentifier(arguments.purgeType)
@@ -83,12 +83,12 @@ class PurgeCommand : Extension() {
                         val scores = ScoreConnection.getInstance(carryType)
                             .scores
                             .orElse(listOf()).stream()
-                            .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.DEFAULT }
+                            .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
                             .toList()
 
                         val safeCarriers = scores.stream()
                             .filter { scoreModel: ScoreModel -> scoreModel.scoreAmount != null }
-                            .filter { scoreModel: ScoreModel -> scoreModel.scoreAmount >= arguments.threshold }
+                            .filter { scoreModel: ScoreModel -> scoreModel.scoreAmount!! >= arguments.threshold }
                             .map { obj: ScoreModel -> obj.carrier }
                             .map { obj: DiscordUserModel -> obj.id }
                             .toList()
@@ -168,7 +168,7 @@ class PurgeCommand : Extension() {
                         }
 
                         val queue =
-                            QueueConnection.getInstance().getCarryQueuesByQueueStep(QueueStep.APPROVING).orElse(setOf())
+                            QueueConnection.getInstance().getCarryQueuesByQueueStep(QueueStep.Approving).orElse(setOf())
 
                         if (queue.any { queueModel -> queueModel.carryType.id == carryType.id }) {
                             val embed = ApplicationService.embed
@@ -191,12 +191,12 @@ class PurgeCommand : Extension() {
                         val scores = ScoreConnection.getInstance(carryType)
                             .scores
                             .orElse(listOf()).stream()
-                            .filter { it.scoreType == ScoreType.DEFAULT }
+                            .filter { it.scoreType == ScoreType.Default }
                             .toList()
 
                         val safeCarriers = scores.stream()
                             .filter { it.scoreAmount != null }
-                            .filter { it.scoreAmount >= arguments.threshold }
+                            .filter { it.scoreAmount!! >= arguments.threshold }
                             .map { it.carrier }
                             .map { um -> um.id }
                             .toList()
@@ -222,7 +222,7 @@ class PurgeCommand : Extension() {
                                 .filter { scoreModel -> scoreModel.carrier.id == carrier.id.value.toLong() }
                                 .map { obj: ScoreModel -> obj.scoreAmount }
                                 .findFirst()
-                                .orElse(0L)
+                                .orElse(0L) ?: 0
 
                             val purgeData = PurgeData(
                                 carrier.id.value.toLong(),

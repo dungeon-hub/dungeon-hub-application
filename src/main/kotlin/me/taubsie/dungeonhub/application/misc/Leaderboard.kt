@@ -3,7 +3,7 @@ package me.taubsie.dungeonhub.application.misc
 import dev.kord.rest.builder.message.EmbedBuilder
 import me.taubsie.dungeonhub.application.service.LeaderboardService.getEmptyLeaderboardEmbed
 import me.taubsie.dungeonhub.application.service.LeaderboardService.getLeaderboardEmbed
-import me.taubsie.dungeonhub.common.model.score.LeaderboardModel
+import net.dungeonhub.model.score.LeaderboardModel
 
 /**
  * This class holds the data for a simple leaderboard without pages.

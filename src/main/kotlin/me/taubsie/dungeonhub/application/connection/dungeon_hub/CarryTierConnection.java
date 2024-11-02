@@ -1,11 +1,11 @@
 package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
-import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierCreationModel;
-import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
-import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierUpdateModel;
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
+import net.dungeonhub.model.carry_tier.CarryTierCreationModel;
+import net.dungeonhub.model.carry_tier.CarryTierModel;
+import net.dungeonhub.model.carry_tier.CarryTierUpdateModel;
+import net.dungeonhub.model.carry_type.CarryTypeModel;
+import net.dungeonhub.service.MoshiService;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -60,8 +60,7 @@ public class CarryTierConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> getGson().fromJson(s,
-                DungeonHubService.getInstance().getCarryTierListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getCarryTierListMoshi()::fromJson);
     }
 
     public Optional<CarryTierModel> createCarryTier(CarryTierCreationModel creationModel) {
@@ -76,7 +75,7 @@ public class CarryTierConnection implements ModuleConnection {
                 .post(requestBody)
                 .build();
 
-        return executeRequest(request, CarryTierModel::fromJson);
+        return executeRequest(request, CarryTierModel.Companion::fromJson);
     }
 
     public Optional<CarryTierModel> updateCarryTier(long id, CarryTierUpdateModel updateModel) {
@@ -91,6 +90,6 @@ public class CarryTierConnection implements ModuleConnection {
                 .put(requestBody)
                 .build();
 
-        return executeRequest(request, CarryTierModel::fromJson);
+        return executeRequest(request, CarryTierModel.Companion::fromJson);
     }
 }

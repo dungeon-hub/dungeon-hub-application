@@ -1,9 +1,9 @@
 package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
-import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
-import me.taubsie.dungeonhub.common.model.purge_type.PurgeTypeModel;
+import net.dungeonhub.model.carry_type.CarryTypeModel;
+import net.dungeonhub.model.purge_type.PurgeTypeModel;
+import net.dungeonhub.service.MoshiService;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import org.slf4j.Logger;
@@ -52,7 +52,6 @@ public class PurgeTypeConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> getGson().fromJson(s,
-                DungeonHubService.getInstance().getPurgeTypeModelListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getPurgeTypeListMoshi()::fromJson);
     }
 }

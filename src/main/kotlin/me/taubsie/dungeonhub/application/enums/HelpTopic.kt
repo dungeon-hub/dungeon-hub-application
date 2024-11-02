@@ -9,8 +9,8 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerCon
 import me.taubsie.dungeonhub.application.enums.HelpTopic.DescriptionSupplier
 import me.taubsie.dungeonhub.application.exceptions.MustBeServerException
 import me.taubsie.dungeonhub.application.misc.HelpDisplay
-import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
+import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
+import net.dungeonhub.model.carry_type.CarryTypeModel
 
 @Getter
 enum class HelpTopic(

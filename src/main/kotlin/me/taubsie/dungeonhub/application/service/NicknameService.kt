@@ -13,9 +13,9 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConne
 import me.taubsie.dungeonhub.application.connection.getMutualServers
 import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.misc.PlayerInformation
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel
+import net.dungeonhub.model.discord_role.DiscordRoleModel
+import net.dungeonhub.model.discord_user.DiscordUserModel
+import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
 import org.jetbrains.annotations.Contract
 import java.util.*
 import java.util.function.Function
@@ -70,7 +70,7 @@ object NicknameService {
             .updateUser(user.id.value.toLong(), updateModel)
             .orElseThrow { CommandExecutionException("Couldn't update your user data.") }
 
-        return userModel.minecraftId
+        return userModel.minecraftId!!
     }
 
     /**
@@ -137,7 +137,7 @@ object NicknameService {
 
         val role = getRoleModel(member, sortedRoles)
 
-        val nickname = loadUsername(role.nameSchema, PlayerInformation(member.asUser(), discordUserModel))
+        val nickname = loadUsername(role.nameSchema!!, PlayerInformation(member.asUser(), discordUserModel))
 
         if (nickname.isBlank()) {
             return
@@ -185,7 +185,7 @@ object NicknameService {
     private fun validateRole(discordRoles: Map<Long, DiscordRoleModel>): Predicate<Role> {
         return Predicate { role: Role ->
             val obj = discordRoles[role.id.value.toLong()]
-            Objects.nonNull(obj) && Objects.nonNull(obj!!.nameSchema) && obj.nameSchema.isNotBlank()
+            Objects.nonNull(obj) && Objects.nonNull(obj!!.nameSchema) && obj.nameSchema!!.isNotBlank()
         }
     }
 

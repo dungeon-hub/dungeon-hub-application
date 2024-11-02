@@ -14,8 +14,8 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleConne
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleGroupConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.connection.getMutualServers
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
-import me.taubsie.dungeonhub.common.model.discord_role_group.DiscordRoleGroupModel
+import net.dungeonhub.model.discord_role.DiscordRoleModel
+import net.dungeonhub.model.discord_role_group.DiscordRoleGroupModel
 import java.util.stream.Collectors
 
 object RolesService {
@@ -56,7 +56,7 @@ object RolesService {
         val isVerified = DiscordUserConnection.getInstance()
             .getLinkedById(member.id.value.toLong()).isPresent
         val verifiedRoles = serverRoles.values.stream()
-            .filter { obj: DiscordRoleModel -> obj.isVerifiedRole }
+            .filter { obj: DiscordRoleModel -> obj.verifiedRole }
             .map { obj: DiscordRoleModel -> obj.id }
             .map { id: Long? ->
                 runBlocking {
