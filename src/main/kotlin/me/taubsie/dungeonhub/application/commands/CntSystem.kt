@@ -47,28 +47,17 @@ class CntSystem : Extension() {
                 check {
                     failIfNot(requestType.buttonId == event.interaction.componentId)
                 }
+
                 action {
-                    event.interaction.user
-                    try {
-                        event.interaction.modal("Crafts And Transfers", requestType.modalId) {
-                            actionRow {
-                                textInput(TextInputStyle.Short, requestType.descriptionId, "Request Description")
-                            }
-                            actionRow {
-                                textInput(TextInputStyle.Short, requestType.valueId, "Value")
-                            }
-                            actionRow {
-                                textInput(TextInputStyle.Short, requestType.requirementId, "Craft Requirement")
-                            }
+                    event.interaction.modal("Crafts And Transfers", requestType.modalId) {
+                        actionRow {
+                            textInput(TextInputStyle.Short, requestType.descriptionId, "Request Description")
                         }
-                    } catch (throwable: Throwable) {
-                        event.interaction.respondEphemeral {
-                            content =
-                                "An error occurred while processing your request. Please try again later. Error code 1"
-                            embeds = ApplicationService.getErrorEmbeds(
-                                throwable,
-                                "An error occured while processing your CNT request."
-                            )
+                        actionRow {
+                            textInput(TextInputStyle.Short, requestType.valueId, "Value")
+                        }
+                        actionRow {
+                            textInput(TextInputStyle.Short, requestType.requirementId, "Craft Requirement")
                         }
                     }
                 }
@@ -79,56 +68,51 @@ class CntSystem : Extension() {
             check {
                 failIfNot("cnt_claim" == event.interaction.componentId)
             }
+
             action {
-                try {
-                    val cntRequest = CntRequestConnection
-                        .getInstance(event.interaction.guild.id.value.toLong())
-                        .findCntRequest(event.interaction.message.id.value.toLong())
-                        .orElseThrow { CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?") }
+                val cntRequest = CntRequestConnection
+                    .getInstance(event.interaction.guild.id.value.toLong())
+                    .findCntRequest(event.interaction.message.id.value.toLong())
+                    .orElseThrow { CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?") }
 
-                    if (cntRequest.claimer != null) {
-                        event.interaction.respondEphemeral {
-                            content = "This request has already been claimed!"
-                        }
-                        return@action
-                    }
-
-                    val claimerId = event.interaction.user.id.value.toLong()
-
-                    val claimer = DiscordUserConnection.getInstance().getById(claimerId).or {
-                        DiscordUserConnection.getInstance().updateUser(claimerId, DiscordUserUpdateModel(null))
-                    }.orElseThrow { CommandExecutionException("Couldn't load CNT claimer!") }
-
-                    val updateModel = cntRequest.getUpdateModel()
-                    updateModel.claimer = claimer
-
-                    val updatedCntRequest = CntRequestConnection.getInstance(event.interaction.guild.id.value.toLong())
-                        .updateCntRequest(cntRequest.id, updateModel)
-                        .orElseThrow { CommandExecutionException("Couldn't update CNT request!") }
-
-                    val claimMessage = ApplicationService.embedWithoutTimestamp
-                    claimMessage.title = "Claimed!"
-                    claimMessage.description = """ 
-                        You have claimed a crafts and transfers request.
-                        Do NOT visit the requester. 
-                        You are not allowed to give collateral.
-                    """
-
+                if (cntRequest.claimer != null) {
                     event.interaction.respondEphemeral {
-                        embeds = mutableListOf(claimMessage)
+                        content = "This request has already been claimed!"
                     }
+                    return@action
+                }
 
-                    val originalMessage = event.interaction.message
-                    originalMessage.edit {
-                        embeds = mutableListOf(ApplicationService.getCntEmbed(updatedCntRequest))
+                val claimerId = event.interaction.user.id.value.toLong()
 
-                        components {
-                            addClaimedCntButtons()
-                        }
-                    }
-                } catch (e: Exception) {
-                    event.interaction.respondEphemeral {
-                        embeds = ApplicationService.getErrorEmbeds(e, "An error occured: ${e.message}")
+                val claimer = DiscordUserConnection.getInstance().getById(claimerId).or {
+                    DiscordUserConnection.getInstance().updateUser(claimerId, DiscordUserUpdateModel(null))
+                }.orElseThrow { CommandExecutionException("Couldn't load CNT claimer!") }
+
+                val updateModel = cntRequest.getUpdateModel()
+                updateModel.claimer = claimer
+
+                val updatedCntRequest = CntRequestConnection.getInstance(event.interaction.guild.id.value.toLong())
+                    .updateCntRequest(cntRequest.id, updateModel)
+                    .orElseThrow { CommandExecutionException("Couldn't update CNT request!") }
+
+                val claimMessage = ApplicationService.embedWithoutTimestamp
+                claimMessage.title = "Claimed!"
+                claimMessage.description = """ 
+                    You have claimed a crafts and transfers request.
+                    Do NOT visit the requester. 
+                    You are not allowed to give collateral.
+                """
+
+                event.interaction.respondEphemeral {
+                    embeds = mutableListOf(claimMessage)
+                }
+
+                val originalMessage = event.interaction.message
+                originalMessage.edit {
+                    embeds = mutableListOf(ApplicationService.getCntEmbed(updatedCntRequest))
+
+                    components {
+                        addClaimedCntButtons()
                     }
                 }
             }
@@ -185,93 +169,87 @@ class CntSystem : Extension() {
                 check {
                     failIfNot(requestType.modalId == event.interaction.modalId)
                 }
+
                 action {
                     val requesterUser = event.interaction.user
 
-                    try {
-                        val requestDescription = event.interaction.textInputs[requestType.descriptionId]?.value!!
-                        val coinValue = event.interaction.textInputs[requestType.valueId]?.value!!
-                        val requirement = event.interaction.textInputs[requestType.requirementId]?.value!!
+                    val requestDescription = event.interaction.textInputs[requestType.descriptionId]?.value!!
+                    val coinValue = event.interaction.textInputs[requestType.valueId]?.value!!
+                    val requirement = event.interaction.textInputs[requestType.requirementId]?.value!!
 
-                        val channel = event.interaction.channel
-                        if (channel !is GuildMessageChannelBehavior) {
-                            event.interaction.respondEphemeral {
-                                content = "Please use this on a server, DMs are not supported."
-                            }
-                            return@action
-                        }
-
-                        val channelId =
-                            ServerProperty.CNT_MESSAGES_CHANNEL.getValue(channel.guildId.value.toLong()).orElse(null)
-
-                        val responseEmbed = ApplicationService.embed
-                        responseEmbed.color(EmbedColor.DEFAULT)
-                        responseEmbed.description =
-                            "Thanks for trusting in our service! I'm now trying to send your CNT request into <#$channelId>"
-
-                        val cntEmbed = ApplicationService.getCntEmbed(
-                            requestDescription,
-                            coinValue,
-                            requirement,
-                            Clock.System.now(),
-                            requesterUser.id.value.toLong()
-                        )
-
-                        val response: Message
-
-                        if (channelId != null) {
-                            event.interaction.respondEphemeral {
-                                embeds = mutableListOf(responseEmbed)
-                            }
-
-                            val cntChannel = channel.guild.getChannelOrNull(Snowflake(channelId))
-                                ?.asChannelOfOrNull<GuildMessageChannel>() ?: channel
-
-                            response = cntChannel.createMessage {
-                                embeds = mutableListOf(cntEmbed)
-
-                                addUnclaimedCntButtons()
-                            }
-                        } else {
-                            response = event.interaction.deferPublicResponse().respond {
-                                embeds = mutableListOf(cntEmbed)
-
-                                addUnclaimedCntButtons()
-                            }.message
-
-                        }
-
-                        val messageId = response.id
-
-                        val creationModel = CntRequestCreationModel(
-                            messageId.value.toLong(),
-                            requesterUser.id.value.toLong(),
-                            null,
-                            Instant.now(),
-                            coinValue,
-                            requestDescription,
-                            requirement
-                        )
-
-                        val embed = CntRequestConnection
-                            .getInstance(channel.guildId.value.toLong())
-                            .createCntRequest(creationModel)
-                            .map { mutableListOf(ApplicationService.getCntEmbed(it)) }
-                            .orElseGet {
-                                ApplicationService.getErrorEmbeds(
-                                    CommandExecutionException("Could not persist CNT request."),
-                                    "Could not persist CNT request."
-                                )
-                            }
-
-                        response.edit {
-                            embeds = embed
-                        }
-                    } catch (throwable: Throwable) {
+                    val channel = event.interaction.channel
+                    if (channel !is GuildMessageChannelBehavior) {
                         event.interaction.respondEphemeral {
-                            content =
-                                "An error occurred while processing your request. Please try again later. Error code 3"
+                            content = "Please use this on a server, DMs are not supported."
                         }
+                        return@action
+                    }
+
+                    val channelId =
+                        ServerProperty.CNT_MESSAGES_CHANNEL.getValue(channel.guildId.value.toLong()).orElse(null)
+
+                    val responseEmbed = ApplicationService.embed
+                    responseEmbed.color(EmbedColor.DEFAULT)
+                    responseEmbed.description =
+                        "Thanks for trusting in our service! I'm now trying to send your CNT request into <#$channelId>"
+
+                    val cntEmbed = ApplicationService.getCntEmbed(
+                        requestDescription,
+                        coinValue,
+                        requirement,
+                        Clock.System.now(),
+                        requesterUser.id.value.toLong()
+                    )
+
+                    val response: Message
+
+                    if (channelId != null) {
+                        event.interaction.respondEphemeral {
+                            embeds = mutableListOf(responseEmbed)
+                        }
+
+                        val cntChannel = channel.guild.getChannelOrNull(Snowflake(channelId))
+                            ?.asChannelOfOrNull<GuildMessageChannel>() ?: channel
+
+                        response = cntChannel.createMessage {
+                            embeds = mutableListOf(cntEmbed)
+
+                            addUnclaimedCntButtons()
+                        }
+                    } else {
+                        response = event.interaction.deferPublicResponse().respond {
+                            embeds = mutableListOf(cntEmbed)
+
+                            addUnclaimedCntButtons()
+                        }.message
+
+                    }
+
+                    val messageId = response.id
+
+                    val creationModel = CntRequestCreationModel(
+                        messageId.value.toLong(),
+                        requesterUser.id.value.toLong(),
+                        null,
+                        Instant.now(),
+                        coinValue,
+                        requestDescription,
+                        requirement
+                    )
+
+                    val embed = CntRequestConnection
+                        .getInstance(channel.guildId.value.toLong())
+                        .createCntRequest(creationModel)
+                        .map { mutableListOf(ApplicationService.getCntEmbed(it)) }
+                        .orElseGet {
+                            ApplicationService.getErrorEmbeds(
+                                CommandExecutionException("Could not persist CNT request."),
+                                "Could not persist CNT request."
+                            )
+                        }
+
+                    response.edit {
+                        embeds = embed
                     }
                 }
             }
