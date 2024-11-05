@@ -3,7 +3,7 @@ package me.taubsie.dungeonhub.application.connection;
 import com.google.gson.JsonObject;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
 import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.model.JwtTokenModel;
+import net.dungeonhub.model.auth.JwtTokenModel;
 import okhttp3.FormBody;
 import okhttp3.Request;
 

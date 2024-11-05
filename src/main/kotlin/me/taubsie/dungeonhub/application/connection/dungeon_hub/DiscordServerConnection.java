@@ -1,13 +1,13 @@
 package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
-import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.enums.ScoreType;
-import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
-import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
-import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
-import me.taubsie.dungeonhub.common.model.score.ScoreModel;
-import me.taubsie.dungeonhub.common.model.server.DiscordServerModel;
+import net.dungeonhub.enums.ScoreType;
+import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel;
+import net.dungeonhub.model.carry_tier.CarryTierModel;
+import net.dungeonhub.model.discord_server.DiscordServerModel;
+import net.dungeonhub.model.score.LeaderboardModel;
+import net.dungeonhub.model.score.ScoreModel;
+import net.dungeonhub.service.MoshiService;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +47,7 @@ public class DiscordServerConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, DiscordServerModel::fromJson);
+        return executeRequest(request, DiscordServerModel.Companion::fromJson);
     }
 
     public Optional<List<CarryTierModel>> getAllCarryTiers(long serverId) {
@@ -57,8 +57,7 @@ public class DiscordServerConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> getGson().fromJson(s,
-                DungeonHubService.getInstance().getCarryTierListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getCarryTierListMoshi()::fromJson);
     }
 
     public Optional<List<CarryDifficultyModel>> getAllCarryDifficulties(long serverId) {
@@ -68,8 +67,7 @@ public class DiscordServerConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> getGson().fromJson(s,
-                DungeonHubService.getInstance().getCarryDifficultyListType()));
+        return executeRequest(request, s -> MoshiService.INSTANCE.getCarryDifficultyListMoshi().fromJson(s));
     }
 
     public Optional<List<DiscordServerModel>> loadAllServers() {
@@ -79,9 +77,7 @@ public class DiscordServerConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s ->
-                DungeonHubService.getInstance().getGson().fromJson(s,
-                        DungeonHubService.getInstance().getServerModelListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getDiscordServerListMoshi()::fromJson);
     }
 
     public Optional<CarryTierModel> getCarryTierFromCategory(long serverId, long categoryId) {
@@ -91,7 +87,7 @@ public class DiscordServerConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, CarryTierModel::fromJson);
+        return executeRequest(request, CarryTierModel.Companion::fromJson);
     }
 
     public Optional<List<ScoreModel>> getScores(DiscordServerModel serverModel, long id) {
@@ -101,8 +97,7 @@ public class DiscordServerConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> DungeonHubService.getInstance()
-                .getGson().fromJson(s, DungeonHubService.getInstance().getScoreModelListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getScoreListMoshi()::fromJson);
     }
 
     public Optional<LeaderboardModel> loadTotalLeaderboard(long serverId, @Nullable ScoreType scoreType, @Nullable Integer page) {
@@ -112,7 +107,7 @@ public class DiscordServerConnection implements ModuleConnection {
     public Optional<LeaderboardModel> loadTotalLeaderboard(long serverId, @Nullable ScoreType scoreType, @Nullable Integer page,
                                                            @Nullable Long userId) {
         if (scoreType == null) {
-            scoreType = ScoreType.DEFAULT;
+            scoreType = ScoreType.Default;
         }
 
         if (page == null || page < 0) {
@@ -131,7 +126,7 @@ public class DiscordServerConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, LeaderboardModel::fromJson);
+        return executeRequest(request, LeaderboardModel.Companion::fromJson);
     }
 
     public Optional<Long> fetchTotalAmountOfMoneySpent(long serverId, @Nullable Long userId, @Nullable Long carrierId, @Nullable Long carryTypeId, @Nullable Long carryTierId, @Nullable Instant since) {

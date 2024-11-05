@@ -1,9 +1,9 @@
 package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
-import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestCreationModel;
-import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestModel;
-import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestUpdateModel;
+import net.dungeonhub.model.cnt_request.CntRequestCreationModel;
+import net.dungeonhub.model.cnt_request.CntRequestModel;
+import net.dungeonhub.model.cnt_request.CntRequestUpdateModel;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -46,7 +46,7 @@ public class CntRequestConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, CntRequestModel::fromJson);
+        return executeRequest(request, CntRequestModel.Companion::fromJson);
     }
 
     public Optional<CntRequestModel> createCntRequest(CntRequestCreationModel creationModel) {
@@ -61,7 +61,7 @@ public class CntRequestConnection implements ModuleConnection {
                 .post(requestBody)
                 .build();
 
-        return executeRequest(request, CntRequestModel::fromJson);
+        return executeRequest(request, CntRequestModel.Companion::fromJson);
     }
 
     public Optional<CntRequestModel> updateCntRequest(long id, CntRequestUpdateModel updateModel) {
@@ -76,6 +76,6 @@ public class CntRequestConnection implements ModuleConnection {
                 .put(requestBody)
                 .build();
 
-        return executeRequest(request, CntRequestModel::fromJson);
+        return executeRequest(request, CntRequestModel.Companion::fromJson);
     }
 }

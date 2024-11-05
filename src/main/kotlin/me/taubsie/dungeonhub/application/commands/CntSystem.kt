@@ -33,9 +33,8 @@ import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.color
-import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestCreationModel
-import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestUpdateModel
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel
+import net.dungeonhub.model.cnt_request.CntRequestCreationModel
+import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
 import java.time.Instant
 
 @LoadExtension
@@ -97,12 +96,11 @@ class CntSystem : Extension() {
                     val claimerId = event.interaction.user.id.value.toLong()
 
                     val claimer = DiscordUserConnection.getInstance().getById(claimerId).or {
-                        DiscordUserConnection.getInstance().updateUser(claimerId, DiscordUserUpdateModel())
+                        DiscordUserConnection.getInstance().updateUser(claimerId, DiscordUserUpdateModel(null))
                     }.orElseThrow { CommandExecutionException("Couldn't load CNT claimer!") }
 
-                    val updateModel = CntRequestUpdateModel.builder()
-                        .claimer(claimer)
-                        .build()
+                    val updateModel = cntRequest.getUpdateModel()
+                    updateModel.claimer = claimer
 
                     val updatedCntRequest = CntRequestConnection.getInstance(event.interaction.guild.id.value.toLong())
                         .updateCntRequest(cntRequest.id, updateModel)
@@ -147,7 +145,7 @@ class CntSystem : Extension() {
                     .findCntRequest(event.interaction.message.id.value.toLong())
                     .orElseThrow { CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?") }
 
-                if (event.interaction.user.id.value.toLong() != cntRequest.claimer.id
+                if (event.interaction.user.id.value.toLong() != cntRequest.claimer?.id
                     && !event.interaction.user.hasPermission(Permission.Administrator)
                 ) {
                     val embed = ApplicationService
@@ -162,8 +160,11 @@ class CntSystem : Extension() {
                 unclaimMessage.title = "Unclaimed!"
                 unclaimMessage.description = "The request has been unclaimed. It is now available for others to claim."
 
+                val updateModel = cntRequest.getUpdateModel()
+                updateModel.claimer = null
+
                 val updatedCntRequest = CntRequestConnection.getInstance(event.interaction.guild.id.value.toLong())
-                    .updateCntRequest(cntRequest.id, CntRequestUpdateModel.builder().removeClaimer(true).build())
+                    .updateCntRequest(cntRequest.id, updateModel)
                     .orElseThrow { CommandExecutionException("Couldn't update CNT request!") }
 
                 event.interaction.respondEphemeral {

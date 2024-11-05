@@ -1,13 +1,13 @@
 package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
-import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.enums.QueueStep;
-import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
-import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueCreationModel;
-import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel;
-import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueUpdateModel;
-import me.taubsie.dungeonhub.common.model.score.LoggedCarryModel;
+import net.dungeonhub.enums.QueueStep;
+import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel;
+import net.dungeonhub.model.carry_queue.CarryQueueCreationModel;
+import net.dungeonhub.model.carry_queue.CarryQueueModel;
+import net.dungeonhub.model.carry_queue.CarryQueueUpdateModel;
+import net.dungeonhub.model.score.LoggedCarryModel;
+import net.dungeonhub.service.MoshiService;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -44,7 +44,7 @@ public class QueueConnection implements ModuleConnection {
                 .post(requestBody)
                 .build();
 
-        return executeRequest(request, CarryQueueModel::fromJson);
+        return executeRequest(request, CarryQueueModel.Companion::fromJson);
     }
 
     public Optional<Set<CarryQueueModel>> getCarryQueueByRelatedIdAndQueueStep(@NotNull Long relatedId,
@@ -58,10 +58,7 @@ public class QueueConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> DungeonHubService.getInstance()
-                .getGson()
-                .fromJson(s, DungeonHubService.getInstance()
-                        .getCarryQueueModelSetType()));
+        return executeRequest(request, MoshiService.INSTANCE.getCarryQueueSetMoshi()::fromJson);
     }
 
     public Optional<Set<CarryQueueModel>> getCarryQueueByRelatedId(@NotNull Long id) {
@@ -73,10 +70,7 @@ public class QueueConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> DungeonHubService.getInstance()
-                .getGson()
-                .fromJson(s, DungeonHubService.getInstance()
-                        .getCarryQueueModelSetType()));
+        return executeRequest(request, MoshiService.INSTANCE.getCarryQueueSetMoshi()::fromJson);
     }
 
     public Optional<Set<CarryQueueModel>> getCarryQueuesByQueueStep(@NotNull QueueStep step) {
@@ -88,10 +82,7 @@ public class QueueConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> DungeonHubService.getInstance()
-                .getGson()
-                .fromJson(s, DungeonHubService.getInstance()
-                        .getCarryQueueModelSetType()));
+        return executeRequest(request, MoshiService.INSTANCE.getCarryQueueSetMoshi()::fromJson);
     }
 
     public Optional<CarryQueueModel> updateQueue(Long id, CarryQueueUpdateModel updateModel) {
@@ -107,7 +98,7 @@ public class QueueConnection implements ModuleConnection {
                 .put(requestBody)
                 .build();
 
-        return executeRequest(request, CarryQueueModel::fromJson);
+        return executeRequest(request, CarryQueueModel.Companion::fromJson);
     }
 
     public boolean deleteQueue(Long id) {
@@ -134,7 +125,7 @@ public class QueueConnection implements ModuleConnection {
                 .post(requestBody)
                 .build();
 
-        return executeRequest(request, LoggedCarryModel::fromJson);
+        return executeRequest(request, LoggedCarryModel.Companion::fromJson);
     }
 
     @Override

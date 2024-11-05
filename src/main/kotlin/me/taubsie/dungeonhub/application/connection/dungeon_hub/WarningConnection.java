@@ -1,8 +1,11 @@
 package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
-import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.model.warning.*;
+import net.dungeonhub.model.warning.AddedWarningModel;
+import net.dungeonhub.model.warning.DetailedWarningModel;
+import net.dungeonhub.model.warning.WarningCreationModel;
+import net.dungeonhub.model.warning.WarningEvidenceCreationModel;
+import net.dungeonhub.service.MoshiService;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -44,7 +47,7 @@ public class WarningConnection implements ModuleConnection {
 
         Request request = getApiRequest(url).get().build();
 
-        return executeRequest(request, s -> fromJson(s, DungeonHubService.getInstance().getDetailedWarningModelListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getDetailedWarningListMoshi()::fromJson);
     }
 
     public Optional<List<DetailedWarningModel>> getActiveWarns(long userId) {
@@ -54,7 +57,7 @@ public class WarningConnection implements ModuleConnection {
 
         Request request = getApiRequest(url).get().build();
 
-        return executeRequest(request, s -> fromJson(s, DungeonHubService.getInstance().getDetailedWarningModelListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getDetailedWarningListMoshi()::fromJson);
     }
 
     public Optional<AddedWarningModel> addWarning(WarningCreationModel creationModel) {
@@ -67,7 +70,7 @@ public class WarningConnection implements ModuleConnection {
 
         Request request = getApiRequest(url).post(requestBody).build();
 
-        return executeRequest(request, AddedWarningModel::fromJson);
+        return executeRequest(request, AddedWarningModel.Companion::fromJson);
     }
 
     public Optional<DetailedWarningModel> deactivateWarning(long id) {
@@ -75,7 +78,7 @@ public class WarningConnection implements ModuleConnection {
 
         Request request = getApiRequest(url).delete().build();
 
-        return executeRequest(request, DetailedWarningModel::fromJson);
+        return executeRequest(request, DetailedWarningModel.Companion::fromJson);
     }
 
     public Optional<DetailedWarningModel> addEvidence(long warningId, WarningEvidenceCreationModel evidenceCreationModel) {
@@ -88,6 +91,6 @@ public class WarningConnection implements ModuleConnection {
 
         Request request = getApiRequest(url).put(requestBody).build();
 
-        return executeRequest(request, DetailedWarningModel::fromJson);
+        return executeRequest(request, DetailedWarningModel.Companion::fromJson);
     }
 }

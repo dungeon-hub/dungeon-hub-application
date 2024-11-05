@@ -31,10 +31,10 @@ import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
 import me.taubsie.dungeonhub.application.service.LeaderboardService
 import me.taubsie.dungeonhub.application.service.PermissionService
-import me.taubsie.dungeonhub.common.enums.ScoreResetType
-import me.taubsie.dungeonhub.common.enums.ScoreType
-import me.taubsie.dungeonhub.common.model.score.ScoreModel
-import me.taubsie.dungeonhub.common.model.score.ScoreUpdateModel
+import net.dungeonhub.enums.ScoreResetType
+import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.model.score.ScoreModel
+import net.dungeonhub.model.score.ScoreUpdateModel
 
 @LoadExtension
 class ManageScoreCommand : Extension() {
@@ -144,7 +144,7 @@ class ManageScoreCommand : Extension() {
                 .orElse(listOf())
 
         val updatedScore = updatedScores.stream()
-            .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.DEFAULT }
+            .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
             .map { obj: ScoreModel -> obj.scoreAmount }
             .findFirst()
             .orElse(0L)

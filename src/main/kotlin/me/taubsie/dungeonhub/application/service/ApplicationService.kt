@@ -34,19 +34,19 @@ import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import me.taubsie.dungeonhub.application.misc.FlagResponse
-import me.taubsie.dungeonhub.common.enums.ScoreType
-import me.taubsie.dungeonhub.common.enums.WarningAction
-import me.taubsie.dungeonhub.common.model.carry.CarryModel
-import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel
-import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel
-import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel
-import me.taubsie.dungeonhub.common.model.cnt_request.CntRequestModel
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
-import me.taubsie.dungeonhub.common.model.score.ScoreModel
-import me.taubsie.dungeonhub.common.model.warning.DetailedWarningModel
-import me.taubsie.dungeonhub.common.model.warning.WarningActionModel
-import me.taubsie.dungeonhub.common.model.warning.WarningModel
+import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.enums.WarningAction
+import net.dungeonhub.model.carry.CarryModel
+import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
+import net.dungeonhub.model.carry_queue.CarryQueueModel
+import net.dungeonhub.model.carry_tier.CarryTierModel
+import net.dungeonhub.model.carry_type.CarryTypeModel
+import net.dungeonhub.model.cnt_request.CntRequestModel
+import net.dungeonhub.model.discord_role.DiscordRoleModel
+import net.dungeonhub.model.score.ScoreModel
+import net.dungeonhub.model.warning.DetailedWarningModel
+import net.dungeonhub.model.warning.WarningActionModel
+import net.dungeonhub.model.warning.WarningModel
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
@@ -198,7 +198,7 @@ object ApplicationService {
             "Name schema",
             true
         ) { discordRoleModel.nameSchema ?: "none" }
-        embed.field("Verified role", true) { if (discordRoleModel.isVerifiedRole) "yes" else "no" }
+        embed.field("Verified role", true) { if (discordRoleModel.verifiedRole) "yes" else "no" }
 
         return embed
     }
@@ -206,7 +206,7 @@ object ApplicationService {
     @JvmOverloads
     fun loadEmbedFromCarry(
         carry: CarryModel,
-        embedBuilder: EmbedBuilder = getEmbed(Instant.fromEpochSeconds(carry.time().epochSecond))
+        embedBuilder: EmbedBuilder = getEmbed(Instant.fromEpochSeconds(carry.time!!.epochSecond))
     ): EmbedBuilder {
         embedBuilder.color = EmbedColor.INFORMATION.color
 
@@ -214,17 +214,17 @@ object ApplicationService {
         embedBuilder.field(
             "Type of carry",
             true
-        ) { carry.carryDifficulty().carryTier.displayName + " - " + carry.carryDifficulty().displayName }
-        embedBuilder.field("Player", true) { "<@" + carry.player().id + ">" }
-        embedBuilder.field("Carrier", true) { "<@" + carry.carrier().id + ">" }
+        ) { carry.carryDifficulty.carryTier.displayName + " - " + carry.carryDifficulty.displayName }
+        embedBuilder.field("Player", true) { "<@" + carry.player.id + ">" }
+        embedBuilder.field("Carrier", true) { "<@" + carry.carrier.id + ">" }
         embedBuilder.field("Gained Score", true) { carry.calculateScore().toString() }
 
-        if (carry.approver() != null) {
-            embedBuilder.field("Approved by", true) { "<@" + carry.approver() + ">" }
+        if (carry.approver != null) {
+            embedBuilder.field("Approved by", true) { "<@" + carry.approver + ">" }
         }
 
-        if (carry.attachmentLink() != null) {
-            embedBuilder.field("Transcript-Link", true) { "[Click to open]" + "(" + carry.attachmentLink() + ")" }
+        if (carry.attachmentLink != null) {
+            embedBuilder.field("Transcript-Link", true) { "[Click to open]" + "(" + carry.attachmentLink + ")" }
         }
 
         return embedBuilder
@@ -250,7 +250,7 @@ object ApplicationService {
     }
 
     fun loadEmbedFromCarryQueue(carryQueue: CarryQueueModel): EmbedBuilder {
-        return loadEmbedFromCarryQueue(carryQueue, getEmbed(Instant.fromEpochSeconds(carryQueue.time.epochSecond)))
+        return loadEmbedFromCarryQueue(carryQueue, getEmbed(Instant.fromEpochSeconds(carryQueue.time!!.epochSecond)))
     }
 
     fun formatWarn(warningModel: WarningModel): EmbedBuilder {
@@ -259,10 +259,10 @@ object ApplicationService {
         embed.title = "Warning #${warningModel.id}"
 
         embed.field("User") { "<@${warningModel.user.id}>" }
-        embed.field("Striker") { warningModel.striker?.let { "<@${it.id}>" } ?: "CONSOLE" }
+        embed.field("Striker") { "<@${warningModel.striker.id}>" }
         embed.field("Severity") { warningModel.warningType.name }
         embed.field("Reason") { warningModel.reason ?: "No reason provided." }
-        embed.field("Active") { warningModel.isActive.toString() }
+        embed.field("Active") { warningModel.active.toString() }
 
         return embed
     }
@@ -273,10 +273,10 @@ object ApplicationService {
         embed.title = "Warning #${warningModel.id}"
 
         embed.field("User") { "<@${warningModel.user.id}>" }
-        embed.field("Striker") { warningModel.striker?.let { "<@${it.id}>" } ?: "CONSOLE" }
+        embed.field("Striker") { "<@${warningModel.striker.id}>" }
         embed.field("Severity") { warningModel.warningType.name }
         embed.field("Reason") { warningModel.reason ?: "No reason provided." }
-        embed.field("Active") { warningModel.isActive.toString() }
+        embed.field("Active") { warningModel.active.toString() }
 
         if (showEvidences && warningModel.evidences.isNotEmpty()) {
             val evidences = warningModel.evidences.stream().map {
@@ -314,13 +314,7 @@ object ApplicationService {
         embed.title = "Warning #${warningModel.id}"
 
         embed.field("User") { "<@${warningModel.user.id}>" }
-        embed.field("Striker") {
-            if (warningModel.striker != null) {
-                "<@${warningModel.striker.id}>"
-            } else {
-                "CONSOLE"
-            }
-        }
+        embed.field("Striker") { "<@${warningModel.striker.id}>" }
         embed.field("Severity") { warningModel.warningType.name }
         embed.field("Reason") { warningModel.reason ?: "No reason provided." }
 
@@ -364,7 +358,7 @@ object ApplicationService {
         )
 
         scoreCount.forEach { scoreModel: ScoreModel ->
-            if (scoreModel.scoreType == ScoreType.EVENT && !scoreModel.carryType?.isEventActive!!) {
+            if (scoreModel.scoreType == ScoreType.Event && !scoreModel.carryType?.isEventActive!!) {
                 return@forEach
             }
             val description = scoreModel.carryType?.displayName + ": " + scoreModel.scoreAmount
@@ -460,15 +454,15 @@ object ApplicationService {
         embed.field("Identifier", true) { carryType.identifier }
         embed.field("Display Name", true) { carryType.displayName }
 
-        carryType.logChannel.ifPresent { logChannel ->
+        carryType.logChannel?.let { logChannel ->
             embed.field("Log Channel", true) { "<#$logChannel>" }
         }
 
-        carryType.leaderboardChannel.ifPresent { leaderboardChannel ->
+        carryType.leaderboardChannel?.let { leaderboardChannel ->
             embed.field("Leaderboard Channel", true) { "<#$leaderboardChannel>" }
         }
 
-        embed.field("Event active", true) { if (carryType.isEventActive) "yes" else "no" }
+        embed.field("Event active", true) { if (carryType.isEventActive == true) "yes" else "no" }
 
         return embed
     }
@@ -479,24 +473,24 @@ object ApplicationService {
         embed.color = EmbedColor.DEFAULT.color
         embed.field("Identifier", true) { carryTier.identifier }
         embed.field("Display Name", true) { carryTier.displayName }
-        embed.field("Descriptive Name", true) { carryTier.descriptiveName }
+        embed.field("Descriptive Name", true) { carryTier.descriptiveName!! }
         embed.field(
             "Carry Type",
             true
         ) { carryTier.carryType.displayName + " (" + carryTier.carryType.identifier + ")" }
 
-        carryTier.category.ifPresent { category: Long -> embed.field("Category", true) { "<#$category>" } }
-        carryTier.priceChannel.ifPresent { priceChannel: Long ->
+        carryTier.category?.let { category: Long -> embed.field("Category", true) { "<#$category>" } }
+        carryTier.priceChannel?.let { priceChannel: Long ->
             embed.field(
                 "Price Channel",
                 true
             ) { "<#$priceChannel>" }
         }
-        carryTier.thumbnailUrl.ifPresent { thumbnailUrl: String ->
+        carryTier.thumbnailUrl?.let { thumbnailUrl: String ->
             embed.field("Thumbnail URL", true) { thumbnailUrl }
         }
-        carryTier.actualPriceTitle.ifPresent { s: String -> embed.field("Price Title", true) { s } }
-        carryTier.priceDescription.ifPresent { s: String -> embed.field("Price Description", true) { s } }
+        carryTier.priceTitle?.let { s: String -> embed.field("Price Title", true) { s } }
+        carryTier.priceDescription?.let { s: String -> embed.field("Price Description", true) { s } }
 
         return embed
     }
@@ -522,11 +516,11 @@ object ApplicationService {
         embed.field("Score", true) { carryDifficulty.score.toString() }
 
         carryDifficulty.bulkAmount
-            .ifPresent { integer: Int -> embed.field("Bulk Amount", true) { integer.toString() } }
+            ?.let { integer: Int -> embed.field("Bulk Amount", true) { integer.toString() } }
         carryDifficulty.bulkPrice
-            .ifPresent { integer: Int -> embed.field("Bulk Price", true) { integer.toString() } }
-        carryDifficulty.actualThumbnailUrl.ifPresent { s: String -> embed.field("Thumbnail URL", true) { s } }
-        carryDifficulty.actualPriceName.ifPresent { s: String -> embed.field("Price Title", true) { s } }
+            ?.let { integer: Int -> embed.field("Bulk Price", true) { integer.toString() } }
+        carryDifficulty.thumbnailUrl?.let { s: String -> embed.field("Thumbnail URL", true) { s } }
+        carryDifficulty.thumbnailUrl?.let { s: String -> embed.field("Price Title", true) { s } }
 
         return embed
     }
@@ -578,8 +572,8 @@ object ApplicationService {
         val bulkPrice = carryDifficulty.bulkPrice
         val bulkAmount = carryDifficulty.bulkAmount
 
-        if (bulkPrice.isPresent && bulkAmount.isPresent && bulkAmount.get() <= amount) {
-            return bulkPrice.get().toLong()
+        if (bulkPrice != null && bulkAmount != null && bulkAmount <= amount) {
+            return bulkPrice.toLong()
         }
 
         return carryDifficulty.price.toLong()
@@ -601,7 +595,7 @@ object ApplicationService {
         val reason = mutableListOf<String>()
 
         var timeout = actions.filter { it.warningAction == WarningAction.Timeout }
-            .map { parseTimeoutDuration(it.data) }
+            .map { parseTimeoutDuration(it.data!!) }
             .reduceOrNull { acc, duration -> acc.plus(duration) }
 
         if (timeout != null && timeout.isPositive()) {
@@ -626,7 +620,7 @@ object ApplicationService {
         for (action in actions) {
             when (action.warningAction) {
                 WarningAction.AddRole -> {
-                    val role = member.guild.getRoleOrNull(Snowflake(action.data))
+                    val role = member.guild.getRoleOrNull(Snowflake(action.data!!))
 
                     if (role == null) {
                         reason.add("- Tried to apply role with id `${action.data}`, but it couldn't be found.")
@@ -638,7 +632,7 @@ object ApplicationService {
                 }
 
                 WarningAction.RemoveRole -> {
-                    val role = member.guild.getRoleOrNull(Snowflake(action.data))
+                    val role = member.guild.getRoleOrNull(Snowflake(action.data!!))
 
                     if (role == null) {
                         reason.add("- Tried to remove role with id `${action.data}`, but it couldn't be found.")
@@ -650,7 +644,7 @@ object ApplicationService {
                 }
 
                 WarningAction.RemoveRoleGroup -> {
-                    val role = member.guild.getRoleOrNull(Snowflake(action.data))
+                    val role = member.guild.getRoleOrNull(Snowflake(action.data!!))
 
                     if (role == null) {
                         reason.add("- Tried to remove role-group with id `${action.data}`, but it couldn't be found.")

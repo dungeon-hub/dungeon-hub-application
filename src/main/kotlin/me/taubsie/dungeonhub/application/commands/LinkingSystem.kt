@@ -36,8 +36,7 @@ import me.taubsie.dungeonhub.application.enums.HelpTopic
 import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.*
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel
+import net.dungeonhub.model.discord_user.DiscordUserModel
 import java.util.*
 import kotlin.concurrent.thread
 
@@ -256,8 +255,11 @@ class LinkingSystem : Extension() {
                             .getLinkedById(user.id.value.toLong())
                             .orElseThrow { NotLinkedException() }
 
+                    val updateModel = oldUserModel.getUpdateModel()
+                    updateModel.minecraftId = null
+
                     DiscordUserConnection.getInstance()
-                        .updateUser(user.id.value.toLong(), DiscordUserUpdateModel(true))
+                        .updateUser(user.id.value.toLong(), updateModel)
                         .orElseThrow { CommandExecutionException("Couldn't update your user data.") }
 
                     val embed = ApplicationService.embed

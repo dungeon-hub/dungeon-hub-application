@@ -18,7 +18,7 @@ import me.taubsie.dungeonhub.application.exceptions.InvalidSubCommandException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
-import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyUpdateModel
+import net.dungeonhub.model.carry_difficulty.CarryDifficultyUpdateModel
 
 @LoadExtension
 class CarryDifficultyCommand : Extension() {
@@ -143,7 +143,7 @@ class CarryDifficultyCommand : Extension() {
                             throw CommandExecutionException("Please provide something you want to edit.")
                         }
 
-                        val updateModel = CarryDifficultyUpdateModel()
+                        val updateModel = carryDifficulty.getUpdateModel()
 
                         if (arguments.displayName != null) {
                             updateModel.displayName = arguments.displayName

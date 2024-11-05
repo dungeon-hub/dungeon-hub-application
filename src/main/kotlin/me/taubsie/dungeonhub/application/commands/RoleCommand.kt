@@ -27,8 +27,8 @@ import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.NicknameService
 import me.taubsie.dungeonhub.application.service.RolesService
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleCreationModel
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleUpdateModel
+import net.dungeonhub.model.discord_role.DiscordRoleCreationModel
+import net.dungeonhub.model.discord_role.DiscordRoleUpdateModel
 import kotlin.concurrent.thread
 
 @LoadExtension

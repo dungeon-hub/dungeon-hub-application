@@ -1,8 +1,8 @@
 package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
-import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.model.discord_role_group.DiscordRoleGroupModel;
+import net.dungeonhub.model.discord_role_group.DiscordRoleGroupModel;
+import net.dungeonhub.service.MoshiService;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import org.slf4j.Logger;
@@ -41,7 +41,6 @@ public class DiscordRoleGroupConnection implements ModuleConnection {
 
         Request request = getApiRequest(url).get().build();
 
-        return executeRequest(request, s -> getGson().fromJson(s,
-                DungeonHubService.getInstance().getDiscordRoleGroupModelListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getDiscordRoleGroupListMoshi()::fromJson);
     }
 }

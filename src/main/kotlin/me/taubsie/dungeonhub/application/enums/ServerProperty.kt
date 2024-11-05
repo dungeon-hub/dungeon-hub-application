@@ -2,7 +2,6 @@ package me.taubsie.dungeonhub.application.enums
 
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import me.taubsie.dungeonhub.application.service.ServerService.getActualServerProperty
-import me.taubsie.dungeonhub.common.Nameable
 import java.util.*
 
 //TODO implement related properties
@@ -18,7 +17,7 @@ enum class ServerProperty(
     val propertyType: ServerPropertyType = ServerPropertyType.STRING,
     val enabled: Boolean = true,
     val relatedProperties: Array<ServerProperty> = arrayOf()
-) : ChoiceEnum, Nameable {
+) : ChoiceEnum {
     PROFILE_MODERATION_BAN_MESSAGE("profile_moderation_message"),
     BAN_MESSAGE("ban_message"),
     UNBAN_FORM("unban_form"),
@@ -46,10 +45,6 @@ enum class ServerProperty(
         true,
         relatedProperties
     )
-
-    override fun getName(): String {
-        return readableName
-    }
 
     fun getValue(serverId: Long): Optional<String> {
         return getActualServerProperty(serverId, this)

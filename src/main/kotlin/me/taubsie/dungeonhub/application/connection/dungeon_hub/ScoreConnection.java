@@ -1,14 +1,14 @@
 package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
-import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.enums.ScoreResetType;
-import me.taubsie.dungeonhub.common.enums.ScoreType;
-import me.taubsie.dungeonhub.common.model.ScoreResetModel;
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
-import me.taubsie.dungeonhub.common.model.score.LeaderboardModel;
-import me.taubsie.dungeonhub.common.model.score.ScoreModel;
-import me.taubsie.dungeonhub.common.model.score.ScoreUpdateModel;
+import net.dungeonhub.enums.ScoreResetType;
+import net.dungeonhub.enums.ScoreType;
+import net.dungeonhub.model.carry_type.CarryTypeModel;
+import net.dungeonhub.model.score.LeaderboardModel;
+import net.dungeonhub.model.score.ScoreModel;
+import net.dungeonhub.model.score.ScoreResetModel;
+import net.dungeonhub.model.score.ScoreUpdateModel;
+import net.dungeonhub.service.MoshiService;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -53,7 +53,7 @@ public class ScoreConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, ScoreModel::fromJson);
+        return executeRequest(request, ScoreModel.Companion::fromJson);
     }
 
     public Optional<List<ScoreModel>> getScores() {
@@ -63,7 +63,7 @@ public class ScoreConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> fromJson(s, DungeonHubService.getInstance().getScoreModelListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getScoreListMoshi()::fromJson);
     }
 
     public Optional<List<ScoreModel>> getScores(long id) {
@@ -75,11 +75,11 @@ public class ScoreConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> fromJson(s, DungeonHubService.getInstance().getScoreModelListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getScoreListMoshi()::fromJson);
     }
 
     public Optional<ScoreModel> getScore(long id) {
-        return getScore(id, ScoreType.DEFAULT);
+        return getScore(id, ScoreType.Default);
     }
 
     public Optional<List<ScoreModel>> updateScores(ScoreUpdateModel scoreUpdateModel) {
@@ -94,8 +94,7 @@ public class ScoreConnection implements ModuleConnection {
                 .put(requestBody)
                 .build();
 
-        return executeRequest(request, s -> getGson().fromJson(s,
-                DungeonHubService.getInstance().getScoreModelListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getScoreListMoshi()::fromJson);
     }
 
     public Optional<LeaderboardModel> loadLeaderboard(@Nullable ScoreType scoreType, @Nullable Integer page) {
@@ -105,7 +104,7 @@ public class ScoreConnection implements ModuleConnection {
     public Optional<LeaderboardModel> loadLeaderboard(@Nullable ScoreType scoreType, @Nullable Integer page,
                                                       @Nullable Long userId) {
         if (scoreType == null) {
-            scoreType = ScoreType.DEFAULT;
+            scoreType = ScoreType.Default;
         }
 
         if (page == null || page < 0) {
@@ -124,7 +123,7 @@ public class ScoreConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, LeaderboardModel::fromJson);
+        return executeRequest(request, LeaderboardModel.Companion::fromJson);
     }
 
     public Optional<ScoreResetModel> resetScore(ScoreResetType scoreResetType) {
@@ -132,6 +131,6 @@ public class ScoreConnection implements ModuleConnection {
 
         Request request = getApiRequest(url).delete().build();
 
-        return executeRequest(request, ScoreResetModel::fromJson);
+        return executeRequest(request, ScoreResetModel.Companion::fromJson);
     }
 }

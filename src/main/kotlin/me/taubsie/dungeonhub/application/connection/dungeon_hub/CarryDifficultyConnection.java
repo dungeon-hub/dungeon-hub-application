@@ -1,10 +1,10 @@
 package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
-import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel;
-import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyUpdateModel;
-import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel;
+import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel;
+import net.dungeonhub.model.carry_difficulty.CarryDifficultyUpdateModel;
+import net.dungeonhub.model.carry_tier.CarryTierModel;
+import net.dungeonhub.service.MoshiService;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -47,7 +47,7 @@ public class CarryDifficultyConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, CarryDifficultyModel::fromJson);
+        return executeRequest(request, CarryDifficultyModel.Companion::fromJson);
     }
 
     public Optional<List<CarryDifficultyModel>> getAllCarryDifficulties() {
@@ -57,8 +57,7 @@ public class CarryDifficultyConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> getGson().fromJson(s,
-                DungeonHubService.getInstance().getCarryDifficultyListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getCarryDifficultyListMoshi()::fromJson);
     }
 
     public Optional<CarryDifficultyModel> getByIdentifier(String identifier) {
@@ -80,7 +79,7 @@ public class CarryDifficultyConnection implements ModuleConnection {
                 .put(requestBody)
                 .build();
 
-        return executeRequest(request, CarryDifficultyModel::fromJson);
+        return executeRequest(request, CarryDifficultyModel.Companion::fromJson);
     }
 
     @Override

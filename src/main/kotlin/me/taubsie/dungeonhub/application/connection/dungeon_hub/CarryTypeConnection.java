@@ -1,10 +1,10 @@
 package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
-import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeCreationModel;
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeModel;
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeUpdateModel;
+import net.dungeonhub.model.carry_type.CarryTypeCreationModel;
+import net.dungeonhub.model.carry_type.CarryTypeModel;
+import net.dungeonhub.model.carry_type.CarryTypeUpdateModel;
+import net.dungeonhub.service.MoshiService;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -46,7 +46,7 @@ public class CarryTypeConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, CarryTypeModel::fromJson);
+        return executeRequest(request, CarryTypeModel.Companion::fromJson);
     }
 
     //TODO dedicated endpoint?
@@ -69,7 +69,7 @@ public class CarryTypeConnection implements ModuleConnection {
                 .post(requestBody)
                 .build();
 
-        return executeRequest(request, CarryTypeModel::fromJson);
+        return executeRequest(request, CarryTypeModel.Companion::fromJson);
     }
 
     public Optional<CarryTypeModel> updateCarryType(long id, CarryTypeUpdateModel updateModel) {
@@ -84,7 +84,7 @@ public class CarryTypeConnection implements ModuleConnection {
                 .put(requestBody)
                 .build();
 
-        return executeRequest(request, CarryTypeModel::fromJson);
+        return executeRequest(request, CarryTypeModel.Companion::fromJson);
     }
 
     public Optional<CarryTypeModel> deleteCarryType(CarryTypeModel carryTypeModel) {
@@ -94,7 +94,7 @@ public class CarryTypeConnection implements ModuleConnection {
                 .delete()
                 .build();
 
-        return executeRequest(request, CarryTypeModel::fromJson);
+        return executeRequest(request, CarryTypeModel.Companion::fromJson);
     }
 
     public Optional<List<CarryTypeModel>> getAllCarryTypes() {
@@ -102,7 +102,6 @@ public class CarryTypeConnection implements ModuleConnection {
 
         Request request = getApiRequest(url).get().build();
 
-        return executeRequest(request, s -> getGson().fromJson(s,
-                DungeonHubService.getInstance().getCarryTypeListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getCarryTypeListMoshi()::fromJson);
     }
 }

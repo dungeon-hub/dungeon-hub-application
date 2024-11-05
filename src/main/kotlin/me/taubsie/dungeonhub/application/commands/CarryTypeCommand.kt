@@ -14,8 +14,7 @@ import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeCreationModel
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeUpdateModel
+import net.dungeonhub.model.carry_type.CarryTypeCreationModel
 import java.util.*
 
 @LoadExtension
@@ -51,15 +50,15 @@ class CarryTypeCommand : Extension() {
                         val creationModel = CarryTypeCreationModel(identifier, arguments.displayName)
 
                         if (arguments.logChannel != null) {
-                            creationModel.setLogChannel(arguments.logChannel!!.id.value.toLong())
+                            creationModel.logChannel = arguments.logChannel!!.id.value.toLong()
                         }
 
                         if (arguments.leaderboardChannel != null) {
-                            creationModel.setLeaderboardChannel(arguments.leaderboardChannel!!.id.value.toLong())
+                            creationModel.leaderboardChannel = arguments.leaderboardChannel!!.id.value.toLong()
                         }
 
                         if (arguments.eventActive != null) {
-                            creationModel.setEventActive(arguments.eventActive)
+                            creationModel.eventActive = arguments.eventActive
                         }
 
                         val carryTypeModel =
@@ -166,7 +165,7 @@ class CarryTypeCommand : Extension() {
                             throw CommandExecutionException("Please provide something you want to edit.")
                         }
 
-                        val updateModel = CarryTypeUpdateModel()
+                        val updateModel = carryType.getUpdateModel()
 
                         if (arguments.displayName != null) {
                             updateModel.displayName = arguments.displayName
@@ -226,7 +225,7 @@ class CarryTypeCommand : Extension() {
                             throw CommandExecutionException("Please provide something you want to reset.")
                         }
 
-                        val updateModel = CarryTypeUpdateModel()
+                        val updateModel = carryType.getUpdateModel()
 
                         if (arguments.logChannel) {
                             updateModel.logChannel = -1L

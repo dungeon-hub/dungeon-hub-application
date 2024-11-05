@@ -28,9 +28,9 @@ import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
-import me.taubsie.dungeonhub.common.enums.WarningType
-import me.taubsie.dungeonhub.common.model.warning.WarningCreationModel
-import me.taubsie.dungeonhub.common.model.warning.WarningEvidenceCreationModel
+import net.dungeonhub.enums.WarningType
+import net.dungeonhub.model.warning.WarningCreationModel
+import net.dungeonhub.model.warning.WarningEvidenceCreationModel
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import org.slf4j.LoggerFactory

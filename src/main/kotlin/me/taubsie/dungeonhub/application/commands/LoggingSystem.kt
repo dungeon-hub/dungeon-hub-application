@@ -40,13 +40,13 @@ import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
 import me.taubsie.dungeonhub.application.service.LeaderboardService.refreshLeaderboard
 import me.taubsie.dungeonhub.application.service.PermissionService
-import me.taubsie.dungeonhub.common.enums.QueueStep
-import me.taubsie.dungeonhub.common.enums.ScoreType
-import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueCreationModel
-import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel
-import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueUpdateModel
-import me.taubsie.dungeonhub.common.model.score.LoggedCarryModel
-import me.taubsie.dungeonhub.common.model.score.ScoreModel
+import net.dungeonhub.enums.QueueStep
+import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.model.carry_queue.CarryQueueCreationModel
+import net.dungeonhub.model.carry_queue.CarryQueueModel
+import net.dungeonhub.model.carry_queue.CarryQueueUpdateModel
+import net.dungeonhub.model.score.LoggedCarryModel
+import net.dungeonhub.model.score.ScoreModel
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -75,7 +75,7 @@ class LoggingSystem : Extension() {
                     }
 
                     if (QueueConnection.getInstance()
-                            .getCarryQueueByRelatedIdAndQueueStep(channel.id.value.toLong(), QueueStep.CONFIRMATION)
+                            .getCarryQueueByRelatedIdAndQueueStep(channel.id.value.toLong(), QueueStep.Confirmation)
                             .stream()
                             .filter { it != null }
                             .flatMap<CarryQueueModel?> { obj: Set<CarryQueueModel?> -> obj.stream() }
@@ -100,7 +100,7 @@ class LoggingSystem : Extension() {
                                             QueueConnection.getInstance()
                                                 .getCarryQueueByRelatedIdAndQueueStep(
                                                     channel.id.value.toLong(),
-                                                    QueueStep.CONFIRMATION
+                                                    QueueStep.Confirmation
                                                 )
                                                 .stream()
                                                 .flatMap { obj: Set<CarryQueueModel> -> obj.stream() }
@@ -190,13 +190,14 @@ class LoggingSystem : Extension() {
                     val time = Instant.now()
                     val carried = firstMessage.mentionedUsers.first()
 
-                    val creationModel = CarryQueueCreationModel()
-                        .setQueueStep(QueueStep.CONFIRMATION)
-                        .setTime(time)
-                        .setAmount(arguments.carryAmount)
-                        .setPlayer(carried.id.value.toLong())
-                        .setCarrier(user.id.value.toLong())
-                        .setRelationId(channel.id.value.toLong())
+                    val creationModel = CarryQueueCreationModel(
+                        queueStep = QueueStep.Confirmation,
+                        time = time,
+                        amount = arguments.carryAmount,
+                        player = carried.id.value.toLong(),
+                        carrier = user.id.value.toLong(),
+                        relationId = channel.id.value.toLong()
+                    )
 
                     val carryQueueModel =
                         QueueConnection.getInstance()
@@ -248,7 +249,7 @@ class LoggingSystem : Extension() {
         val message = event.interaction.message
 
         for (queueModel in QueueConnection.getInstance()
-            .getCarryQueueByRelatedIdAndQueueStep(message.id.value.toLong(), QueueStep.APPROVING)
+            .getCarryQueueByRelatedIdAndQueueStep(message.id.value.toLong(), QueueStep.Approving)
             .orElse(HashSet<CarryQueueModel>())) {
             val carrier = event.kord.getUser(Snowflake(queueModel.carrier.id))
 
@@ -296,14 +297,12 @@ class LoggingSystem : Extension() {
         val message = event.interaction.message
 
         for (queueModel: CarryQueueModel in QueueConnection.getInstance()
-            .getCarryQueueByRelatedIdAndQueueStep(message.id.value.toLong(), QueueStep.APPROVING)
+            .getCarryQueueByRelatedIdAndQueueStep(message.id.value.toLong(), QueueStep.Approving)
             .orElse(java.util.HashSet())) {
-            val updateModel = CarryQueueUpdateModel()
-                .setApprover(event.interaction.user.id.value.toLong())
+            val updateModel = queueModel.getUpdateModel()
+            updateModel.approver = event.interaction.user.id.value.toLong()
 
-            val loggedCarryModel =
-                QueueConnection.getInstance()
-                    .logQueue(queueModel.id, updateModel)
+            val loggedCarryModel = QueueConnection.getInstance().logQueue(queueModel.id, updateModel)
 
             if (loggedCarryModel.isEmpty) {
                 return
@@ -312,7 +311,7 @@ class LoggingSystem : Extension() {
             val updatedScore = loggedCarryModel.stream()
                 .map(LoggedCarryModel::scoreModels)
                 .flatMap { obj: List<ScoreModel> -> obj.stream() }
-                .filter { scoreModel: ScoreModel -> (scoreModel.scoreType == ScoreType.DEFAULT) }
+                .filter { scoreModel: ScoreModel -> (scoreModel.scoreType == ScoreType.Default) }
                 .findFirst()
                 .map { obj: ScoreModel -> obj.scoreAmount }
                 .orElseGet {
@@ -340,10 +339,10 @@ class LoggingSystem : Extension() {
                 loggedCarryModel.get().carryModel
                     .carryType
                     .logChannel
-                    .map { id: Long ->
+                    ?.let { id: Long ->
                         runBlocking { event.interaction.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id)) }
                     }
-                    .ifPresent { serverTextChannel ->
+                    ?.let { serverTextChannel ->
                         runBlocking {
                             serverTextChannel.createMessage {
                                 val embed = ApplicationService.loadEmbedFromCarry(loggedCarryModel.get().carryModel)
@@ -369,7 +368,7 @@ class LoggingSystem : Extension() {
         val channel = event.interaction.channel
 
         val carryQueue = QueueConnection.getInstance()
-            .getCarryQueueByRelatedIdAndQueueStep(channel.id.value.toLong(), QueueStep.CONFIRMATION).stream()
+            .getCarryQueueByRelatedIdAndQueueStep(channel.id.value.toLong(), QueueStep.Confirmation).stream()
             .flatMap { obj: Set<CarryQueueModel> -> obj.stream() }
             .findFirst()
             .orElse(null)
@@ -392,8 +391,8 @@ class LoggingSystem : Extension() {
             return
         }
 
-        val updateModel = CarryQueueUpdateModel()
-            .setQueueStep(QueueStep.TRANSCRIPT)
+        val updateModel = carryQueue.getUpdateModel()
+        updateModel.queueStep = QueueStep.Transcript
 
         val responder = event.interaction.deferEphemeralResponse()
 

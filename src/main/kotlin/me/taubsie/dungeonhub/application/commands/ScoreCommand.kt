@@ -8,7 +8,7 @@ import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerCon
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
-import me.taubsie.dungeonhub.common.model.server.DiscordServerModel
+import net.dungeonhub.model.discord_server.DiscordServerModel
 
 @LoadExtension
 class ScoreCommand : Extension() {

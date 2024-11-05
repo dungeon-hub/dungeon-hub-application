@@ -16,8 +16,8 @@ import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartupListener
 import me.taubsie.dungeonhub.application.service.ServerService.allServers
-import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyModel
-import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierModel
+import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
+import net.dungeonhub.model.carry_tier.CarryTierModel
 import java.sql.Time
 import java.util.*
 import java.util.stream.Collectors
@@ -42,10 +42,10 @@ object MessagesService : StartupListener {
         val priceDescription = carryTier.priceDescription
 
         val description =
-            title + priceDescription.map { s: String -> s + "\n\n" }.orElse("") + carryDifficulties.stream()
+            title + (priceDescription?.let { s: String -> s + "\n\n" } ?: "") + carryDifficulties.stream()
                 .map { carryDifficulty: CarryDifficultyModel ->
                     val result = StringBuilder()
-                    if (carryDifficulty.bulkAmount.isPresent && carryDifficulty.bulkPrice.isPresent) {
+                    if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
                         result.append("\n")
                     }
 
@@ -59,11 +59,11 @@ object MessagesService : StartupListener {
 
                     result.append(priceText)
 
-                    if (carryDifficulty.bulkAmount.isPresent && carryDifficulty.bulkPrice.isPresent) {
+                    if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
                         result.append("\n\\*")
-                            .append(ApplicationService.makeNumberReadable(carryDifficulty.bulkPrice.get().toLong()))
+                            .append(ApplicationService.makeNumberReadable(carryDifficulty.bulkPrice!!.toLong()))
                             .append(" per carry if you buy ")
-                            .append(carryDifficulty.bulkAmount.get())
+                            .append(carryDifficulty.bulkAmount)
                             .append("+ carries.")
                     }
                     result
@@ -73,7 +73,7 @@ object MessagesService : StartupListener {
         embed.color = EmbedColor.DEFAULT.color
         embed.description = description
 
-        carryTier.thumbnailUrl.ifPresent { embed.thumbnail { this.url = it } }
+        carryTier.thumbnailUrl?.let { embed.thumbnail { this.url = it } }
 
         return embed
     }
@@ -104,10 +104,10 @@ object MessagesService : StartupListener {
 
     private suspend fun refreshPriceMessages(carryTiers: Stream<CarryTierModel>) {
         val carryTiersPerChannel = carryTiers
-            .filter { carryTier: CarryTierModel -> carryTier.priceChannel.isPresent }
+            .filter { carryTier: CarryTierModel -> carryTier.priceChannel != null }
             .collect(
                 Collectors.toMap(
-                    { carryTier: CarryTierModel -> carryTier.priceChannel.get() },
+                    { carryTier: CarryTierModel -> carryTier.priceChannel },
                     { carryTier: CarryTierModel ->
                         mutableListOf(
                             carryTier
@@ -124,7 +124,7 @@ object MessagesService : StartupListener {
         carryTiersPerChannel
             .forEach { (key: Long?, value: MutableList<CarryTierModel>) ->
                 DiscordConnection.bot?.kordRef
-                    ?.getChannelOf<GuildMessageChannel>(Snowflake(key))
+                    ?.getChannelOf<GuildMessageChannel>(Snowflake(key!!))
                     ?.let {
                         refreshPriceMessageInChannel(
                             it,

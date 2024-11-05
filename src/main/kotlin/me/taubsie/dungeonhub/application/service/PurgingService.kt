@@ -12,8 +12,8 @@ import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartupListener
 import me.taubsie.dungeonhub.application.misc.PurgeData
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
-import me.taubsie.dungeonhub.common.model.purge_type.PurgeTypeModel
+import net.dungeonhub.model.discord_role.DiscordRoleModel
+import net.dungeonhub.model.purge_type.PurgeTypeModel
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Time

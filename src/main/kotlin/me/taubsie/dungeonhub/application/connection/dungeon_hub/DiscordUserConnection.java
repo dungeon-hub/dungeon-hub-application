@@ -1,9 +1,9 @@
 package me.taubsie.dungeonhub.application.connection.dungeon_hub;
 
 import me.taubsie.dungeonhub.application.connection.ModuleConnection;
-import me.taubsie.dungeonhub.common.DungeonHubService;
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel;
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel;
+import net.dungeonhub.model.discord_user.DiscordUserModel;
+import net.dungeonhub.model.discord_user.DiscordUserUpdateModel;
+import net.dungeonhub.service.MoshiService;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -51,7 +51,7 @@ public class DiscordUserConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, DiscordUserModel::fromJson);
+        return executeRequest(request, DiscordUserModel.Companion::fromJson);
     }
 
     public Optional<DiscordUserModel> getLinkedById(long id) {
@@ -65,7 +65,7 @@ public class DiscordUserConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, s -> fromJson(s, DungeonHubService.getInstance().getDiscordUserModelListType()));
+        return executeRequest(request, MoshiService.INSTANCE.getDiscordUserListMoshi()::fromJson);
     }
 
     public Optional<DiscordUserModel> updateUser(long id, DiscordUserUpdateModel updateModel) {
@@ -80,7 +80,7 @@ public class DiscordUserConnection implements ModuleConnection {
                 .put(requestBody)
                 .build();
 
-        return executeRequest(request, DiscordUserModel::fromJson);
+        return executeRequest(request, DiscordUserModel.Companion::fromJson);
     }
 
     //TODO test
@@ -103,6 +103,6 @@ public class DiscordUserConnection implements ModuleConnection {
                 .get()
                 .build();
 
-        return executeRequest(request, DiscordUserModel::fromJson);
+        return executeRequest(request, DiscordUserModel.Companion::fromJson);
     }
 }
