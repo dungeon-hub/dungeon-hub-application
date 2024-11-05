@@ -92,4 +92,14 @@ public class CarryTierConnection implements ModuleConnection {
 
         return executeRequest(request, CarryTierModel.Companion::fromJson);
     }
+
+    public Optional<CarryTierModel> deleteCarryTier(long id) {
+        HttpUrl url = getApiUrl(id).build();
+
+        Request request = getApiRequest(url)
+                .delete()
+                .build();
+
+        return executeRequest(request, CarryTierModel.Companion::fromJson);
+    }
 }

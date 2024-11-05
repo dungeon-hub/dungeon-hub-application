@@ -11,7 +11,6 @@ import dev.kordex.core.commands.converters.impl.optionalString
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
 import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
@@ -136,9 +135,8 @@ class CarryTierCommand : Extension() {
                             throw CommandExecutionException("Well this is weird.. Something doesn't really add up!")
                         }
 
-                        //TODO implement
-                        val deletedCarryTier = DungeonHubConnection.getInstance()
-                            .removeCarryTier(carryTier)
+                        val deletedCarryTier = CarryTierConnection.getInstance(carryType)
+                            .deleteCarryTier(carryTier.id)
                             .orElse(null)
 
                         if (deletedCarryTier == null) {
