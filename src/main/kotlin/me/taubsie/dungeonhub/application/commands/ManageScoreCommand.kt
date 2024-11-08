@@ -74,9 +74,7 @@ class ManageScoreCommand : Extension() {
                 description = "Reset score for a given carry type."
 
                 check {
-                    check {
-                        hasPermission(Permission.Administrator)
-                    }
+                    hasPermission(Permission.Administrator)
                 }
 
                 action {
