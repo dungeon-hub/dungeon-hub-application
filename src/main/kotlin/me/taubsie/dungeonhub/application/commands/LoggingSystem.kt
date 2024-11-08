@@ -292,15 +292,15 @@ class LoggingSystem : Extension() {
             val updatedScore = loggedCarryModel.scoreModels
                 .firstOrNull { scoreModel: ScoreModel -> (scoreModel.scoreType == ScoreType.Default) }
                 ?.scoreAmount
-                ?: (ScoreConnection[queueModel.carryType].getScore(queueModel.carrier.id)?.scoreAmount ?: 0)
+                ?: (ScoreConnection[loggedCarryModel.carryModel.carryType].getScore(loggedCarryModel.carryModel.carrier.id)?.scoreAmount ?: 0)
 
-            val carrier = event.kord.getUser(Snowflake(queueModel.carrier.id))
+            val carrier = event.kord.getUser(Snowflake(loggedCarryModel.carryModel.carrier.id))
 
             //TODO request exception
             carrier?.dm {
                 content = "Your carry was logged!\n\n**Your Updated Score:** $updatedScore"
 
-                val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                val embed = ApplicationService.loadEmbedFromCarry(loggedCarryModel.carryModel)
                 embed.title = "Information"
                 embed.color = EmbedColor.Default.color
 
@@ -328,7 +328,7 @@ class LoggingSystem : Extension() {
             } catch (ignored: NullPointerException) {
             }
 
-            logger.debug("Carry logged: {}", queueModel)
+            logger.debug("Carry logged: {}", loggedCarryModel.carryModel)
         }
 
         refreshLeaderboard()
