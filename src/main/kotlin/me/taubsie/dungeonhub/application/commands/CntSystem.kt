@@ -199,7 +199,7 @@ class CntSystem : Extension() {
                 event.interaction.message.edit {
                     val embed = ApplicationService.getCntEmbed(updatedCntRequest)
                     embed.color(EmbedColor.POSITIVE)
-                    embed.title = "Craft and Transfers Request completed!"
+                    embed.description = "### Craft and Transfers Request completed!"
 
                     embeds = mutableListOf(embed)
                     components {
