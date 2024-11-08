@@ -63,7 +63,7 @@ class CarryDifficultyCommand : Extension() {
                     respond {
                         val carryType =
                             CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
-                                ?: throw CommandExecutionException("That carry type doesn't exists!")
+                                ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
                         val carryTier = CarryTierConnection[carryType]
                             .getByIdentifier(arguments.carryTier)

@@ -198,7 +198,7 @@ class CntSystem : Extension() {
 
                 event.interaction.message.edit {
                     val embed = ApplicationService.getCntEmbed(updatedCntRequest)
-                    embed.color(EmbedColor.POSITIVE)
+                    embed.color(EmbedColor.Positive)
                     embed.description = "### Craft and Transfers Request completed!"
 
                     embeds = mutableListOf(embed)
@@ -234,7 +234,7 @@ class CntSystem : Extension() {
                         ServerProperty.CNT_MESSAGES_CHANNEL.getValue(channel.guildId.value.toLong()).orElse(null)
 
                     val responseEmbed = ApplicationService.embed
-                    responseEmbed.color(EmbedColor.DEFAULT)
+                    responseEmbed.color(EmbedColor.Default)
                     responseEmbed.description =
                         "Thanks for trusting in our service! I'm now trying to send your CNT request into <#$channelId>"
 

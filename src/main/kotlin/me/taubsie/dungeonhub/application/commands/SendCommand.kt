@@ -44,7 +44,7 @@ class SendCommand : Extension() {
 
                         channel.createMessage {
                             val embed = ApplicationService.embed
-                            embed.color = EmbedColor.DEFAULT.color
+                            embed.color = EmbedColor.Default.color
                             embed.title = "Linking"
                             embed.description =
                                 "Please link to your Minecraft account using the buttons below.\nRemember to never give out the email connected to your Microsoft account and to never click any links!\n\nCheck out this video if you're still unsure if messages similar to this are legit: https://youtu.be/WRRIOkM8oe8?t=743&si=oc71yA9h-XJUsGpX"
@@ -56,7 +56,7 @@ class SendCommand : Extension() {
                         }
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.POSITIVE.color
+                        embed.color = EmbedColor.Positive.color
                         embed.description = "Trying to send message..."
                         embeds = mutableListOf(embed)
                     }
@@ -77,7 +77,7 @@ class SendCommand : Extension() {
                         val cntInfoChannel = ServerProperty.CNT_INFORMATION_CHANNEL.getValue(guild!!.id.value.toLong()).orElse(null)
 
                         val embed = ApplicationService.embed
-                        embed.color(EmbedColor.POSITIVE)
+                        embed.color(EmbedColor.Positive)
                         embed.description = "Trying to send message..."
                         embeds = mutableListOf(embed)
 

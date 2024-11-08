@@ -56,7 +56,6 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
 import javax.imageio.ImageIO
-import kotlin.Throws
 import kotlin.concurrent.thread
 import kotlin.time.Duration
 
@@ -682,7 +681,7 @@ object ApplicationService {
         userId: Long
     ): EmbedBuilder {
         val embed = getEmbed(time)
-        embed.color = EmbedColor.DEFAULT.color
+        embed.color = EmbedColor.Default.color
         embed.description = "### Craft and Transfers Request by <@${userId}>"
 
         embed.field("Description", true) { description }
