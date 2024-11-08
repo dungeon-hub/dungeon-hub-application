@@ -13,13 +13,12 @@ import dev.kord.core.supplier.RestEntitySupplier
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.getCarryAmountOrNull
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.getTotalAmountOfMoneySpent
 import me.taubsie.dungeonhub.application.connection.getGuildOrNull
+import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartupListener
+import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.connection.DiscordUserConnection
 import org.slf4j.LoggerFactory
 import java.sql.Time
 import java.time.ZonedDateTime
@@ -86,15 +85,17 @@ object ServerStatsService : StartupListener {
     }
 
     private suspend fun updateStatChannels(guild: Guild, channels: List<Pair<Long, String>>) {
-        val linkedUsers = DiscordUserConnection.getInstance().countLinkedUsers().orElse(0)
+        val linkedUsers = DiscordUserConnection.countLinkedUsers() ?: 0
         val spentMoney = try {
             ApplicationService.makeNumberReadable(
-                DiscordServerConnection.getInstance().getTotalAmountOfMoneySpent(guild.id.value.toLong()), 3
+                DiscordServerConnection.getTotalAmountOfMoneySpent(guild.id.value.toLong())
+                    ?: throw CommandExecutionException("Couldn't load the total amount of money spent."),
+                3
             )
         } catch (ex: Exception) {
             0
         }
-        val monthlyCarries = DiscordServerConnection.getInstance().getCarryAmountOrNull(
+        val monthlyCarries = DiscordServerConnection.getCarryAmount(
             guild.id.value.toLong(),
             ZonedDateTime.now().minusDays(30).toInstant()
         ) ?: 0

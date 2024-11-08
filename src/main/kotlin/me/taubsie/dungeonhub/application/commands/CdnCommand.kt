@@ -10,13 +10,13 @@ import dev.kordex.core.components.components
 import dev.kordex.core.components.linkButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralSlashCommand
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.KnownStaticResource
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.connection.ContentConnection
+import net.dungeonhub.connection.DungeonHubConnection
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 
@@ -53,24 +53,18 @@ class CdnCommand : Extension() {
                     respond {
                         val attachmentRequest = Request.Builder().url(arguments.attachment.url.toHttpUrl()).build()
 
-                        val attachmentData: ByteArray =
-                            DungeonHubConnection.getInstance()
-                                .executeRawRequest(attachmentRequest)
-                                .orElseThrow { CommandExecutionException("Couldn't read file data.") }
+                        val attachmentData: ByteArray = DungeonHubConnection.executeRawRequest(attachmentRequest)
+                            ?: throw CommandExecutionException("Couldn't read file data.")
 
                         val fileUrl = if (arguments.name != null) {
-                            ContentConnection.getInstance()
-                                .uploadFile(attachmentData, arguments.name)
+                            ContentConnection.uploadFile(attachmentData, arguments.name!!)
                         } else {
-                            ContentConnection.getInstance()
-                                .uploadFile(attachmentData)
+                            ContentConnection.uploadFile(attachmentData)
                         }
 
                         val embedBuilder: EmbedBuilder
-                        if (fileUrl != null && fileUrl.isPresent) {
-                            val url =
-                                ContentConnection.getInstance()
-                                    .getCdnUrl(fileUrl.get()).toString()
+                        if (fileUrl != null) {
+                            val url = ContentConnection.getCdnUrl(fileUrl).toString()
 
                             embedBuilder = ApplicationService.embed
                             embedBuilder.title = "File added."
@@ -104,9 +98,7 @@ class CdnCommand : Extension() {
 
                 action {
                     respond {
-                        val url =
-                            ContentConnection.getInstance()
-                                .getStaticUrl(arguments.resource.path).toString()
+                        val url = ContentConnection.getStaticUrl(arguments.resource.path).toString()
 
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.POSITIVE.color

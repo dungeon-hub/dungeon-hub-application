@@ -17,7 +17,6 @@ import dev.kordex.core.extensions.publicSlashCommand
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
@@ -27,6 +26,7 @@ import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.NicknameService
 import me.taubsie.dungeonhub.application.service.RolesService
+import net.dungeonhub.connection.DiscordRoleConnection
 import net.dungeonhub.model.discord_role.DiscordRoleCreationModel
 import net.dungeonhub.model.discord_role.DiscordRoleUpdateModel
 import kotlin.concurrent.thread
@@ -88,12 +88,8 @@ class RoleCommand : Extension() {
 
                     action {
                         respond {
-                            val currentRole =
-                                DiscordRoleConnection.getInstance(
-                                    guild!!.id.value.toLong()
-                                )
-                                    .getById(arguments.role.id.value.toLong())
-                                    .orElse(null)
+                            val currentRole = DiscordRoleConnection[guild!!.id.value.toLong()]
+                                .getById(arguments.role.id.value.toLong())
 
                             if (arguments.nameSchema == null && arguments.verifiedRole == null) {
                                 if (currentRole == null) {
@@ -105,9 +101,7 @@ class RoleCommand : Extension() {
                             }
 
                             val modifiedRole = if (currentRole != null) {
-                                DiscordRoleConnection.getInstance(
-                                    guild!!.id.value.toLong()
-                                )
+                                DiscordRoleConnection[guild!!.id.value.toLong()]
                                     .updateRole(
                                         arguments.role.id.value.toLong(),
                                         DiscordRoleUpdateModel(
@@ -115,11 +109,8 @@ class RoleCommand : Extension() {
                                             arguments.verifiedRole
                                         )
                                     )
-                                    .orElse(null)
                             } else {
-                                DiscordRoleConnection.getInstance(
-                                    guild!!.id.value.toLong()
-                                )
+                                DiscordRoleConnection[guild!!.id.value.toLong()]
                                     .addNewRole(
                                         DiscordRoleCreationModel(
                                             arguments.role.id.value.toLong(),
@@ -127,7 +118,6 @@ class RoleCommand : Extension() {
                                             arguments.verifiedRole ?: false
                                         )
                                     )
-                                    .orElse(null)
                             }
 
                             if (modifiedRole == null) {

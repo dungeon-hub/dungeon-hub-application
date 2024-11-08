@@ -4,11 +4,11 @@ import dev.kord.core.entity.Guild
 import dev.kord.core.entity.User
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import lombok.Getter
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
 import me.taubsie.dungeonhub.application.enums.HelpTopic.DescriptionSupplier
 import me.taubsie.dungeonhub.application.exceptions.MustBeServerException
 import me.taubsie.dungeonhub.application.misc.HelpDisplay
+import net.dungeonhub.connection.ContentConnection
+import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
 
@@ -27,9 +27,7 @@ enum class HelpTopic(
             val fields: MutableMap<CarryTypeModel, MutableMap<String, Int>> = HashMap()
 
             val carryDifficulties =
-                DiscordServerConnection.getInstance()
-                    .getAllCarryDifficulties(server.id.value.toLong())
-                    .orElse(ArrayList())
+                DiscordServerConnection.getAllCarryDifficulties(server.id.value.toLong()) ?: ArrayList()
 
             if (carryDifficulties.isEmpty()) {
                 return@DescriptionSupplier HelpDisplay.fromDescription(
@@ -166,8 +164,7 @@ enum class HelpTopic(
                         "settings, wait a few minutes and try again!\n" +
                         "\n" +
                         "You can find a video example [here]("
-                        + ContentConnection.getInstance()
-                    .getStaticUrl(KnownStaticResource.VERIFICATION_EXAMPLE.path).build().toUrl()
+                        + ContentConnection.getStaticUrl(KnownStaticResource.VERIFICATION_EXAMPLE.path).build().toUrl()
                         + ")."
             )
         });

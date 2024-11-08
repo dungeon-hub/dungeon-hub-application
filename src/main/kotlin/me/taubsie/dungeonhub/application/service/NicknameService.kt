@@ -8,11 +8,11 @@ import dev.kord.core.entity.User
 import kotlinx.coroutines.flow.toList
 import me.taubsie.dungeonhub.application.connection.HypixelConnection.getHypixelLinkedDiscord
 import me.taubsie.dungeonhub.application.connection.MojangConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.connection.getMutualServers
 import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.misc.PlayerInformation
+import net.dungeonhub.connection.DiscordRoleConnection
+import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.discord_user.DiscordUserModel
 import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
@@ -66,9 +66,8 @@ object NicknameService {
 
         val updateModel = DiscordUserUpdateModel(uuid)
 
-        val userModel = DiscordUserConnection.getInstance()
-            .updateUser(user.id.value.toLong(), updateModel)
-            .orElseThrow { CommandExecutionException("Couldn't update your user data.") }
+        val userModel = DiscordUserConnection.updateUser(user.id.value.toLong(), updateModel)
+            ?: throw CommandExecutionException("Couldn't update your user data.")
 
         return userModel.minecraftId!!
     }
@@ -107,11 +106,8 @@ object NicknameService {
      */
     @Throws(NoNameSchemaWarning::class, NotLinkedException::class)
     suspend fun updateNickname(member: Member, serverRoles: List<Role>?) {
-        val discordUserModel =
-            DiscordUserConnection.getInstance()
-                .getById(member.id.value.toLong())
-                .filter { discordUserModel1: DiscordUserModel -> discordUserModel1.minecraftId != null }
-                .orElseThrow { NotLinkedException() }
+        val discordUserModel = DiscordUserConnection.getLinkedById(member.id.value.toLong())
+            ?: throw NotLinkedException()
         updateNickname(member, discordUserModel, serverRoles)
     }
 
@@ -224,8 +220,7 @@ object NicknameService {
      */
     @Contract(pure = true)
     private fun getRoleModels(guild: GuildBehavior): Map<Long, DiscordRoleModel> {
-        return DiscordRoleConnection.getInstance(guild.id.value.toLong())
-            .allRoles.orElse(emptyList())
+        return (DiscordRoleConnection[guild.id.value.toLong()].allRoles ?: emptyList())
             .stream().collect(toMap())
     }
 
@@ -247,10 +242,7 @@ object NicknameService {
 
 //TODO move to connection?
 fun User.getUUIDOrNull(): UUID? {
-    return DiscordUserConnection.getInstance()
-        .getById(id.value.toLong())
-        .map { it.minecraftId }
-        .orElse(null)
+    return DiscordUserConnection.getById(id.value.toLong())?.minecraftId
 }
 
 @Throws(NotLinkedException::class)

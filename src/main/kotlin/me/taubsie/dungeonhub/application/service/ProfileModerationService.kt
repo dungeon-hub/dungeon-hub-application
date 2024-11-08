@@ -14,11 +14,11 @@ import dev.kordex.core.utils.dm
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.enums.ServerProperty
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadException
 import net.codebox.homoglyph.Homoglyph
 import net.codebox.homoglyph.HomoglyphBuilder
+import net.dungeonhub.connection.DiscordUserConnection
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -244,8 +244,7 @@ object ProfileModerationService {
     }
 
     fun isVerified(user: Member): Boolean {
-        return DiscordUserConnection.getInstance()
-            .getLinkedById(user.id.value.toLong()).isPresent
+        return DiscordUserConnection.getLinkedById(user.id.value.toLong()) != null
     }
 
     fun isExcluded(user: Member): Boolean {

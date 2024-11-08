@@ -1,6 +1,7 @@
 package me.taubsie.dungeonhub.application.connection;
 
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
+import net.dungeonhub.connection.AuthorizationConnection;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -18,7 +19,7 @@ public interface ModuleConnection extends Connection {
         return new Request.Builder()
                 .url(httpUrl)
                 .addHeader("Content-Type", mediaType.toString())
-                .addHeader("Authorization", "Bearer " + AuthorizationConnection.getInstance().getApiToken());
+                .addHeader("Authorization", "Bearer " + AuthorizationConnection.INSTANCE.getApiToken());
     }
 
     default HttpUrl.Builder getApiUrl() {
