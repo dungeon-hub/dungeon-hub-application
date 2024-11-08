@@ -186,17 +186,19 @@ class MessageListener : Extension() {
                     }
                 }
 
-                val updateModel = queueModel.getUpdateModel()
-                updateModel.attachmentLink = attachmentLink
+                val firstUpdateModel = queueModel.getUpdateModel()
+                firstUpdateModel.attachmentLink = attachmentLink
 
-                if ((queueModel.amount >= APPROVE_AMOUNT_THRESHOLD
-                            || queueModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
+                val updatedModel = QueueConnection.updateQueue(queueModel.id, firstUpdateModel) ?: queueModel
+
+                if ((updatedModel.amount >= APPROVE_AMOUNT_THRESHOLD
+                            || updatedModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
                     && approvingChannel.isPresent
                 ) {
                     runBlocking {
                         val createdMessage = approvingChannel.get()
                             .createMessage {
-                                val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                                val embed = ApplicationService.loadEmbedFromCarryQueue(updatedModel)
                                 embed.title = "Accept carry-log?"
                                 embed.color = EmbedColor.Default.color
 
@@ -216,13 +218,13 @@ class MessageListener : Extension() {
                         thread(start = true) {
                             runBlocking {
                                 DiscordConnection.bot?.kordRef
-                                    ?.getUser(Snowflake(queueModel.carrier.id))
+                                    ?.getUser(Snowflake(updatedModel.carrier.id))
                                     ?.dm {
                                         val embed = ApplicationService.embed
                                         embed.color(EmbedColor.Information)
                                         embed.title = "Approval needed"
                                         embed.description =
-                                            "Due to the high number of score (${queueModel.calculateScore()}) or carries (${queueModel.amount}), your ${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
+                                            "Due to the high number of score (${updatedModel.calculateScore()}) or carries (${updatedModel.amount}), your ${updatedModel.carryTier.displayName} - ${updatedModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
                                                     "You will be notified here once it was approved or denied."
 
                                         embeds = mutableListOf(embed)
@@ -230,13 +232,15 @@ class MessageListener : Extension() {
                             }
                         }
 
-                        updateModel.queueStep = QueueStep.Approving
-                        updateModel.relationId = createdMessage.id.value.toLong()
+                        val secondUpdateModel = updatedModel.getUpdateModel()
 
-                        QueueConnection.updateQueue(queueModel.id, updateModel)
+                        secondUpdateModel.queueStep = QueueStep.Approving
+                        secondUpdateModel.relationId = createdMessage.id.value.toLong()
+
+                        QueueConnection.updateQueue(queueModel.id, secondUpdateModel)
                     }
                 } else {
-                    val updatedScore = QueueConnection.logQueue(queueModel.id, updateModel)
+                    val updatedScore = QueueConnection.logQueue(queueModel.id, firstUpdateModel)
                         ?.scoreModels
                         ?.firstOrNull { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
                         ?.scoreAmount
