@@ -18,6 +18,12 @@ import net.dungeonhub.connection.CarryTierConnection
 import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.DiscordServerConnection
 
+/**
+ * Command to calculate the price for some amount of carries.
+ * This command can be used in a carry ticket channel to automatically get the price for the current carry tier.
+ * If used outside a carry ticket channel, the user has to supply the carry type and carry tier.
+ * The command will then calculate the price for the given amount of carries.
+ */
 @LoadExtension
 class CalcPriceCommand : Extension() {
     override val name = "calc-price-command"
@@ -72,7 +78,7 @@ class CalcPriceCommand : Extension() {
                         if (price != 0L) "${ApplicationService.makeNumberReadable(pricePerCarry)} coins" else "Free"
 
                     val embed = ApplicationService.embed
-                    embed.color = EmbedColor.INFORMATION.color
+                    embed.color = EmbedColor.Information.color
                     embed.title = "Carry-Price"
                     embed.field("Type", true) {
                         carryTier.displayName + " | " + carryDifficulty.displayName

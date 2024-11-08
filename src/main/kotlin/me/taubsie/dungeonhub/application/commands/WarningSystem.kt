@@ -64,7 +64,7 @@ class WarningSystem : Extension() {
                 }
 
                 val noPermissionEmbed = ApplicationService.embed
-                noPermissionEmbed.color = EmbedColor.NEGATIVE.color
+                noPermissionEmbed.color = EmbedColor.Negative.color
                 noPermissionEmbed.description =
                     "You don't have the permission to see the warns of other people, so you're seeing your own."
 
@@ -73,7 +73,7 @@ class WarningSystem : Extension() {
 
                 if (warns.isEmpty()) {
                     val embed = ApplicationService.embed
-                    embed.color = EmbedColor.INFORMATION.color
+                    embed.color = EmbedColor.Information.color
                     embed.title = "Warns of user ${target.tag}"
                     embed.description = "User hasn't been warned yet!"
 
@@ -100,7 +100,7 @@ class WarningSystem : Extension() {
                                 copy(noPermissionEmbed)
                             } else {
                                 val embed = ApplicationService.embed
-                                embed.color = EmbedColor.DEFAULT.color
+                                embed.color = EmbedColor.Default.color
                                 embed.description = description
                                 copy(embed)
                             }
@@ -237,7 +237,7 @@ class WarningSystem : Extension() {
                                 ?: throw InvalidOptionException("id", "Couldn't find a warning with the given id.")
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.POSITIVE.color
+                        embed.color = EmbedColor.Positive.color
                         embed.description =
                             "Deactivated warning #${arguments.id} from user <@${removedWarning.user.id}>."
                         embeds = mutableListOf(embed)
@@ -253,7 +253,7 @@ class WarningSystem : Extension() {
                             ?.let { channel ->
                                 channel.createMessage {
                                     val logEmbed = ApplicationService.embed
-                                    logEmbed.color = EmbedColor.INFORMATION.color
+                                    logEmbed.color = EmbedColor.Information.color
                                     logEmbed.description = "<@${user.id}> deactivated warning #${removedWarning.id}."
 
                                     this@createMessage.embeds = mutableListOf(logEmbed)
@@ -265,7 +265,7 @@ class WarningSystem : Extension() {
                             DiscordConnection.bot!!.kordRef.getUser(Snowflake(removedWarning.user.id))
                                 ?.dm {
                                     val dmEmbed = ApplicationService.embed
-                                    dmEmbed.color = EmbedColor.POSITIVE.color
+                                    dmEmbed.color = EmbedColor.Positive.color
                                     dmEmbed.description =
                                         "The warning with id ${removedWarning.id} was removed from you!"
                                     this@dm.embeds = mutableListOf(embed)
@@ -289,7 +289,7 @@ class WarningSystem : Extension() {
                     if (warns.isEmpty()) {
                         respond {
                             val embed = ApplicationService.embed
-                            embed.color = EmbedColor.INFORMATION.color
+                            embed.color = EmbedColor.Information.color
                             embed.title = "Warns of user ${arguments.user.tag}"
                             embed.description = "User has no warns!"
 
@@ -347,7 +347,7 @@ class WarningSystem : Extension() {
 
                         if (arguments.attachment != null && arguments.text != null) {
                             val embed = ApplicationService.embedWithoutTimestamp
-                            embed.color = EmbedColor.NEGATIVE.color
+                            embed.color = EmbedColor.Negative.color
                             embed.description =
                                 "Please only provide either an attachment or a text. The given text wasn't added as evidence: ```\n${arguments.text}\n```"
                             embed.footer = null
@@ -368,7 +368,7 @@ class WarningSystem : Extension() {
                             ?.let { channel ->
                                 channel.createMessage {
                                     val logEmbed = ApplicationService.embed
-                                    logEmbed.color = EmbedColor.INFORMATION.color
+                                    logEmbed.color = EmbedColor.Information.color
                                     logEmbed.description =
                                         "<@${user.id}> added an evidence to warning #${warning.id}:\n\n$evidence"
 

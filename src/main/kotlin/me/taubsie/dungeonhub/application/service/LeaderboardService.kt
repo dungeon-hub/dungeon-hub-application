@@ -59,7 +59,7 @@ object LeaderboardService : StartupListener {
         val embed = embed
         embed.title = title
         embed.description = LEADERBOARD_DESCRIPTION
-        embed.color = EmbedColor.DEFAULT.color
+        embed.color = EmbedColor.Default.color
 
         // 0 -> starts with 1; 1 -> starts with 11; 2 -> starts with 21; etc.
         var counter = 10 * leaderboardModel.page
@@ -90,7 +90,7 @@ object LeaderboardService : StartupListener {
     fun getEmptyLeaderboardEmbed(title: String?): EmbedBuilder {
         val embed = embed
         embed.title = title
-        embed.color = EmbedColor.NEGATIVE.color
+        embed.color = EmbedColor.Negative.color
         embed.description = """
              No score has been gained yet!
              $LEADERBOARD_DESCRIPTION

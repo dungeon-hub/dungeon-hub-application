@@ -69,7 +69,7 @@ class HelpCommand : Extension() {
 
         if (helpTopic == null) {
             embed.title = "**Bot Usage:**"
-            embed.color = EmbedColor.DEFAULT.color
+            embed.color = EmbedColor.Default.color
             embed.description = """
                             This bot uses slash commands, in order to use it you must have your discord client updated (No need to worry if you're on desktop).
                                                     

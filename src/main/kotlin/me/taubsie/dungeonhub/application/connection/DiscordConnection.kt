@@ -99,8 +99,7 @@ object DiscordConnection : StartupListener {
         AppearanceType.Listening to {
             val time = Duration.between(uptime, Instant.now())
                 .withNanos(0)
-                //TODO is this needed?
-                //.withSeconds(0)
+                .withSeconds(0)
                 .toKotlinDuration()
                 .toString()
 
@@ -178,7 +177,7 @@ object DiscordConnection : StartupListener {
 
                     message {
                         embed {
-                            color(EmbedColor.DEFAULT)
+                            color(EmbedColor.Default)
                             title = "Dungeon Hub"
                             description = "Soon you can see more here!"
                         }

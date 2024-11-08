@@ -66,7 +66,7 @@ object MessagesService : StartupListener {
                 }.collect(Collectors.joining("\n"))
 
         val embed = ApplicationService.embedWithoutTimestamp
-        embed.color = EmbedColor.DEFAULT.color
+        embed.color = EmbedColor.Default.color
         embed.description = description
 
         carryTier.thumbnailUrl?.let { embed.thumbnail { this.url = it } }

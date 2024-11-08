@@ -33,6 +33,13 @@ import net.dungeonhub.service.GsonService
 import java.nio.charset.StandardCharsets
 import java.util.function.Consumer
 
+/**
+ * This extension provides the ability to manage embeds.
+ * It allows you to get the embed data of a message, send a custom embed, add an embed to a message sent by this bot, and edit an embed sent by this bot.
+ * The embed data can be provided in a JSON format.
+ * The embed data can be displayed as a beautiful embed (all fields of the embed class are mapped to embed fields), as source code, or as a CDN link (which contains the source code).
+ * The embed data can be sent to a specific channel and defaults to the channel where the command was executed.
+ */
 @LoadExtension
 class EmbedCommand : Extension() {
     override val name = "embed-command"
@@ -75,7 +82,7 @@ class EmbedCommand : Extension() {
                         val embeds = if (count == -1) message.embeds else mutableListOf(message.embeds[count])
 
                         val embedBuilder = ApplicationService.embed
-                        embedBuilder.color = EmbedColor.DEFAULT.color
+                        embedBuilder.color = EmbedColor.Default.color
 
                         if (beautiful && embeds.size == 1) {
                             @Suppress("DEPRECATION")
@@ -191,7 +198,7 @@ class EmbedCommand : Extension() {
                         }
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.POSITIVE.color
+                        embed.color = EmbedColor.Positive.color
                         embed.description = "Embed sent into <#${channel.id}>!"
                         embeds = mutableListOf(embed)
                     }
@@ -278,7 +285,7 @@ class EmbedCommand : Extension() {
                         }
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.POSITIVE.color
+                        embed.color = EmbedColor.Positive.color
                         embed.description = "Embed(s) added to message " + message.getJumpUrl() + "!"
                         embeds = mutableListOf(embed)
                     }
@@ -316,6 +323,8 @@ class EmbedCommand : Extension() {
                         val message = arguments.getMessage()
 
                         //TODO how to handle interaction responses?
+
+
                         if (message?.author?.isSelf() != true) {
                             throw InvalidOptionException(
                                 "link",
@@ -344,7 +353,7 @@ class EmbedCommand : Extension() {
                         }
 
                         val response = ApplicationService.embed
-                        response.color = EmbedColor.POSITIVE.color
+                        response.color = EmbedColor.Positive.color
                         response.description = "Embed in message ${message.getJumpUrl()} edited!"
 
                         embeds = mutableListOf(response)

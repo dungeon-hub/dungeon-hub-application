@@ -21,6 +21,21 @@ import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.ServerService
 import java.util.stream.Collectors
 
+/**
+ * The config command allows you to edit the config for the server.
+ * This includes setting and getting values for the server.
+ * The command is only available for users with the Administrator permission and is also only available in guilds.
+ * The command has the following subcommands:
+ * - `get`: Shows you the current config for the server.
+ * - `set string`: Sets a string config value.
+ * - `set number`: Sets a number config value.
+ * - `set boolean`: Sets a boolean config value.
+ * - `set channel`: Sets a channel config value.
+ * - `set category`: Sets a category config value.
+ * - `set role`: Sets a role config value.
+ * - `set null`: Sets a property to null (resetting it).
+ * @see ServerProperty
+ */
 @LoadExtension
 class ConfigCommand : Extension() {
     override val name = "config-command"
@@ -45,7 +60,7 @@ class ConfigCommand : Extension() {
 
                         if (value == null) {
                             val embed = ApplicationService.embed
-                            embed.color = EmbedColor.NEGATIVE.color
+                            embed.color = EmbedColor.Negative.color
                             embed.description = "No value for `${property.name}` is set."
 
                             if (!property.isEnabled(guildId)) {
@@ -59,7 +74,7 @@ class ConfigCommand : Extension() {
                         }
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.INFORMATION.color
+                        embed.color = EmbedColor.Information.color
                         embed.description = "Loaded the value of `${property.name}`."
                         embed.field("Current value", true) { property.propertyType.applyPropertyType(value) }
 
@@ -212,7 +227,7 @@ class ConfigCommand : Extension() {
                             serverData.get().setConfig(property, null)
 
                             val embed = ApplicationService.embed
-                            embed.color = EmbedColor.POSITIVE.color
+                            embed.color = EmbedColor.Positive.color
                             embed.description = "Changed the value of `${property.name}`."
                             embed.field("Old value", true) {
                                 oldValue
@@ -229,12 +244,12 @@ class ConfigCommand : Extension() {
         }
     }
 
-    fun setConfig(property: ServerProperty, value: String, guildId: Long): EmbedBuilder {
+    fun setConfig(property: ServerProperty, newValue: String, guildId: Long): EmbedBuilder {
         if (!property.isEnabled(guildId)) {
             throw InvalidOptionException("property", "This property is disabled on this server.")
         }
 
-        val value = value.replace("\\n", "\n")
+        val value = newValue.replace("\\n", "\n")
 
         if (value.isBlank()) {
             throw InvalidOptionException("value", "Please enter a new value.")
@@ -253,7 +268,7 @@ class ConfigCommand : Extension() {
         serverData.get().setConfig(property, value)
 
         val embed = ApplicationService.embed
-        embed.color = EmbedColor.POSITIVE.color
+        embed.color = EmbedColor.Positive.color
         embed.description = "Changed the value of `${property.name}`."
         embed.field("Old value", true) {
             oldValue

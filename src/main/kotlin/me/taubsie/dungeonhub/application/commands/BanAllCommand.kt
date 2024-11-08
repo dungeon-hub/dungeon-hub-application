@@ -15,6 +15,10 @@ import me.taubsie.dungeonhub.application.service.ProfileModerationService
 import me.taubsie.dungeonhub.application.service.addEmbed
 import me.taubsie.dungeonhub.application.service.color
 
+/**
+ * Command to ban all users in a comma-separated list.
+ * @see ProfileModerationService
+ */
 @LoadExtension
 class BanAllCommand : Extension() {
     override val name = "ban-all-command"
@@ -57,13 +61,13 @@ class BanAllCommand : Extension() {
 
                     if (errors.isEmpty()) {
                         addEmbed {
-                            color(EmbedColor.POSITIVE)
+                            color(EmbedColor.Positive)
                             description =
                                 "Successfully banned " + (if (users.size > 1) "all " else "") + users.size + " user" + (if (users.size > 1) "s." else ".")
                         }
                     } else {
                         addEmbed {
-                            color(EmbedColor.NEGATIVE)
+                            color(EmbedColor.Negative)
                             description = "Couldn't ban the following user(s):\n${java.lang.String.join(", ", errors)}"
                         }
                     }

@@ -145,13 +145,13 @@ enum class HelpTopic(
                 embedFields[key.displayName] = value
             }
 
-            HelpDisplay(description, EmbedColor.DEFAULT, embedFields)
+            HelpDisplay(description, EmbedColor.Default, embedFields)
         }),
     VERIFICATION("verification", "How to verify",
         DescriptionSupplier { user: User, _: Guild? ->
             HelpDisplay.fromDescription(
                 "To link your Minecraft account to your Discord account:\n" +
-                        "## 1. On Hypixel\n" +
+                        "## 1. On Hypixel (`mc.hypixel.net`)\n" +
                         "- Join any lobby using `/lobby`\n" +
                         "- Right click with the \"My Profile\" item (second hotbar slot) in your hand.\n" +
                         "- Select \"Social Media\", to the right of your player head, then select \"Discord\".\n" +

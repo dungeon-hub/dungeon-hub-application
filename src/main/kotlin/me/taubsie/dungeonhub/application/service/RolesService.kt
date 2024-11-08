@@ -155,7 +155,6 @@ object RolesService {
         return roles
     }
 
-    //TODO test
     suspend fun removeRoleGroup(member: Member, roleGroupId: Long) {
         var userRoles = member.roleIds.toMutableSet()
 

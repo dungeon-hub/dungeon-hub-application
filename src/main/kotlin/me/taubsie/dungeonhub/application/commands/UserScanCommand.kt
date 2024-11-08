@@ -83,7 +83,7 @@ class UserScanCommand : Extension() {
         }
 
         val embed = ApplicationService.embed
-        embed.color = EmbedColor.NEGATIVE.color
+        embed.color = EmbedColor.Negative.color
         embed.description = ((if (ban) "Banned" else "Flagged")
                 + ":\n" + result.entries
             .stream()

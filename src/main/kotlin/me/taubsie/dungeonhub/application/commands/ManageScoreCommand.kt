@@ -89,7 +89,7 @@ class ManageScoreCommand : Extension() {
                             ?: throw CommandExecutionException("Error while getting a response when resetting score.")
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.INFORMATION.color
+                        embed.color = EmbedColor.Information.color
                         embed.title = "Score for ${carryType.displayName} successfully reset!"
                         embed.description = when (arguments.resetType) {
                             ScoreResetType.Default -> "Default score of ${resetModel.defaultCount} users were reset. ${
@@ -142,7 +142,7 @@ class ManageScoreCommand : Extension() {
             runBlocking {
                 serverTextChannel.createMessage {
                     val embed = ApplicationService.embed
-                    embed.color = EmbedColor.INFORMATION.color
+                    embed.color = EmbedColor.Information.color
                     embed.title = "Score-Management"
                     embed.description =
                         "${event.interaction.user.mention} edited the ${carryType.displayName}-score of ${arguments.user.mention}.\nThey ${(if (remove) "removed" else "added")} ${arguments.amount} score, the user now has $updatedScore score."
@@ -155,7 +155,7 @@ class ManageScoreCommand : Extension() {
         LeaderboardService.refreshLeaderboard()
 
         val embed = ApplicationService.embed
-        embed.color = EmbedColor.INFORMATION.color
+        embed.color = EmbedColor.Information.color
         embed.title = "Score-Management"
         embed.description =
             "${event.interaction.user.mention}, the user ${arguments.user.mention} now has $updatedScore ${carryType.displayName}-score.\nYou ${(if (remove) "removed" else "added")} ${arguments.amount} of that score."

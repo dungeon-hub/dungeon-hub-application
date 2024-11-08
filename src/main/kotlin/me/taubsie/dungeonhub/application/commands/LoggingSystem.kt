@@ -80,7 +80,7 @@ class LoggingSystem : Extension() {
                         )?.firstOrNull() != null
                     ) {
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.NEGATIVE.color
+                        embed.color = EmbedColor.Negative.color
                         embed.description = " Someone is already logging this carry.\n" +
                                 "If you think this is a mistake, clear the log using the buttons below.\n" +
                                 "Otherwise, simply click dismiss to delete this message."
@@ -102,7 +102,7 @@ class LoggingSystem : Extension() {
 
                                         if (carryQueue == null) {
                                             val innerEmbed = ApplicationService.embed
-                                            innerEmbed.color = EmbedColor.INFORMATION.color
+                                            innerEmbed.color = EmbedColor.Information.color
                                             innerEmbed.description = "That log request was already cleared."
 
                                             embeds = mutableListOf(innerEmbed)
@@ -113,7 +113,7 @@ class LoggingSystem : Extension() {
                                         QueueConnection.deleteQueue(carryQueue.id)
 
                                         val innerEmbed = ApplicationService.embed
-                                        innerEmbed.color = EmbedColor.POSITIVE.color
+                                        innerEmbed.color = EmbedColor.Positive.color
                                         innerEmbed.description = "The log request was cleared, you can now log again!"
 
                                         embeds = mutableListOf(innerEmbed)
@@ -244,7 +244,7 @@ class LoggingSystem : Extension() {
                 content = "Your log was denied by ${event.interaction.user.mention}."
 
                 val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
-                embed.color = EmbedColor.NEGATIVE.color
+                embed.color = EmbedColor.Negative.color
                 embed.title = "Information"
 
                 embeds = mutableListOf(embed)
@@ -259,7 +259,7 @@ class LoggingSystem : Extension() {
                     runBlocking {
                         serverTextChannel.createMessage {
                             val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
-                            embed.color = EmbedColor.NEGATIVE.color
+                            embed.color = EmbedColor.Negative.color
                             embed.title = "Carry denied"
                             embed.field("Denied by", true) { event.interaction.user.mention }
 
@@ -302,7 +302,7 @@ class LoggingSystem : Extension() {
 
                 val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
                 embed.title = "Information"
-                embed.color = EmbedColor.DEFAULT.color
+                embed.color = EmbedColor.Default.color
 
                 embeds = mutableListOf(embed)
             }
@@ -319,7 +319,7 @@ class LoggingSystem : Extension() {
                             serverTextChannel.createMessage {
                                 val embed = ApplicationService.loadEmbedFromCarry(loggedCarryModel.carryModel)
                                 embed.title = "Carry accepted."
-                                embed.color = EmbedColor.POSITIVE.color
+                                embed.color = EmbedColor.Positive.color
 
                                 embeds = mutableListOf(embed)
                             }

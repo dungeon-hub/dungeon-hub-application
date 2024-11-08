@@ -20,6 +20,13 @@ import net.dungeonhub.connection.DungeonHubConnection
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 
+/**
+ * A command to access the CDN using the slash command /cdn.
+ * This command is only available to a few users: @see [allowedUsers]
+ * The command has two subcommands:
+ * - `add`: Add a file to the CDN.
+ * - `static`: Get a static file from the CDN.
+ */
 @LoadExtension
 class CdnCommand : Extension() {
     override val name = "cdn-command"
@@ -68,7 +75,7 @@ class CdnCommand : Extension() {
 
                             embedBuilder = ApplicationService.embed
                             embedBuilder.title = "File added."
-                            embedBuilder.color = EmbedColor.POSITIVE.color
+                            embedBuilder.color = EmbedColor.Positive.color
                             embedBuilder.image = url
                             embedBuilder.footer {
                                 text = ApplicationService.unstableFooter
@@ -101,7 +108,7 @@ class CdnCommand : Extension() {
                         val url = ContentConnection.getStaticUrl(arguments.resource.path).toString()
 
                         val embed = ApplicationService.embed
-                        embed.color = EmbedColor.POSITIVE.color
+                        embed.color = EmbedColor.Positive.color
                         embed.title = "Static resource"
                         embed.field("Name", true) { arguments.resource.loadDisplayName() }
                         embed.field("File name", true) { arguments.resource.getName() }
