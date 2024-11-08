@@ -10,10 +10,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleGroupConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.connection.getMutualServers
+import net.dungeonhub.connection.DiscordRoleConnection
+import net.dungeonhub.connection.DiscordRoleGroupConnection
+import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.discord_role_group.DiscordRoleGroupModel
 import java.util.stream.Collectors
@@ -40,10 +40,7 @@ object RolesService {
     }
 
     suspend fun calculateRoles(member: Member): List<Role> {
-        val serverRoles =
-            DiscordRoleConnection.getInstance(member.guildId.value.toLong())
-                .allRoles
-                .orElse(ArrayList())
+        val serverRoles = (DiscordRoleConnection[member.guildId.value.toLong()].allRoles ?: emptyList())
                 .stream()
                 .collect(
                     Collectors.toMap(
@@ -53,8 +50,7 @@ object RolesService {
 
         var discordRoles: MutableSet<Snowflake> = member.roleIds.toMutableSet()
 
-        val isVerified = DiscordUserConnection.getInstance()
-            .getLinkedById(member.id.value.toLong()).isPresent
+        val isVerified = DiscordUserConnection.getLinkedById(member.id.value.toLong()) != null
         val verifiedRoles = serverRoles.values.stream()
             .filter { obj: DiscordRoleModel -> obj.verifiedRole }
             .map { obj: DiscordRoleModel -> obj.id }
@@ -87,10 +83,7 @@ object RolesService {
 
     fun applyRoleGroups(server: GuildBehavior, roles: MutableSet<Snowflake>): MutableSet<Snowflake> {
         @Suppress("NAME_SHADOWING") var roles = roles
-        val roleGroups =
-            DiscordRoleGroupConnection.getInstance(server.id.value.toLong())
-                .all
-                .orElse(ArrayList())
+        val roleGroups = DiscordRoleGroupConnection[server.id.value.toLong()].all ?: emptyList()
 
         var lastRoles = 0
         while (lastRoles != roles.size) {
@@ -166,7 +159,7 @@ object RolesService {
     suspend fun removeRoleGroup(member: Member, roleGroupId: Long) {
         var userRoles = member.roleIds.toMutableSet()
 
-        val roleGroups = DiscordRoleGroupConnection.getInstance(member.guild.id.value.toLong()).all.orElse(listOf())
+        val roleGroups = DiscordRoleGroupConnection[member.guild.id.value.toLong()].all ?: listOf()
 
         var lastRoles = 0
         while (lastRoles != userRoles.size) {

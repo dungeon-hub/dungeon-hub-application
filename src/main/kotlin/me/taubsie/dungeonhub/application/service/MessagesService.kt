@@ -9,13 +9,13 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
 import me.taubsie.dungeonhub.application.connection.isSelf
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartupListener
 import me.taubsie.dungeonhub.application.service.ServerService.allServers
+import net.dungeonhub.connection.CarryDifficultyConnection
+import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_tier.CarryTierModel
 import java.sql.Time
@@ -28,11 +28,7 @@ object MessagesService : StartupListener {
     private const val REFRESH_PERIOD = 1000L * 60 * 15
 
     fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder? {
-        val carryDifficulties =
-            CarryDifficultyConnection.getInstance(carryTier)
-                .allCarryDifficulties.stream()
-                .flatMap { obj: List<CarryDifficultyModel> -> obj.stream() }
-                .toList()
+        val carryDifficulties = CarryDifficultyConnection[carryTier].allCarryDifficulties ?: listOf()
 
         if (carryDifficulties.isEmpty()) {
             return null
@@ -80,19 +76,13 @@ object MessagesService : StartupListener {
 
     suspend fun refreshPriceMessages(serverId: Long) {
         refreshPriceMessages(
-            DiscordServerConnection.getInstance()
-                .getAllCarryTiers(serverId)
-                .orElse(ArrayList())
-                .stream()
+            (DiscordServerConnection.getAllCarryTiers(serverId) ?: listOf()).stream()
         )
     }
 
     suspend fun refreshPriceMessages(server: Guild) {
         refreshPriceMessages(
-            DiscordServerConnection.getInstance()
-                .getAllCarryTiers(server.id.value.toLong())
-                .orElse(ArrayList())
-                .stream()
+            (DiscordServerConnection.getAllCarryTiers(server.id.value.toLong()) ?: listOf()).stream()
         )
     }
 

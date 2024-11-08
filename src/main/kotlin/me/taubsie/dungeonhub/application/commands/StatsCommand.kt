@@ -4,15 +4,13 @@ import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.getCarryAmountOrNull
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.getTotalAmountOfMoneySpentOrNull
 import me.taubsie.dungeonhub.application.connection.getGuildOrNull
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.addEmbed
 import me.taubsie.dungeonhub.application.service.color
+import net.dungeonhub.connection.DiscordServerConnection
 import java.time.ZonedDateTime
 
 @LoadExtension
@@ -33,20 +31,20 @@ class StatsCommand : Extension() {
 
                     val memberCount = guild.approximateMemberCount ?: 0
                     val spentMoney = ApplicationService.makeNumberReadable(
-                        DiscordServerConnection.getInstance().getTotalAmountOfMoneySpentOrNull(guild.id.value.toLong())
-                            ?: 0, 3
+                        DiscordServerConnection.getTotalAmountOfMoneySpent(guild.id.value.toLong()) ?: 0,
+                        3
                     )
                     val spentMoneyMonthly = ApplicationService.makeNumberReadable(
-                        DiscordServerConnection.getInstance().getTotalAmountOfMoneySpentOrNull(
+                        DiscordServerConnection.getTotalAmountOfMoneySpent(
                             guild.id.value.toLong(),
                             since = ZonedDateTime.now().minusDays(30).toInstant()
                         ) ?: 0, 3
                     )
                     val totalCarries =
-                        DiscordServerConnection.getInstance().getCarryAmountOrNull(guild.id.value.toLong()) ?: 0
-                    val monthlyCarries = DiscordServerConnection.getInstance().getCarryAmountOrNull(
+                        DiscordServerConnection.getCarryAmount(guild.id.value.toLong()) ?: 0
+                    val monthlyCarries = DiscordServerConnection.getCarryAmount(
                         guild.id.value.toLong(),
-                        ZonedDateTime.now().minusDays(30).toInstant()
+                        since = ZonedDateTime.now().minusDays(30).toInstant()
                     ) ?: 0
 
                     addEmbed {

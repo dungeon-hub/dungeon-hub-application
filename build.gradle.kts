@@ -34,7 +34,7 @@ dependencies {
 
     //Internal API
     implementation("me.taubsie:dungeon-hub-common:1.0.0")
-    implementation("net.dungeon-hub.api:model:0.1.1")
+    implementation("net.dungeon-hub.api:client:0.2.0")
 
     //Functionality
     implementation("net.dungeon-hub:transcripts-kord:0.1.1")
@@ -43,6 +43,7 @@ dependencies {
     implementation("net.hypixel:hypixel-api-core:4.4")
     implementation("me.nullicorn:Nedit:2.2.0")
     implementation("com.google.zxing:javase:3.5.2")
+    implementation("com.google.guava:guava:33.0.0-jre")
 
     //HTTP Client
     implementation("com.squareup.okhttp3:okhttp:4.10.0")

@@ -4,10 +4,10 @@ import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.converters.impl.optionalUser
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralSlashCommand
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.model.discord_server.DiscordServerModel
 
 @LoadExtension
@@ -24,14 +24,13 @@ class ScoreCommand : Extension() {
                 respond {
                     val userToCheck = arguments.user ?: event.interaction.user
 
-                    val scores =
-                        DiscordServerConnection.getInstance()
-                            .getScores(DiscordServerModel(guild!!.id.value.toLong()), userToCheck.id.value.toLong())
-                            .orElse(listOf())
+                    val scores = DiscordServerConnection.getScores(
+                        DiscordServerModel(guild!!.id.value.toLong()),
+                        userToCheck.id.value.toLong()
+                    ) ?: listOf()
 
                     val carryCount =
-                        DiscordUserConnection.getInstance()
-                            .getCarryCount(userToCheck.id.value.toLong(), guild!!.id.value.toLong()).orElse(null)
+                        DiscordUserConnection.getCarryCount(userToCheck.id.value.toLong(), guild!!.id.value.toLong())
 
                     embeds = mutableListOf(
                         ApplicationService.getScoreCountMessage(

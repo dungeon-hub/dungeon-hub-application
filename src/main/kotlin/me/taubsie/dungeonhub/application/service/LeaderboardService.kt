@@ -12,9 +12,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant.Companion.fromEpochMilliseconds
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
 import me.taubsie.dungeonhub.application.loader.OnStart
@@ -23,6 +20,9 @@ import me.taubsie.dungeonhub.application.loader.StartupListener
 import me.taubsie.dungeonhub.application.misc.Leaderboard
 import me.taubsie.dungeonhub.application.service.ApplicationService.embed
 import me.taubsie.dungeonhub.application.service.ApplicationService.footer
+import net.dungeonhub.connection.CarryTypeConnection
+import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.score.LeaderboardModel
@@ -72,7 +72,7 @@ object LeaderboardService : StartupListener {
         }
 
         leaderboardModel.playerScore?.let { playerScore: ScoreModel? ->
-            if(leaderboardModel.playerPosition?.let { it != -1 } == true) {
+            if (leaderboardModel.playerPosition?.let { it != -1 } == true) {
                 embed.field(
                     "__**Your rank:**__ #" + (leaderboardModel.playerPosition!! + 1),
                     false
@@ -171,25 +171,21 @@ object LeaderboardService : StartupListener {
 
         val leaderboards: MutableMap<GuildMessageChannel, MutableList<Leaderboard>> = HashMap()
 
-        for (serverModel in DiscordServerConnection.getInstance()
-            .loadAllServers()
-            .orElse(mutableListOf())) {
-            for (carryType in CarryTypeConnection.getInstance(
-                serverModel.id
-            ).allCarryTypes.orElse(listOf<CarryTypeModel>())) {
+        for (serverModel in DiscordServerConnection.loadAllServers() ?: mutableListOf()) {
+            for (carryType in CarryTypeConnection[serverModel.id].allCarryTypes ?: listOf()) {
                 val leaderboardChannel = carryType.leaderboardChannel?.let { id: Long? ->
-                        runBlocking {
-                            try {
-                                return@runBlocking Optional.ofNullable(
-                                    DiscordConnection.bot
-                                        ?.kordRef
-                                        ?.getChannelOf<GuildMessageChannel>(Snowflake(id!!))
-                                )
-                            } catch (exception: RequestException) {
-                                return@runBlocking Optional.empty()
-                            }
+                    runBlocking {
+                        try {
+                            return@runBlocking Optional.ofNullable(
+                                DiscordConnection.bot
+                                    ?.kordRef
+                                    ?.getChannelOf<GuildMessageChannel>(Snowflake(id!!))
+                            )
+                        } catch (exception: RequestException) {
+                            return@runBlocking Optional.empty()
                         }
                     }
+                }
 
                 if (leaderboardChannel == null) {
                     continue
@@ -204,18 +200,14 @@ object LeaderboardService : StartupListener {
                         leaderboards[leaderboardChannel.get()]!!.add(
                             Leaderboard(
                                 getLeaderboardTitle(carryType, scoreType),
-                                ScoreConnection.getInstance(
-                                    carryType
-                                ).loadLeaderboard(scoreType, 0).orElse(null)
+                                ScoreConnection[carryType].loadLeaderboard(scoreType, 0)
                             )
                         )
                     } else {
                         leaderboards[leaderboardChannel.get()] = mutableListOf(
                             Leaderboard(
                                 getLeaderboardTitle(carryType, scoreType),
-                                ScoreConnection.getInstance(
-                                    carryType
-                                ).loadLeaderboard(scoreType, 0).orElse(null)
+                                ScoreConnection[carryType].loadLeaderboard(scoreType, 0)
                             )
                         )
                     }
@@ -245,16 +237,14 @@ object LeaderboardService : StartupListener {
                             leaderboards[leaderboardChannel]!!.add(
                                 Leaderboard(
                                     getLeaderboardTitle(null, scoreType),
-                                    DiscordServerConnection.getInstance()
-                                        .loadTotalLeaderboard(serverModel.id, scoreType, 0).orElse(null)
+                                    DiscordServerConnection.loadTotalLeaderboard(serverModel.id, scoreType, 0)
                                 )
                             )
                         } else {
                             leaderboards[leaderboardChannel] = mutableListOf(
                                 Leaderboard(
                                     getLeaderboardTitle(null, scoreType),
-                                    DiscordServerConnection.getInstance()
-                                        .loadTotalLeaderboard(serverModel.id, scoreType, 0).orElse(null)
+                                    DiscordServerConnection.loadTotalLeaderboard(serverModel.id, scoreType, 0)
                                 )
                             )
                         }

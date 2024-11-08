@@ -23,8 +23,6 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.utils.hasPermission
 import kotlinx.datetime.Clock
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CntRequestConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.enums.CntRequestType
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
@@ -33,6 +31,8 @@ import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.color
+import net.dungeonhub.connection.CntRequestConnection
+import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.model.cnt_request.CntRequestCreationModel
 import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
 import java.time.Instant
@@ -70,10 +70,9 @@ class CntSystem : Extension() {
             }
 
             action {
-                val cntRequest = CntRequestConnection
-                    .getInstance(event.interaction.guild.id.value.toLong())
+                val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
                     .findCntRequest(event.interaction.message.id.value.toLong())
-                    .orElseThrow { CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?") }
+                    ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
 
                 if (cntRequest.claimer != null) {
                     event.interaction.respondEphemeral {
@@ -84,16 +83,16 @@ class CntSystem : Extension() {
 
                 val claimerId = event.interaction.user.id.value.toLong()
 
-                val claimer = DiscordUserConnection.getInstance().getById(claimerId).or {
-                    DiscordUserConnection.getInstance().updateUser(claimerId, DiscordUserUpdateModel(null))
-                }.orElseThrow { CommandExecutionException("Couldn't load CNT claimer!") }
+                val claimer = DiscordUserConnection.getById(claimerId)
+                    ?: DiscordUserConnection.updateUser(claimerId, DiscordUserUpdateModel(null))
+                    ?: throw CommandExecutionException("Couldn't load CNT claimer!")
 
                 val updateModel = cntRequest.getUpdateModel()
                 updateModel.claimer = claimer
 
-                val updatedCntRequest = CntRequestConnection.getInstance(event.interaction.guild.id.value.toLong())
+                val updatedCntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
                     .updateCntRequest(cntRequest.id, updateModel)
-                    .orElseThrow { CommandExecutionException("Couldn't update CNT request!") }
+                    ?: throw CommandExecutionException("Couldn't update CNT request!")
 
                 val claimMessage = ApplicationService.embedWithoutTimestamp
                 claimMessage.title = "Claimed!"
@@ -124,10 +123,9 @@ class CntSystem : Extension() {
             }
 
             action {
-                val cntRequest = CntRequestConnection
-                    .getInstance(event.interaction.guild.id.value.toLong())
+                val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
                     .findCntRequest(event.interaction.message.id.value.toLong())
-                    .orElseThrow { CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?") }
+                    ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
 
                 if (event.interaction.user.id.value.toLong() != cntRequest.claimer?.id
                     && !event.interaction.user.hasPermission(Permission.Administrator)
@@ -147,9 +145,9 @@ class CntSystem : Extension() {
                 val updateModel = cntRequest.getUpdateModel()
                 updateModel.claimer = null
 
-                val updatedCntRequest = CntRequestConnection.getInstance(event.interaction.guild.id.value.toLong())
+                val updatedCntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
                     .updateCntRequest(cntRequest.id, updateModel)
-                    .orElseThrow { CommandExecutionException("Couldn't update CNT request!") }
+                    ?: throw CommandExecutionException("Couldn't update CNT request!")
 
                 event.interaction.respondEphemeral {
                     embeds = mutableListOf(unclaimMessage)
@@ -159,6 +157,53 @@ class CntSystem : Extension() {
                     embeds = mutableListOf(ApplicationService.getCntEmbed(updatedCntRequest))
                     components {
                         addUnclaimedCntButtons()
+                    }
+                }
+            }
+        }
+
+        event<GuildButtonInteractionCreateEvent> {
+            check {
+                failIfNot("cnt_done" == event.interaction.componentId)
+            }
+
+            action {
+                val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
+                    .findCntRequest(event.interaction.message.id.value.toLong())
+                    ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
+
+                if (event.interaction.user.id.value.toLong() != cntRequest.user.id
+                    && !event.interaction.user.hasPermission(Permission.Administrator)
+                ) {
+                    val embed = ApplicationService
+                        .getErrorEmbed(CommandExecutionWarning("The CNT request is not yours!"))
+
+                    event.interaction.respondEphemeral { embeds = mutableListOf(embed) }
+
+                    return@action
+                }
+
+                val updateModel = cntRequest.getUpdateModel()
+                updateModel.completed = true
+
+                val updatedCntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
+                    .updateCntRequest(cntRequest.id, updateModel)
+                    ?: throw CommandExecutionException("Couldn't update CNT request!")
+
+                event.interaction.respondEphemeral {
+                    val embed = ApplicationService.embed
+                    embed.description = "Your CNT request is now marked as completed.\n__Thanks for using our services!__"
+                    embeds = mutableListOf(embed)
+                }
+
+                event.interaction.message.edit {
+                    val embed = ApplicationService.getCntEmbed(updatedCntRequest)
+                    embed.color(EmbedColor.POSITIVE)
+                    embed.description = "### Craft and Transfers Request completed!"
+
+                    embeds = mutableListOf(embed)
+                    components {
+                        addDoneCntButtons()
                     }
                 }
             }
@@ -237,16 +282,13 @@ class CntSystem : Extension() {
                         requirement
                     )
 
-                    val embed = CntRequestConnection
-                        .getInstance(channel.guildId.value.toLong())
+                    val embed = CntRequestConnection[channel.guildId.value.toLong()]
                         .createCntRequest(creationModel)
-                        .map { mutableListOf(ApplicationService.getCntEmbed(it)) }
-                        .orElseGet {
-                            ApplicationService.getErrorEmbeds(
-                                CommandExecutionException("Could not persist CNT request."),
-                                "Could not persist CNT request."
-                            )
-                        }
+                        ?.let { mutableListOf(ApplicationService.getCntEmbed(it)) }
+                        ?: ApplicationService.getErrorEmbeds(
+                            CommandExecutionException("Could not persist CNT request."),
+                            "Could not persist CNT request."
+                        )
 
                     response.edit {
                         embeds = embed
@@ -282,6 +324,23 @@ class CntSystem : Extension() {
                 label = "Unclaim"
             }
             interactionButton(ButtonStyle.Secondary, "cnt_done") {
+                label = "Done"
+            }
+        }
+    }
+
+    private fun MessageBuilder.addDoneCntButtons() {
+        actionRow {
+            interactionButton(ButtonStyle.Primary, "cnt_claim") {
+                disabled = true
+                label = "Claim"
+            }
+            interactionButton(ButtonStyle.Secondary, "cnt_unclaim") {
+                disabled = true
+                label = "Unclaim"
+            }
+            interactionButton(ButtonStyle.Secondary, "cnt_done") {
+                disabled = true
                 label = "Done"
             }
         }
