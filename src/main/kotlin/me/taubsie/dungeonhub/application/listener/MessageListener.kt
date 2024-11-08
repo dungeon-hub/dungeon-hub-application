@@ -237,31 +237,31 @@ class MessageListener : Extension() {
                         secondUpdateModel.queueStep = QueueStep.Approving
                         secondUpdateModel.relationId = createdMessage.id.value.toLong()
 
-                        QueueConnection.updateQueue(queueModel.id, secondUpdateModel)
+                        QueueConnection.updateQueue(updatedModel.id, secondUpdateModel)
                     }
                 } else {
-                    val updatedScore = QueueConnection.logQueue(queueModel.id, firstUpdateModel)
+                    val updatedScore = QueueConnection.logQueue(updatedModel.id, firstUpdateModel)
                         ?.scoreModels
                         ?.firstOrNull { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
                         ?.scoreAmount
-                        ?: (ScoreConnection[queueModel.carryType].getScore(queueModel.carrier.id)?.scoreAmount ?: 0)
+                        ?: (ScoreConnection[updatedModel.carryType].getScore(updatedModel.carrier.id)?.scoreAmount ?: 0)
 
                     runBlocking {
-                        val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(queueModel.carrier.id))
+                        val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(updatedModel.carrier.id))
 
                         if (carrier != null) {
                             carrier.dm {
                                 this.content = "Your carry was logged!\n\n" +
                                         "**Your Updated Score:** $updatedScore"
 
-                                val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                                val embed = ApplicationService.loadEmbedFromCarryQueue(updatedModel)
                                 embed.title = "Information"
                                 embed.color = EmbedColor.Default.color
 
                                 embeds = mutableListOf(embed)
                             }
 
-                            val logChannel = queueModel.carryTier
+                            val logChannel = updatedModel.carryTier
                                 .carryType
                                 .logChannel
                                 ?.let { id: Long ->
@@ -271,34 +271,34 @@ class MessageListener : Extension() {
                             if (logChannel != null) {
                                 logger.debug(
                                     "Carry logged: {}",
-                                    MoshiService.moshi.adapter(CarryQueueModel::class.java).toJson(queueModel)
+                                    MoshiService.moshi.adapter(CarryQueueModel::class.java).toJson(updatedModel)
                                 )
 
                                 logChannel.createMessage {
                                     val embed = ApplicationService.getEmbed(
-                                        queueModel.time?.toKotlinInstant() ?: Clock.System.now()
+                                        updatedModel.time?.toKotlinInstant() ?: Clock.System.now()
                                     )
                                     embed.title = "Carry accepted."
                                     embed.color = EmbedColor.Positive.color
-                                    embed.field("Number of carries", true) { queueModel.amount.toString() }
+                                    embed.field("Number of carries", true) { updatedModel.amount.toString() }
                                     embed.field("Type of carry", true) {
-                                        "${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName}"
+                                        "${updatedModel.carryTier.displayName} - ${updatedModel.carryDifficulty.displayName}"
                                     }
                                     embed.field("Player", true) {
-                                        "<@${queueModel.player.id}>"
+                                        "<@${updatedModel.player.id}>"
                                     }
                                     embed.field("Carrier", true) {
-                                        "<@${queueModel.carrier.id}>"
+                                        "<@${updatedModel.carrier.id}>"
                                     }
                                     embed.field("Transcript-Link", true) {
-                                        "[Click to open](${queueModel.attachmentLink})"
+                                        "[Click to open](${updatedModel.attachmentLink})"
                                     }
 
                                     embeds = mutableListOf(embed)
                                 }
                             }
 
-                            QueueConnection.deleteQueue(queueModel.id)
+                            QueueConnection.deleteQueue(updatedModel.id)
                         }
                     }
                 }
