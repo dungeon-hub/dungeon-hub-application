@@ -162,6 +162,53 @@ class CntSystem : Extension() {
             }
         }
 
+        event<GuildButtonInteractionCreateEvent> {
+            check {
+                failIfNot("cnt_done" == event.interaction.componentId)
+            }
+
+            action {
+                val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
+                    .findCntRequest(event.interaction.message.id.value.toLong())
+                    ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
+
+                if (event.interaction.user.id.value.toLong() != cntRequest.user.id
+                    && !event.interaction.user.hasPermission(Permission.Administrator)
+                ) {
+                    val embed = ApplicationService
+                        .getErrorEmbed(CommandExecutionWarning("The CNT request is not yours!"))
+
+                    event.interaction.respondEphemeral { embeds = mutableListOf(embed) }
+
+                    return@action
+                }
+
+                val updateModel = cntRequest.getUpdateModel()
+                updateModel.completed = true
+
+                val updatedCntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
+                    .updateCntRequest(cntRequest.id, updateModel)
+                    ?: throw CommandExecutionException("Couldn't update CNT request!")
+
+                event.interaction.respondEphemeral {
+                    val embed = ApplicationService.embed
+                    embed.description = "Your CNT request is now marked as completed.\n__Thanks for using our services!__"
+                    embeds = mutableListOf(embed)
+                }
+
+                event.interaction.message.edit {
+                    val embed = ApplicationService.getCntEmbed(updatedCntRequest)
+                    embed.color(EmbedColor.POSITIVE)
+                    embed.title = "Craft and Transfers Request completed!"
+
+                    embeds = mutableListOf(embed)
+                    components {
+                        addDoneCntButtons()
+                    }
+                }
+            }
+        }
+
         CntRequestType.entries.forEach { requestType ->
             event<ModalSubmitInteractionCreateEvent> {
                 check {
@@ -277,6 +324,23 @@ class CntSystem : Extension() {
                 label = "Unclaim"
             }
             interactionButton(ButtonStyle.Secondary, "cnt_done") {
+                label = "Done"
+            }
+        }
+    }
+
+    private fun MessageBuilder.addDoneCntButtons() {
+        actionRow {
+            interactionButton(ButtonStyle.Primary, "cnt_claim") {
+                disabled = true
+                label = "Claim"
+            }
+            interactionButton(ButtonStyle.Secondary, "cnt_unclaim") {
+                disabled = true
+                label = "Unclaim"
+            }
+            interactionButton(ButtonStyle.Secondary, "cnt_done") {
+                disabled = true
                 label = "Done"
             }
         }

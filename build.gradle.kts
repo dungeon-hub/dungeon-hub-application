@@ -34,7 +34,7 @@ dependencies {
 
     //Internal API
     implementation("me.taubsie:dungeon-hub-common:1.0.0")
-    implementation("net.dungeon-hub.api:client:0.1.1")
+    implementation("net.dungeon-hub.api:client:0.2.0")
 
     //Functionality
     implementation("net.dungeon-hub:transcripts-kord:0.1.1")
