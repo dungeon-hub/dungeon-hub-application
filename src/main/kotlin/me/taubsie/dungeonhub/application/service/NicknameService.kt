@@ -8,14 +8,14 @@ import dev.kord.core.entity.User
 import kotlinx.coroutines.flow.toList
 import me.taubsie.dungeonhub.application.connection.HypixelConnection.getHypixelLinkedDiscord
 import me.taubsie.dungeonhub.application.connection.MojangConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordRoleConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.connection.getMutualServers
 import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.misc.PlayerInformation
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel
+import net.dungeonhub.connection.DiscordRoleConnection
+import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.model.discord_role.DiscordRoleModel
+import net.dungeonhub.model.discord_user.DiscordUserModel
+import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
 import org.jetbrains.annotations.Contract
 import java.util.*
 import java.util.function.Function
@@ -66,11 +66,10 @@ object NicknameService {
 
         val updateModel = DiscordUserUpdateModel(uuid)
 
-        val userModel = DiscordUserConnection.getInstance()
-            .updateUser(user.id.value.toLong(), updateModel)
-            .orElseThrow { CommandExecutionException("Couldn't update your user data.") }
+        val userModel = DiscordUserConnection.updateUser(user.id.value.toLong(), updateModel)
+            ?: throw CommandExecutionException("Couldn't update your user data.")
 
-        return userModel.minecraftId
+        return userModel.minecraftId!!
     }
 
     /**
@@ -107,11 +106,8 @@ object NicknameService {
      */
     @Throws(NoNameSchemaWarning::class, NotLinkedException::class)
     suspend fun updateNickname(member: Member, serverRoles: List<Role>?) {
-        val discordUserModel =
-            DiscordUserConnection.getInstance()
-                .getById(member.id.value.toLong())
-                .filter { discordUserModel1: DiscordUserModel -> discordUserModel1.minecraftId != null }
-                .orElseThrow { NotLinkedException() }
+        val discordUserModel = DiscordUserConnection.getLinkedById(member.id.value.toLong())
+            ?: throw NotLinkedException()
         updateNickname(member, discordUserModel, serverRoles)
     }
 
@@ -137,7 +133,7 @@ object NicknameService {
 
         val role = getRoleModel(member, sortedRoles)
 
-        val nickname = loadUsername(role.nameSchema, PlayerInformation(member.asUser(), discordUserModel))
+        val nickname = loadUsername(role.nameSchema!!, PlayerInformation(member.asUser(), discordUserModel))
 
         if (nickname.isBlank()) {
             return
@@ -185,7 +181,7 @@ object NicknameService {
     private fun validateRole(discordRoles: Map<Long, DiscordRoleModel>): Predicate<Role> {
         return Predicate { role: Role ->
             val obj = discordRoles[role.id.value.toLong()]
-            Objects.nonNull(obj) && Objects.nonNull(obj!!.nameSchema) && obj.nameSchema.isNotBlank()
+            Objects.nonNull(obj) && Objects.nonNull(obj!!.nameSchema) && obj.nameSchema!!.isNotBlank()
         }
     }
 
@@ -224,8 +220,7 @@ object NicknameService {
      */
     @Contract(pure = true)
     private fun getRoleModels(guild: GuildBehavior): Map<Long, DiscordRoleModel> {
-        return DiscordRoleConnection.getInstance(guild.id.value.toLong())
-            .allRoles.orElse(emptyList())
+        return (DiscordRoleConnection[guild.id.value.toLong()].allRoles ?: emptyList())
             .stream().collect(toMap())
     }
 
@@ -247,10 +242,7 @@ object NicknameService {
 
 //TODO move to connection?
 fun User.getUUIDOrNull(): UUID? {
-    return DiscordUserConnection.getInstance()
-        .getById(id.value.toLong())
-        .map { it.minecraftId }
-        .orElse(null)
+    return DiscordUserConnection.getById(id.value.toLong())?.minecraftId
 }
 
 @Throws(NotLinkedException::class)

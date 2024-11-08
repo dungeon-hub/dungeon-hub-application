@@ -1,20 +1,20 @@
 package me.taubsie.dungeonhub.application.connection;
 
 import com.google.gson.Gson;
-import me.taubsie.dungeonhub.common.DungeonHubService;
+import net.dungeonhub.service.GsonService;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Type;
 import java.util.Optional;
-import java.util.function.Function;
 
 public interface Connection {
     Logger getLogger();
 
     default Gson getGson() {
-        return DungeonHubService.getInstance().getGson();
+        //noinspection deprecation
+        return GsonService.INSTANCE.getGson();
     }
 
     default <T> T fromJson(String json, Class<T> clazz) {
@@ -33,7 +33,7 @@ public interface Connection {
         return MediaType.parse("application/json; charset=utf-8");
     }
 
-    default <T> Optional<T> executeRequest(Request request, Function<String, T> function) {
+    default <T> Optional<T> executeRequest(Request request, MappingFunction<String, T> function) {
         return DungeonHubConnection.getInstance().executeRequest(request, function);
     }
 

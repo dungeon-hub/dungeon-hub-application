@@ -7,17 +7,16 @@ import dev.kordex.core.commands.converters.impl.long
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
-import java.util.*
+import net.dungeonhub.connection.CarryDifficultyConnection
+import net.dungeonhub.connection.CarryTierConnection
+import net.dungeonhub.connection.CarryTypeConnection
+import net.dungeonhub.connection.DiscordServerConnection
 
 /**
  * Command to calculate the price for some amount of carries.
@@ -40,21 +39,21 @@ class CalcPriceCommand : Extension() {
                     var carryTier = channel.asChannelOfOrNull<CategorizableChannel>()
                         ?.categoryId
                         ?.let { id ->
-                            DiscordServerConnection.getInstance()
-                                .getCarryTierFromCategory(guild!!.id.value.toLong(), id.value.toLong())
+                            DiscordServerConnection.getCarryTierFromCategory(
+                                guild!!.id.value.toLong(),
+                                id.value.toLong()
+                            )
                         }
-                        ?.orElse(null)
 
                     val previousCarryTier = carryTier
 
-                    carryTier = CarryTypeConnection.getInstance(guild!!.id.value.toLong())
+                    carryTier = CarryTypeConnection[guild!!.id.value.toLong()]
                         .getByIdentifier(arguments.carryType)
-                        .flatMap { carryType ->
-                            CarryTierConnection.getInstance(carryType)
+                        ?.let { carryType ->
+                            CarryTierConnection[carryType]
                                 .getByIdentifier(arguments.carryTier)
-                                .or { Optional.ofNullable(previousCarryTier) }
+                                ?: previousCarryTier
                         }
-                        .orElse(null)
 
                     if (carryTier == null) {
                         throw InvalidOptionException(
@@ -63,15 +62,9 @@ class CalcPriceCommand : Extension() {
                         )
                     }
 
-                    val carryDifficulty = CarryDifficultyConnection.getInstance(carryTier)
+                    val carryDifficulty = CarryDifficultyConnection[carryTier]
                         .getByIdentifier(arguments.carryDifficulty)
-                        .orElse(null)
-
-                    if (carryDifficulty == null) {
-                        throw InvalidOptionException(
-                            "carry-difficulty"
-                        )
-                    }
+                        ?: throw InvalidOptionException("carry-difficulty")
 
                     val price = ApplicationService.calculatePrice(carryDifficulty, arguments.amount)
                     val pricePerCarry = ApplicationService.calculatePricePerCarry(carryDifficulty, arguments.amount)
@@ -94,7 +87,7 @@ class CalcPriceCommand : Extension() {
                     embed.field("Price", true) { priceText }
                     embed.field("Price per Carry", true) { pricePerCarryText }
 
-                    carryDifficulty.thumbnailUrl.ifPresent { thumbnail -> embed.thumbnail { url = thumbnail } }
+                    carryDifficulty.thumbnailUrl?.let { embed.thumbnail { url = it } }
 
                     embeds = mutableListOf(embed)
                 }

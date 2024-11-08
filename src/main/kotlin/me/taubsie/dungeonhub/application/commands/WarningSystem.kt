@@ -20,17 +20,17 @@ import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
 import me.taubsie.dungeonhub.application.connection.copy
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.WarningConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
-import me.taubsie.dungeonhub.common.enums.WarningType
-import me.taubsie.dungeonhub.common.model.warning.WarningCreationModel
-import me.taubsie.dungeonhub.common.model.warning.WarningEvidenceCreationModel
+import net.dungeonhub.connection.ContentConnection
+import net.dungeonhub.connection.WarningConnection
+import net.dungeonhub.enums.WarningType
+import net.dungeonhub.model.warning.WarningCreationModel
+import net.dungeonhub.model.warning.WarningEvidenceCreationModel
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import org.slf4j.LoggerFactory
@@ -68,10 +68,8 @@ class WarningSystem : Extension() {
                 noPermissionEmbed.description =
                     "You don't have the permission to see the warns of other people, so you're seeing your own."
 
-                val warns =
-                    WarningConnection.getInstance(guild!!.id.value.toLong())
-                        .getActiveWarns(target.id.value.toLong())
-                        .orElseThrow { CommandExecutionException("Couldn't load active warns of the given user.") }
+                val warns = WarningConnection[guild!!.id.value.toLong()].getActiveWarns(target.id.value.toLong())
+                    ?: throw CommandExecutionException("Couldn't load active warns of the given user.")
 
                 if (warns.isEmpty()) {
                     val embed = ApplicationService.embed
@@ -157,19 +155,17 @@ class WarningSystem : Extension() {
                             true
                         )
 
-                        val addedWarning =
-                            WarningConnection.getInstance(guild!!.id.value.toLong())
-                                .addWarning(creationModel)
-                                .orElseThrow { CommandExecutionException("Error while trying to add a warning") }
+                        val addedWarning = WarningConnection[guild!!.id.value.toLong()].addWarning(creationModel)
+                            ?: throw CommandExecutionException("Error while trying to add a warning")
 
                         val actionDescription = ApplicationService.applyWarningActions(
                             addedWarning.warningActionModel,
                             target.asMember(guild!!.id)
                         )
 
-                        val activeWarnings = WarningConnection.getInstance(guild!!.id.value.toLong())
-                            .getActiveWarns(target.id.value.toLong())
-                            .orElse(listOf())
+                        val activeWarnings =
+                            WarningConnection[guild!!.id.value.toLong()].getActiveWarns(target.id.value.toLong())
+                                ?: listOf()
 
                         val embed = ApplicationService.formatWarn(addedWarning.warningModel)
                         embed.description =
@@ -237,14 +233,8 @@ class WarningSystem : Extension() {
                 action {
                     respond {
                         val removedWarning =
-                            WarningConnection.getInstance(guild!!.id.value.toLong())
-                                .deactivateWarning(arguments.id)
-                                .orElseThrow {
-                                    InvalidOptionException(
-                                        "id",
-                                        "Couldn't find a warning with the given id."
-                                    )
-                                }
+                            WarningConnection[guild!!.id.value.toLong()].deactivateWarning(arguments.id)
+                                ?: throw InvalidOptionException("id", "Couldn't find a warning with the given id.")
 
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.Positive.color
@@ -293,9 +283,8 @@ class WarningSystem : Extension() {
 
                 action {
                     val warns =
-                        WarningConnection.getInstance(guild!!.id.value.toLong())
-                            .getAllWarns(arguments.user.id.value.toLong())
-                            .orElseThrow { CommandExecutionException("Couldn't load all warns of the given user.") }
+                        WarningConnection[guild!!.id.value.toLong()].getAllWarns(arguments.user.id.value.toLong())
+                            ?: throw CommandExecutionException("Couldn't load all warns of the given user.")
 
                     if (warns.isEmpty()) {
                         respond {
@@ -340,13 +329,10 @@ class WarningSystem : Extension() {
                                     .executeRawRequest(attachmentRequest)
                                     .orElseThrow { CommandExecutionException("Couldn't read file data.") }
 
-                            val uri =
-                                ContentConnection.getInstance()
-                                    .uploadFile(attachmentData)
-                                    .orElseThrow { CommandExecutionException("Couldn't upload file data to the cdn.") }
+                            val uri = ContentConnection.uploadFile(attachmentData)
+                                ?: throw CommandExecutionException("Couldn't upload file data to the cdn.")
 
-                            ContentConnection.getInstance()
-                                .getCdnUrl(uri).toString()
+                            ContentConnection.getCdnUrl(uri).toString()
                         } else if (arguments.text != null) {
                             arguments.text!!
                         } else {
@@ -356,9 +342,8 @@ class WarningSystem : Extension() {
                         val creationModel = WarningEvidenceCreationModel(evidence, user.id.value.toLong())
 
                         val warning =
-                            WarningConnection.getInstance(guild!!.id.value.toLong())
-                                .addEvidence(arguments.id, creationModel)
-                                .orElseThrow { CommandExecutionException("Failed to add evidence to that warning. Did you enter a correct id?") }
+                            WarningConnection[guild!!.id.value.toLong()].addEvidence(arguments.id, creationModel)
+                                ?: throw CommandExecutionException("Failed to add evidence to that warning. Did you enter a correct id?")
 
                         if (arguments.attachment != null && arguments.text != null) {
                             val embed = ApplicationService.embedWithoutTimestamp

@@ -9,16 +9,15 @@ import dev.kordex.core.commands.converters.impl.optionalString
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryDifficultyConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidSubCommandException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
-import me.taubsie.dungeonhub.common.model.carry_difficulty.CarryDifficultyUpdateModel
+import net.dungeonhub.connection.CarryDifficultyConnection
+import net.dungeonhub.connection.CarryTierConnection
+import net.dungeonhub.connection.CarryTypeConnection
 
 /**
  * Command to manage carry difficulties.
@@ -63,37 +62,19 @@ class CarryDifficultyCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(arguments.carryType)
-                                .orElse(null)
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw CommandExecutionException("That carry type doesn't exists!")
 
-                        if (carryType == null) {
-                            throw CommandExecutionWarning("That carry type doesn't exists!")
-                        }
-
-                        val carryTier =
-                            CarryTierConnection.getInstance(
-                                carryType
-                            )
-                                .getByIdentifier(arguments.carryTier)
-                                .orElse(null)
-
-                        if (carryTier == null) {
-                            throw CommandExecutionWarning("That carry tier doesn't exists!")
-                        }
+                        val carryTier = CarryTierConnection[carryType]
+                            .getByIdentifier(arguments.carryTier)
+                            ?: throw CommandExecutionWarning("That carry tier doesn't exists!")
 
                         val carryDifficulty =
-                            CarryDifficultyConnection.getInstance(
-                                carryTier
-                            )
-                                .getByIdentifier(arguments.carryDifficulty)
-                                .orElse(null)
-
-                        if (carryDifficulty == null) {
-                            throw InvalidOptionException("carry-difficulty", "That carry difficulty doesn't exist!")
-                        }
+                            CarryDifficultyConnection[carryTier].getByIdentifier(arguments.carryDifficulty)
+                                ?: throw InvalidOptionException(
+                                    "carry-difficulty",
+                                    "That carry difficulty doesn't exist!"
+                                )
 
                         val embed = ApplicationService.getCarryDifficultyEmbed(carryDifficulty)
                         embeds = mutableListOf(embed)
@@ -108,43 +89,24 @@ class CarryDifficultyCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(arguments.carryType)
-                                .orElse(null)
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        if (carryType == null) {
-                            throw CommandExecutionWarning("That carry type doesn't exists!")
-                        }
-
-                        val carryTier =
-                            CarryTierConnection.getInstance(
-                                carryType
-                            )
-                                .getByIdentifier(arguments.carryTier)
-                                .orElse(null)
-
-                        if (carryTier == null) {
-                            throw InvalidOptionException("carry-tier", "That carry tier doesn't exist")
-                        }
+                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
+                            ?: throw InvalidOptionException("carry-tier", "That carry tier doesn't exist")
 
                         val carryDifficulty =
-                            CarryDifficultyConnection.getInstance(
-                                carryTier
-                            )
-                                .getByIdentifier(arguments.carryDifficulty)
-                                .orElse(null)
-
-                        if (carryDifficulty == null) {
-                            throw InvalidOptionException("carry.difficulty", "That carry difficulty doesn't exist")
-                        }
+                            CarryDifficultyConnection[carryTier].getByIdentifier(arguments.carryDifficulty)
+                                ?: throw InvalidOptionException(
+                                    "carry.difficulty",
+                                    "That carry difficulty doesn't exist"
+                                )
 
                         if (arguments.displayName == null && arguments.price == null && arguments.score == null && arguments.bulkAmount == null && arguments.bulkPrice == null && arguments.thumbnailUrl == null && arguments.priceName == null) {
                             throw CommandExecutionWarning("Please provide something you want to edit.")
                         }
 
-                        val updateModel = CarryDifficultyUpdateModel()
+                        val updateModel = carryDifficulty.getUpdateModel()
 
                         if (arguments.displayName != null) {
                             updateModel.displayName = arguments.displayName
@@ -174,16 +136,9 @@ class CarryDifficultyCommand : Extension() {
                             updateModel.priceName = arguments.priceName
                         }
 
-                        val updatedCarryDifficulty =
-                            CarryDifficultyConnection.getInstance(
-                                carryTier
-                            )
-                                .updateCarryDifficulty(carryDifficulty.id, updateModel)
-                                .orElse(null)
-
-                        if (updatedCarryDifficulty == null) {
-                            throw CommandExecutionWarning("Couldn't update carry difficulty.")
-                        }
+                        val updatedCarryDifficulty = CarryDifficultyConnection[carryTier]
+                            .updateCarryDifficulty(carryDifficulty.id, updateModel)
+                            ?: throw CommandExecutionWarning("Couldn't update carry difficulty.")
 
                         val embed = ApplicationService.getCarryDifficultyEmbed(updatedCarryDifficulty)
                         embed.title = "Updated Carry Difficulty"

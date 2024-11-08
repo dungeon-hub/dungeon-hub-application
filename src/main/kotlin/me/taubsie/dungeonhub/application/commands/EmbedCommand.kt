@@ -23,13 +23,13 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.utils.getJumpUrl
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.*
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
-import me.taubsie.dungeonhub.common.DungeonHubService
+import net.dungeonhub.connection.ContentConnection
+import net.dungeonhub.service.GsonService
 import java.nio.charset.StandardCharsets
 import java.util.function.Consumer
 
@@ -61,9 +61,7 @@ class EmbedCommand : Extension() {
                     respond {
                         val beautiful = arguments.type.equals("beautiful", ignoreCase = true)
 
-                        val message = arguments.getMessage() ?: throw InvalidOptionException(
-                            "link"
-                        )
+                        val message = arguments.getMessage() ?: throw InvalidOptionException("link")
 
                         if (message.embeds.isEmpty()) {
                             throw InvalidOptionException(
@@ -87,7 +85,8 @@ class EmbedCommand : Extension() {
                         embedBuilder.color = EmbedColor.Default.color
 
                         if (beautiful && embeds.size == 1) {
-                            DungeonHubService.getInstance().gson.toJsonTree(embeds[0])
+                            @Suppress("DEPRECATION")
+                            GsonService.gson.toJsonTree(embeds[0])
                                 .asJsonObject
                                 .entrySet()
                                 .forEach(Consumer { entry: Map.Entry<String, JsonElement> ->
@@ -100,18 +99,17 @@ class EmbedCommand : Extension() {
                                     }
                                 })
                         } else {
-                            val embedSource = DungeonHubService.getInstance().gson.toJson(
+                            @Suppress("DEPRECATION")
+                            val embedSource = GsonService.gson.toJson(
                                 if (embeds.size == 1) embeds[0].toModel()
                                 else embeds.map { it.toModel() }
                             )
 
                             val description =
                                 if (embedSource.length >= 4000 || arguments.type.equals("cdn", ignoreCase = true)) {
-                                    ContentConnection.getInstance()
-                                        .uploadFile(embedSource.toByteArray(StandardCharsets.UTF_8)).map { s: String? ->
-                                            ContentConnection.getInstance()
-                                                .getCdnUrl(s).toString()
-                                        }.orElse(embedSource)
+                                    ContentConnection.uploadFile(embedSource.toByteArray(StandardCharsets.UTF_8))
+                                        ?.let { ContentConnection.getCdnUrl(it).toString() }
+                                        ?: embedSource
                                 } else {
                                     "```\n$embedSource\n```"
                                 }
@@ -140,19 +138,15 @@ class EmbedCommand : Extension() {
                         if (source.startsWith(cdnPrefix)) {
                             source = source.substring(cdnPrefix.length)
 
-                            source =
-                                ContentConnection.getInstance()
-                                    .downloadFile(source).orElseThrow {
-                                        CommandExecutionException(
-                                            "Couldn't download the file correctly."
-                                        )
-                                    }
+                            source = ContentConnection.downloadFile(source)
+                                ?: throw CommandExecutionException("Couldn't download the file correctly.")
                         }
 
                         val embedBuilders: MutableList<EmbedBuilder> = ArrayList()
 
                         try {
-                            val embedSource = DungeonHubService.getInstance().gson.fromJson(
+                            @Suppress("DEPRECATION")
+                            val embedSource = GsonService.gson.fromJson(
                                 source,
                                 JsonElement::class.java
                             )
@@ -220,7 +214,8 @@ class EmbedCommand : Extension() {
                         val embedBuilders: MutableList<EmbedBuilder> = mutableListOf()
 
                         try {
-                            val embedSource = DungeonHubService.getInstance().gson.fromJson(
+                            @Suppress("DEPRECATION")
+                            val embedSource = GsonService.gson.fromJson(
                                 arguments.embed,
                                 JsonElement::class.java
                             )
@@ -267,9 +262,7 @@ class EmbedCommand : Extension() {
                             throw CommandExecutionException("Please provide any embeds to send.")
                         }
 
-                        val message = arguments.getMessage() ?: throw InvalidOptionException(
-                            "link"
-                        )
+                        val message = arguments.getMessage() ?: throw InvalidOptionException("link")
 
                         //TODO how to handle interaction responses?
                         if (message.author?.isSelf() != true) {
@@ -307,7 +300,8 @@ class EmbedCommand : Extension() {
                     respond {
                         val embed = EmbedBuilder()
                         try {
-                            val embedSource: JsonObject = DungeonHubService.getInstance().gson.fromJson(
+                            @Suppress("DEPRECATION")
+                            val embedSource: JsonObject = GsonService.gson.fromJson(
                                 arguments.embed,
                                 JsonObject::class.java
                             )

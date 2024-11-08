@@ -11,13 +11,13 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.extensions.publicUserCommand
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.misc.FlagResponse
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.addEmbed
 import me.taubsie.dungeonhub.application.service.color
+import net.dungeonhub.connection.DiscordUserConnection
 
 @LoadExtension
 class LookupCommand : Extension() {
@@ -37,8 +37,7 @@ class LookupCommand : Extension() {
                     respond {
                         val uuid = MojangConnection.getInstance().getUUIDByName(arguments.ign)
 
-                        val discordId = DiscordUserConnection.getInstance().findUserByUuid(uuid)
-                            .orElse(null)?.id
+                        val discordId = DiscordUserConnection.findUserByUuid(uuid)?.id
 
                         val flagResponses: List<FlagResponse> =
                             FlaggingConnection.getInstance().isFlagged(uuid, discordId)
@@ -105,8 +104,7 @@ class LookupCommand : Extension() {
     }
 
     private fun respondToLookupUser(target: UserBehavior): suspend FollowupMessageCreateBuilder.() -> Unit = {
-        val uuid = DiscordUserConnection.getInstance().getLinkedById(target.id.value.toLong())
-            .orElse(null)?.minecraftId
+        val uuid = DiscordUserConnection.getLinkedById(target.id.value.toLong())?.minecraftId
 
         val ign = uuid?.let { MojangConnection.getInstance().getNameByUUID(uuid) }
 

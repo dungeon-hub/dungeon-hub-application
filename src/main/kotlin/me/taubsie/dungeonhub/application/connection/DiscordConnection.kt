@@ -27,12 +27,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.getTotalAmountOfMoneySpent
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.listener.ServerJoinListener
 import me.taubsie.dungeonhub.application.loader.ClassLoader
 import me.taubsie.dungeonhub.application.loader.OnStart
@@ -41,7 +37,9 @@ import me.taubsie.dungeonhub.application.loader.StartupListener
 import me.taubsie.dungeonhub.application.misc.EmbedModel
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.color
-import me.taubsie.dungeonhub.common.DungeonHubService
+import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.service.MoshiService
 import net.dungeonhub.wrapper.kord.toJavaColor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -68,10 +66,7 @@ object DiscordConnection : StartupListener {
     private var currentAppearance = 0
     private val possibleAppearances: List<Pair<AppearanceType, suspend () -> String>> = listOf(
         AppearanceType.Custom to {
-            "Handling ${
-                DiscordUserConnection.getInstance()
-                    .countLinkedUsers().orElse(0)
-            } linked users!"
+            "Handling ${DiscordUserConnection.countLinkedUsers() ?: 0} linked users!"
         },
         AppearanceType.Watching to {
             "${bot?.kordRef?.totalUserCount() ?: 0} carriers on ${bot?.kordRef?.guilds?.count() ?: 0} servers"
@@ -112,7 +107,8 @@ object DiscordConnection : StartupListener {
         },
         AppearanceType.Custom to {
             val amount = try {
-                DiscordServerConnection.getInstance().getTotalAmountOfMoneySpent(693263712626278553L)
+                DiscordServerConnection.getTotalAmountOfMoneySpent(693263712626278553L)
+                    ?: throw CommandExecutionException("Couldn't load the total amount of money spent.")
             } catch (commandExecutionException: CommandExecutionException) {
                 0
             }
@@ -190,18 +186,7 @@ object DiscordConnection : StartupListener {
             }
 
             errorResponse { message, type ->
-                embeds = if (type.error is CommandExecutionException) {
-                    mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionException))
-                } else if (type.error is CommandExecutionWarning) {
-                    mutableListOf(ApplicationService.getErrorEmbed(type.error as CommandExecutionWarning))
-                } else {
-                    val embed = ApplicationService.getErrorEmbed(CommandExecutionException(type.error))
-                    if (message.isNotBlank()) {
-                        embed.title = message
-                    }
-
-                    mutableListOf(embed)
-                }
+                embeds = ApplicationService.getErrorEmbeds(type.error, message)
             }
 
             hooks {
@@ -400,20 +385,18 @@ fun EmbedBuilder.applyJson(key: String, value: JsonElement) {
         "author" -> setAuthor(value)
         "url" -> url = value.asString
         "color" -> color = run {
-            val internalColor = DungeonHubService.getInstance().gson.fromJson(
-                value.asString,
-                Color::class.java
-            )
+            val internalColor = MoshiService.moshi.adapter(Color::class.java).fromJson(
+                value.asString
+            )!!
             dev.kord.common.Color(internalColor.red, internalColor.green, internalColor.blue)
         }
 
         "fields" -> setFields(value)
         "footer" -> setFooter(value)
         "timestamp" -> timestamp = (
-                DungeonHubService.getInstance().gson.fromJson(
-                    value.asString,
-                    Instant::class.java
-                ).toKotlinInstant()
+                MoshiService.moshi.adapter(Instant::class.java).fromJson(
+                    value.asString
+                )!!.toKotlinInstant()
                 )
 
         "thumbnail" -> setThumbnail(value)

@@ -8,15 +8,14 @@ import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.*
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeCreationModel
-import me.taubsie.dungeonhub.common.model.carry_type.CarryTypeUpdateModel
+import net.dungeonhub.connection.CarryTypeConnection
+import net.dungeonhub.model.carry_type.CarryTypeCreationModel
 import java.util.*
 
 /**
@@ -53,38 +52,27 @@ class CarryTypeCommand : Extension() {
                             .lowercase(Locale.getDefault())
                             .replace(" ", "_")
 
-                        if (CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(identifier).isPresent
-                        ) {
+                        if (CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(identifier) != null) {
                             throw InvalidOptionException("identifier", "That carry type already exists!")
                         }
 
                         val creationModel = CarryTypeCreationModel(identifier, arguments.displayName)
 
                         if (arguments.logChannel != null) {
-                            creationModel.setLogChannel(arguments.logChannel!!.id.value.toLong())
+                            creationModel.logChannel = arguments.logChannel!!.id.value.toLong()
                         }
 
                         if (arguments.leaderboardChannel != null) {
-                            creationModel.setLeaderboardChannel(arguments.leaderboardChannel!!.id.value.toLong())
+                            creationModel.leaderboardChannel = arguments.leaderboardChannel!!.id.value.toLong()
                         }
 
                         if (arguments.eventActive != null) {
-                            creationModel.setEventActive(arguments.eventActive)
+                            creationModel.eventActive = arguments.eventActive
                         }
 
                         val carryTypeModel =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .addNewCarryType(creationModel)
-                                .orElse(null)
-
-                        if (carryTypeModel == null) {
-                            throw CommandExecutionWarning("Couldn't add that carry type.")
-                        }
+                            CarryTypeConnection[guild!!.id.value.toLong()].addNewCarryType(creationModel)
+                                ?: throw CommandExecutionWarning("Couldn't add that carry type.")
 
                         val embed = ApplicationService.getCarryTypeEmbed(carryTypeModel)
                         embed.title = "Carry Type created"
@@ -101,26 +89,11 @@ class CarryTypeCommand : Extension() {
                     respond {
                         val identifier = arguments.carryType
 
-                        val carryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(identifier)
+                        val carryType = CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(identifier)
+                            ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        if (carryType.isEmpty) {
-                            throw CommandExecutionWarning("That carry type doesn't exists!")
-                        }
-
-                        val deletedCarryType =
-                            CarryTypeConnection.getInstance(
-                                carryType.get().server.id
-                            )
-                                .deleteCarryType(carryType.get())
-                                .orElse(null)
-
-                        if (deletedCarryType == null) {
-                            throw CommandExecutionWarning("Carry type couldn't be deleted!")
-                        }
+                        val deletedCarryType = CarryTypeConnection[carryType.server.id].deleteCarryType(carryType)
+                            ?: throw CommandExecutionWarning("Carry type couldn't be deleted!")
 
                         val embed = ApplicationService.getCarryTypeEmbed(deletedCarryType)
                         embed.title = "Deleted Carry Type"
@@ -136,15 +109,8 @@ class CarryTypeCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(arguments.carryType)
-                                .orElse(null)
-
-                        if (carryType == null) {
-                            throw CommandExecutionWarning("Carry type not found.")
-                        }
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw CommandExecutionWarning("Carry type not found.")
 
                         val embed = ApplicationService.getCarryTypeEmbed(carryType)
                         embeds = mutableListOf(embed)
@@ -159,21 +125,14 @@ class CarryTypeCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(arguments.carryType)
-                                .orElse(null)
-
-                        if (carryType == null) {
-                            throw CommandExecutionWarning("That carry type doesn't exists!")
-                        }
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
                         if (arguments.displayName == null && arguments.logChannel == null && arguments.leaderboardChannel == null && arguments.eventActive == null) {
                             throw CommandExecutionWarning("Please provide something you want to edit.")
                         }
 
-                        val updateModel = CarryTypeUpdateModel()
+                        val updateModel = carryType.getUpdateModel()
 
                         if (arguments.displayName != null) {
                             updateModel.displayName = arguments.displayName
@@ -192,15 +151,8 @@ class CarryTypeCommand : Extension() {
                         }
 
                         val updatedCarryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .updateCarryType(carryType.id, updateModel)
-                                .orElse(null)
-
-                        if (updatedCarryType == null) {
-                            throw CommandExecutionException("Couldn't update carry type.")
-                        }
+                            CarryTypeConnection[guild!!.id.value.toLong()].updateCarryType(carryType.id, updateModel)
+                                ?: throw CommandExecutionWarning("Couldn't update carry type.")
 
                         val embed = ApplicationService.getCarryTypeEmbed(updatedCarryType)
                         embed.title = "Updated Carry Type"
@@ -216,21 +168,14 @@ class CarryTypeCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(arguments.carryType)
-                                .orElse(null)
-
-                        if (carryType == null) {
-                            throw CommandExecutionWarning("That carry type doesn't exists!")
-                        }
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
                         if (!arguments.logChannel && !arguments.leaderboardChannel) {
                             throw CommandExecutionWarning("Please provide something you want to reset.")
                         }
 
-                        val updateModel = CarryTypeUpdateModel()
+                        val updateModel = carryType.getUpdateModel()
 
                         if (arguments.logChannel) {
                             updateModel.logChannel = -1L
@@ -241,15 +186,8 @@ class CarryTypeCommand : Extension() {
                         }
 
                         val updatedCarryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .updateCarryType(carryType.id, updateModel)
-                                .orElse(null)
-
-                        if (updatedCarryType == null) {
-                            throw CommandExecutionException("Couldn't update carry type.")
-                        }
+                            CarryTypeConnection[guild!!.id.value.toLong()].updateCarryType(carryType.id, updateModel)
+                                ?: throw CommandExecutionWarning("Couldn't update carry type.")
 
                         val embed = ApplicationService.getCarryTypeEmbed(updatedCarryType)
                         embed.title = "Updated Carry Type with reset values"

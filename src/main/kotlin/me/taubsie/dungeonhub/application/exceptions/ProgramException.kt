@@ -1,8 +1,6 @@
 package me.taubsie.dungeonhub.application.exceptions
 
-import java.io.Serial
-
-open class CommandExecutionException : ProgramException {
+open class ProgramException : IllegalArgumentException {
     constructor() : super()
 
     constructor(s: String?) : super(s)
@@ -10,9 +8,4 @@ open class CommandExecutionException : ProgramException {
     constructor(message: String?, cause: Throwable?) : super(message, cause)
 
     constructor(cause: Throwable?) : super(cause)
-
-    companion object {
-        @Serial
-        private val serialVersionUID = 6707538877645992492L
-    }
 }

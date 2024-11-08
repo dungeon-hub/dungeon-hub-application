@@ -19,8 +19,6 @@ import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import kotlinx.coroutines.runBlocking
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
@@ -31,10 +29,12 @@ import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
 import me.taubsie.dungeonhub.application.service.LeaderboardService
 import me.taubsie.dungeonhub.application.service.PermissionService
-import me.taubsie.dungeonhub.common.enums.ScoreResetType
-import me.taubsie.dungeonhub.common.enums.ScoreType
-import me.taubsie.dungeonhub.common.model.score.ScoreModel
-import me.taubsie.dungeonhub.common.model.score.ScoreUpdateModel
+import net.dungeonhub.connection.CarryTypeConnection
+import net.dungeonhub.connection.ScoreConnection
+import net.dungeonhub.enums.ScoreResetType
+import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.model.score.ScoreModel
+import net.dungeonhub.model.score.ScoreUpdateModel
 
 @LoadExtension
 class ManageScoreCommand : Extension() {
@@ -74,26 +74,17 @@ class ManageScoreCommand : Extension() {
                 description = "Reset score for a given carry type."
 
                 check {
-                    check {
-                        hasPermission(Permission.Administrator)
-                    }
+                    hasPermission(Permission.Administrator)
                 }
 
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(arguments.carryType)
-                                .orElseThrow { InvalidOptionException("carry-type") }
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw InvalidOptionException("carry-type")
 
-                        val resetModel =
-                            ScoreConnection.getInstance(
-                                carryType
-                            )
-                                .resetScore(arguments.resetType)
-                                .orElseThrow { CommandExecutionException("Error while getting a response when resetting score.") }
+                        val resetModel = ScoreConnection[carryType].resetScore(arguments.resetType)
+                            ?: throw CommandExecutionException("Error while getting a response when resetting score.")
 
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.Information.color
@@ -127,24 +118,16 @@ class ManageScoreCommand : Extension() {
             throw MissingPermissionException()
         }
 
-        val carryType =
-            CarryTypeConnection.getInstance(guild.id.value.toLong())
-                .getByIdentifier(arguments.carryType)
-                .orElse(null)
-
-        if (carryType == null) {
-            throw InvalidOptionException("carry-type")
-        }
+        val carryType = CarryTypeConnection[guild.id.value.toLong()].getByIdentifier(arguments.carryType)
+            ?: throw InvalidOptionException("carry-type")
 
         val score = if (remove) -arguments.amount else arguments.amount
 
-        val updatedScores =
-            ScoreConnection.getInstance(carryType)
-                .updateScores(ScoreUpdateModel(arguments.user.id.value.toLong(), score))
-                .orElse(listOf())
+        val updatedScores = ScoreConnection[carryType]
+            .updateScores(ScoreUpdateModel(arguments.user.id.value.toLong(), score)) ?: listOf()
 
         val updatedScore = updatedScores.stream()
-            .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.DEFAULT }
+            .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
             .map { obj: ScoreModel -> obj.scoreAmount }
             .findFirst()
             .orElse(0L)

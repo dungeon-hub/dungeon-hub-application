@@ -2,7 +2,6 @@ package me.taubsie.dungeonhub.application.enums
 
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import me.taubsie.dungeonhub.application.service.ServerService.getActualServerProperty
-import me.taubsie.dungeonhub.common.Nameable
 import java.util.*
 
 //TODO implement related properties
@@ -18,7 +17,7 @@ enum class ServerProperty(
     val propertyType: ServerPropertyType = ServerPropertyType.STRING,
     val enabled: Boolean = true,
     val relatedProperties: Array<ServerProperty> = arrayOf()
-) : ChoiceEnum, Nameable {
+) : ChoiceEnum {
     PROFILE_MODERATION_BAN_MESSAGE("profile_moderation_message"),
     BAN_MESSAGE("ban_message"),
     UNBAN_FORM("unban_form"),
@@ -33,6 +32,8 @@ enum class ServerProperty(
     TRANSCRIPTS_CHANNEL("id_transcripts_channel", ServerPropertyType.CHANNEL),
     TOTAL_SCORE_LEADERBOARD_CHANNEL("id_total_score_leaderboard_channel", ServerPropertyType.CHANNEL),
     SERVICE_TEAM_RULES_CHANNEL("id_service_team_rules_channel", ServerPropertyType.CHANNEL),
+    CNT_MESSAGES_CHANNEL("cnt_messages_channel", ServerPropertyType.CHANNEL),
+    CNT_INFORMATION_CHANNEL("cnt_information_channel", ServerPropertyType.CHANNEL),
 
     SCORE_MANAGEMENT_ROLE("id_score_management_score", ServerPropertyType.ROLE);
 
@@ -44,10 +45,6 @@ enum class ServerProperty(
         true,
         relatedProperties
     )
-
-    override fun getName(): String {
-        return readableName
-    }
 
     fun getValue(serverId: Long): Optional<String> {
         return getActualServerProperty(serverId, this)
