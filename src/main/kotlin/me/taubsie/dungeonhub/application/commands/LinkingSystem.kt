@@ -79,7 +79,23 @@ class LinkingSystem : Extension() {
                         return@respond
                     }
 
-                    val linkedId = NicknameService.linkToIgn(arguments.ign, user.asUser())
+                    val linkedId = try {
+                        NicknameService.linkToIgn(arguments.ign, user.asUser())
+                    } catch (invalidOptionWarning: InvalidOptionWarning) {
+                        embeds = mutableListOf(ApplicationService.getErrorEmbed(invalidOptionWarning))
+                        actionRow {
+                            addLinkHelpButton()
+                        }
+
+                        return@respond
+                    } catch (hypixelLinkedToOtherWarning: HypixelLinkedToOtherWarning) {
+                        embeds = mutableListOf(ApplicationService.getErrorEmbed(hypixelLinkedToOtherWarning))
+                        actionRow {
+                            addLinkHelpButton()
+                        }
+
+                        return@respond
+                    }
 
                     val embed = ApplicationService.embed
                     embed.title = "Linked successfully"
@@ -91,22 +107,25 @@ class LinkingSystem : Extension() {
                     embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
+
+                    thread(start = true) {
+                        runBlocking {
+                            if(guild != null) {
+                                val member = user.asMember(guild!!.id)
+
+                                val roles = RolesService.updateRoles(member)
+
+                                NicknameService.updateNickname(member, roles)
+                            } else {
+                                val user = user.asUser()
+
+                                val roles = RolesService.updateRoles(user)
+
+                                NicknameService.updateNickname(user, roles)
+                            }
+                        }
+                    }
                 }
-
-                if(guild != null) {
-                    val member = user.asMember(guild!!.id)
-
-                    val roles = RolesService.updateRoles(member)
-
-                    NicknameService.updateNickname(member, roles)
-                } else {
-                    val user = user.asUser()
-
-                    val roles = RolesService.updateRoles(user)
-
-                    NicknameService.updateNickname(user, roles)
-                }
-
             }
         }
 
@@ -547,16 +566,20 @@ class LinkingSystem : Extension() {
     }
 }
 
+fun ActionRowBuilder.addLinkHelpButton() {
+    interactionButton(ButtonStyle.Secondary, "show_help_linking") {
+        emoji(ReactionEmoji.Unicode("❔"))
+        label = "Help"
+    }
+}
+
 fun ActionRowBuilder.addLinkButtons() {
     interactionButton(ButtonStyle.Primary, "link_user") {
         emoji(ReactionEmoji.Unicode("\uD83D\uDD17"))
         label = "Link"
     }
 
-    interactionButton(ButtonStyle.Secondary, "show_help_linking") {
-        emoji(ReactionEmoji.Unicode("❔"))
-        label = "Help"
-    }
+    addLinkHelpButton()
 }
 
 fun ActionRowBuilder.addSilentLinkButtons() {
