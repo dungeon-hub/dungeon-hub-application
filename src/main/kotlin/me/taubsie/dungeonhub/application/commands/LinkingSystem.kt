@@ -1,8 +1,6 @@
 package me.taubsie.dungeonhub.application.commands
 
 import dev.kord.common.entity.*
-import dev.kord.core.behavior.channel.asChannelOfOrNull
-import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.interaction.modal
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.respondPublic
@@ -11,7 +9,6 @@ import dev.kord.core.builder.components.emoji
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.Role
-import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.interaction.ButtonInteraction
 import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
@@ -36,14 +33,12 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.HypixelConnection.getHypixelLinkedDiscord
 import me.taubsie.dungeonhub.application.connection.MojangConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.HelpTopic
 import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.*
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserModel
-import me.taubsie.dungeonhub.common.model.discord_user.DiscordUserUpdateModel
+import net.dungeonhub.connection.DiscordUserConnection
 import java.util.*
 import kotlin.concurrent.thread
 
@@ -60,16 +55,13 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val linkedTo =
-                        DiscordUserConnection.getInstance()
-                            .getById(user.id.value.toLong()).map { it.minecraftId }
+                    val linkedTo = DiscordUserConnection.getById(user.id.value.toLong())?.minecraftId
 
-                    if (linkedTo.isPresent) {
+                    if (linkedTo != null) {
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.Information.color
                         embed.description = "You're already linked to user `${
-                            MojangConnection.getInstance()
-                                .getNameByUUID(linkedTo.get())
+                            MojangConnection.getInstance().getNameByUUID(linkedTo)
                         }`! If you think that's incorrect, try using ${"`/unlink`"}."
 
                         embeds = mutableListOf(
@@ -186,11 +178,7 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val userModel: DiscordUserModel? =
-                        DiscordUserConnection.getInstance()
-                            .getById(user.id.value.toLong())
-                            .filter { Objects.nonNull(it.minecraftId) }
-                            .orElse(null)
+                    val userModel = DiscordUserConnection.getLinkedById(user.id.value.toLong())
 
                     if (userModel == null) {
                         val embed = ApplicationService.embed
@@ -285,14 +273,14 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val oldUserModel =
-                        DiscordUserConnection.getInstance()
-                            .getLinkedById(user.id.value.toLong())
-                            .orElseThrow { NotLinkedException() }
+                    val oldUserModel = DiscordUserConnection.getLinkedById(user.id.value.toLong())
+                        ?: throw NotLinkedException()
 
-                    DiscordUserConnection.getInstance()
-                        .updateUser(user.id.value.toLong(), DiscordUserUpdateModel(true))
-                        .orElseThrow { CommandExecutionException("Couldn't update your user data.") }
+                    val updateModel = oldUserModel.getUpdateModel()
+                    updateModel.minecraftId = null
+
+                    DiscordUserConnection.updateUser(user.id.value.toLong(), updateModel)
+                        ?: throw CommandExecutionException("Couldn't update your user data.")
 
                     val embed = ApplicationService.embed
                     embed.description = "Unlinked successfully from account `${
@@ -362,10 +350,7 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val uuid =
-                        DiscordUserConnection.getInstance()
-                            .getById(arguments.user.id.value.toLong()).map { it.minecraftId }
-                            .orElse(null)
+                    val uuid = DiscordUserConnection.getById(arguments.user.id.value.toLong())?.minecraftId
 
                     if (uuid == null) {
                         val embed = ApplicationService.errorEmbed
@@ -396,9 +381,8 @@ class LinkingSystem : Extension() {
                 respond {
                     val uuid = MojangConnection.getInstance().getUUIDByName(arguments.ign)
 
-                    val userModel = DiscordUserConnection.getInstance()
-                        .findUserByUuid(uuid)
-                        .orElseThrow { CommandExecutionWarning("Couldn't find who the given user is linked to.") }
+                    val userModel = DiscordUserConnection.findUserByUuid(uuid)
+                        ?: throw CommandExecutionWarning("Couldn't find who the given user is linked to.")
 
                     addEmbed {
                         color(EmbedColor.Positive)
@@ -423,17 +407,15 @@ class LinkingSystem : Extension() {
                 when (event.interaction.componentId) {
                     "link_user", "link_user_silent" -> {
                         val linkedTo =
-                            DiscordUserConnection.getInstance()
-                                .getById(event.interaction.user.id.value.toLong())
-                                .map { it.minecraftId }
+                            DiscordUserConnection.getById(event.interaction.user.id.value.toLong())?.minecraftId
 
-                        if (linkedTo.isPresent) {
+                        if (linkedTo != null) {
                             event.interaction.respondEphemeral {
                                 val embed = ApplicationService.embed
                                 embed.color = EmbedColor.Information.color
                                 embed.description = "You're already linked to user `${
                                     MojangConnection.getInstance()
-                                        .getNameByUUID(linkedTo.get())
+                                        .getNameByUUID(linkedTo)
                                 }`! If you think that's incorrect, try using ${"`/unlink`"}."
 
                                 embeds = mutableListOf(embed)
@@ -515,6 +497,8 @@ class LinkingSystem : Extension() {
 
         event<MemberJoinEvent> {
             action {
+                DiscordUserConnection.getLinkedById(event.member.id.value.toLong()) ?: return@action
+
                 thread(start = true) {
                     runBlocking {
                         val roles: List<Role> = RolesService.updateRoles(event.member)

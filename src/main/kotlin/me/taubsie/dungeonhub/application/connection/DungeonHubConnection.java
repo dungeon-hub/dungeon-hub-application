@@ -2,6 +2,7 @@ package me.taubsie.dungeonhub.application.connection;
 
 import lombok.Getter;
 import me.taubsie.dungeonhub.application.config.ConfigProperty;
+import net.dungeonhub.connection.AuthorizationConnection;
 import okhttp3.*;
 import okio.Buffer;
 import org.slf4j.Logger;
@@ -11,7 +12,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.function.Function;
 
 @Getter
 public class DungeonHubConnection {
@@ -41,8 +41,15 @@ public class DungeonHubConnection {
         return instance;
     }
 
-    public <T> Optional<T> executeRequest(Request request, Function<String, T> function) {
-        return executeRequest(request).map(function);
+    public <T> Optional<T> executeRequest(Request request, MappingFunction<String, T> function) {
+        return executeRequest(request).map(s -> {
+            try {
+                return function.apply(s);
+            }
+            catch (IOException e) {
+                return null;
+            }
+        });
     }
 
     public Optional<byte[]> executeRawRequest(Request request) {
@@ -109,7 +116,7 @@ public class DungeonHubConnection {
         return new Request.Builder()
                 .url(httpUrl)
                 .addHeader("Content-Type", mediaType.toString())
-                .addHeader(AUTHORIZATION, "Bearer " + AuthorizationConnection.getInstance().getApiToken());
+                .addHeader(AUTHORIZATION, "Bearer " + AuthorizationConnection.INSTANCE.getApiToken());
     }
 
     public HttpUrl.Builder getApiUrl(String uri) {

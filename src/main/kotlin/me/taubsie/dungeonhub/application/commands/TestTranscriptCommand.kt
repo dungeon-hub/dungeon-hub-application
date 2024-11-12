@@ -5,9 +5,9 @@ import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralSlashCommand
 import me.taubsie.dungeonhub.application.config.ConfigProperty
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.wrapper.kord.createTranscript
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -46,10 +46,7 @@ class TestTranscriptCommand : Extension() {
                     try {
                         val transcript = transcriptChannel.createTranscript()
 
-                        val url =
-                            ContentConnection.getInstance()
-                                .uploadFile(transcript.toByteArray(StandardCharsets.UTF_8))
-                                .orElse(null)
+                        val url = ContentConnection.uploadFile(transcript.toByteArray(StandardCharsets.UTF_8))
 
                         if (!url.isNullOrBlank()) {
                             val embed = ApplicationService.embed

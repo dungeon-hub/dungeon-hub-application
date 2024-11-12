@@ -5,9 +5,9 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.utils.dm
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.connection.ContentConnection
 import org.apache.logging.log4j.core.Appender
 import org.apache.logging.log4j.core.Core
 import org.apache.logging.log4j.core.Filter
@@ -40,10 +40,9 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
         } else {
             embed.title = "Title would be too long, see field"
             embed.field("Title") {
-                ContentConnection.getInstance()
-                    .uploadFile(title.toByteArray(StandardCharsets.UTF_8))
-                    .map { s -> ContentConnection.getInstance().getCdnUrl(s).toString() }
-                    .orElse(title)
+                ContentConnection.uploadFile(title.toByteArray(StandardCharsets.UTF_8))
+                    ?.let { ContentConnection.getCdnUrl(it).toString() }
+                    ?: title
             }
         }
 
@@ -53,10 +52,9 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
             var description = getExceptionMessage(logEvent.thrown)
 
             if (description != null && description.length > 4000) {
-                description = ContentConnection.getInstance()
-                    .uploadFile(description.toByteArray(StandardCharsets.UTF_8))
-                    .map { s -> ContentConnection.getInstance().getCdnUrl(s).toString() }
-                    .orElse(description)
+                description = ContentConnection.uploadFile(description.toByteArray(StandardCharsets.UTF_8))
+                    ?.let { ContentConnection.getCdnUrl(it).toString() }
+                    ?: description
             }
 
             embed.description = description

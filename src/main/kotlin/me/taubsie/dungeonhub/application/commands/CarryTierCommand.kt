@@ -11,16 +11,15 @@ import dev.kordex.core.commands.converters.impl.optionalString
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTierConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.CarryTypeConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordServerConnection
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
-import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierCreationModel
-import me.taubsie.dungeonhub.common.model.carry_tier.CarryTierUpdateModel
+import net.dungeonhub.connection.CarryTierConnection
+import net.dungeonhub.connection.CarryTypeConnection
+import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.model.carry_tier.CarryTierCreationModel
 import java.util.*
 
 /**
@@ -54,71 +53,42 @@ class CarryTierCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(arguments.carryType)
-                                .orElse(null)
-
-                        if (carryType == null) {
-                            throw InvalidOptionException("carry-type", "Carry Type couldn't be found.")
-                        }
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw InvalidOptionException("carry-type", "Carry Type couldn't be found.")
 
                         val identifier: String = arguments.identifier
                             .trim()
                             .lowercase(Locale.getDefault())
                             .replace(" ", "_")
 
-                        if (CarryTierConnection.getInstance(
-                                carryType
-                            ).getByIdentifier(identifier).isPresent
-                        ) {
+                        if (CarryTierConnection[carryType].getByIdentifier(identifier) != null) {
                             throw InvalidOptionException("identifier", "That carry tier already exists!")
                         }
 
-                        val creationModel = CarryTierCreationModel()
-                        creationModel.identifier = identifier
-                        creationModel.displayName = arguments.displayName
-
-                        if (arguments.descriptiveName != null) {
-                            creationModel.descriptiveName = arguments.descriptiveName
-                        }
-
-                        if (arguments.category != null && DiscordServerConnection.getInstance()
-                                .getCarryTierFromCategory(
-                                    guild!!.id.value.toLong(),
-                                    arguments.category!!.id.value.toLong()
-                                ).isEmpty
+                        if (arguments.category != null && DiscordServerConnection.getCarryTierFromCategory(
+                                guild!!.id.value.toLong(),
+                                arguments.category!!.id.value.toLong()
+                            ) == null
                         ) {
-                            creationModel.category = arguments.category!!.id.value.toLong()
-                        }
-
-                        if (arguments.priceChannel != null) {
-                            creationModel.priceChannel = arguments.priceChannel!!.id.value.toLong()
-                        }
-
-                        if (arguments.thumbnailUrl != null) {
-                            creationModel.thumbnailUrl = arguments.thumbnailUrl
-                        }
-
-                        if (arguments.priceTitle != null) {
-                            creationModel.priceTitle = arguments.priceTitle
-                        }
-
-                        if (arguments.priceDescription != null) {
-                            creationModel.priceDescription = arguments.priceDescription
-                        }
-
-                        val carryTier =
-                            CarryTierConnection.getInstance(
-                                carryType
+                            throw InvalidOptionException(
+                                "category",
+                                "That category is already assigned to another carry tier!"
                             )
-                                .createCarryTier(creationModel)
-                                .orElse(null)
-
-                        if (carryTier == null) {
-                            throw CommandExecutionWarning("Couldn't add that carry tier.")
                         }
+
+                        val creationModel = CarryTierCreationModel(
+                            identifier = identifier,
+                            displayName = arguments.displayName,
+                            category = arguments.category!!.id.value.toLong(),
+                            priceChannel = arguments.priceChannel!!.id.value.toLong(),
+                            descriptiveName = arguments.descriptiveName,
+                            thumbnailUrl = arguments.thumbnailUrl,
+                            priceTitle = arguments.priceTitle,
+                            priceDescription = arguments.priceDescription
+                        )
+
+                        val carryTier = CarryTierConnection[carryType].createCarryTier(creationModel)
+                            ?: throw CommandExecutionWarning("Couldn't add that carry tier.")
 
                         val embed = ApplicationService.getCarryTierEmbed(carryTier)
                         embed.title = "Carry Tier created"
@@ -134,38 +104,18 @@ class CarryTierCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(arguments.carryType)
-                                .orElse(null)
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        if (carryType == null) {
-                            throw CommandExecutionWarning("That carry type doesn't exists!")
-                        }
-
-                        val carryTier =
-                            CarryTierConnection.getInstance(
-                                carryType
-                            )
-                                .getByIdentifier(arguments.carryTier)
-                                .orElse(null)
-
-                        if (carryTier == null) {
-                            throw InvalidOptionException("carry-tier")
-                        }
+                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
+                            ?: throw InvalidOptionException("carry-tier")
 
                         if (carryTier.carryType != carryType) {
                             throw CommandExecutionWarning("Well this is weird.. Something doesn't really add up!")
                         }
 
-                        val deletedCarryTier = CarryTierConnection.getInstance(carryType)
-                            .deleteCarryTier(carryTier)
-                            .orElse(null)
-
-                        if (deletedCarryTier == null) {
-                            throw CommandExecutionWarning("Couldn't delete that carry tier.")
-                        }
+                        val deletedCarryTier = CarryTierConnection[carryType].deleteCarryTier(carryTier.id)
+                            ?: throw CommandExecutionWarning("Couldn't delete the carry tier.")
 
                         val embed = ApplicationService.getCarryTierEmbed(deletedCarryTier)
                         embed.title = "Deleted Carry Tier"
@@ -181,26 +131,11 @@ class CarryTierCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(arguments.carryType)
-                                .orElse(null)
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw CommandExecutionWarning("Carry type not found.")
 
-                        if (carryType == null) {
-                            throw CommandExecutionWarning("Carry type not found.")
-                        }
-
-                        val carryTier =
-                            CarryTierConnection.getInstance(
-                                carryType
-                            )
-                                .getByIdentifier(arguments.carryTier)
-                                .orElse(null)
-
-                        if (carryTier == null) {
-                            throw InvalidOptionException("carry-tier", "That carry tier doesn't exist!")
-                        }
+                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
+                            ?: throw InvalidOptionException("carry-tier", "That carry tier doesn't exist!")
 
                         val embed = ApplicationService.getCarryTierEmbed(carryTier)
                         embeds = mutableListOf(embed)
@@ -215,39 +150,21 @@ class CarryTierCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(arguments.carryType)
-                                .orElse(null)
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        if (carryType == null) {
-                            throw CommandExecutionWarning("That carry type doesn't exists!")
-                        }
-
-                        val carryTier =
-                            CarryTierConnection.getInstance(
-                                carryType
-                            )
-                                .getByIdentifier(arguments.carryTier)
-                                .orElse(null)
-
-                        if (carryTier == null) {
-                            throw InvalidOptionException("carry-tier", "That carry tier doesn't exist")
-                        }
+                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
+                            ?: throw InvalidOptionException("carry-tier", "That carry tier doesn't exist")
 
                         if (arguments.displayName == null && arguments.category == null && arguments.priceChannel == null && arguments.descriptiveName == null && arguments.thumbnailUrl == null && arguments.priceTitle == null) {
                             throw CommandExecutionWarning("Please provide something you want to edit.")
                         }
 
                         if (arguments.category != null) {
-                            val categoryCarryTier =
-                                DiscordServerConnection.getInstance()
-                                    .getCarryTierFromCategory(
-                                        guild!!.id.value.toLong(),
-                                        arguments.category!!.id.value.toLong()
-                                    )
-                                    .orElse(null)
+                            val categoryCarryTier = DiscordServerConnection.getCarryTierFromCategory(
+                                guild!!.id.value.toLong(),
+                                arguments.category!!.id.value.toLong()
+                            )
 
                             if (categoryCarryTier != null && categoryCarryTier != carryTier) {
                                 val embed = ApplicationService.getErrorEmbed(
@@ -259,7 +176,7 @@ class CarryTierCommand : Extension() {
                             }
                         }
 
-                        val updateModel = CarryTierUpdateModel.fromCarryTier(carryTier)
+                        val updateModel = carryTier.getUpdateModel()
 
                         if (arguments.displayName != null) {
                             updateModel.displayName = arguments.displayName
@@ -285,16 +202,8 @@ class CarryTierCommand : Extension() {
                             updateModel.priceTitle = arguments.priceTitle
                         }
 
-                        val updatedCarryTier =
-                            CarryTierConnection.getInstance(
-                                carryType
-                            )
-                                .updateCarryTier(carryTier.id, updateModel)
-                                .orElse(null)
-
-                        if (updatedCarryTier == null) {
-                            throw CommandExecutionWarning("Couldn't update carry tier.")
-                        }
+                        val updatedCarryTier = CarryTierConnection[carryType].updateCarryTier(carryTier.id, updateModel)
+                            ?: throw CommandExecutionWarning("Couldn't update carry tier.")
 
                         val embed = ApplicationService.getCarryTierEmbed(updatedCarryTier)
                         embed.title = "Updated Carry Tier"
@@ -310,39 +219,24 @@ class CarryTierCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection.getInstance(
-                                guild!!.id.value.toLong()
-                            )
-                                .getByIdentifier(arguments.carryType)
-                                .orElse(null)
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        if (carryType == null) {
-                            throw CommandExecutionWarning("That carry type doesn't exists!")
-                        }
-
-                        val carryTier =
-                            CarryTierConnection.getInstance(
-                                carryType
-                            )
-                                .getByIdentifier(arguments.carryTier)
-                                .orElse(null)
-
-                        if (carryTier == null) {
-                            throw InvalidOptionException("carry-tier", "Carry tier doesn't exist")
-                        }
+                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
+                            ?: throw InvalidOptionException("carry-tier", "Carry tier doesn't exist")
 
                         if (!arguments.category && !arguments.priceChannel && !arguments.descriptiveName && !arguments.thumbnailUrl && !arguments.priceTitle) {
                             throw CommandExecutionWarning("Please provide something you want to reset.")
                         }
 
-                        val updateModel = CarryTierUpdateModel.fromCarryTier(carryTier)
+                        val updateModel = carryTier.getUpdateModel()
 
                         if (arguments.category) {
-                            updateModel.category = -1L
+                            updateModel.category = null
                         }
 
                         if (arguments.priceChannel) {
-                            updateModel.priceChannel = -1L
+                            updateModel.priceChannel = null
                         }
 
                         if (arguments.descriptiveName) {
@@ -358,15 +252,8 @@ class CarryTierCommand : Extension() {
                         }
 
                         val updatedCarryTier =
-                            CarryTierConnection.getInstance(
-                                carryType
-                            )
-                                .updateCarryTier(carryTier.id, updateModel)
-                                .orElse(null)
-
-                        if (updatedCarryTier == null) {
-                            throw CommandExecutionWarning("Couldn't update carry tier.")
-                        }
+                            CarryTierConnection[carryType].updateCarryTier(carryTier.id, updateModel)
+                                ?: throw CommandExecutionWarning("Couldn't update carry tier.")
 
                         val embed = ApplicationService.getCarryTierEmbed(updatedCarryTier)
                         embed.title = "Updated Carry Tier with reset values"

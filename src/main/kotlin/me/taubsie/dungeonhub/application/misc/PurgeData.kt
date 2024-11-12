@@ -1,7 +1,7 @@
 package me.taubsie.dungeonhub.application.misc
 
-import me.taubsie.dungeonhub.common.model.discord_role.DiscordRoleModel
-import me.taubsie.dungeonhub.common.model.purge_type.PurgeTypeModel
+import net.dungeonhub.model.discord_role.DiscordRoleModel
+import net.dungeonhub.model.purge_type.PurgeTypeModel
 
 /**
  * This record holds the purge data used for a single user to allow easy querying.

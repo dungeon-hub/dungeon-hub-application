@@ -28,17 +28,12 @@ import dev.kordex.core.utils.respond
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.reduce
-import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.DiscordUserConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.QueueConnection
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ScoreConnection
 import me.taubsie.dungeonhub.application.connection.isDungeonHub
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
@@ -49,13 +44,12 @@ import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.LeaderboardService
 import me.taubsie.dungeonhub.application.service.color
-import me.taubsie.dungeonhub.common.DungeonHubService
-import me.taubsie.dungeonhub.common.enums.QueueStep
-import me.taubsie.dungeonhub.common.enums.ScoreType
-import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueModel
-import me.taubsie.dungeonhub.common.model.carry_queue.CarryQueueUpdateModel
-import me.taubsie.dungeonhub.common.model.score.LoggedCarryModel
-import me.taubsie.dungeonhub.common.model.score.ScoreModel
+import net.dungeonhub.connection.*
+import net.dungeonhub.enums.QueueStep
+import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.model.carry_queue.CarryQueueModel
+import net.dungeonhub.model.score.ScoreModel
+import net.dungeonhub.service.MoshiService
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import org.slf4j.LoggerFactory
@@ -136,10 +130,8 @@ class MessageListener : Extension() {
 
             val attachmentRequest = Request.Builder().url(attachment.url.toHttpUrl()).build()
 
-            val attachmentData: ByteArray =
-                DungeonHubConnection.getInstance()
-                    .executeRawRequest(attachmentRequest)
-                    .orElseThrow { CommandExecutionException("Couldn't read file data.") }
+            val attachmentData: ByteArray = DungeonHubConnection.executeRawRequest(attachmentRequest)
+                ?: throw CommandExecutionException("Couldn't read file data.")
 
             val content = String(attachmentData, StandardCharsets.UTF_8)
 
@@ -167,20 +159,15 @@ class MessageListener : Extension() {
                     runBlocking { DiscordConnection.bot?.kordRef?.getChannelOf<TextChannel>(Snowflake(s)) }
                 }
 
-            for (queueModel in QueueConnection.getInstance()
-                .getCarryQueuesByQueueStep(QueueStep.TRANSCRIPT)
-                .orElse(HashSet())
-                .stream().filter { carryQueueModel: CarryQueueModel ->
+            for (queueModel in (QueueConnection.getCarryQueuesByQueueStep(QueueStep.Transcript) ?: HashSet())
+                .filter { carryQueueModel: CarryQueueModel ->
                     channelId.map { aLong: Long -> aLong == carryQueueModel.relationId }
                         .orElse(false)
-                }
-                .toList()) {
+                }) {
                 if (attachmentLink == null) {
-                    val attachmentUrl =
-                        ContentConnection.getInstance()
-                            .uploadFile(attachmentData, "{uuid}.html")
+                    val attachmentUrl = ContentConnection.uploadFile(attachmentData, "{uuid}.html")
 
-                    if (attachmentUrl.isEmpty) {
+                    if (attachmentUrl == null) {
                         logger.error(
                             "Couldn't upload content of attachment on message {}.",
                             message.id
@@ -188,9 +175,7 @@ class MessageListener : Extension() {
                         return
                     }
 
-                    attachmentLink =
-                        ContentConnection.getInstance()
-                            .getCdnUrl(attachmentUrl.get()).toString()
+                    attachmentLink = ContentConnection.getCdnUrl(attachmentUrl).toString()
 
                     thread(start = true) {
                         runBlocking {
@@ -201,19 +186,19 @@ class MessageListener : Extension() {
                     }
                 }
 
-                queueModel.attachmentLink = attachmentLink
+                val firstUpdateModel = queueModel.getUpdateModel()
+                firstUpdateModel.attachmentLink = attachmentLink
 
-                val updateModel = CarryQueueUpdateModel()
-                    .setAttachmentLink(attachmentLink)
+                val updatedModel = QueueConnection.updateQueue(queueModel.id, firstUpdateModel) ?: queueModel
 
-                if ((queueModel.amount >= APPROVE_AMOUNT_THRESHOLD
-                            || queueModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
+                if ((updatedModel.amount >= APPROVE_AMOUNT_THRESHOLD
+                            || updatedModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
                     && approvingChannel.isPresent
                 ) {
                     runBlocking {
                         val createdMessage = approvingChannel.get()
                             .createMessage {
-                                val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                                val embed = ApplicationService.loadEmbedFromCarryQueue(updatedModel)
                                 embed.title = "Accept carry-log?"
                                 embed.color = EmbedColor.Default.color
 
@@ -233,96 +218,87 @@ class MessageListener : Extension() {
                         thread(start = true) {
                             runBlocking {
                                 DiscordConnection.bot?.kordRef
-                                    ?.getUser(Snowflake(queueModel.carrier.id))
+                                    ?.getUser(Snowflake(updatedModel.carrier.id))
                                     ?.dm {
                                         val embed = ApplicationService.embed
                                         embed.color(EmbedColor.Information)
                                         embed.title = "Approval needed"
-                                        embed.description = "Due to the high number of score (${queueModel.calculateScore()}) or carries (${queueModel.amount}), your ${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
-                                                "You will be notified here once it was approved or denied."
+                                        embed.description =
+                                            "Due to the high number of score (${updatedModel.calculateScore()}) or carries (${updatedModel.amount}), your ${updatedModel.carryTier.displayName} - ${updatedModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
+                                                    "You will be notified here once it was approved or denied."
 
                                         embeds = mutableListOf(embed)
                                     }
                             }
                         }
 
-                        updateModel.setQueueStep(QueueStep.APPROVING)
-                            .setRelationId(createdMessage.id.value.toLong())
+                        val secondUpdateModel = updatedModel.getUpdateModel()
 
-                        QueueConnection.getInstance()
-                            .updateQueue(queueModel.id, updateModel)
+                        secondUpdateModel.queueStep = QueueStep.Approving
+                        secondUpdateModel.relationId = createdMessage.id.value.toLong()
+
+                        QueueConnection.updateQueue(updatedModel.id, secondUpdateModel)
                     }
                 } else {
-                    val updatedScore =
-                        QueueConnection.getInstance()
-                            .logQueue(queueModel.id, updateModel)
-                            .stream()
-                            .map(LoggedCarryModel::scoreModels)
-                            .flatMap { obj: List<ScoreModel> -> obj.stream() }
-                            .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.DEFAULT }
-                            .findFirst()
-                            .map { obj: ScoreModel -> obj.scoreAmount }
-                            .orElseGet {
-                                ScoreConnection.getInstance(
-                                    queueModel.carryType
-                                )
-                                    .getScore(queueModel.carrier.id)
-                                    .map { obj: ScoreModel -> obj.scoreAmount }
-                                    .orElse(0L)
-                            }
+                    val updatedScore = QueueConnection.logQueue(updatedModel.id, firstUpdateModel)
+                        ?.scoreModels
+                        ?.firstOrNull { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
+                        ?.scoreAmount
+                        ?: (ScoreConnection[updatedModel.carryType].getScore(updatedModel.carrier.id)?.scoreAmount ?: 0)
 
                     runBlocking {
-                        val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(queueModel.carrier.id))
+                        val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(updatedModel.carrier.id))
 
                         if (carrier != null) {
                             carrier.dm {
                                 this.content = "Your carry was logged!\n\n" +
                                         "**Your Updated Score:** $updatedScore"
 
-                                val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                                val embed = ApplicationService.loadEmbedFromCarryQueue(updatedModel)
                                 embed.title = "Information"
                                 embed.color = EmbedColor.Default.color
 
                                 embeds = mutableListOf(embed)
                             }
 
-                            val logChannel = queueModel.carryTier
+                            val logChannel = updatedModel.carryTier
                                 .carryType
                                 .logChannel
-                                .map { id: Long ->
+                                ?.let { id: Long ->
                                     runBlocking { server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id)) }
                                 }
 
-                            if (logChannel.isPresent) {
+                            if (logChannel != null) {
                                 logger.debug(
                                     "Carry logged: {}",
-                                    DungeonHubService.getInstance().gson.toJson(queueModel)
+                                    MoshiService.moshi.adapter(CarryQueueModel::class.java).toJson(updatedModel)
                                 )
 
-                                logChannel.get().createMessage {
-                                    val embed = ApplicationService.getEmbed(queueModel.time.toKotlinInstant())
+                                logChannel.createMessage {
+                                    val embed = ApplicationService.getEmbed(
+                                        updatedModel.time?.toKotlinInstant() ?: Clock.System.now()
+                                    )
                                     embed.title = "Carry accepted."
                                     embed.color = EmbedColor.Positive.color
-                                    embed.field("Number of carries", true) { queueModel.amount.toString() }
+                                    embed.field("Number of carries", true) { updatedModel.amount.toString() }
                                     embed.field("Type of carry", true) {
-                                        "${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName}"
+                                        "${updatedModel.carryTier.displayName} - ${updatedModel.carryDifficulty.displayName}"
                                     }
                                     embed.field("Player", true) {
-                                        "<@${queueModel.player.id}>"
+                                        "<@${updatedModel.player.id}>"
                                     }
                                     embed.field("Carrier", true) {
-                                        "<@${queueModel.carrier.id}>"
+                                        "<@${updatedModel.carrier.id}>"
                                     }
                                     embed.field("Transcript-Link", true) {
-                                        "[Click to open](${queueModel.attachmentLink})"
+                                        "[Click to open](${updatedModel.attachmentLink})"
                                     }
 
                                     embeds = mutableListOf(embed)
                                 }
                             }
 
-                            QueueConnection.getInstance()
-                                .deleteQueue(queueModel.id)
+                            QueueConnection.deleteQueue(updatedModel.id)
                         }
                     }
                 }
@@ -429,29 +405,17 @@ class MessageListener : Extension() {
             return
         }
 
-        val ignOptional = DiscordUserConnection.getInstance()
-            .getLinkedById(user.id.value.toLong())
-            .map { obj -> obj.minecraftId }
-            .map { uuid ->
-                MojangConnection.getInstance().getNameByUUID(uuid)
-            }
-            .or {
-                lines.stream()
-                    .filter { s -> s.startsWith("IGN: ") || s.startsWith("- **IGN**: ") || s.startsWith("**IGN**: ") }
-                    .findFirst()
-            }.or {
-                runBlocking {
-                    future {
-                        Optional.ofNullable(user.asMemberOrNull(event.guildId!!)?.effectiveName)
-                    }
-                }.join()
-            }
+        val ignOptional = DiscordUserConnection.getLinkedById(user.id.value.toLong())
+            ?.minecraftId
+            ?.let { MojangConnection.getInstance().getNameByUUID(it) }
+            ?: (lines.firstOrNull { s -> s.startsWith("IGN: ") || s.startsWith("- **IGN**: ") || s.startsWith("**IGN**: ") })
+            ?: (user.asMemberOrNull(event.guildId!!)?.effectiveName)
 
-        if (ignOptional.isEmpty) {
+        if (ignOptional == null) {
             return
         }
 
-        val ign = ignOptional.get()
+        val ign = ignOptional
             .replace("IGN: ", "")
             .replace("- **IGN**: ", "")
             .replace("**IGN**: ", "")

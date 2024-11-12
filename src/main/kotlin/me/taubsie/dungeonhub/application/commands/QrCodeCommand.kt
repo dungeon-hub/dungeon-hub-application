@@ -11,11 +11,11 @@ import dev.kordex.core.commands.converters.impl.attachment
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import me.taubsie.dungeonhub.application.connection.dungeon_hub.ContentConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.connection.ContentConnection
 import java.net.URL
 import javax.imageio.ImageIO
 
@@ -41,17 +41,10 @@ class QrCodeCommand : Extension() {
                             val embed = ApplicationService.embed
                             embed.color = EmbedColor.Default.color
 
-                            val cdnLink =
-                                ContentConnection.getInstance()
-                                    .uploadFile(
-                                        ApplicationService.readImageData(image)
-                                    )
-                                    .map { s ->
-                                        ContentConnection.getInstance()
-                                            .getCdnUrl(s)
-                                    }
-                                    .orElseThrow { CommandExecutionException("Couldn't upload QR code data to CDN.") }
-                                    .toString()
+                            val cdnLink = (ContentConnection.uploadFile(ApplicationService.readImageData(image))
+                                ?.let { ContentConnection.getCdnUrl(it) }
+                                ?: throw CommandExecutionException("Couldn't upload QR code data to CDN."))
+                                .toString()
 
                             embed.image = cdnLink
                             embed.field {
