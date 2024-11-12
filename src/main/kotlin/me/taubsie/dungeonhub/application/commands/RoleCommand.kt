@@ -6,9 +6,10 @@ import dev.kord.core.entity.Member
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.checks.hasPermission
 import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.converters.impl.optionalEnumChoice
 import dev.kordex.core.commands.application.slash.group
 import dev.kordex.core.commands.application.slash.publicSubCommand
-import dev.kordex.core.commands.converters.impl.optionalBoolean
+import dev.kordex.core.commands.converters.impl.boolean
 import dev.kordex.core.commands.converters.impl.optionalString
 import dev.kordex.core.commands.converters.impl.role
 import dev.kordex.core.commands.converters.impl.user
@@ -27,6 +28,7 @@ import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.NicknameService
 import me.taubsie.dungeonhub.application.service.RolesService
 import net.dungeonhub.connection.DiscordRoleConnection
+import net.dungeonhub.enums.RoleAction
 import net.dungeonhub.model.discord_role.DiscordRoleCreationModel
 import net.dungeonhub.model.discord_role.DiscordRoleUpdateModel
 import kotlin.concurrent.thread
@@ -91,7 +93,7 @@ class RoleCommand : Extension() {
                             val currentRole = DiscordRoleConnection[guild!!.id.value.toLong()]
                                 .getById(arguments.role.id.value.toLong())
 
-                            if (arguments.nameSchema == null && arguments.verifiedRole == null) {
+                            if (arguments.nameSchema == null && arguments.roleAction == null) {
                                 if (currentRole == null) {
                                     throw NoOptionFoundException()
                                 } else {
@@ -106,7 +108,7 @@ class RoleCommand : Extension() {
                                         arguments.role.id.value.toLong(),
                                         DiscordRoleUpdateModel(
                                             arguments.nameSchema,
-                                            arguments.verifiedRole
+                                            arguments.roleAction
                                         )
                                     )
                             } else {
@@ -115,7 +117,7 @@ class RoleCommand : Extension() {
                                         DiscordRoleCreationModel(
                                             arguments.role.id.value.toLong(),
                                             arguments.nameSchema,
-                                            arguments.verifiedRole ?: false
+                                            arguments.roleAction ?: RoleAction.None
                                         )
                                     )
                             }
@@ -137,8 +139,7 @@ class RoleCommand : Extension() {
                     }
                 }
 
-                //TODO finish implementation
-                /*publicSubCommand(::RoleConfigResetArguments) {
+                publicSubCommand(::RoleConfigResetArguments) {
                     name = "reset"
                     description = "Reset a role config value"
 
@@ -148,11 +149,51 @@ class RoleCommand : Extension() {
 
                     action {
                         respond {
-                            //TODO finish implementation
-                            throw CommandExecutionException("Command isn't implemented yet.")
+                            val currentRole = DiscordRoleConnection[guild!!.id.value.toLong()]
+                                .getById(arguments.role.id.value.toLong())
+
+                            if (arguments.resetNameSchema == false) {
+                                if (currentRole == null) {
+                                    throw NoOptionFoundException()
+                                } else {
+                                    embeds = mutableListOf(ApplicationService.loadEmbedFromDiscordRole(currentRole))
+                                }
+                                return@respond
+                            }
+
+                            val modifiedRole = if (currentRole != null) {
+                                val updateModel = currentRole.getUpdateModel()
+
+                                if (arguments.resetNameSchema) {
+                                    updateModel.nameSchema = null
+                                }
+
+                                DiscordRoleConnection[guild!!.id.value.toLong()]
+                                    .updateRole(arguments.role.id.value.toLong(), updateModel)
+                            } else {
+                                DiscordRoleConnection[guild!!.id.value.toLong()].addNewRole(
+                                    DiscordRoleCreationModel(
+                                        arguments.role.id.value.toLong()
+                                    )
+                                )
+                            }
+
+                            if (modifiedRole == null) {
+                                val embed = ApplicationService.embed
+                                embed.color = EmbedColor.Negative.color
+                                embed.description = "Couldn't modify the given role."
+                                embeds = mutableListOf(embed)
+
+                                return@respond
+                            }
+
+                            val embed = ApplicationService.loadEmbedFromDiscordRole(modifiedRole)
+                            embed.color = EmbedColor.Positive.color
+                            embed.title = "Modified role"
+                            embeds = mutableListOf(embed)
                         }
                     }
-                }*/
+                }
             }
         }
     }
@@ -291,9 +332,10 @@ class RoleCommand : Extension() {
             description = "Set the name schema for this username"
         }
 
-        val verifiedRole by optionalBoolean {
-            name = "verified-role"
-            description = "Set if the role should automatically be granted to everyone who is linked."
+        val roleAction by optionalEnumChoice<RoleAction> {
+            name = "role-action"
+            description = "Set when this role should be applied to users, based on if they're linked or not."
+            typeName = "RoleAction"
         }
     }
 
@@ -301,6 +343,11 @@ class RoleCommand : Extension() {
         val role by role {
             name = "role"
             description = "Select which role you want to configure."
+        }
+
+        val resetNameSchema by boolean {
+            name = "name-schema"
+            description = "Reset the name schema for this role."
         }
     }
 }
