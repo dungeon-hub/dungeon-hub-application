@@ -198,7 +198,7 @@ object ApplicationService {
             "Name schema",
             true
         ) { discordRoleModel.nameSchema ?: "none" }
-        embed.field("Verified role", true) { if (discordRoleModel.verifiedRole) "yes" else "no" }
+        embed.field("Role action", true) { discordRoleModel.roleAction.readableName }
 
         return embed
     }

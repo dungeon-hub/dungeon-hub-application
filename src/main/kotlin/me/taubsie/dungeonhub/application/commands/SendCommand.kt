@@ -12,6 +12,7 @@ import dev.kord.rest.builder.message.actionRow
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.channel
+import dev.kordex.core.commands.converters.impl.optionalBoolean
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import me.taubsie.dungeonhub.application.enums.CntRequestType
@@ -32,7 +33,7 @@ class SendCommand : Extension() {
             description = "Sends a special message into a channel."
             allowInDms = false
 
-            publicSubCommand(::SendArguments) {
+            publicSubCommand(::SendLinkMessageArguments) {
                 name = "link-message"
                 description = "Sends a message with components that are there to make linking easier."
                 defaultMemberPermissions = Permissions(Permission.ManageMessages)
@@ -51,7 +52,11 @@ class SendCommand : Extension() {
                             embeds = mutableListOf(embed)
 
                             actionRow {
-                                addLinkButtons()
+                                if (arguments.silent == true) {
+                                    addSilentLinkButtons()
+                                } else {
+                                    addLinkButtons()
+                                }
                             }
                         }
 
@@ -109,7 +114,7 @@ class SendCommand : Extension() {
         }
     }
 
-    inner class SendArguments : Arguments() {
+    open inner class SendArguments : Arguments() {
         val channel by channel {
             name = "channel"
             description = "The channel to send the message into."
@@ -118,6 +123,13 @@ class SendCommand : Extension() {
                 ChannelType.GuildVoice,
                 ChannelType.PublicGuildThread
             )
+        }
+    }
+
+    inner class SendLinkMessageArguments : SendArguments() {
+        val silent by optionalBoolean {
+            name = "silent"
+            description = "If the bot should reply silently (using ephemeral messages)"
         }
     }
 }

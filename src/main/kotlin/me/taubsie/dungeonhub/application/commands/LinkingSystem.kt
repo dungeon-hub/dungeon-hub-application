@@ -20,8 +20,6 @@ import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
 import dev.kordex.core.commands.Arguments
-import dev.kordex.core.commands.converters.impl.channel
-import dev.kordex.core.commands.converters.impl.optionalBoolean
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
@@ -39,7 +37,6 @@ import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.*
 import net.dungeonhub.connection.DiscordUserConnection
-import java.util.*
 import kotlin.concurrent.thread
 
 @PrivilegedIntent
@@ -102,7 +99,7 @@ class LinkingSystem : Extension() {
 
                     thread(start = true) {
                         runBlocking {
-                            if(guild != null) {
+                            if (guild != null) {
                                 val member = user.asMember(guild!!.id)
 
                                 val roles = RolesService.updateRoles(member)
@@ -308,42 +305,6 @@ class LinkingSystem : Extension() {
             }
         }
 
-        publicSlashCommand(::SendLinkMessageArguments) {
-            name = "send-link-message"
-            description = "Sends a message with components that are there to make linking easier."
-            defaultMemberPermissions = Permissions(Permission.ManageMessages)
-            allowInDms = false
-
-            action {
-                respond {
-                    val channel = arguments.channel.asChannelOfOrNull<GuildMessageChannel>()
-                        ?: throw CommandExecutionException("Channel couldn't be found or isn't a message channel. Please let an administrator know.")
-
-                    channel.createMessage {
-                        val embed = ApplicationService.embed
-                        embed.color = EmbedColor.Default.color
-                        embed.title = "Linking"
-                        embed.description =
-                            "Please link to your Minecraft account using the buttons below.\nRemember to never give out the email connected to your Microsoft account and to never click any links!\n\nCheck out this video if you're still unsure if messages similar to this are legit: https://youtu.be/WRRIOkM8oe8?t=743&si=oc71yA9h-XJUsGpX"
-                        embeds = mutableListOf(embed)
-
-                        actionRow {
-                            if (arguments.silent == true) {
-                                addSilentLinkButtons()
-                            } else {
-                                addLinkButtons()
-                            }
-                        }
-                    }
-
-                    val embed = ApplicationService.embed
-                    embed.color = EmbedColor.Positive.color
-                    embed.description = "Trying to send message..."
-                    embeds = mutableListOf(embed)
-                }
-            }
-        }
-
         publicSlashCommand(::IgnArguments) {
             name = "ign"
             description = "Shows the IGN of a linked user."
@@ -522,23 +483,6 @@ class LinkingSystem : Extension() {
         val user by user {
             name = "user"
             description = "The user to sync."
-        }
-    }
-
-    inner class SendLinkMessageArguments : Arguments() {
-        val channel by channel {
-            name = "channel"
-            description = "The channel to send the message into."
-            requiredChannelTypes = mutableSetOf(
-                ChannelType.GuildText,
-                ChannelType.GuildVoice,
-                ChannelType.PublicGuildThread
-            )
-        }
-
-        val silent by optionalBoolean {
-            name = "silent"
-            description = "If the bot should reply silently (using ephemeral messages)"
         }
     }
 
