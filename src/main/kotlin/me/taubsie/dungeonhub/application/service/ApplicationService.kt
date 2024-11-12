@@ -51,6 +51,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.IOException
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
@@ -62,6 +63,8 @@ import kotlin.time.Duration
 object ApplicationService {
     const val MAX_MINECRAFT_USERNAME_LENGTH = 16
     private val logger: Logger = LoggerFactory.getLogger(DiscordConnection::class.java)
+
+    val dungeonHubDirectory = "${System.getProperty("user.home")}${File.separator}dungeon-hub"
 
     private val serverLink: String
         get() = "discord.dungeon-hub.net"

@@ -3,8 +3,8 @@ package me.taubsie.dungeonhub.application.misc
 import lombok.Getter
 import me.taubsie.dungeonhub.application.config.ConfigFile
 import me.taubsie.dungeonhub.application.enums.ServerProperty
+import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.ServerService
-import me.taubsie.dungeonhub.common.DungeonHubService
 import java.io.File
 import java.util.*
 import java.util.stream.Collectors
@@ -41,6 +41,6 @@ class ServerData(val id: Long) : ConfigFile<ServerProperty>() {
 
     companion object {
         val configFolder: String
-            get() = DungeonHubService.getInstance().mainFolder + File.separator + "servers"
+            get() = ApplicationService.dungeonHubDirectory + File.separator + "servers"
     }
 }

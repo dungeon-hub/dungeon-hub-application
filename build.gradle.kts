@@ -33,7 +33,6 @@ dependencies {
     implementation("org.projectlombok:lombok:1.18.28")
 
     //Internal API
-    implementation("me.taubsie:dungeon-hub-common:1.0.0")
     implementation("net.dungeon-hub.api:client:0.3.0")
 
     //Functionality

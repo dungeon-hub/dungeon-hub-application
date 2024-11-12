@@ -7,7 +7,6 @@ import me.taubsie.dungeonhub.application.enums.ServerProperty
 import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartupListener
 import me.taubsie.dungeonhub.application.misc.ServerData
-import me.taubsie.dungeonhub.common.DungeonHubService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -69,7 +68,7 @@ object ServerService : StartupListener {
     }
 
     val serverFolder: String
-        get() = DungeonHubService.getInstance().mainFolder + File.separator + "servers"
+        get() = ApplicationService.dungeonHubDirectory + File.separator + "servers"
 
     fun loadServerData(id: Long) {
         serverData.add(ServerData(id))

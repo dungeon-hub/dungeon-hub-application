@@ -2,7 +2,7 @@ package me.taubsie.dungeonhub.application.config
 
 import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartPriority
-import me.taubsie.dungeonhub.common.DungeonHubService
+import me.taubsie.dungeonhub.application.service.ApplicationService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -33,7 +33,7 @@ object ConfigService : ConfigFile<ConfigProperty>() {
     }
 
     val configFolder: String
-        get() = DungeonHubService.getInstance().mainFolder + File.separator + "config"
+        get() = ApplicationService.dungeonHubDirectory + File.separator + "config"
 
     override val configFile: File
         get() = File(configFolder + File.separator + "application_config.properties")
