@@ -4,6 +4,7 @@ import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.int
 import dev.kordex.core.commands.converters.impl.optionalInt
 import dev.kordex.core.commands.converters.impl.optionalString
 import dev.kordex.core.commands.converters.impl.string
@@ -18,6 +19,8 @@ import me.taubsie.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.CarryTierConnection
 import net.dungeonhub.connection.CarryTypeConnection
+import net.dungeonhub.model.carry_difficulty.CarryDifficultyCreationModel
+import java.util.*
 
 /**
  * Command to manage carry difficulties.
@@ -39,9 +42,42 @@ class CarryDifficultyCommand : Extension() {
                 name = "create"
                 description = "Create a new carry difficulty"
 
-                //TODO implement
                 action {
-                    throw InvalidSubCommandException()
+                    respond {
+                        val carryType =
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw CommandExecutionWarning("That carry type doesn't exists!")
+
+                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
+                            ?: throw CommandExecutionWarning("That carry tier doesn't exists!")
+
+                        val identifier = arguments.identifier
+                            .trim()
+                            .lowercase(Locale.getDefault())
+                            .replace(" ", "_")
+
+                        if (CarryDifficultyConnection[carryTier].getByIdentifier(identifier) != null) {
+                            throw InvalidOptionException("identifier", "That carry difficulty already exists!")
+                        }
+
+                        val creationModel = CarryDifficultyCreationModel(
+                            identifier = identifier,
+                            displayName = arguments.displayName,
+                            price = arguments.price,
+                            score = arguments.score,
+                            bulkAmount = null,
+                            bulkPrice = null,
+                            thumbnailUrl = null,
+                            priceName = null
+                        )
+
+                        val carryDifficulty = CarryDifficultyConnection[carryTier].createCarryDifficulty(creationModel)
+                            ?: throw CommandExecutionWarning("Couldn't create carry difficulty.")
+
+                        val embed = ApplicationService.getCarryDifficultyEmbed(carryDifficulty)
+                        embed.title = "Created Carry Difficulty"
+                        embeds = mutableListOf(embed)
+                    }
                 }
             }
 
@@ -49,9 +85,35 @@ class CarryDifficultyCommand : Extension() {
                 name = "delete"
                 description = "Delete a carry difficulty"
 
-                //TODO implement
                 action {
-                    throw InvalidSubCommandException()
+                    respond {
+                        val carryType =
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw CommandExecutionWarning("That carry type doesn't exists!")
+
+                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
+                            ?: throw InvalidOptionException("carry-tier")
+
+                        if (carryTier.carryType != carryType) {
+                            throw CommandExecutionWarning("Well this is weird.. Something doesn't really add up!")
+                        }
+
+                        val carryDifficulty =
+                            CarryDifficultyConnection[carryTier].getByIdentifier(arguments.carryDifficulty)
+                                ?: throw InvalidOptionException("carry-difficulty")
+
+                        if (carryDifficulty.carryTier != carryTier) {
+                            throw CommandExecutionWarning("Well this is also weird.. Something doesn't really add up!")
+                        }
+
+                        val deletedCarryDifficulty =
+                            CarryDifficultyConnection[carryTier].deleteCarryDifficulty(carryDifficulty.id)
+                                ?: throw CommandExecutionWarning("Couldn't delete the carry difficulty.")
+
+                        val embed = ApplicationService.getCarryDifficultyEmbed(deletedCarryDifficulty)
+                        embed.title = "Deleted Carry Difficulty"
+                        embeds = mutableListOf(embed)
+                    }
                 }
             }
 
@@ -185,7 +247,17 @@ class CarryDifficultyCommand : Extension() {
             maxLength = 30
         }
 
-        //TODO add optional arguments
+        val price by int {
+            name = "price"
+            description = "The price per carry"
+            minValue = 0
+        }
+
+        val score by int {
+            name = "score"
+            description = "The score gained per carry"
+            minValue = 0
+        }
     }
 
     inner class CarryDifficultyArguments : Arguments() {
