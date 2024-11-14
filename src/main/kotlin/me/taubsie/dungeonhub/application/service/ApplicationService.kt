@@ -262,7 +262,7 @@ object ApplicationService {
         embed.title = "Warning #${warningModel.id}"
 
         embed.field("User") { "<@${warningModel.user.id}>" }
-        embed.field("Striker") { "<@${warningModel.striker.id}>" }
+        embed.field("Staff member") { "<@${warningModel.striker.id}>" }
         embed.field("Severity") { warningModel.warningType.name }
         embed.field("Reason") { warningModel.reason ?: "No reason provided." }
         embed.field("Active") { warningModel.active.toString() }
@@ -276,7 +276,7 @@ object ApplicationService {
         embed.title = "Warning #${warningModel.id}"
 
         embed.field("User") { "<@${warningModel.user.id}>" }
-        embed.field("Striker") { "<@${warningModel.striker.id}>" }
+        embed.field("Staff member") { "<@${warningModel.striker.id}>" }
         embed.field("Severity") { warningModel.warningType.name }
         embed.field("Reason") { warningModel.reason ?: "No reason provided." }
         embed.field("Active") { warningModel.active.toString() }
@@ -317,7 +317,7 @@ object ApplicationService {
         embed.title = "Warning #${warningModel.id}"
 
         embed.field("User") { "<@${warningModel.user.id}>" }
-        embed.field("Striker") { "<@${warningModel.striker.id}>" }
+        embed.field("Staff member") { "<@${warningModel.striker.id}>" }
         embed.field("Severity") { warningModel.warningType.name }
         embed.field("Reason") { warningModel.reason ?: "No reason provided." }
 

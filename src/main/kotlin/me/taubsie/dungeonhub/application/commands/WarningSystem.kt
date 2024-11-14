@@ -177,7 +177,7 @@ class WarningSystem : Extension() {
                                 }
                             }${
                                 if (addedWarning.warningModel.warningType == WarningType.Strike) {
-                                    "\n\n_Please note that strikes expire after 3 months._"
+                                    "\n\n_Please note that a ${addedWarning.warningModel.warningType.name} warning expires after 3 months._"
                                 } else {
                                     ""
                                 }
@@ -216,7 +216,7 @@ class WarningSystem : Extension() {
                             }
 
                             if (addedWarning.warningModel.warningType == WarningType.Strike) {
-                                dmEmbed.description += "\n\n_Please note that strikes expire after 3 months._\n_If you want a related punishment removed **after the strikes have expired**, please contact server staff through the support._"
+                                dmEmbed.description += "\n\n_Please note that a ${addedWarning.warningModel.warningType.name} warning expires after 3 months._\n_If you want a related punishment removed **after the strikes have expired**, please contact server staff through the support._"
                             }
 
                             this@dm.embeds = mutableListOf(dmEmbed)

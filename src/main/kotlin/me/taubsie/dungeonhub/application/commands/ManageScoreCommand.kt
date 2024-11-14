@@ -43,7 +43,7 @@ class ManageScoreCommand : Extension() {
     override suspend fun setup() {
         publicSlashCommand {
             name = "manage-score"
-            description = "Use this to manage the score of carriers."
+            description = "Use this to manage the score of service team members."
             defaultMemberPermissions = Permissions(Permission.ManageMessages)
             allowInDms = false
 
