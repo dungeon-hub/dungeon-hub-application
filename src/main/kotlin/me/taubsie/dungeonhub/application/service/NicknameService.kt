@@ -42,7 +42,7 @@ import java.util.stream.Collectors
 object NicknameService {
     @Throws(CommandExecutionWarning::class)
     fun linkToIgn(ign: String, user: User): UUID {
-        val uuid = MojangConnection.getInstance().getUUIDByName(ign)
+        val uuid = MojangConnection.getUUIDByName(ign)
 
         val hypixelName = getHypixelLinkedDiscord(uuid)
         val username = user.tag
@@ -251,5 +251,5 @@ fun User.getUUID(): UUID {
 }
 
 fun UUID.fetchIgn(): String {
-    return MojangConnection.getInstance().getNameByUUID(this)
+    return MojangConnection.getNameByUUID(this)
 }

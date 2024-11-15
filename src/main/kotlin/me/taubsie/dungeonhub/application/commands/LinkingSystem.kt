@@ -58,7 +58,7 @@ class LinkingSystem : Extension() {
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.Information.color
                         embed.description = "You're already linked to user `${
-                            MojangConnection.getInstance().getNameByUUID(linkedTo)
+                            MojangConnection.getNameByUUID(linkedTo)
                         }`! If you think that's incorrect, try using ${"`/unlink`"}."
 
                         embeds = mutableListOf(
@@ -89,10 +89,7 @@ class LinkingSystem : Extension() {
                     val embed = ApplicationService.embed
                     embed.title = "Linked successfully"
                     embed.description =
-                        "You're now linked to `${
-                            MojangConnection.getInstance()
-                                .getNameByUUID(linkedId)
-                        }`."
+                        "You're now linked to `${MojangConnection.getNameByUUID(linkedId)}`."
                     embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
@@ -132,8 +129,7 @@ class LinkingSystem : Extension() {
 
                     action {
                         respond {
-                            val uuid = MojangConnection.getInstance()
-                                .getUUIDByName(arguments.ign)
+                            val uuid = MojangConnection.getUUIDByName(arguments.ign)
 
                             val discordUser = getHypixelLinkedDiscord(uuid)
                                 .orElseThrow {
@@ -281,8 +277,7 @@ class LinkingSystem : Extension() {
 
                     val embed = ApplicationService.embed
                     embed.description = "Unlinked successfully from account `${
-                        MojangConnection.getInstance()
-                            .getNameByUUID(oldUserModel.minecraftId)
+                        MojangConnection.getNameByUUID(oldUserModel.minecraftId!!)
                     }`."
                     embed.color = EmbedColor.Positive.color
 
@@ -321,7 +316,7 @@ class LinkingSystem : Extension() {
                     }
 
                     val ign =
-                        MojangConnection.getInstance().getNameByUUID(uuid)
+                        MojangConnection.getNameByUUID(uuid)
 
                     val embed = ApplicationService.embed
                     embed.color = EmbedColor.Positive.color
@@ -340,7 +335,7 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val uuid = MojangConnection.getInstance().getUUIDByName(arguments.ign)
+                    val uuid = MojangConnection.getUUIDByName(arguments.ign)
 
                     val userModel = DiscordUserConnection.findUserByUuid(uuid)
                         ?: throw CommandExecutionWarning("Couldn't find who the given user is linked to.")
@@ -375,8 +370,7 @@ class LinkingSystem : Extension() {
                                 val embed = ApplicationService.embed
                                 embed.color = EmbedColor.Information.color
                                 embed.description = "You're already linked to user `${
-                                    MojangConnection.getInstance()
-                                        .getNameByUUID(linkedTo)
+                                    MojangConnection.getNameByUUID(linkedTo)
                                 }`! If you think that's incorrect, try using ${"`/unlink`"}."
 
                                 embeds = mutableListOf(embed)

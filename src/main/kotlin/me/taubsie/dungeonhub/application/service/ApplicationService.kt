@@ -404,10 +404,10 @@ object ApplicationService {
             }
         }
 
-        val uuid: UUID = MojangConnection.getInstance().getUUIDByName(ign)
+        val uuid: UUID = MojangConnection.getUUIDByName(ign)
 
         val flagResponses: List<FlagResponse> =
-            FlaggingConnection.getInstance().isFlagged(uuid, discordId)
+            FlaggingConnection.isFlagged(uuid, discordId)
                 .stream()
                 .filter { flagResponse: FlagResponse -> flagResponse.uuid != null || flagResponse.discord != null }
                 .filter { flagResponse: FlagResponse ->

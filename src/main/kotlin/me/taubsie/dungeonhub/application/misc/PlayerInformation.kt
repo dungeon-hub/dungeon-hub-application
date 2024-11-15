@@ -23,8 +23,7 @@ class PlayerInformation(private val user: User, private val discordUserModel: Di
             replacements["discord.name"] = { user.username }
             replacements["discord.displayname"] = { user.effectiveName }
             replacements["minecraft.name"] = {
-                MojangConnection.getInstance()
-                    .getNameByUUID(discordUserModel.minecraftId)
+                MojangConnection.getNameByUUID(discordUserModel.minecraftId!!)
             }
             replacements["skyblock.catacombs.level"] =
                 { getCataLevelByUUID(discordUserModel.minecraftId!!).toString() }

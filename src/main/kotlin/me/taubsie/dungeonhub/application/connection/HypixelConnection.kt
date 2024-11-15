@@ -179,8 +179,8 @@ object HypixelConnection : HypixelHttpClient {
             .map { obj: JsonPrimitive -> obj.asString }
     }
 
-    fun getOnlineStatus(ign: String?): StatusReply.Session {
-        val uuid = MojangConnection.getInstance().getUUIDByName(ign)
+    fun getOnlineStatus(ign: String): StatusReply.Session {
+        val uuid = MojangConnection.getUUIDByName(ign)
 
         return hypixelApi.getStatus(uuid).join().session
     }

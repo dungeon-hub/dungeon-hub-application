@@ -35,12 +35,12 @@ class LookupCommand : Extension() {
 
                 action {
                     respond {
-                        val uuid = MojangConnection.getInstance().getUUIDByName(arguments.ign)
+                        val uuid = MojangConnection.getUUIDByName(arguments.ign)
 
                         val discordId = DiscordUserConnection.findUserByUuid(uuid)?.id
 
                         val flagResponses: List<FlagResponse> =
-                            FlaggingConnection.getInstance().isFlagged(uuid, discordId)
+                            FlaggingConnection.isFlagged(uuid, discordId)
                                 .stream()
                                 .filter { flagResponse: FlagResponse -> flagResponse.uuid != null || flagResponse.discord != null }
                                 .filter { flagResponse: FlagResponse ->
@@ -106,10 +106,10 @@ class LookupCommand : Extension() {
     private fun respondToLookupUser(target: UserBehavior): suspend FollowupMessageCreateBuilder.() -> Unit = {
         val uuid = DiscordUserConnection.getLinkedById(target.id.value.toLong())?.minecraftId
 
-        val ign = uuid?.let { MojangConnection.getInstance().getNameByUUID(uuid) }
+        val ign = uuid?.let { MojangConnection.getNameByUUID(uuid) }
 
         val flagResponses: List<FlagResponse> =
-            FlaggingConnection.getInstance().isFlagged(uuid, target.id.value.toLong())
+            FlaggingConnection.isFlagged(uuid, target.id.value.toLong())
                 .stream()
                 .filter { flagResponse: FlagResponse -> flagResponse.uuid != null || flagResponse.discord != null }
                 .filter { flagResponse: FlagResponse ->

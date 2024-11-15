@@ -1,252 +1,259 @@
-package me.taubsie.dungeonhub.application.connection;
+package me.taubsie.dungeonhub.application.connection
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import me.taubsie.dungeonhub.application.config.ConfigProperty;
-import me.taubsie.dungeonhub.application.enums.FlaggingApi;
-import me.taubsie.dungeonhub.application.misc.FlagDetail;
-import me.taubsie.dungeonhub.application.misc.FlagResponse;
-import okhttp3.HttpUrl;
-import okhttp3.Request;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import me.taubsie.dungeonhub.application.config.ConfigProperty
+import me.taubsie.dungeonhub.application.enums.FlaggingApi
+import me.taubsie.dungeonhub.application.misc.FlagDetail
+import me.taubsie.dungeonhub.application.misc.FlagDetail.FlagDetailBuilder.builder
+import me.taubsie.dungeonhub.application.misc.FlagResponse
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Request
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.*
+import java.util.function.Consumer
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+object FlaggingConnection : Connection {
+    override val logger: Logger = LoggerFactory.getLogger(FlaggingConnection::class.java)
 
-public class FlaggingConnection implements Connection {
-    private static final Logger logger = LoggerFactory.getLogger(FlaggingConnection.class);
-    private static FlaggingConnection instance;
+    private var lastBlockGameRefresh: Instant? = null
+    private var blockGameData: List<JsonObject>? = null
 
-    private Instant lastBlockGameRefresh;
-    private List<JsonObject> blockGameData;
+    fun isFlagged(id: Long?): List<FlagResponse> {
+        return isFlagged(null, id)
+    }
 
-    public static FlaggingConnection getInstance() {
-        if (instance == null) {
-            instance = new FlaggingConnection();
+    fun isFlagged(uuid: UUID?): List<FlagResponse> {
+        return isFlagged(uuid, null)
+    }
+
+    fun isFlagged(uuid: UUID?, id: Long?): List<FlagResponse> {
+        return FlaggingApi.entries.stream()
+            .parallel()
+            .map { flaggingApi: FlaggingApi -> flaggingApi.execute(uuid, id) }
+            .toList()
+    }
+
+    fun isBlockGameFlagged(id: Long): FlagDetail? {
+        if (lastBlockGameRefresh == null || blockGameData == null || lastBlockGameRefresh!!.isBefore(
+                Instant.now().minus(5, ChronoUnit.MINUTES)
+            )
+        ) {
+            refreshBlockGameData()
         }
 
-        return instance;
-    }
-
-    @Override
-    public Logger getLogger() {
-        return logger;
-    }
-
-    public List<FlagResponse> isFlagged(@Nullable Long id) {
-        return isFlagged(null, id);
-    }
-
-    public List<FlagResponse> isFlagged(@Nullable UUID uuid) {
-        return isFlagged(uuid, null);
-    }
-
-    public List<FlagResponse> isFlagged(@Nullable UUID uuid, @Nullable Long id) {
-        return FlaggingApi.getEntries().stream()
-                .parallel()
-                .map(flaggingApi -> flaggingApi.execute(uuid, id))
-                .toList();
-    }
-
-    public Optional<FlagDetail> isBlockGameFlagged(Long id) {
-        if (lastBlockGameRefresh == null
-                || blockGameData == null
-                || lastBlockGameRefresh.isBefore(Instant.now().minus(5, ChronoUnit.MINUTES))) {
-            refreshBlockGameData();
+        return blockGameData!!.firstOrNull { jsonObject: JsonObject ->
+            jsonObject.has("id")
+                    && jsonObject["id"].isJsonPrimitive
+                    && jsonObject.getAsJsonPrimitive("id").asLong == id
+        }?.let { blockGameData: JsonObject ->
+            this.loadFlagDetailFromBlockGameData(
+                blockGameData
+            )
         }
-
-        return blockGameData.parallelStream()
-                .filter(jsonObject -> jsonObject.has("id")
-                        && jsonObject.get("id").isJsonPrimitive()
-                        && jsonObject.getAsJsonPrimitive("id").getAsLong() == id)
-                .findFirst()
-                .map(this::loadFlagDetailFromBlockGameData);
     }
 
-    private FlagDetail loadFlagDetailFromBlockGameData(JsonObject blockGameData) {
-        StringBuilder reason = new StringBuilder();
+    private fun loadFlagDetailFromBlockGameData(blockGameData: JsonObject): FlagDetail {
+        val reason = StringBuilder()
 
-        JsonPrimitive scammedAmount = blockGameData.getAsJsonPrimitive("scammed");
-        JsonPrimitive method = blockGameData.getAsJsonPrimitive("method");
+        val scammedAmount = blockGameData.getAsJsonPrimitive("scammed")
+        val method = blockGameData.getAsJsonPrimitive("method")
 
-        if(scammedAmount != null && scammedAmount.isString()) {
-            reason.append("(").append(scammedAmount.getAsString()).append(")");
+        if (scammedAmount != null && scammedAmount.isString) {
+            reason.append("(").append(scammedAmount.asString).append(")")
 
-            if(method != null && method.isString()) {
-                reason.append(" -> ");
+            if (method != null && method.isString) {
+                reason.append(" -> ")
             }
         }
 
-        if(method != null && method.isString()) {
-            reason.append(method.getAsString());
+        if (method != null && method.isString) {
+            reason.append(method.asString)
         }
 
 
-        return FlagDetail.FlagDetailBuilder.builder()
-                .flagged(true)
-                .reason(reason.toString())
-                .build();
+        return builder()
+            .flagged(true)
+            .reason(reason.toString())
+            .build()
     }
 
-    public void refreshBlockGameData() {
-        lastBlockGameRefresh = Instant.now();
+    fun refreshBlockGameData() {
+        lastBlockGameRefresh = Instant.now()
 
-        HttpUrl httpUrl = HttpUrl.get("https://block.lenny.ie/scammers");
+        val httpUrl: HttpUrl = "https://block.lenny.ie/scammers".toHttpUrl()
 
-        Request request = new Request.Builder()
-                .url(httpUrl)
-                .get()
-                .build();
+        val request = Request.Builder()
+            .url(httpUrl)
+            .get()
+            .build()
 
-        JsonArray jsonArray = executeRequest(request, s -> fromJson(s, JsonArray.class))
-                .orElse(null);
+        val jsonArray = executeRequest(
+            request
+        ) { s: String? ->
+            fromJson(
+                s!!,
+                JsonArray::class.java
+            )
+        }
 
         if (jsonArray == null) {
-            return;
+            return
         }
 
         blockGameData = jsonArray.asList().parallelStream()
-                .map(JsonElement::getAsJsonObject)
-                .toList();
+            .map { obj: JsonElement -> obj.asJsonObject }
+            .toList()
     }
 
-    public Optional<FlagDetail> isSafetyFlagged(UUID uuid) {
-        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "v1/user")
-                .newBuilder()
-                .addQueryParameter("user", uuid.toString())
-                .addQueryParameter("type", "uuid")
-                .build();
+    fun isSafetyFlagged(uuid: UUID): FlagDetail? {
+        val httpUrl = (ConfigProperty.SAFETY_API_URL.toString() + "v1/user").toHttpUrl()
+            .newBuilder()
+            .addQueryParameter("user", uuid.toString())
+            .addQueryParameter("type", "uuid")
+            .build()
 
-        Request request = new Request.Builder()
-                .url(httpUrl)
-                .addHeader("Authorization", ConfigProperty.SAFETY_API_KEY.getValue())
-                .get()
-                .build();
+        val request = Request.Builder()
+            .url(httpUrl)
+            .addHeader("Authorization", ConfigProperty.SAFETY_API_KEY.value!!)
+            .get()
+            .build()
 
-        return executeRequest(request, s -> fromJson(s, JsonObject.class))
-                .map(this::fromSafetyResponse);
+        return executeRequest(request) { s: String? ->
+            fromJson(
+                s!!,
+                JsonObject::class.java
+            )
+        }?.let { rootObject: JsonObject -> this.fromSafetyResponse(rootObject) }
     }
 
-    public Optional<FlagDetail> isSafetyFlagged(Long id) {
-        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.SAFETY_API_URL + "v1/user")
-                .newBuilder()
-                .addQueryParameter("user", String.valueOf(id))
-                .addQueryParameter("type", "discord")
-                .build();
+    fun isSafetyFlagged(id: Long): FlagDetail? {
+        val httpUrl: HttpUrl = (ConfigProperty.SAFETY_API_URL.toString() + "v1/user").toHttpUrl()
+            .newBuilder()
+            .addQueryParameter("user", id.toString())
+            .addQueryParameter("type", "discord")
+            .build()
 
-        Request request = new Request.Builder()
-                .url(httpUrl)
-                .addHeader("Authorization", ConfigProperty.SAFETY_API_KEY.getValue())
-                .get()
-                .build();
+        val request = Request.Builder()
+            .url(httpUrl)
+            .addHeader("Authorization", ConfigProperty.SAFETY_API_KEY.value!!)
+            .get()
+            .build()
 
-        return executeRequest(request, s -> fromJson(s, JsonObject.class))
-                .map(this::fromSafetyResponse);
+        return executeRequest(request) { s: String? ->
+            fromJson(
+                s!!,
+                JsonObject::class.java
+            )
+        }?.let { rootObject: JsonObject -> this.fromSafetyResponse(rootObject) }
     }
 
-    public FlagDetail fromSafetyResponse(JsonObject rootObject) {
-        JsonObject dataObject = rootObject.getAsJsonObject("data");
+    fun fromSafetyResponse(rootObject: JsonObject): FlagDetail {
+        val dataObject = rootObject.getAsJsonObject("data")
 
-        boolean flagged = dataObject.has("ratter") || dataObject.has("scammer");
+        val flagged = dataObject.has("ratter") || dataObject.has("scammer")
 
-        FlagDetail.Builder builder = FlagDetail.FlagDetailBuilder.builder()
-                .flagged(flagged);
+        val builder = builder()
+            .flagged(flagged)
 
-        JsonObject detailObject = null;
+        var detailObject: JsonObject? = null
         if (dataObject.has("ratter")) {
-            detailObject = dataObject.getAsJsonObject("ratter");
+            detailObject = dataObject.getAsJsonObject("ratter")
         } else if (dataObject.has("scammer")) {
-            detailObject = dataObject.getAsJsonObject("scammer");
+            detailObject = dataObject.getAsJsonObject("scammer")
         }
 
         if (detailObject != null) {
-            builder.reason(detailObject.getAsJsonPrimitive("reason").getAsString());
+            builder.reason(detailObject.getAsJsonPrimitive("reason").asString)
 
             if (detailObject.has("evidence")) {
-                List<String> evidences = new ArrayList<>();
+                val evidences: MutableList<String> = ArrayList()
                 detailObject.getAsJsonArray("evidence")
-                        .forEach(jsonElement -> evidences.add(jsonElement.getAsString()));
+                    .forEach(Consumer { jsonElement: JsonElement -> evidences.add(jsonElement.asString) })
 
-                builder.evidence(String.join(", ", evidences));
+                builder.evidence(java.lang.String.join(", ", evidences))
             }
 
             if (detailObject.has("moderator")) {
                 try {
-                    builder.staff(detailObject.getAsJsonPrimitive("moderator").getAsLong());
-                }
-                catch (NumberFormatException ignored) {
+                    builder.staff(detailObject.getAsJsonPrimitive("moderator").asLong)
+                } catch (ignored: NumberFormatException) {
                     //ignored since this basically only applies if the id isn't a number, meaning this shouldn't be set
                 }
             }
         }
 
-        return builder.build();
+        return builder.build()
     }
 
-    public Optional<FlagDetail> isJerryFlagged(UUID uuid) {
-        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.JERRY_API_URL + "v1/scammers/" + uuid);
+    fun isJerryFlagged(uuid: UUID): FlagDetail? {
+        val httpUrl: HttpUrl = (ConfigProperty.JERRY_API_URL.toString() + "v1/scammers/" + uuid).toHttpUrl()
 
-        Request request = new Request.Builder()
-                .url(httpUrl)
-                .addHeader("Authorization", "Bearer " + ConfigProperty.JERRY_API_KEY)
-                .get()
-                .build();
+        val request = Request.Builder()
+            .url(httpUrl)
+            .addHeader("Authorization", "Bearer " + ConfigProperty.JERRY_API_KEY)
+            .get()
+            .build()
 
-        return executeRequest(request, s -> fromJson(s, JsonObject.class))
-                .filter(jsonObject -> jsonObject.get("success").getAsBoolean())
-                .map(this::fromJerryResponse);
+        return executeRequest(request) { s: String? ->
+            fromJson(
+                s!!,
+                JsonObject::class.java
+            )
+        }?.takeIf { it.get("success").asBoolean }
+            ?.let { rootObject: JsonObject -> this.fromJerryResponse(rootObject) }
     }
 
-    public Optional<FlagDetail> isJerryFlagged(Long id) {
-        HttpUrl httpUrl = HttpUrl.get(ConfigProperty.JERRY_API_URL + "v1/scammers/discord/" + id);
+    fun isJerryFlagged(id: Long): FlagDetail? {
+        val httpUrl = (ConfigProperty.JERRY_API_URL.toString() + "v1/scammers/discord/" + id).toHttpUrl()
 
-        Request request = new Request.Builder()
-                .url(httpUrl)
-                .addHeader("Authorization", "Bearer " + ConfigProperty.JERRY_API_KEY)
-                .get()
-                .build();
+        val request = Request.Builder()
+            .url(httpUrl)
+            .addHeader("Authorization", "Bearer " + ConfigProperty.JERRY_API_KEY)
+            .get()
+            .build()
 
-        return executeRequest(request, s -> fromJson(s, JsonObject.class))
-                .filter(jsonObject -> jsonObject.get("success").getAsBoolean())
-                .map(this::fromJerryResponse);
+        return executeRequest(request) { s: String? ->
+            fromJson(
+                s!!,
+                JsonObject::class.java
+            )
+        }?.takeIf { jsonObject -> jsonObject.get("success").asBoolean }
+            ?.let { rootObject: JsonObject -> this.fromJerryResponse(rootObject) }
     }
 
-    public FlagDetail fromJerryResponse(JsonObject rootObject) {
-        FlagDetail.Builder builder = FlagDetail.FlagDetailBuilder.builder()
-                .flagged(rootObject.get("scammer").getAsBoolean());
+    fun fromJerryResponse(rootObject: JsonObject): FlagDetail {
+        val builder = builder()
+            .flagged(rootObject["scammer"].asBoolean)
 
-        if (rootObject.has("details") && rootObject.get("details").isJsonObject()) {
-            JsonObject detailObject = rootObject.getAsJsonObject("details");
+        if (rootObject.has("details") && rootObject["details"].isJsonObject) {
+            val detailObject = rootObject.getAsJsonObject("details")
 
             if (detailObject.has("reason")) {
-                builder.reason(detailObject.getAsJsonPrimitive("reason").getAsString());
+                builder.reason(detailObject.getAsJsonPrimitive("reason").asString)
             }
 
             if (detailObject.has("staff")) {
                 try {
-                    builder.staff(detailObject.getAsJsonPrimitive("staff").getAsLong());
-                }
-                catch (NumberFormatException ignored) {
+                    builder.staff(detailObject.getAsJsonPrimitive("staff").asLong)
+                } catch (ignored: NumberFormatException) {
                     //ignored since this basically only applies if the id is redacted, meaning this shouldn't be set
                 }
             }
 
             if (detailObject.has("evidence")) {
-                String evidence = detailObject.getAsJsonPrimitive("evidence").getAsString();
-                if (!evidence.equalsIgnoreCase("<redacted>")) {
-                    builder.evidence(evidence);
+                val evidence = detailObject.getAsJsonPrimitive("evidence").asString
+                if (!evidence.equals("<redacted>", ignoreCase = true)) {
+                    builder.evidence(evidence)
                 }
             }
         }
 
-        return builder.build();
+        return builder.build()
     }
 }

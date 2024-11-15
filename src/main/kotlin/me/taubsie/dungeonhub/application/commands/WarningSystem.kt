@@ -324,10 +324,8 @@ class WarningSystem : Extension() {
                             val attachmentRequest =
                                 Request.Builder().url(arguments.attachment!!.url.toHttpUrl()).build()
 
-                            val attachmentData =
-                                DungeonHubConnection.getInstance()
-                                    .executeRawRequest(attachmentRequest)
-                                    .orElseThrow { CommandExecutionException("Couldn't read file data.") }
+                            val attachmentData = DungeonHubConnection.executeRawRequest(attachmentRequest)
+                                ?: throw CommandExecutionException("Couldn't read file data.")
 
                             val uri = ContentConnection.uploadFile(attachmentData)
                                 ?: throw CommandExecutionException("Couldn't upload file data to the cdn.")

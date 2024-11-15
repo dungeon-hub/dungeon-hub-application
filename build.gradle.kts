@@ -65,6 +65,9 @@ dependencies {
 
 kotlin {
     jvmToolchain(17)
+    compilerOptions {
+        freeCompilerArgs.add("-Xjvm-default=all")
+    }
 }
 
 application {

@@ -407,13 +407,10 @@ class MessageListener : Extension() {
 
         val ignOptional = DiscordUserConnection.getLinkedById(user.id.value.toLong())
             ?.minecraftId
-            ?.let { MojangConnection.getInstance().getNameByUUID(it) }
+            ?.let { MojangConnection.getNameByUUID(it) }
             ?: (lines.firstOrNull { s -> s.startsWith("IGN: ") || s.startsWith("- **IGN**: ") || s.startsWith("**IGN**: ") })
             ?: (user.asMemberOrNull(event.guildId!!)?.effectiveName)
-
-        if (ignOptional == null) {
-            return
-        }
+            ?: return
 
         val ign = ignOptional
             .replace("IGN: ", "")

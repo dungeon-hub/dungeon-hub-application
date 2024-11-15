@@ -19,32 +19,27 @@ enum class FlaggingApi(
 ) {
     JERRY(
         "Jerry",
-        { uuid: UUID? ->
-            FlaggingConnection.getInstance().isJerryFlagged(uuid)
-                .orElse(null)
+        { uuid: UUID ->
+            FlaggingConnection.isJerryFlagged(uuid)
         },
-        { discordId: Long? ->
-            FlaggingConnection.getInstance().isJerryFlagged(discordId)
-                .orElse(null)
+        { discordId: Long ->
+            FlaggingConnection.isJerryFlagged(discordId)
         }
     ),
     HYPIXEL_SAFETY(
         "Hypixel Safety",
-        { uuid: UUID? ->
-            FlaggingConnection.getInstance().isSafetyFlagged(uuid)
-                .orElse(null)
+        { uuid: UUID ->
+            FlaggingConnection.isSafetyFlagged(uuid)
         },
-        { discordId: Long? ->
-            FlaggingConnection.getInstance().isSafetyFlagged(discordId)
-                .orElse(null)
+        { discordId: Long ->
+            FlaggingConnection.isSafetyFlagged(discordId)
         }
     ),
     BLOCK_GAME(
         "Block Game Bot",
         { _ -> null },
-        { discordId: Long? ->
-            FlaggingConnection.getInstance().isBlockGameFlagged(discordId)
-                .orElse(null)
+        { discordId: Long ->
+            FlaggingConnection.isBlockGameFlagged(discordId)
         }
     );
 

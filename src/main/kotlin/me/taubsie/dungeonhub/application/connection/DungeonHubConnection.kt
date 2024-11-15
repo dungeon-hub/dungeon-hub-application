@@ -1,126 +1,122 @@
-package me.taubsie.dungeonhub.application.connection;
+package me.taubsie.dungeonhub.application.connection
 
-import lombok.Getter;
-import me.taubsie.dungeonhub.application.config.ConfigProperty;
-import net.dungeonhub.connection.AuthorizationConnection;
-import okhttp3.*;
-import okio.Buffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import me.taubsie.dungeonhub.application.config.ConfigProperty
+import net.dungeonhub.connection.AuthorizationConnection.apiToken
+import net.dungeonhub.structure.MappingFunction
+import okhttp3.*
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaType
+import okio.Buffer
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.io.IOException
+import java.nio.charset.StandardCharsets
+import java.time.Duration
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.Optional;
+object DungeonHubConnection {
+    private val logger: Logger = LoggerFactory.getLogger(DungeonHubConnection::class.java)
+    private const val API_PREFIX = "api/v1/"
+    private const val AUTHORIZATION = "Authorization"
 
-@Getter
-public class DungeonHubConnection {
-    private static final Logger logger = LoggerFactory.getLogger(DungeonHubConnection.class);
-    private static final String API_PREFIX = "api/v1/";
-    private static final String AUTHORIZATION = "Authorization";
+    val httpClient = OkHttpClient.Builder()
+        .retryOnConnectionFailure(true)
+        .connectTimeout(Duration.ofSeconds(30))
+        .readTimeout(Duration.ofSeconds(30))
+        .callTimeout(Duration.ofSeconds(30))
+        .writeTimeout(Duration.ofSeconds(30))
+        .build()
 
-    private static DungeonHubConnection instance;
-
-    private final OkHttpClient httpClient;
-
-    private DungeonHubConnection() {
-        httpClient = new OkHttpClient.Builder()
-                .retryOnConnectionFailure(true)
-                .connectTimeout(Duration.ofSeconds(30))
-                .readTimeout(Duration.ofSeconds(30))
-                .callTimeout(Duration.ofSeconds(30))
-                .writeTimeout(Duration.ofSeconds(30))
-                .build();
-    }
-
-    public static synchronized DungeonHubConnection getInstance() {
-        if (instance == null) {
-            instance = new DungeonHubConnection();
-        }
-
-        return instance;
-    }
-
-    public <T> Optional<T> executeRequest(Request request, MappingFunction<String, T> function) {
-        return executeRequest(request).map(s -> {
+    fun <T> executeRequest(request: Request, function: MappingFunction<String, T>): T? {
+        return executeRequest(request)?.let { s: String ->
             try {
-                return function.apply(s);
+                return@let function.apply(s)
+            } catch (e: IOException) {
+                return@let null
             }
-            catch (IOException e) {
-                return null;
-            }
-        });
+        }
     }
 
-    public Optional<byte[]> executeRawRequest(Request request) {
-        try (Response response = getHttpClient().newCall(request).execute()) {
-            if (response.isSuccessful()) {
-                logger.debug("Executed request to '{}' successfully.", request.url());
+    fun executeRawRequest(request: Request): ByteArray? {
+        try {
+            httpClient.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    logger.debug("Executed request to '{}' successfully.", request.url)
 
-                return Optional.ofNullable(response.body()).map(responseBody -> {
-                    try {
-                        return responseBody.bytes();
+                    return response.body?.let { responseBody: ResponseBody ->
+                        try {
+                            responseBody.bytes()
+                        } catch (ioException: IOException) {
+                            logger.error(
+                                null,
+                                ioException
+                            )
+                            null
+                        }
                     }
-                    catch (IOException ioException) {
-                        logger.error(null, ioException);
-                        return null;
-                    }
-                });
-            } else if (response.code() == 404) {
-                logger.debug("Executed request to '{}' returned a 404.", request.url());
+                } else if (response.code == 404) {
+                    logger.debug("Executed request to '{}' returned a 404.", request.url)
 
-                return Optional.empty();
-            } else {
-                String body = getBody(request);
+                    return null
+                } else {
+                    val body = getBody(request)
 
-                logger.error("Request to '{}' wasn't successful. Body:\n{}\nResponse: {}\n{}",
-                        request.url(),
+                    logger.error(
+                        "Request to '{}' wasn't successful. Body:\n{}\nResponse: {}\n{}",
+                        request.url,
                         body,
-                        response.code(),
-                        response.body() != null ? response.body().string() : null);
+                        response.code,
+                        if (response.body != null) response.body!!.string() else null
+                    )
+                }
             }
+        } catch (ioException: IOException) {
+            logger.error(null, ioException)
         }
-        catch (IOException ioException) {
-            logger.error(null, ioException);
-        }
-        return Optional.empty();
+        return null
     }
 
-    public Optional<String> executeRequest(Request request) {
-        return executeRawRequest(request).map(bytes -> new String(bytes, StandardCharsets.UTF_8));
-    }
-
-    public String getBody(Request request) {
-        Request newRequest = request.newBuilder().build();
-
-        if (newRequest.body() == null) {
-            return null;
-        }
-
-        try (Buffer buffer = new Buffer()) {
-            newRequest.body().writeTo(buffer);
-            return buffer.readUtf8();
-        }
-        catch (IOException | NullPointerException exception) {
-            return null;
+    fun executeRequest(request: Request): String? {
+        return executeRawRequest(request)?.let { bytes: ByteArray? ->
+            String(
+                bytes!!, StandardCharsets.UTF_8
+            )
         }
     }
 
-    public Request.Builder getApiRequest(String uri) {
-        return getApiRequest(getApiUrl(uri).build());
+    fun getBody(request: Request): String? {
+        val newRequest = request.newBuilder().build()
+
+        if (newRequest.body == null) {
+            return null
+        }
+
+        try {
+            Buffer().use { buffer ->
+                newRequest.body!!.writeTo(buffer)
+                return buffer.readUtf8()
+            }
+        } catch (exception: IOException) {
+            return null
+        } catch (exception: NullPointerException) {
+            return null
+        }
     }
 
-    public Request.Builder getApiRequest(HttpUrl httpUrl) {
-        MediaType mediaType = MediaType.get("multipart/form-data; boundary=---011000010111000001101001");
-
-        return new Request.Builder()
-                .url(httpUrl)
-                .addHeader("Content-Type", mediaType.toString())
-                .addHeader(AUTHORIZATION, "Bearer " + AuthorizationConnection.INSTANCE.getApiToken());
+    fun getApiRequest(uri: String): Request.Builder {
+        return getApiRequest(getApiUrl(uri).build())
     }
 
-    public HttpUrl.Builder getApiUrl(String uri) {
-        return HttpUrl.get(ConfigProperty.API_URL + API_PREFIX + uri)
-                .newBuilder();
+    fun getApiRequest(httpUrl: HttpUrl): Request.Builder {
+        val mediaType: MediaType = "multipart/form-data; boundary=---011000010111000001101001".toMediaType()
+
+        return Request.Builder()
+            .url(httpUrl)
+            .addHeader("Content-Type", mediaType.toString())
+            .addHeader(AUTHORIZATION, "Bearer " + apiToken)
+    }
+
+    fun getApiUrl(uri: String): HttpUrl.Builder {
+        return (ConfigProperty.API_URL.toString() + API_PREFIX + uri).toHttpUrl()
+            .newBuilder()
     }
 }
