@@ -43,6 +43,7 @@ dependencies {
     implementation("me.nullicorn:Nedit:2.2.0")
     implementation("com.google.zxing:javase:3.5.2")
     implementation("com.google.guava:guava:33.0.0-jre")
+    implementation("org.mnode.ical4j:ical4j:4.0.5")
 
     //HTTP Client
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
@@ -61,6 +62,11 @@ dependencies {
     //Annotations
     annotationProcessor("org.projectlombok:lombok:1.18.28")
     annotationProcessor("org.apache.logging.log4j:log4j-core:2.20.0")
+
+    //Testing
+    testImplementation(platform("org.junit:junit-bom:5.10.0"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation(kotlin("test"))
 }
 
 kotlin {
@@ -82,11 +88,6 @@ tasks.withType<Javadoc> {
     options.encoding = "UTF-8"
 }
 
-//TODO remove this once all classes are written in Kotlin
-sourceSets {
-    main {
-        java {
-            srcDir("src")
-        }
-    }
+tasks.test {
+    useJUnitPlatform()
 }
