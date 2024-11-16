@@ -51,7 +51,7 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
         if (logEvent.thrown != null) {
             var description = getExceptionMessage(logEvent.thrown)
 
-            if (description != null && description.length > 4000) {
+            if (description != null && description.length > 3000) {
                 description = ContentConnection.uploadFile(description.toByteArray(StandardCharsets.UTF_8))
                     ?.let { ContentConnection.getCdnUrl(it).toString() }
                     ?: description
