@@ -452,6 +452,7 @@ class LinkingSystem : Extension() {
 
         event<MemberJoinEvent> {
             action {
+                //TODO Remove once Hypixel / Mojang API is cached
                 DiscordUserConnection.getLinkedById(event.member.id.value.toLong()) ?: return@action
 
                 thread(start = true) {
