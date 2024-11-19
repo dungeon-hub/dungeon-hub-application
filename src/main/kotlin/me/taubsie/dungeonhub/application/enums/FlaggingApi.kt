@@ -37,7 +37,7 @@ enum class FlaggingApi(
     ),
     BLOCK_GAME(
         "Block Game Bot",
-        { _ -> null },
+        { _ -> FlagDetail.Builder().flagged(false).build() },
         { discordId: Long ->
             FlaggingConnection.isBlockGameFlagged(discordId)
         }

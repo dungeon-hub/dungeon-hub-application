@@ -4,6 +4,8 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import me.taubsie.dungeonhub.application.config.ConfigProperty
+import me.taubsie.dungeonhub.application.connection.DungeonHubConnection.getBody
+import me.taubsie.dungeonhub.application.connection.DungeonHubConnection.httpClient
 import me.taubsie.dungeonhub.application.enums.FlaggingApi
 import me.taubsie.dungeonhub.application.misc.FlagDetail
 import me.taubsie.dungeonhub.application.misc.FlagDetail.FlagDetailBuilder.builder
@@ -11,8 +13,10 @@ import me.taubsie.dungeonhub.application.misc.FlagResponse
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
+import okhttp3.ResponseBody
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.io.IOException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
@@ -39,7 +43,7 @@ object FlaggingConnection : Connection {
             .toList()
     }
 
-    fun isBlockGameFlagged(id: Long): FlagDetail? {
+    fun isBlockGameFlagged(id: Long): FlagDetail {
         if (lastBlockGameRefresh == null || blockGameData == null || lastBlockGameRefresh!!.isBefore(
                 Instant.now().minus(5, ChronoUnit.MINUTES)
             )
@@ -47,15 +51,15 @@ object FlaggingConnection : Connection {
             refreshBlockGameData()
         }
 
-        return blockGameData!!.firstOrNull { jsonObject: JsonObject ->
+        return blockGameData!!.firstOrNull { jsonObject ->
             jsonObject.has("id")
                     && jsonObject["id"].isJsonPrimitive
                     && jsonObject.getAsJsonPrimitive("id").asLong == id
-        }?.let { blockGameData: JsonObject ->
+        }?.let { blockGameData ->
             this.loadFlagDetailFromBlockGameData(
                 blockGameData
             )
-        }
+        } ?: FlagDetail.Builder().flagged(false).build()
     }
 
     private fun loadFlagDetailFromBlockGameData(blockGameData: JsonObject): FlagDetail {
@@ -124,12 +128,46 @@ object FlaggingConnection : Connection {
             .get()
             .build()
 
-        return executeRequest(request) { s: String? ->
-            fromJson(
-                s!!,
-                JsonObject::class.java
-            )
-        }?.let { rootObject: JsonObject -> this.fromSafetyResponse(rootObject) }
+        try {
+            httpClient.newCall(request).execute().use { response ->
+                return if (response.isSuccessful) {
+                    logger.debug("Executed Safety-UUID request to '{}' successfully.", request.url)
+
+                    response.body?.let { responseBody: ResponseBody ->
+                        fromJson(
+                            try {
+                                responseBody.string()
+                            } catch (ioException: IOException) {
+                                logger.error(
+                                    null,
+                                    ioException
+                                )
+                                null
+                            }!!,
+                            JsonObject::class.java
+                        ).let { rootObject: JsonObject -> this.fromSafetyResponse(rootObject) }
+                    }
+                } else if (response.code == 404) {
+                    logger.debug("Executed Safety-UUID to '{}' returned a 404.", request.url)
+
+                    FlagDetail.Builder().flagged(false).build()
+                } else {
+                    val body = getBody(request)
+
+                    logger.error(
+                        "Safety-UUID to '{}' wasn't successful. Body:\n{}\nResponse: {}\n{}",
+                        request.url,
+                        body,
+                        response.code,
+                        if (response.body != null) response.body!!.string() else null
+                    )
+
+                    null
+                }
+            }
+        } catch (_: IOException) {
+            return null
+        }
     }
 
     fun isSafetyFlagged(id: Long): FlagDetail? {
@@ -145,12 +183,46 @@ object FlaggingConnection : Connection {
             .get()
             .build()
 
-        return executeRequest(request) { s: String? ->
-            fromJson(
-                s!!,
-                JsonObject::class.java
-            )
-        }?.let { rootObject: JsonObject -> this.fromSafetyResponse(rootObject) }
+        try {
+            httpClient.newCall(request).execute().use { response ->
+                return if (response.isSuccessful) {
+                    logger.debug("Executed Safety-id request to '{}' successfully.", request.url)
+
+                    response.body?.let { responseBody: ResponseBody ->
+                        fromJson(
+                            try {
+                                responseBody.string()
+                            } catch (ioException: IOException) {
+                                logger.error(
+                                    null,
+                                    ioException
+                                )
+                                null
+                            }!!,
+                            JsonObject::class.java
+                        ).let { rootObject: JsonObject -> this.fromSafetyResponse(rootObject) }
+                    }
+                } else if (response.code == 404) {
+                    logger.debug("Executed Safety-id request to '{}' returned a 404.", request.url)
+
+                    FlagDetail.Builder().flagged(false).build()
+                } else {
+                    val body = getBody(request)
+
+                    logger.error(
+                        "Safety-id request to '{}' wasn't successful. Body:\n{}\nResponse: {}\n{}",
+                        request.url,
+                        body,
+                        response.code,
+                        if (response.body != null) response.body!!.string() else null
+                    )
+
+                    null
+                }
+            }
+        } catch (_: IOException) {
+            return null
+        }
     }
 
     fun fromSafetyResponse(rootObject: JsonObject): FlagDetail {

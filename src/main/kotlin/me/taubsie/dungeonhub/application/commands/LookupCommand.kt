@@ -110,15 +110,36 @@ class LookupCommand : Extension() {
 
         val flagResponses: List<FlagResponse> =
             FlaggingConnection.isFlagged(uuid, target.id.value.toLong())
-                .stream()
-                .filter { flagResponse: FlagResponse -> flagResponse.uuid != null || flagResponse.discord != null }
-                .filter { flagResponse: FlagResponse ->
-                    ((flagResponse.uuid != null && flagResponse.uuid.flagged)
-                            || (flagResponse.discord != null && flagResponse.discord.flagged))
-                }
-                .toList()
 
-        if (flagResponses.isNotEmpty()) {
+        val flagged = flagResponses
+            .filter { flagResponse: FlagResponse -> flagResponse.uuid != null || flagResponse.discord != null }
+            .filter { flagResponse: FlagResponse ->
+                ((flagResponse.uuid != null && flagResponse.uuid.flagged)
+                        || (flagResponse.discord != null && flagResponse.discord.flagged))
+            }
+
+        val downFlaggedServices = flagResponses.filter {
+            it.uuid == null || it.discord == null
+        }
+
+        if (downFlaggedServices.isNotEmpty()) {
+            addEmbed {
+                footer = null
+                timestamp = null
+                color(EmbedColor.Negative)
+                description = "**The following services are currently unreachable, which could cause false negatives**:\n\n${
+                    downFlaggedServices.joinToString(separator = "\n", prefix = "- ") {
+                        "${it.name} (${
+                            if (it.uuid == null) {
+                                if (it.discord == null) "UUID, discord id" else "UUID"
+                            } else "discord id"
+                        })"
+                    }
+                }"
+            }
+        }
+
+        if (flagged.isNotEmpty()) {
             addEmbed {
                 color(EmbedColor.Negative)
                 description =
@@ -129,7 +150,7 @@ class LookupCommand : Extension() {
                             ""
                     }.\n## **It is likely not safe to interact with them.**\n\n${
                         ApplicationService.formatFlagDetails(
-                            flagResponses
+                            flagged
                         )
                     }"
             }
