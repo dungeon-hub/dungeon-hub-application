@@ -127,7 +127,7 @@ class LookupCommand : Extension() {
                 footer = null
                 timestamp = null
                 color(EmbedColor.Negative)
-                description = "**The following services are currently unreachable, which could cause false negatives**:\n\n${
+                description = "**The following services are currently unreachable, which could cause false negatives**:\n${
                     downFlaggedServices.joinToString(separator = "\n", prefix = "- ") {
                         "${it.name} (${
                             if (it.uuid == null) {
