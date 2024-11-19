@@ -350,9 +350,9 @@ object ApplicationService {
         val embed = embed
 
         embed.title = if ((userToCheck.id != user.id && server != null)) {
-            server.getMember(userToCheck.id).effectiveName + "'s score${if (carryCount != null) " from $carryCount carries" else ""}:"
+            server.getMember(userToCheck.id).effectiveName + "'s score${if (carryCount != null) " from $carryCount total carries" else ""}:"
         } else {
-            "Your score${if (carryCount != null) " from $carryCount carries" else ""}:"
+            "Your score${if (carryCount != null) " from $carryCount total carries" else ""}:"
         }
         embed.color = EmbedColor.Default.color
 
