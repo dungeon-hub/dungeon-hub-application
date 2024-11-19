@@ -37,11 +37,31 @@ enum class FlaggingApi(
     ),
     BLOCK_GAME(
         "Block Game Bot",
-        { _ -> FlagDetail.Builder().flagged(false).build() },
+        null,
         { discordId: Long ->
             FlaggingConnection.isBlockGameFlagged(discordId)
         }
     );
+
+    class JerryData(val success: Boolean, val scammer: Boolean, val details: JerryDetails?) {
+        class JerryDetails(
+            val reason: String?,
+            val staff: String?,
+            val evidence: String?
+        )
+    }
+
+    class HypixelSafetyDataContainer(val data: HypixelSafetyData) {
+        class HypixelSafetyData(val ratter: HypixelSafetyDetail?, val scammer: HypixelSafetyDetail?) {
+            class HypixelSafetyDetail(
+                val reason: String,
+                val evidence: List<String>?,
+                val moderator: String?
+            )
+        }
+    }
+
+    class BlockGameData(val id: Long, val scammed: String?, val method: String?)
 
     private val logger: Logger = LoggerFactory.getLogger(FlaggingApi::class.java)
 
@@ -66,7 +86,9 @@ enum class FlaggingApi(
 
                 return@runBlocking FlagResponse(
                     displayName,
+                    uuid != null && uuidFlagged != null,
                     uuidFlagged?.await(),
+                    id != null && discordIdFlagged != null,
                     discordIdFlagged?.await(),
                 )
             }

@@ -35,47 +35,7 @@ class LookupCommand : Extension() {
 
                 action {
                     respond {
-                        val uuid = MojangConnection.getUUIDByName(arguments.ign)
-
-                        val discordId = DiscordUserConnection.findUserByUuid(uuid)?.id
-
-                        val flagResponses: List<FlagResponse> =
-                            FlaggingConnection.isFlagged(uuid, discordId)
-                                .stream()
-                                .filter { flagResponse: FlagResponse -> flagResponse.uuid != null || flagResponse.discord != null }
-                                .filter { flagResponse: FlagResponse ->
-                                    ((flagResponse.uuid != null && flagResponse.uuid.flagged)
-                                            || (flagResponse.discord != null && flagResponse.discord.flagged))
-                                }
-                                .toList()
-
-                        if (flagResponses.isEmpty()) {
-                            addEmbed {
-                                color(EmbedColor.Positive)
-                                description = "The given user (${arguments.ign})${
-                                    if (discordId != null)
-                                        " and the discord user they're linked to (<@$discordId>) are"
-                                    else
-                                        " is"
-                                } not flagged"
-                            }
-                            return@respond
-                        }
-
-                        addEmbed {
-                            color(EmbedColor.Negative)
-                            description =
-                                "The given user (${arguments.ign}) **is flagged**${
-                                    if (discordId != null)
-                                        ", or the user they're linked to (<@$discordId>) **is flagged**"
-                                    else
-                                        ""
-                                }.\n## **It is likely not safe to interact with them.**\n\n${
-                                    ApplicationService.formatFlagDetails(
-                                        flagResponses
-                                    )
-                                }"
-                        }
+                        respondToLookup(null, arguments.ign)()
                     }
                 }
             }
@@ -86,7 +46,7 @@ class LookupCommand : Extension() {
 
                 action {
                     respond {
-                        respondToLookupUser(arguments.user)()
+                        respondToLookup(arguments.user, null)()
                     }
                 }
             }
@@ -97,75 +57,83 @@ class LookupCommand : Extension() {
 
             action {
                 respond {
-                    respondToLookupUser(targetUsers.first())()
+                    respondToLookup(targetUsers.first(), null)()
                 }
             }
         }
     }
 
-    private fun respondToLookupUser(target: UserBehavior): suspend FollowupMessageCreateBuilder.() -> Unit = {
-        val uuid = DiscordUserConnection.getLinkedById(target.id.value.toLong())?.minecraftId
+    private fun respondToLookup(target: UserBehavior?, ign: String?): suspend FollowupMessageCreateBuilder.() -> Unit =
+        respond@{
+            if (target == null && ign == null) {
+                addEmbed {
+                    color(EmbedColor.Negative)
+                    description = "No user to lookup supplied!"
+                }
 
-        val ign = uuid?.let { MojangConnection.getNameByUUID(uuid) }
-
-        val flagResponses: List<FlagResponse> =
-            FlaggingConnection.isFlagged(uuid, target.id.value.toLong())
-
-        val flagged = flagResponses
-            .filter { flagResponse: FlagResponse -> flagResponse.uuid != null || flagResponse.discord != null }
-            .filter { flagResponse: FlagResponse ->
-                ((flagResponse.uuid != null && flagResponse.uuid.flagged)
-                        || (flagResponse.discord != null && flagResponse.discord.flagged))
+                return@respond
             }
 
-        val downFlaggedServices = flagResponses.filter {
-            it.uuid == null || it.discord == null
-        }
+            val uuid =
+                target?.let { target -> DiscordUserConnection.getLinkedById(target.id.value.toLong())?.minecraftId }
+                    ?: ign?.let { ign -> MojangConnection.getUUIDByName(ign) }
 
-        if (downFlaggedServices.isNotEmpty()) {
+            val actualIgn = uuid?.let { MojangConnection.getNameByUUID(uuid) }
+            val actualTarget = target?.id?.value?.toLong() ?: uuid?.let { DiscordUserConnection.findUserByUuid(it)?.id }
+
+            val flagResponses = FlaggingConnection.isFlagged(uuid, actualTarget)
+
+            val flagged = flagResponses
+                .filter { flagResponse: FlagResponse -> flagResponse.uuid != null || flagResponse.discord != null }
+                .filter { flagResponse: FlagResponse ->
+                    ((flagResponse.uuid != null && flagResponse.uuid.flagged)
+                            || (flagResponse.discord != null && flagResponse.discord.flagged))
+                }
+
+            val downedServices = flagResponses.filter {
+                (it.uuidGiven && it.uuid == null) ||
+                        (it.discordGiven && it.discord == null)
+            }
+
+            if (downedServices.isNotEmpty()) {
+                addEmbed {
+                    footer = null
+                    timestamp = null
+                    color(EmbedColor.Negative)
+                    description =
+                        "**The following services are currently unreachable, which could cause false negatives**:\n${
+                            downedServices.joinToString(separator = "\n- ", prefix = "- ") {
+                                "${it.name} (${
+                                    if (it.uuid == null) {
+                                        if (it.discord == null) "UUID, discord id" else "UUID"
+                                    } else "discord id"
+                                })"
+                            }
+                        }"
+                }
+            }
+
+            if (flagged.isNotEmpty()) {
+                addEmbed {
+                    footer = null
+                    timestamp = null
+                    color(EmbedColor.Negative)
+                    description = formatDescription(flagged.isNotEmpty(), target != null, actualTarget, actualIgn)
+                }
+            } else {
+                addEmbed {
+                    footer = null
+                    timestamp = null
+                    color(EmbedColor.Positive)
+                    description = formatDescription(flagged.isNotEmpty(), target != null, actualTarget, actualIgn)
+                }
+            }
+
             addEmbed {
-                footer = null
-                timestamp = null
-                color(EmbedColor.Negative)
-                description = "**The following services are currently unreachable, which could cause false negatives**:\n${
-                    downFlaggedServices.joinToString(separator = "\n", prefix = "- ") {
-                        "${it.name} (${
-                            if (it.uuid == null) {
-                                if (it.discord == null) "UUID, discord id" else "UUID"
-                            } else "discord id"
-                        })"
-                    }
-                }"
+                color(if (flagged.isNotEmpty()) EmbedColor.Negative else if (downedServices.isNotEmpty()) EmbedColor.Information else EmbedColor.Positive)
+                fields = ApplicationService.formatTotalFlagDetails(flagResponses)
             }
         }
-
-        if (flagged.isNotEmpty()) {
-            addEmbed {
-                color(EmbedColor.Negative)
-                description =
-                    "The given user (${target.mention}) **is flagged**${
-                        if (ign != null)
-                            ", or the user they're linked to ($ign) **is flagged**"
-                        else
-                            ""
-                    }.\n## **It is likely not safe to interact with them.**\n\n${
-                        ApplicationService.formatFlagDetails(
-                            flagged
-                        )
-                    }"
-            }
-        } else {
-            addEmbed {
-                color(EmbedColor.Positive)
-                description = "The given user (${target.mention})${
-                    if (ign != null)
-                        " and the minecraft user they're linked to ($ign) are"
-                    else
-                        " is"
-                } not flagged"
-            }
-        }
-    }
 
     inner class LookupUserArguments : Arguments() {
         val user by user {
@@ -179,6 +147,42 @@ class LookupCommand : Extension() {
             name = "ign"
             description = "The IGN of the player."
             minLength = 2
+        }
+    }
+
+    fun formatDescription(flagged: Boolean, discordGiven: Boolean, target: Long?, actualIgn: String?): String {
+        return if (flagged) {
+            (if (discordGiven) {
+                "The given user (<@$target>) **is flagged**${
+                    if (actualIgn != null)
+                        ", or the player they're linked to ($actualIgn) **is flagged**"
+                    else
+                        ""
+                }"
+            } else {
+                "The given player ($actualIgn) **is flagged**${
+                    if (target != null)
+                        ", or the user they're linked to (<@$target>) **is flagged**"
+                    else
+                        ""
+                }"
+            }) + ".\n## **It is likely not safe to interact with them.**"
+        } else {
+            (if (discordGiven) {
+                "The given user (<@$target>)${
+                    if (actualIgn != null)
+                        " and the minecraft user they're linked to ($actualIgn) are"
+                    else
+                        " is"
+                }"
+            } else {
+                "The given player ($actualIgn)${
+                    if (target != null)
+                        ", or the user they're linked to (<@$target>) are"
+                    else
+                        " is"
+                }"
+            }) + " not flagged"
         }
     }
 }

@@ -130,7 +130,7 @@ class MessageListener : Extension() {
 
             val attachmentRequest = Request.Builder().url(attachment.url.toHttpUrl()).build()
 
-            val attachmentData: ByteArray = DungeonHubConnection.executeRawRequest(attachmentRequest)
+            val attachmentData: ByteArray = DungeonHubConnection.executeRawRequest(attachmentRequest)?.result
                 ?: throw CommandExecutionException("Couldn't read file data.")
 
             val content = String(attachmentData, StandardCharsets.UTF_8)

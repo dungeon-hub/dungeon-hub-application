@@ -18,7 +18,6 @@ import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasPermission
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
 import me.taubsie.dungeonhub.application.connection.copy
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
@@ -27,6 +26,7 @@ import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.ContentConnection
+import net.dungeonhub.connection.DungeonHubConnection
 import net.dungeonhub.connection.WarningConnection
 import net.dungeonhub.enums.WarningType
 import net.dungeonhub.model.warning.WarningCreationModel
@@ -324,7 +324,7 @@ class WarningSystem : Extension() {
                             val attachmentRequest =
                                 Request.Builder().url(arguments.attachment!!.url.toHttpUrl()).build()
 
-                            val attachmentData = DungeonHubConnection.executeRawRequest(attachmentRequest)
+                            val attachmentData = DungeonHubConnection.executeRawRequest(attachmentRequest)?.result
                                 ?: throw CommandExecutionException("Couldn't read file data.")
 
                             val uri = ContentConnection.uploadFile(attachmentData)

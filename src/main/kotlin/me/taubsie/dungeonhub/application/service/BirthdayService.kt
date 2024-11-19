@@ -7,10 +7,10 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.*
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartupListener
+import net.dungeonhub.connection.DungeonHubConnection.httpClient
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
 import okhttp3.Request
@@ -105,7 +105,7 @@ object BirthdayService : StartupListener {
             .build()
 
         try {
-            DungeonHubConnection.httpClient.newCall(request).execute().let { response ->
+            httpClient.newCall(request).execute().let { response ->
                 if (response.isSuccessful && response.body != null) {
                     response.body!!.byteStream().let { inputStream: InputStream ->
                         CalendarBuilder().build(inputStream).let { calendar ->

@@ -435,16 +435,44 @@ object ApplicationService {
         return embed
     }
 
+    fun formatTotalFlagDetails(flagged: List<FlagResponse>): MutableList<EmbedBuilder.Field> {
+        val result = mutableListOf<EmbedBuilder.Field>()
+
+        for (flagResponse in flagged) {
+            if (flagResponse.discordGiven) {
+                val discordField = EmbedBuilder.Field()
+                discordField.name =
+                    (if (flagResponse.discord?.flagged == true) ":x: " else if (flagResponse.discord == null) ":question_mark: " else ":white_check_mark: ") + flagResponse.name + " (by discord)"
+                discordField.value =
+                    if (flagResponse.discord?.flagged == true) "This user is flagged!\n${flagResponse.discord.format(false)}" else if (flagResponse.discord == null) "Service is currently unreachable." else "User isn't flagged"
+                discordField.inline = true
+                result.add(discordField)
+            }
+
+            if (flagResponse.uuidGiven) {
+                val uuidField = EmbedBuilder.Field()
+                uuidField.name =
+                    (if (flagResponse.uuid?.flagged == true) ":x: " else if (flagResponse.uuid == null) ":question_mark: " else ":white_check_mark: ") + flagResponse.name + " (by UUID)"
+                uuidField.value =
+                    if (flagResponse.uuid?.flagged == true) "This user is flagged!\n${flagResponse.uuid.format(false)}" else if (flagResponse.uuid == null) "Service is currently unreachable." else "User isn't flagged"
+                uuidField.inline = true
+                result.add(uuidField)
+            }
+        }
+
+        return result
+    }
+
     fun formatFlagDetails(flagged: List<FlagResponse>): String {
         val result: MutableList<String> = ArrayList()
 
         for (flagResponse in flagged) {
             if (flagResponse.discord != null && flagResponse.discord.flagged) {
-                result.add("- " + flagResponse.name + " (by discord): " + flagResponse.discord.format())
+                result.add(flagResponse.name + " (by discord):\n" + flagResponse.discord.format(true))
             }
 
             if (flagResponse.uuid != null && flagResponse.uuid.flagged) {
-                result.add("- " + flagResponse.name + " (by UUID): " + flagResponse.uuid.format())
+                result.add(flagResponse.name + " (by UUID):\n" + flagResponse.uuid.format(true))
             }
         }
 

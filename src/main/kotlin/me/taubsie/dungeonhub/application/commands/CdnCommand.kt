@@ -60,8 +60,9 @@ class CdnCommand : Extension() {
                     respond {
                         val attachmentRequest = Request.Builder().url(arguments.attachment.url.toHttpUrl()).build()
 
-                        val attachmentData: ByteArray = DungeonHubConnection.executeRawRequest(attachmentRequest)
-                            ?: throw CommandExecutionException("Couldn't read file data.")
+                        val attachmentData: ByteArray =
+                            DungeonHubConnection.executeRawRequest(attachmentRequest)?.result
+                                ?: throw CommandExecutionException("Couldn't read file data.")
 
                         val fileUrl = if (arguments.name != null) {
                             ContentConnection.uploadFile(attachmentData, arguments.name!!)

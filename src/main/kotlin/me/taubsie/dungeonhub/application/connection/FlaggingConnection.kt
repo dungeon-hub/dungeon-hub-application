@@ -1,32 +1,30 @@
 package me.taubsie.dungeonhub.application.connection
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
+import com.squareup.moshi.adapter
 import me.taubsie.dungeonhub.application.config.ConfigProperty
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection.getBody
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection.httpClient
 import me.taubsie.dungeonhub.application.enums.FlaggingApi
+import me.taubsie.dungeonhub.application.enums.FlaggingApi.HypixelSafetyDataContainer
+import me.taubsie.dungeonhub.application.enums.FlaggingApi.HypixelSafetyDataContainer.HypixelSafetyData.HypixelSafetyDetail
 import me.taubsie.dungeonhub.application.misc.FlagDetail
 import me.taubsie.dungeonhub.application.misc.FlagDetail.FlagDetailBuilder.builder
 import me.taubsie.dungeonhub.application.misc.FlagResponse
+import net.dungeonhub.service.MoshiService.moshi
+import net.dungeonhub.structure.ExternalConnection
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
-import okhttp3.ResponseBody
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.IOException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
-import java.util.function.Consumer
 
-object FlaggingConnection : Connection {
+@OptIn(ExperimentalStdlibApi::class)
+object FlaggingConnection : ExternalConnection {
     override val logger: Logger = LoggerFactory.getLogger(FlaggingConnection::class.java)
 
     private var lastBlockGameRefresh: Instant? = null
-    private var blockGameData: List<JsonObject>? = null
+    private var blockGameData: List<FlaggingApi.BlockGameData>? = null
 
     fun isFlagged(id: Long?): List<FlagResponse> {
         return isFlagged(null, id)
@@ -51,10 +49,8 @@ object FlaggingConnection : Connection {
             refreshBlockGameData()
         }
 
-        return blockGameData!!.firstOrNull { jsonObject ->
-            jsonObject.has("id")
-                    && jsonObject["id"].isJsonPrimitive
-                    && jsonObject.getAsJsonPrimitive("id").asLong == id
+        return blockGameData!!.firstOrNull { data ->
+            data.id == id
         }?.let { blockGameData ->
             this.loadFlagDetailFromBlockGameData(
                 blockGameData
@@ -62,24 +58,20 @@ object FlaggingConnection : Connection {
         } ?: FlagDetail.Builder().flagged(false).build()
     }
 
-    private fun loadFlagDetailFromBlockGameData(blockGameData: JsonObject): FlagDetail {
+    private fun loadFlagDetailFromBlockGameData(blockGameData: FlaggingApi.BlockGameData): FlagDetail {
         val reason = StringBuilder()
 
-        val scammedAmount = blockGameData.getAsJsonPrimitive("scammed")
-        val method = blockGameData.getAsJsonPrimitive("method")
+        if (blockGameData.scammed != null) {
+            reason.append("(").append(blockGameData.scammed).append(")")
 
-        if (scammedAmount != null && scammedAmount.isString) {
-            reason.append("(").append(scammedAmount.asString).append(")")
-
-            if (method != null && method.isString) {
-                reason.append(" -> ")
+            if (blockGameData.method != null) {
+                reason.append(" -> ").append(blockGameData.method)
             }
         }
 
-        if (method != null && method.isString) {
-            reason.append(method.asString)
+        if (blockGameData.method != null) {
+            reason.append(blockGameData.method)
         }
-
 
         return builder()
             .flagged(true)
@@ -97,22 +89,13 @@ object FlaggingConnection : Connection {
             .get()
             .build()
 
-        val jsonArray = executeRequest(
-            request
-        ) { s: String? ->
-            fromJson(
-                s!!,
-                JsonArray::class.java
-            )
-        }
+        val jsonArray = executeRequest(request) { s -> moshi.adapter<List<FlaggingApi.BlockGameData>>().fromJson(s) }
 
         if (jsonArray == null) {
             return
         }
 
-        blockGameData = jsonArray.asList().parallelStream()
-            .map { obj: JsonElement -> obj.asJsonObject }
-            .toList()
+        blockGameData = jsonArray
     }
 
     fun isSafetyFlagged(uuid: UUID): FlagDetail? {
@@ -128,45 +111,12 @@ object FlaggingConnection : Connection {
             .get()
             .build()
 
-        try {
-            httpClient.newCall(request).execute().use { response ->
-                return if (response.isSuccessful) {
-                    logger.debug("Executed Safety-UUID request to '{}' successfully.", request.url)
-
-                    response.body?.let { responseBody: ResponseBody ->
-                        fromJson(
-                            try {
-                                responseBody.string()
-                            } catch (ioException: IOException) {
-                                logger.error(
-                                    null,
-                                    ioException
-                                )
-                                null
-                            }!!,
-                            JsonObject::class.java
-                        ).let { rootObject: JsonObject -> this.fromSafetyResponse(rootObject) }
-                    }
-                } else if (response.code == 404) {
-                    logger.debug("Executed Safety-UUID to '{}' returned a 404.", request.url)
-
-                    FlagDetail.Builder().flagged(false).build()
-                } else {
-                    val body = getBody(request)
-
-                    logger.error(
-                        "Safety-UUID to '{}' wasn't successful. Body:\n{}\nResponse: {}\n{}",
-                        request.url,
-                        body,
-                        response.code,
-                        if (response.body != null) response.body!!.string() else null
-                    )
-
-                    null
-                }
-            }
-        } catch (_: IOException) {
-            return null
+        return executeRequest(request, FlagDetail.Builder().flagged(false).build()) {
+            fromSafetyResponse(
+                moshi.adapter<HypixelSafetyDataContainer>().fromJson(
+                    it
+                )!!
+            )
         }
     }
 
@@ -183,77 +133,43 @@ object FlaggingConnection : Connection {
             .get()
             .build()
 
-        try {
-            httpClient.newCall(request).execute().use { response ->
-                return if (response.isSuccessful) {
-                    logger.debug("Executed Safety-id request to '{}' successfully.", request.url)
-
-                    response.body?.let { responseBody: ResponseBody ->
-                        fromJson(
-                            try {
-                                responseBody.string()
-                            } catch (ioException: IOException) {
-                                logger.error(
-                                    null,
-                                    ioException
-                                )
-                                null
-                            }!!,
-                            JsonObject::class.java
-                        ).let { rootObject: JsonObject -> this.fromSafetyResponse(rootObject) }
-                    }
-                } else if (response.code == 404) {
-                    logger.debug("Executed Safety-id request to '{}' returned a 404.", request.url)
-
-                    FlagDetail.Builder().flagged(false).build()
-                } else {
-                    val body = getBody(request)
-
-                    logger.error(
-                        "Safety-id request to '{}' wasn't successful. Body:\n{}\nResponse: {}\n{}",
-                        request.url,
-                        body,
-                        response.code,
-                        if (response.body != null) response.body!!.string() else null
-                    )
-
-                    null
-                }
-            }
-        } catch (_: IOException) {
-            return null
+        return executeRequest(request, FlagDetail.Builder().flagged(false).build()) {
+            fromSafetyResponse(
+                moshi.adapter<HypixelSafetyDataContainer>().fromJson(
+                    it
+                )!!
+            )
         }
     }
 
-    fun fromSafetyResponse(rootObject: JsonObject): FlagDetail {
-        val dataObject = rootObject.getAsJsonObject("data")
+    fun fromSafetyResponse(hypixelSafetyDataContainer: HypixelSafetyDataContainer): FlagDetail {
+        val data = hypixelSafetyDataContainer.data
 
-        val flagged = dataObject.has("ratter") || dataObject.has("scammer")
+        val flagged = data.ratter != null || data.scammer != null
 
-        val builder = builder()
-            .flagged(flagged)
+        val builder = builder().flagged(flagged)
 
-        var detailObject: JsonObject? = null
-        if (dataObject.has("ratter")) {
-            detailObject = dataObject.getAsJsonObject("ratter")
-        } else if (dataObject.has("scammer")) {
-            detailObject = dataObject.getAsJsonObject("scammer")
+        var detail: HypixelSafetyDetail? = null
+        if (data.ratter != null) {
+            detail = data.ratter
+        } else if (data.scammer != null) {
+            detail = data.scammer
         }
 
-        if (detailObject != null) {
-            builder.reason(detailObject.getAsJsonPrimitive("reason").asString)
-
-            if (detailObject.has("evidence")) {
+        if (detail != null) {
+            builder.reason(detail.reason)
+            if (detail.evidence != null) {
                 val evidences: MutableList<String> = ArrayList()
-                detailObject.getAsJsonArray("evidence")
-                    .forEach(Consumer { jsonElement: JsonElement -> evidences.add(jsonElement.asString) })
+                detail.evidence!!.forEach {
+                    evidences.add(it)
+                }
 
                 builder.evidence(java.lang.String.join(", ", evidences))
             }
 
-            if (detailObject.has("moderator")) {
+            if (detail.moderator != null) {
                 try {
-                    builder.staff(detailObject.getAsJsonPrimitive("moderator").asLong)
+                    builder.staff(detail.moderator!!.toLong())
                 } catch (ignored: NumberFormatException) {
                     //ignored since this basically only applies if the id isn't a number, meaning this shouldn't be set
                 }
@@ -273,12 +189,11 @@ object FlaggingConnection : Connection {
             .build()
 
         return executeRequest(request) { s: String? ->
-            fromJson(
-                s!!,
-                JsonObject::class.java
+            moshi.adapter<FlaggingApi.JerryData>().fromJson(
+                s!!
             )
-        }?.takeIf { it.get("success").asBoolean }
-            ?.let { rootObject: JsonObject -> this.fromJerryResponse(rootObject) }
+        }?.takeIf { it.success }
+            ?.let { rootObject -> this.fromJerryResponse(rootObject) }
     }
 
     fun isJerryFlagged(id: Long): FlagDetail? {
@@ -291,38 +206,33 @@ object FlaggingConnection : Connection {
             .build()
 
         return executeRequest(request) { s: String? ->
-            fromJson(
-                s!!,
-                JsonObject::class.java
+            moshi.adapter<FlaggingApi.JerryData>().fromJson(
+                s!!
             )
-        }?.takeIf { jsonObject -> jsonObject.get("success").asBoolean }
-            ?.let { rootObject: JsonObject -> this.fromJerryResponse(rootObject) }
+        }?.takeIf { jsonObject -> jsonObject.success }
+            ?.let { rootObject -> this.fromJerryResponse(rootObject) }
     }
 
-    fun fromJerryResponse(rootObject: JsonObject): FlagDetail {
-        val builder = builder()
-            .flagged(rootObject["scammer"].asBoolean)
+    fun fromJerryResponse(jerryData: FlaggingApi.JerryData): FlagDetail {
+        val builder = builder().flagged(jerryData.scammer)
 
-        if (rootObject.has("details") && rootObject["details"].isJsonObject) {
-            val detailObject = rootObject.getAsJsonObject("details")
+        if (jerryData.details != null) {
+            val detailObject = jerryData.details
 
-            if (detailObject.has("reason")) {
-                builder.reason(detailObject.getAsJsonPrimitive("reason").asString)
+            if (detailObject.reason != null) {
+                builder.reason(detailObject.reason)
             }
 
-            if (detailObject.has("staff")) {
+            if (detailObject.staff != null) {
                 try {
-                    builder.staff(detailObject.getAsJsonPrimitive("staff").asLong)
+                    builder.staff(detailObject.staff.toLong())
                 } catch (ignored: NumberFormatException) {
                     //ignored since this basically only applies if the id is redacted, meaning this shouldn't be set
                 }
             }
 
-            if (detailObject.has("evidence")) {
-                val evidence = detailObject.getAsJsonPrimitive("evidence").asString
-                if (!evidence.equals("<redacted>", ignoreCase = true)) {
-                    builder.evidence(evidence)
-                }
+            if (detailObject.evidence != null && !detailObject.evidence.equals("<redacted>", ignoreCase = true)) {
+                builder.evidence(detailObject.evidence)
             }
         }
 

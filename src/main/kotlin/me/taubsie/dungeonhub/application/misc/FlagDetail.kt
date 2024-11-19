@@ -3,16 +3,16 @@ package me.taubsie.dungeonhub.application.misc
 data class FlagDetail(val flagged: Boolean, val reason: String?, val staff: Long?, val evidence: String?) {
     private fun reason() = reason?.let { "`$reason`" } ?: ""
 
-    private fun staff() = staff?.let { "added by <@$staff>" } ?: ""
+    private fun staff() = staff?.let { "<@$staff>" } ?: ""
 
     private fun evidence() = evidence?.let { "||$evidence||" } ?: ""
 
-    fun format(): String {
-        return "${reason()} ${staff()} ${evidence()}".trim()
+    fun format(asList: Boolean): String {
+        return "${if (asList) "-# - " else ""}Reason: ${reason()}\n${if (asList) "-# - " else ""}Added by: ${staff()}\n${if (asList) "-# - " else ""}${evidence()}".trim()
     }
 
     override fun toString(): String {
-        return format()
+        return format(false)
     }
 
     class Builder {

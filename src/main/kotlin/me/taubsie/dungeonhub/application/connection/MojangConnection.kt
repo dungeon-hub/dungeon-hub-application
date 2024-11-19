@@ -1,8 +1,8 @@
 package me.taubsie.dungeonhub.application.connection
 
 import com.google.gson.JsonParser
-import me.taubsie.dungeonhub.application.connection.DungeonHubConnection.httpClient
 import me.taubsie.dungeonhub.application.exceptions.PlayerNotFoundWarning
+import net.dungeonhub.connection.DungeonHubConnection.httpClient
 import okhttp3.Request
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
