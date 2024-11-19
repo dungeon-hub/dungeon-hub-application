@@ -70,7 +70,7 @@ object BirthdayService : StartupListener {
                     } else {
                         ""
                     }
-                }! \uD83C\uDF82 \uD83C\uDF81 \uD83C\uDF89 \uD83E\uDD73 ❤\uFE0F ${
+                }! \uD83C\uDF89 \uD83E\uDD73 ❤\uFE0F ${
                     if (birthday.birthYear != null) {
                         "\nToday, they are turning ${
                             Clock.System.now()
