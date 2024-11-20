@@ -68,7 +68,7 @@ class CarryTierCommand : Extension() {
                         if (arguments.category != null && DiscordServerConnection.getCarryTierFromCategory(
                                 guild!!.id.value.toLong(),
                                 arguments.category!!.id.value.toLong()
-                            ) == null
+                            ) != null
                         ) {
                             throw InvalidOptionException(
                                 "category",
