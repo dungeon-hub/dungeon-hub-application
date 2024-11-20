@@ -75,7 +75,7 @@ class CarryDifficultyCommand : Extension() {
                             ?: throw CommandExecutionWarning("Couldn't create carry difficulty.")
 
                         val embed = ApplicationService.getCarryDifficultyEmbed(carryDifficulty)
-                        embed.title = "Created Carry Difficulty"
+                        embed.title = "Carry Difficulty created"
                         embeds = mutableListOf(embed)
                     }
                 }
