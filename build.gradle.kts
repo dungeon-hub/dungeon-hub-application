@@ -33,7 +33,7 @@ dependencies {
     implementation("org.projectlombok:lombok:1.18.28")
 
     //Internal API
-    implementation("net.dungeon-hub.api:client:0.4.0")
+    implementation(libs.dungeon.hub.api.client)
 
     //Functionality
     implementation("net.dungeon-hub:transcripts-kord:0.1.1")
