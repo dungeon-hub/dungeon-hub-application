@@ -18,7 +18,6 @@ enum class ServerProperty(
     val enabled: Boolean = true,
     val relatedProperties: Array<ServerProperty> = arrayOf()
 ) : ChoiceEnum {
-    PROFILE_MODERATION_BAN_MESSAGE("profile_moderation_message"),
     BAN_MESSAGE("ban_message"),
     UNBAN_FORM("unban_form"),
 

@@ -159,7 +159,7 @@ object ProfileModerationService {
 
         val unbanForm = ServerProperty.UNBAN_FORM.getValue(server.id.value.toLong())
 
-        var message = ServerProperty.PROFILE_MODERATION_BAN_MESSAGE
+        var message = ServerProperty.BAN_MESSAGE
             .getValue(server.id.value.toLong())
             .orElse("You got banned from `%server%` because of a suspicious user profile.\nIf you think this is a mistake, contact the administrators for further information.")
             .replace("%server%", server.name)
