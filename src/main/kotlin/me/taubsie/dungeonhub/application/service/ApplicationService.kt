@@ -17,8 +17,10 @@ import dev.kord.core.entity.User
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.EmbedBuilder.Footer
+import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.builder.message.create.AbstractMessageCreateBuilder
 import dev.kordex.core.extensions.Extension
+import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.timeoutUntil
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
@@ -30,6 +32,7 @@ import me.taubsie.dungeonhub.application.connection.FlaggingConnection
 import me.taubsie.dungeonhub.application.connection.HypixelConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
+import me.taubsie.dungeonhub.application.enums.ServerProperty
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException
@@ -617,6 +620,32 @@ object ApplicationService {
         }
 
         if (actions.any { it.warningAction == WarningAction.Ban }) {
+            try {
+                member.dm {
+                    val unbanForm = ServerProperty.UNBAN_FORM.getValue(member.guildId.value.toLong())
+                        .orElse(null)
+
+                    var message = ServerProperty.BAN_MESSAGE
+                        .getValue(member.guildId.value.toLong())
+                        .orElse("You got banned from `%server%` because of too many severe warnings.\nIf you think this is a mistake, contact the administrators for further information.")
+                        .replace("%server%", member.guild.asGuildOrNull()?.name ?: member.guildId.toString())
+
+                    unbanForm?.let {
+                        message = message.replace("%form%", it)
+
+                        actionRow {
+                            linkButton(it) {
+                                label = "Appeal"
+                            }
+                        }
+                    }
+
+                    content = message
+                }
+            } catch (_: Exception) {
+                //ignore, dm is just optional
+            }
+
             member.ban {
                 reason = "Too many severe warnings."
             }

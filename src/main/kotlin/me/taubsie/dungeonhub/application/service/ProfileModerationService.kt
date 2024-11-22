@@ -140,7 +140,6 @@ object ProfileModerationService {
             .getValue(server.id.value.toLong())
             .orElse("You got banned from `%server%` because of \"$reason\".\nIf you think this is a mistake, contact the administrators for further information.")
             .replace("%server%", server.name)
-            .replace("%reason", reason)
 
         if (unbanForm.isPresent) {
             message = message.replace("%form%", unbanForm.get())
