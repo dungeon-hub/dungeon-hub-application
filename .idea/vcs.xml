@@ -2,9 +2,6 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/../dungeon-hub-bot" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/../dungeon-hub-common" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/../dungeon-hub-scripts" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../dungeon-hub-server" vcs="Git" />
   </component>
 </project>

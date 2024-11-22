@@ -1,0 +1,188 @@
+package me.taubsie.dungeonhub.application.commands
+
+import dev.kord.core.behavior.UserBehavior
+import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.commands.converters.impl.user
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.extensions.publicUserCommand
+import me.taubsie.dungeonhub.application.connection.FlaggingConnection
+import me.taubsie.dungeonhub.application.connection.MojangConnection
+import me.taubsie.dungeonhub.application.enums.EmbedColor
+import me.taubsie.dungeonhub.application.loader.LoadExtension
+import me.taubsie.dungeonhub.application.misc.FlagResponse
+import me.taubsie.dungeonhub.application.service.ApplicationService
+import me.taubsie.dungeonhub.application.service.addEmbed
+import me.taubsie.dungeonhub.application.service.color
+import net.dungeonhub.connection.DiscordUserConnection
+
+@LoadExtension
+class LookupCommand : Extension() {
+    override val name = "lookup-command"
+
+    override suspend fun setup() {
+        publicSlashCommand {
+            name = "lookup"
+            description = "Lookup a player or discord user."
+            allowInDms = true
+
+            publicSubCommand(::LookupPlayerArguments) {
+                name = "player"
+                description = "Lookup a minecraft user."
+
+                action {
+                    respond {
+                        respondToLookup(null, arguments.ign)()
+                    }
+                }
+            }
+
+            publicSubCommand(::LookupUserArguments) {
+                name = "user"
+                description = "Lookup a discord user."
+
+                action {
+                    respond {
+                        respondToLookup(arguments.user, null)()
+                    }
+                }
+            }
+        }
+
+        publicUserCommand {
+            name = "Lookup User"
+
+            action {
+                respond {
+                    respondToLookup(targetUsers.first(), null)()
+                }
+            }
+        }
+    }
+
+    private fun respondToLookup(target: UserBehavior?, ign: String?): suspend FollowupMessageCreateBuilder.() -> Unit =
+        respond@{
+            if (target == null && ign == null) {
+                addEmbed {
+                    color(EmbedColor.Negative)
+                    description = "No user to lookup supplied!"
+                }
+
+                return@respond
+            }
+
+            val uuid =
+                target?.let { target -> DiscordUserConnection.getLinkedById(target.id.value.toLong())?.minecraftId }
+                    ?: ign?.let { ign -> MojangConnection.getUUIDByName(ign) }
+
+            val actualIgn = uuid?.let { MojangConnection.getNameByUUID(uuid) }
+            val actualTarget = target?.id?.value?.toLong() ?: uuid?.let { DiscordUserConnection.findUserByUuid(it)?.id }
+
+            val flagResponses = FlaggingConnection.isFlagged(uuid, actualTarget)
+
+            val flagged = flagResponses
+                .filter { flagResponse: FlagResponse -> flagResponse.uuid != null || flagResponse.discord != null }
+                .filter { flagResponse: FlagResponse ->
+                    ((flagResponse.uuid != null && flagResponse.uuid.flagged)
+                            || (flagResponse.discord != null && flagResponse.discord.flagged))
+                }
+
+            val downedServices = flagResponses.filter {
+                (it.uuidGiven && it.uuid == null) ||
+                        (it.discordGiven && it.discord == null)
+            }
+
+            if (downedServices.isNotEmpty()) {
+                addEmbed {
+                    footer = null
+                    timestamp = null
+                    color(EmbedColor.Negative)
+                    description =
+                        "**The following services are currently unreachable, which could cause false negatives**:\n${
+                            downedServices.joinToString(separator = "\n- ", prefix = "- ") {
+                                "${it.name} (${
+                                    if (it.uuid == null) {
+                                        if (it.discord == null) "UUID, discord id" else "UUID"
+                                    } else "discord id"
+                                })"
+                            }
+                        }"
+                }
+            }
+
+            if (flagged.isNotEmpty()) {
+                addEmbed {
+                    footer = null
+                    timestamp = null
+                    color(EmbedColor.Negative)
+                    description = formatDescription(flagged.isNotEmpty(), target != null, actualTarget, actualIgn)
+                }
+            } else {
+                addEmbed {
+                    footer = null
+                    timestamp = null
+                    color(EmbedColor.Positive)
+                    description = formatDescription(flagged.isNotEmpty(), target != null, actualTarget, actualIgn)
+                }
+            }
+
+            addEmbed {
+                color(if (flagged.isNotEmpty()) EmbedColor.Negative else if (downedServices.isNotEmpty()) EmbedColor.Information else EmbedColor.Positive)
+                fields = ApplicationService.formatTotalFlagDetails(flagResponses)
+            }
+        }
+
+    inner class LookupUserArguments : Arguments() {
+        val user by user {
+            name = "user"
+            description = "The discord user to lookup."
+        }
+    }
+
+    inner class LookupPlayerArguments : Arguments() {
+        val ign by string {
+            name = "ign"
+            description = "The IGN of the player."
+            minLength = 2
+        }
+    }
+
+    fun formatDescription(flagged: Boolean, discordGiven: Boolean, target: Long?, actualIgn: String?): String {
+        return if (flagged) {
+            (if (discordGiven) {
+                "The given user (<@$target>) **is flagged**${
+                    if (actualIgn != null)
+                        ", or the player they're linked to ($actualIgn) **is flagged**"
+                    else
+                        ""
+                }"
+            } else {
+                "The given player ($actualIgn) **is flagged**${
+                    if (target != null)
+                        ", or the user they're linked to (<@$target>) **is flagged**"
+                    else
+                        ""
+                }"
+            }) + ".\n## **It is likely not safe to interact with them.**"
+        } else {
+            (if (discordGiven) {
+                "The given user (<@$target>)${
+                    if (actualIgn != null)
+                        " and the minecraft user they're linked to ($actualIgn) are"
+                    else
+                        " is"
+                }"
+            } else {
+                "The given player ($actualIgn)${
+                    if (target != null)
+                        ", or the user they're linked to (<@$target>) are"
+                    else
+                        " is"
+                }"
+            }) + " not flagged"
+        }
+    }
+}
