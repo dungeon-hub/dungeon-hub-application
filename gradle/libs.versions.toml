@@ -1,4 +1,5 @@
 [versions]
-dungeon-hub-api-client = "0.4.0"
+dungeon-hub-api-client = "0.4.1"
+
 [libraries]
 dungeon-hub-api-client = { module = "net.dungeon-hub.api:client", version.ref = "dungeon-hub-api-client" }

@@ -56,16 +56,12 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.20.0")
 
-    //Kotlin
-    implementation(kotlin("stdlib-jdk8"))
-
     //Annotations
     annotationProcessor("org.projectlombok:lombok:1.18.28")
     annotationProcessor("org.apache.logging.log4j:log4j-core:2.20.0")
 
     //Testing
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation(kotlin("test"))
 }
 
