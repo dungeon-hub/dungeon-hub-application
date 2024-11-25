@@ -185,7 +185,7 @@ object LeaderboardService : StartupListener {
                             return@runBlocking Optional.empty()
                         }
                     }
-                }
+                }?.orElse(null)
 
                 if (leaderboardChannel == null) {
                     continue
@@ -196,15 +196,15 @@ object LeaderboardService : StartupListener {
                         continue
                     }
 
-                    if (leaderboards.containsKey(leaderboardChannel.get())) {
-                        leaderboards[leaderboardChannel.get()]!!.add(
+                    if (leaderboards.containsKey(leaderboardChannel)) {
+                        leaderboards[leaderboardChannel]!!.add(
                             Leaderboard(
                                 getLeaderboardTitle(carryType, scoreType),
                                 ScoreConnection[carryType].loadLeaderboard(scoreType, 0)
                             )
                         )
                     } else {
-                        leaderboards[leaderboardChannel.get()] = mutableListOf(
+                        leaderboards[leaderboardChannel] = mutableListOf(
                             Leaderboard(
                                 getLeaderboardTitle(carryType, scoreType),
                                 ScoreConnection[carryType].loadLeaderboard(scoreType, 0)
