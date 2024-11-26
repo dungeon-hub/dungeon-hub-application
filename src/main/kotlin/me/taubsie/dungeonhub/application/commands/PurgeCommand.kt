@@ -10,6 +10,7 @@ import dev.kordex.core.commands.converters.impl.long
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -51,14 +52,14 @@ class PurgeCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "purge"
-            description = "Allows you to purge inactive carriers."
+            name = "purge".toKey()
+            description = "Allows you to purge inactive carriers.".toKey()
             defaultMemberPermissions = Permissions(Permission.Administrator)
             allowInDms = false
 
             publicSubCommand(::PurgeArguments) {
-                name = "show"
-                description = "Shows which users would be affected by the purge."
+                name = "show".toKey()
+                description = "Shows which users would be affected by the purge.".toKey()
 
                 action {
                     respond {
@@ -142,8 +143,8 @@ class PurgeCommand : Extension() {
             }
 
             publicSubCommand(::PurgeArguments) {
-                name = "add"
-                description = "Adds the users to the current purge wave."
+                name = "add".toKey()
+                description = "Adds the users to the current purge wave.".toKey()
 
                 action {
                     respond {
@@ -245,8 +246,8 @@ class PurgeCommand : Extension() {
             }
 
             publicSubCommand {
-                name = "start"
-                description = "Starts the current purge wave."
+                name = "start".toKey()
+                description = "Starts the current purge wave.".toKey()
 
                 action {
                     respond {
@@ -262,8 +263,8 @@ class PurgeCommand : Extension() {
             }
 
             publicSubCommand {
-                name = "progress"
-                description = "Shows you the progress of the current purge wave."
+                name = "progress".toKey()
+                description = "Shows you the progress of the current purge wave.".toKey()
 
                 action {
                     respond {
@@ -290,8 +291,8 @@ class PurgeCommand : Extension() {
             }
 
             publicSubCommand {
-                name = "clear"
-                description = "Clears the current purge wave."
+                name = "clear".toKey()
+                description = "Clears the current purge wave.".toKey()
 
                 action {
                     respond {
@@ -319,22 +320,22 @@ class PurgeCommand : Extension() {
 
     inner class PurgeArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = "carry-type".toKey()
+            description = "The identifier of the carry type".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val purgeType by string {
-            name = "purge-type"
-            description = "The identifier of the purge type"
+            name = "purge-type".toKey()
+            description = "The identifier of the purge type".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.purgeType
         }
 
         val threshold by long {
-            name = "threshold"
-            description = "The score-threshold."
+            name = "threshold".toKey()
+            description = "The score-threshold.".toKey()
             minValue = 0
             maxValue = 100
         }

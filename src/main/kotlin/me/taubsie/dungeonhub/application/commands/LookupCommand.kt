@@ -9,6 +9,7 @@ import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.extensions.publicUserCommand
+import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
@@ -25,13 +26,13 @@ class LookupCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "lookup"
-            description = "Lookup a player or discord user."
+            name = "lookup".toKey()
+            description = "Lookup a player or discord user.".toKey()
             allowInDms = true
 
             publicSubCommand(::LookupPlayerArguments) {
-                name = "player"
-                description = "Lookup a minecraft user."
+                name = "player".toKey()
+                description = "Lookup a minecraft user.".toKey()
 
                 action {
                     respond {
@@ -41,8 +42,8 @@ class LookupCommand : Extension() {
             }
 
             publicSubCommand(::LookupUserArguments) {
-                name = "user"
-                description = "Lookup a discord user."
+                name = "user".toKey()
+                description = "Lookup a discord user.".toKey()
 
                 action {
                     respond {
@@ -53,7 +54,7 @@ class LookupCommand : Extension() {
         }
 
         publicUserCommand {
-            name = "Lookup User"
+            name = "Lookup User".toKey()
 
             action {
                 respond {
@@ -137,15 +138,15 @@ class LookupCommand : Extension() {
 
     inner class LookupUserArguments : Arguments() {
         val user by user {
-            name = "user"
-            description = "The discord user to lookup."
+            name = "user".toKey()
+            description = "The discord user to lookup.".toKey()
         }
     }
 
     inner class LookupPlayerArguments : Arguments() {
         val ign by string {
-            name = "ign"
-            description = "The IGN of the player."
+            name = "ign".toKey()
+            description = "The IGN of the player.".toKey()
             minLength = 2
         }
     }

@@ -15,6 +15,7 @@ import dev.kordex.core.components.components
 import dev.kordex.core.components.ephemeralButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -30,8 +31,8 @@ class UserScanCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "userscan"
-            description = "Scans for users with a bad username."
+            name = "userscan".toKey()
+            description = "Scans for users with a bad username.".toKey()
             defaultMemberPermissions = Permissions(Permission.BanMembers)
             allowInDms = false
 
@@ -40,8 +41,8 @@ class UserScanCommand : Extension() {
             }
 
             publicSubCommand {
-                name = "scan"
-                description = "Add this if flagged users shouldn't be banned."
+                name = "scan".toKey()
+                description = "Add this if flagged users shouldn't be banned.".toKey()
 
                 action {
                     respond(execute(false, guild!!.asGuild()))
@@ -49,8 +50,8 @@ class UserScanCommand : Extension() {
             }
 
             publicSubCommand {
-                name = "ban"
-                description = "Add this if flagged users should also be banned."
+                name = "ban".toKey()
+                description = "Add this if flagged users should also be banned.".toKey()
 
                 action {
                     respond(execute(true, guild!!.asGuild()))
@@ -104,7 +105,7 @@ class UserScanCommand : Extension() {
                         ephemeralButton {
                             style = ButtonStyle.Danger
                             id = "show_flagged_banned"
-                            label = "Show " + (if ((ban)) "banned" else "flagged") + " users"
+                            label = "Show ${(if ((ban)) "banned" else "flagged")} users".toKey()
 
                             action {
                                 respond {
@@ -117,7 +118,7 @@ class UserScanCommand : Extension() {
                         ephemeralButton {
                             style = ButtonStyle.Secondary
                             id = "show_excluded"
-                            label = "Show excluded users"
+                            label = "Show excluded users".toKey()
 
                             action {
                                 respond {

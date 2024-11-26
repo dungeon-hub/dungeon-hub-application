@@ -10,6 +10,7 @@ import dev.kordex.core.commands.application.slash.converters.impl.optionalEnumCh
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.HelpTopic
 import me.taubsie.dungeonhub.application.loader.LoadExtension
@@ -22,8 +23,8 @@ class HelpCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand(::HelpArguments) {
-            name = "help"
-            description = "List of available commands."
+            name = "help".toKey()
+            description = "List of available commands.".toKey()
 
             action {
                 respond {
@@ -98,9 +99,9 @@ class HelpCommand : Extension() {
 
     inner class HelpArguments : Arguments() {
         val helpTopic by optionalEnumChoice<HelpTopic> {
-            name = "topic"
-            description = "Select what topic you need help with."
-            typeName = "HelpTopic"
+            name = "topic".toKey()
+            description = "Select what topic you need help with.".toKey()
+            typeName = "HelpTopic".toKey()
         }
     }
 }

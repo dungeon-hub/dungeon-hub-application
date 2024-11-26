@@ -20,6 +20,7 @@ import dev.kordex.core.components.ephemeralButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.dm
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
@@ -55,8 +56,8 @@ class LoggingSystem : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand(::LogArguments) {
-            name = "log"
-            description = "Use this to log your carries."
+            name = "log".toKey()
+            description = "Use this to log your carries.".toKey()
             allowInDms = false
 
             action {
@@ -89,7 +90,7 @@ class LoggingSystem : Extension() {
 
                         components {
                             ephemeralButton {
-                                label = "Clear log"
+                                label = "Clear log".toKey()
                                 style = ButtonStyle.Primary
 
                                 action {
@@ -124,7 +125,7 @@ class LoggingSystem : Extension() {
                             }
 
                             ephemeralButton {
-                                label = "Dismiss"
+                                label = "Dismiss".toKey()
                                 style = ButtonStyle.Danger
 
                                 deferredAck = true
@@ -429,15 +430,15 @@ class LoggingSystem : Extension() {
 
     inner class LogArguments : Arguments() {
         val carryAmount by long {
-            name = "amount"
-            description = "The amount of carries you did."
+            name = "amount".toKey()
+            description = "The amount of carries you did.".toKey()
             minValue = 1
             maxValue = 200
         }
 
         val carryDifficulty by string {
-            name = "carry-difficulty"
-            description = "The difficulty of the carry."
+            name = "carry-difficulty".toKey()
+            description = "The difficulty of the carry.".toKey()
             autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
     }

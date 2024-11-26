@@ -3,6 +3,7 @@ package me.taubsie.dungeonhub.application.commands
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.getGuildOrNull
 import me.taubsie.dungeonhub.application.enums.EmbedColor
@@ -19,8 +20,8 @@ class StatsCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "stats"
-            description = "Shows some stats about this server."
+            name = "stats".toKey()
+            description = "Shows some stats about this server.".toKey()
             allowInDms = false
 
             action {

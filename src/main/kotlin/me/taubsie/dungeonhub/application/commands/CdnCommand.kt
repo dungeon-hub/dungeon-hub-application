@@ -10,6 +10,7 @@ import dev.kordex.core.components.components
 import dev.kordex.core.components.linkButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralSlashCommand
+import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.KnownStaticResource
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
@@ -43,8 +44,8 @@ class CdnCommand : Extension() {
 
     override suspend fun setup() {
         ephemeralSlashCommand {
-            name = "cdn"
-            description = "Manage the CDN"
+            name = "cdn".toKey()
+            description = "Manage the CDN".toKey()
             allowInDms = true
             check {
                 failIfNot("You aren't allowed to use this command.") {
@@ -53,8 +54,8 @@ class CdnCommand : Extension() {
             }
 
             ephemeralSubCommand(::AddArguments) {
-                name = "add"
-                description = "Add a file to the CDN."
+                name = "add".toKey()
+                description = "Add a file to the CDN.".toKey()
 
                 action {
                     respond {
@@ -86,7 +87,7 @@ class CdnCommand : Extension() {
 
                             components {
                                 linkButton {
-                                    label = "Click to open"
+                                    label = "Click to open".toKey()
                                     this.url = url
                                 }
                             }
@@ -101,8 +102,8 @@ class CdnCommand : Extension() {
             }
 
             ephemeralSubCommand(::StaticArguments) {
-                name = "static"
-                description = "Show the list of static files of the CDN."
+                name = "static".toKey()
+                description = "Show the list of static files of the CDN.".toKey()
 
                 action {
                     respond {
@@ -120,7 +121,7 @@ class CdnCommand : Extension() {
 
                         components {
                             linkButton {
-                                label = "Open"
+                                label = "Open".toKey()
                                 this.url = url
                             }
                         }
@@ -132,21 +133,21 @@ class CdnCommand : Extension() {
 
     inner class AddArguments : Arguments() {
         val attachment by attachment {
-            name = "file"
-            description = "The file to add."
+            name = "file".toKey()
+            description = "The file to add.".toKey()
         }
 
         val name by optionalString {
-            name = "name"
-            description = "The name of the file."
+            name = "name".toKey()
+            description = "The name of the file.".toKey()
         }
     }
 
     inner class StaticArguments : Arguments() {
         val resource by enumChoice<KnownStaticResource> {
-            name = "file"
-            description = "The static file to get."
-            typeName = "KnownStaticResource"
+            name = "file".toKey()
+            description = "The static file to get.".toKey()
+            typeName = "KnownStaticResource".toKey()
         }
     }
 }

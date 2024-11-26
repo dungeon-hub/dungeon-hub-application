@@ -8,7 +8,7 @@ import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.*
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
+import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
@@ -36,14 +36,14 @@ class CarryTypeCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "carry-type"
-            description = "Set up the carry types for this server."
+            name = "carry-type".toKey()
+            description = "Set up the carry types for this server.".toKey()
             defaultMemberPermissions = Permissions(Permission.Administrator)
             allowInDms = false
 
             publicSubCommand(::CarryTypeCreateArguments) {
-                name = "create"
-                description = "Create a new carry type"
+                name = "create".toKey()
+                description = "Create a new carry type".toKey()
 
                 action {
                     respond {
@@ -82,8 +82,8 @@ class CarryTypeCommand : Extension() {
             }
 
             publicSubCommand(::CarryTypeArguments) {
-                name = "delete"
-                description = "Delete a carry type"
+                name = "delete".toKey()
+                description = "Delete a carry type".toKey()
 
                 action {
                     respond {
@@ -103,8 +103,8 @@ class CarryTypeCommand : Extension() {
             }
 
             publicSubCommand(::CarryTypeArguments) {
-                name = "get"
-                description = "Get information about a carry type"
+                name = "get".toKey()
+                description = "Get information about a carry type".toKey()
 
                 action {
                     respond {
@@ -119,8 +119,8 @@ class CarryTypeCommand : Extension() {
             }
 
             publicSubCommand(::CarryTypeEditArguments) {
-                name = "edit"
-                description = "Edit a carry type"
+                name = "edit".toKey()
+                description = "Edit a carry type".toKey()
 
                 action {
                     respond {
@@ -162,8 +162,8 @@ class CarryTypeCommand : Extension() {
             }
 
             publicSubCommand(::CarryTypeResetArguments) {
-                name = "reset"
-                description = "Reset properties of a carry type"
+                name = "reset".toKey()
+                description = "Reset properties of a carry type".toKey()
 
                 action {
                     respond {
@@ -200,39 +200,39 @@ class CarryTypeCommand : Extension() {
 
     inner class CarryTypeCreateArguments : Arguments() {
         val identifier by string {
-            name = "identifier"
-            description = "The identifier of the carry type."
+            name = "identifier".toKey()
+            description = "The identifier of the carry type.".toKey()
             maxLength = 30
         }
 
         val displayName by string {
-            name = "display-name"
-            description = "The display name of the carry type"
+            name = "display-name".toKey()
+            description = "The display name of the carry type".toKey()
             maxLength = 30
         }
 
         val logChannel by optionalChannel {
-            name = "log-channel"
-            description = "Set the channel that will be used for logging"
+            name = "log-channel".toKey()
+            description = "Set the channel that will be used for logging".toKey()
             requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
         val leaderboardChannel by optionalChannel {
-            name = "leaderboard-channel"
-            description = "Set the channel that will be used to show a static leaderboard"
+            name = "leaderboard-channel".toKey()
+            description = "Set the channel that will be used to show a static leaderboard".toKey()
             requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
         val eventActive by optionalBoolean {
-            name = "event-active"
-            description = "Set if there if an active event for score"
+            name = "event-active".toKey()
+            description = "Set if there if an active event for score".toKey()
         }
     }
 
     inner class CarryTypeArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = "carry-type".toKey()
+            description = "The identifier of the carry type".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
@@ -240,52 +240,52 @@ class CarryTypeCommand : Extension() {
 
     inner class CarryTypeEditArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = "carry-type".toKey()
+            description = "The identifier of the carry type".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val displayName by optionalString {
-            name = "display-name"
-            description = "Set the display name"
+            name = "display-name".toKey()
+            description = "Set the display name".toKey()
             maxLength = 30
         }
 
         val logChannel by optionalChannel {
-            name = "log-channel"
-            description = "Set the channel that will be used for logging"
+            name = "log-channel".toKey()
+            description = "Set the channel that will be used for logging".toKey()
             requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
         val leaderboardChannel by optionalChannel {
-            name = "leaderboard-channel"
-            description = "Set the channel that will be used to show a static leaderboard"
+            name = "leaderboard-channel".toKey()
+            description = "Set the channel that will be used to show a static leaderboard".toKey()
             requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
         val eventActive by optionalBoolean {
-            name = "event-active"
-            description = "Set if there if an active event for score"
+            name = "event-active".toKey()
+            description = "Set if there if an active event for score".toKey()
         }
     }
 
     inner class CarryTypeResetArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = "carry-type".toKey()
+            description = "The identifier of the carry type".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val logChannel by boolean {
-            name = "log-channel"
-            description = "Set if the log channel should be reset"
+            name = "log-channel".toKey()
+            description = "Set if the log channel should be reset".toKey()
         }
 
         val leaderboardChannel by boolean {
-            name = "leaderboard-channel"
-            description = "Set if the leaderboard channel should be reset"
+            name = "leaderboard-channel".toKey()
+            description = "Set if the leaderboard channel should be reset".toKey()
         }
     }
 }

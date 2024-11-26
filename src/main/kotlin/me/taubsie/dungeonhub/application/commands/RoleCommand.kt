@@ -15,6 +15,7 @@ import dev.kordex.core.commands.converters.impl.role
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -39,14 +40,14 @@ class RoleCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "role"
-            description = "Manage a user's roles."
+            name = "role".toKey()
+            description = "Manage a user's roles.".toKey()
             defaultMemberPermissions = Permissions(Permission.ManageRoles)
             allowInDms = false
 
             publicSubCommand(::RoleArguments) {
-                name = "add"
-                description = "Add a role to a user"
+                name = "add".toKey()
+                description = "Add a role to a user".toKey()
 
                 action {
                     respond {
@@ -56,8 +57,8 @@ class RoleCommand : Extension() {
             }
 
             publicSubCommand(::RoleArguments) {
-                name = "remove"
-                description = "Remove a role from a user"
+                name = "remove".toKey()
+                description = "Remove a role from a user".toKey()
 
                 action {
                     respond {
@@ -67,8 +68,8 @@ class RoleCommand : Extension() {
             }
 
             publicSubCommand(::RoleGroupRemoveArguments) {
-                name = "remove-group"
-                description = "Remove a role group from a user"
+                name = "remove-group".toKey()
+                description = "Remove a role group from a user".toKey()
 
                 action {
                     respond {
@@ -77,12 +78,12 @@ class RoleCommand : Extension() {
                 }
             }
 
-            group("config") {
-                description = "Change the settings of a role."
+            group("config".toKey()) {
+                description = "Change the settings of a role.".toKey()
 
                 publicSubCommand(::RoleConfigSetArguments) {
-                    name = "set"
-                    description = "Set a role config value"
+                    name = "set".toKey()
+                    description = "Set a role config value".toKey()
 
                     check {
                         hasPermission(Permission.Administrator)
@@ -140,8 +141,8 @@ class RoleCommand : Extension() {
                 }
 
                 publicSubCommand(::RoleConfigResetArguments) {
-                    name = "reset"
-                    description = "Reset a role config value"
+                    name = "reset".toKey()
+                    description = "Reset a role config value".toKey()
 
                     check {
                         hasPermission(Permission.Administrator)
@@ -299,55 +300,55 @@ class RoleCommand : Extension() {
 
     inner class RoleArguments : Arguments() {
         val user by user {
-            name = "user"
-            description = "Select which user to modify the role of."
+            name = "user".toKey()
+            description = "Select which user to modify the role of.".toKey()
         }
 
         val role by role {
-            name = "role"
-            description = "Select which role you mean."
+            name = "role".toKey()
+            description = "Select which role you mean.".toKey()
         }
     }
 
     inner class RoleGroupRemoveArguments : Arguments() {
         val target by user {
-            name = "user"
-            description = "Select which user to remove the role group of."
+            name = "user".toKey()
+            description = "Select which user to remove the role group of.".toKey()
         }
 
         val role by role {
-            name = "role-group"
-            description = "The role group to remove from the given user."
+            name = "role-group".toKey()
+            description = "The role group to remove from the given user.".toKey()
         }
     }
 
     inner class RoleConfigSetArguments : Arguments() {
         val role by role {
-            name = "role"
-            description = "Select which role you want to configure."
+            name = "role".toKey()
+            description = "Select which role you want to configure.".toKey()
         }
 
         val nameSchema by optionalString {
-            name = "name-schema"
-            description = "Set the name schema for this username"
+            name = "name-schema".toKey()
+            description = "Set the name schema for this username".toKey()
         }
 
         val roleAction by optionalEnumChoice<RoleAction> {
-            name = "role-action"
-            description = "Set when this role should be applied to users, based on if they're linked or not."
-            typeName = "RoleAction"
+            name = "role-action".toKey()
+            description = "Set when this role should be applied to users, based on if they're linked or not.".toKey()
+            typeName = "RoleAction".toKey()
         }
     }
 
     inner class RoleConfigResetArguments : Arguments() {
         val role by role {
-            name = "role"
-            description = "Select which role you want to configure."
+            name = "role".toKey()
+            description = "Select which role you want to configure.".toKey()
         }
 
         val resetNameSchema by boolean {
-            name = "name-schema"
-            description = "Reset the name schema for this role."
+            name = "name-schema".toKey()
+            description = "Reset the name schema for this role.".toKey()
         }
     }
 }

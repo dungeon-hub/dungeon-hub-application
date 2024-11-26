@@ -13,6 +13,7 @@ import dev.kordex.core.commands.converters.impl.*
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralSlashCommand
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasPermission
@@ -43,8 +44,8 @@ class WarningSystem : Extension() {
 
     override suspend fun setup() {
         ephemeralSlashCommand(::WarnsArguments) {
-            name = "warns"
-            description = "Lets you see your active warnings."
+            name = "warns".toKey()
+            description = "Lets you see your active warnings.".toKey()
             allowInDms = false
 
             action {
@@ -126,14 +127,14 @@ class WarningSystem : Extension() {
         }
 
         publicSlashCommand {
-            name = "warn"
-            description = "Manage the warnings of a server member."
+            name = "warn".toKey()
+            description = "Manage the warnings of a server member.".toKey()
             allowInDms = false
             defaultMemberPermissions = Permissions(Permission.ModerateMembers)
 
             publicSubCommand(::WarnAddArguments) {
-                name = "add"
-                description = "Add a warning to the given user."
+                name = "add".toKey()
+                description = "Add a warning to the given user.".toKey()
 
                 action {
                     respond {
@@ -227,8 +228,8 @@ class WarningSystem : Extension() {
 
             //TODO what about reactivate?
             publicSubCommand(::WarnRemoveArguments) {
-                name = "deactivate"
-                description = "Deactivate a given warning."
+                name = "deactivate".toKey()
+                description = "Deactivate a given warning.".toKey()
 
                 action {
                     respond {
@@ -278,8 +279,8 @@ class WarningSystem : Extension() {
             }
 
             publicSubCommand(::WarnListAllArguments) {
-                name = "list-all"
-                description = "List all warnings of a user, active or not."
+                name = "list-all".toKey()
+                description = "List all warnings of a user, active or not.".toKey()
 
                 action {
                     val warns =
@@ -315,8 +316,8 @@ class WarningSystem : Extension() {
             }
 
             publicSubCommand(::WarnAddEvidenceArguments) {
-                name = "add-evidence"
-                description = "Adds evidence to a warning."
+                name = "add-evidence".toKey()
+                description = "Adds evidence to a warning.".toKey()
 
                 action {
                     respond {
@@ -381,61 +382,61 @@ class WarningSystem : Extension() {
 
     inner class WarnsArguments : Arguments() {
         val target by optionalMember {
-            name = "user"
-            description = "The user to get the warns of."
+            name = "user".toKey()
+            description = "The user to get the warns of.".toKey()
         }
     }
 
     inner class WarnAddArguments : Arguments() {
         val user by user {
-            name = "user"
-            description = "The user to warn."
+            name = "user".toKey()
+            description = "The user to warn.".toKey()
         }
 
         val type by stringChoice {
-            name = "severity"
-            description = "The severity of the warning."
+            name = "severity".toKey()
+            description = "The severity of the warning.".toKey()
 
-            WarningType.entries.forEach { choice(it.name, it.name) }
+            WarningType.entries.forEach { choice(it.name.toKey(), it.name) }
         }
 
         val reason by optionalString {
-            name = "reason"
-            description = "The reason for the warning."
+            name = "reason".toKey()
+            description = "The reason for the warning.".toKey()
             maxLength = 200
         }
     }
 
     inner class WarnRemoveArguments : Arguments() {
         val id by long {
-            name = "id"
-            description = "The id of the warning."
+            name = "id".toKey()
+            description = "The id of the warning.".toKey()
             minValue = 1
         }
     }
 
     inner class WarnListAllArguments : Arguments() {
         val user by user {
-            name = "user"
-            description = "The user to see the warnings of."
+            name = "user".toKey()
+            description = "The user to see the warnings of.".toKey()
         }
     }
 
     inner class WarnAddEvidenceArguments : Arguments() {
         val id by long {
-            name = "id"
-            description = "The id of the warning."
+            name = "id".toKey()
+            description = "The id of the warning.".toKey()
             minValue = 1
         }
 
         val attachment by optionalAttachment {
-            name = "attachment"
-            description = "Add an attachment (image or similar) as evidence."
+            name = "attachment".toKey()
+            description = "Add an attachment (image or similar) as evidence.".toKey()
         }
 
         val text by optionalString {
-            name = "text"
-            description = "Add a text (or link) as evidence."
+            name = "text".toKey()
+            description = "Add a text (or link) as evidence.".toKey()
         }
     }
 

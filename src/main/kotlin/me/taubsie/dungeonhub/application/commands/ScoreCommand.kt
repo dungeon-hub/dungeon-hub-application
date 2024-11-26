@@ -4,6 +4,7 @@ import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.converters.impl.optionalUser
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralSlashCommand
+import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.DiscordServerConnection
@@ -16,8 +17,8 @@ class ScoreCommand : Extension() {
 
     override suspend fun setup() {
         ephemeralSlashCommand(::ScoreArguments) {
-            name = "score"
-            description = "Use this to see the score of yourself or another user."
+            name = "score".toKey()
+            description = "Use this to see the score of yourself or another user.".toKey()
             allowInDms = false
 
             action {
@@ -48,8 +49,8 @@ class ScoreCommand : Extension() {
 
     inner class ScoreArguments : Arguments() {
         val user by optionalUser {
-            name = "user"
-            description = "The user to check the carries for."
+            name = "user".toKey()
+            description = "The user to check the carries for.".toKey()
         }
     }
 }

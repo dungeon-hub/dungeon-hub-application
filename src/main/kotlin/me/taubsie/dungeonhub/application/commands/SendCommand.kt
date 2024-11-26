@@ -15,6 +15,7 @@ import dev.kordex.core.commands.converters.impl.channel
 import dev.kordex.core.commands.converters.impl.optionalBoolean
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.enums.CntRequestType
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
@@ -29,13 +30,13 @@ class SendCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "send"
-            description = "Sends a special message into a channel."
+            name = "send".toKey()
+            description = "Sends a special message into a channel.".toKey()
             allowInDms = false
 
             publicSubCommand(::SendLinkMessageArguments) {
-                name = "link-message"
-                description = "Sends a message with components that are there to make linking easier."
+                name = "link-message".toKey()
+                description = "Sends a message with components that are there to make linking easier.".toKey()
                 defaultMemberPermissions = Permissions(Permission.ManageMessages)
 
                 action {
@@ -69,8 +70,8 @@ class SendCommand : Extension() {
             }
 
             publicSubCommand(::SendArguments) {
-                name = "cnt-message"
-                description = "Send the CNT message into the given channel."
+                name = "cnt-message".toKey()
+                description = "Send the CNT message into the given channel.".toKey()
                 defaultMemberPermissions = Permissions(Permission.Administrator)
 
                 action {
@@ -116,8 +117,8 @@ class SendCommand : Extension() {
 
     open inner class SendArguments : Arguments() {
         val channel by channel {
-            name = "channel"
-            description = "The channel to send the message into."
+            name = "channel".toKey()
+            description = "The channel to send the message into.".toKey()
             requiredChannelTypes = mutableSetOf(
                 ChannelType.GuildText,
                 ChannelType.GuildVoice,
@@ -128,8 +129,8 @@ class SendCommand : Extension() {
 
     inner class SendLinkMessageArguments : SendArguments() {
         val silent by optionalBoolean {
-            name = "silent"
-            description = "If the bot should reply silently (using ephemeral messages)"
+            name = "silent".toKey()
+            description = "If the bot should reply silently (using ephemeral messages)".toKey()
         }
     }
 }

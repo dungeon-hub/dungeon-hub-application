@@ -10,6 +10,7 @@ import dev.kordex.core.commands.converters.impl.optionalString
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidSubCommandException
@@ -33,14 +34,14 @@ class CarryDifficultyCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "carry-difficulty"
-            description = "Set up the carry difficulties for this server."
+            name = "carry-difficulty".toKey()
+            description = "Set up the carry difficulties for this server.".toKey()
             defaultMemberPermissions = Permissions(Permission.Administrator)
             allowInDms = false
 
             publicSubCommand(::CarryDifficultyCreateArguments) {
-                name = "create"
-                description = "Create a new carry difficulty"
+                name = "create".toKey()
+                description = "Create a new carry difficulty".toKey()
 
                 action {
                     respond {
@@ -82,8 +83,8 @@ class CarryDifficultyCommand : Extension() {
             }
 
             publicSubCommand(::CarryDifficultyArguments) {
-                name = "delete"
-                description = "Delete a carry difficulty"
+                name = "delete".toKey()
+                description = "Delete a carry difficulty".toKey()
 
                 action {
                     respond {
@@ -118,8 +119,8 @@ class CarryDifficultyCommand : Extension() {
             }
 
             publicSubCommand(::CarryDifficultyArguments) {
-                name = "get"
-                description = "Get information about a carry difficulty"
+                name = "get".toKey()
+                description = "Get information about a carry difficulty".toKey()
 
                 action {
                     respond {
@@ -145,8 +146,8 @@ class CarryDifficultyCommand : Extension() {
             }
 
             publicSubCommand(::CarryDifficultyEditArguments) {
-                name = "edit"
-                description = "Edit a carry difficulty"
+                name = "edit".toKey()
+                description = "Edit a carry difficulty".toKey()
 
                 action {
                     respond {
@@ -210,8 +211,8 @@ class CarryDifficultyCommand : Extension() {
             }
 
             publicSubCommand(::CarryDifficultyResetArguments) {
-                name = "reset"
-                description = "Reset a carry difficulty"
+                name = "reset".toKey()
+                description = "Reset a carry difficulty".toKey()
 
                 //TODO implement
                 action {
@@ -223,61 +224,61 @@ class CarryDifficultyCommand : Extension() {
 
     inner class CarryDifficultyCreateArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = "carry-type".toKey()
+            description = "The identifier of the carry type".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier"
-            description = "The identifier of the carry tier"
+            name = "carry-tier".toKey()
+            description = "The identifier of the carry tier".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val identifier by string {
-            name = "identifier"
-            description = "The identifier of the carry difficulty"
+            name = "identifier".toKey()
+            description = "The identifier of the carry difficulty".toKey()
         }
 
         val displayName by string {
-            name = "display-name"
-            description = "The display name of the carry difficulty"
+            name = "display-name".toKey()
+            description = "The display name of the carry difficulty".toKey()
             maxLength = 30
         }
 
         val price by int {
-            name = "price"
-            description = "The price per carry"
+            name = "price".toKey()
+            description = "The price per carry".toKey()
             minValue = 0
         }
 
         val score by int {
-            name = "score"
-            description = "The score gained per carry"
+            name = "score".toKey()
+            description = "The score gained per carry".toKey()
             minValue = 0
         }
     }
 
     inner class CarryDifficultyArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = "carry-type".toKey()
+            description = "The identifier of the carry type".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier"
-            description = "The identifier of the carry tier"
+            name = "carry-tier".toKey()
+            description = "The identifier of the carry tier".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val carryDifficulty by string {
-            name = "carry-difficulty"
-            description = "The identifier of the carry difficulty"
+            name = "carry-difficulty".toKey()
+            description = "The identifier of the carry difficulty".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
@@ -285,86 +286,86 @@ class CarryDifficultyCommand : Extension() {
 
     inner class CarryDifficultyEditArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = "carry-type".toKey()
+            description = "The identifier of the carry type".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier"
-            description = "The identifier of the carry tier"
+            name = "carry-tier".toKey()
+            description = "The identifier of the carry tier".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val carryDifficulty by string {
-            name = "carry-difficulty"
-            description = "The identifier of the carry difficulty"
+            name = "carry-difficulty".toKey()
+            description = "The identifier of the carry difficulty".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
 
         val displayName by optionalString {
-            name = "display-name"
-            description = "Set the display name of the carry difficulty"
+            name = "display-name".toKey()
+            description = "Set the display name of the carry difficulty".toKey()
         }
 
         val price by optionalInt {
-            name = "price"
-            description = "Set the price per carry"
+            name = "price".toKey()
+            description = "Set the price per carry".toKey()
             minValue = 0
         }
 
         val score by optionalInt {
-            name = "score"
-            description = "Set the score gained per carry"
+            name = "score".toKey()
+            description = "Set the score gained per carry".toKey()
             minValue = 0
             maxValue = 500
         }
 
         val bulkAmount by optionalInt {
-            name = "bulk-amount"
-            description = "Set the amount after which the carries use the bulk price."
+            name = "bulk-amount".toKey()
+            description = "Set the amount after which the carries use the bulk price.".toKey()
             minValue = 1
             maxValue = 500
         }
 
         val bulkPrice by optionalInt {
-            name = "bulk-price"
-            description = "Set price for bulk carries. Needs to have bulk-price set to be used."
+            name = "bulk-price".toKey()
+            description = "Set price for bulk carries. Needs to have bulk-price set to be used.".toKey()
             minValue = 1
         }
 
         val thumbnailUrl by optionalString {
-            name = "thumbnail-url"
-            description = "Set the url for the thumbnail. This only acts as an override for the carry tier."
+            name = "thumbnail-url".toKey()
+            description = "Set the url for the thumbnail. This only acts as an override for the carry tier.".toKey()
         }
 
         val priceName by optionalString {
-            name = "price-name"
-            description = "Set this if this carry difficulty should have a different name in the price embed."
+            name = "price-name".toKey()
+            description = "Set this if this carry difficulty should have a different name in the price embed.".toKey()
         }
     }
 
     inner class CarryDifficultyResetArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = "carry-type".toKey()
+            description = "The identifier of the carry type".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier"
-            description = "The identifier of the carry tier"
+            name = "carry-tier".toKey()
+            description = "The identifier of the carry tier".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val carryDifficulty by string {
-            name = "carry-difficulty"
-            description = "The identifier of the carry difficulty"
+            name = "carry-difficulty".toKey()
+            description = "The identifier of the carry difficulty".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryDifficulty
         }

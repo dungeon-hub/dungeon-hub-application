@@ -7,6 +7,7 @@ import dev.kordex.core.commands.converters.impl.long
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
@@ -30,8 +31,8 @@ class CalcPriceCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand(::CalcPriceArguments) {
-            name = "calc-price"
-            description = "Calculate the price for some amount of carries."
+            name = "calc-price".toKey()
+            description = "Calculate the price for some amount of carries.".toKey()
             allowInDms = false
 
             action {
@@ -97,29 +98,29 @@ class CalcPriceCommand : Extension() {
 
     inner class CalcPriceArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = "carry-type".toKey()
+            description = "The identifier of the carry type".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier"
-            description = "The identifier of the carry tier"
+            name = "carry-tier".toKey()
+            description = "The identifier of the carry tier".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val carryDifficulty by string {
-            name = "carry-difficulty"
-            description = "The identifier of the carry difficulty"
+            name = "carry-difficulty".toKey()
+            description = "The identifier of the carry difficulty".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
 
         val amount by long {
-            name = "amount"
-            description = "The amount of carries you want."
+            name = "amount".toKey()
+            description = "The amount of carries you want.".toKey()
             maxValue = 200
             minValue = 1
         }

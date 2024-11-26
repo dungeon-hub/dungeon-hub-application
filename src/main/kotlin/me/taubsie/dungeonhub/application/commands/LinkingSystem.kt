@@ -26,6 +26,7 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.extensions.publicUserCommand
+import dev.kordex.core.i18n.toKey
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -46,8 +47,8 @@ class LinkingSystem : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand(::SingleIgnArguments) {
-            name = "link"
-            description = "Link your discord to your hypixel account."
+            name = "link".toKey()
+            description = "Link your discord to your hypixel account.".toKey()
             allowInDms = true
 
             action {
@@ -118,8 +119,8 @@ class LinkingSystem : Extension() {
         listOf(693263712626278553L, 633621474183217163L, 1023684107877761196L).map { Snowflake(it) }
             .forEach { guildId ->
                 publicSlashCommand(::SingleIgnArguments) {
-                    name = "manual-link"
-                    description = "Manually link someone by IGN."
+                    name = "manual-link".toKey()
+                    description = "Manually link someone by IGN.".toKey()
                     guild(guildId)
                     check {
                         failIfNot("You aren't allowed to use this command.") {
@@ -164,8 +165,8 @@ class LinkingSystem : Extension() {
             }
 
         publicSlashCommand {
-            name = "sync"
-            description = "Update your roles and nickname based on your linked account."
+            name = "sync".toKey()
+            description = "Update your roles and nickname based on your linked account.".toKey()
             //TODO maybe rewrite to also allow usage in dms
             allowInDms = false
 
@@ -231,8 +232,8 @@ class LinkingSystem : Extension() {
         }
 
         publicSlashCommand(::ForceSyncArguments) {
-            name = "force-sync"
-            description = "Forces the update of the users roles and nickname."
+            name = "force-sync".toKey()
+            description = "Forces the update of the users roles and nickname.".toKey()
             defaultMemberPermissions = Permissions(Permission.ManageNicknames, Permission.ManageRoles)
             allowInDms = false
 
@@ -246,7 +247,7 @@ class LinkingSystem : Extension() {
         }
 
         publicUserCommand {
-            name = "Force Sync"
+            name = "Force Sync".toKey()
             allowInDms = false
             defaultMemberPermissions = Permissions(Permission.ManageNicknames, Permission.ManageRoles)
 
@@ -260,8 +261,8 @@ class LinkingSystem : Extension() {
         }
 
         publicSlashCommand {
-            name = "unlink"
-            description = "Unlink from your ingame-account."
+            name = "unlink".toKey()
+            description = "Unlink from your ingame-account.".toKey()
             allowInDms = true
 
             action {
@@ -301,8 +302,8 @@ class LinkingSystem : Extension() {
         }
 
         publicSlashCommand(::IgnArguments) {
-            name = "ign"
-            description = "Shows the IGN of a linked user."
+            name = "ign".toKey()
+            description = "Shows the IGN of a linked user.".toKey()
 
             action {
                 respond {
@@ -330,8 +331,8 @@ class LinkingSystem : Extension() {
         }
 
         publicSlashCommand(::SingleIgnArguments) {
-            name = "find-user"
-            description = "Shows which user is linked to the given IGN."
+            name = "find-user".toKey()
+            description = "Shows which user is linked to the given IGN.".toKey()
 
             action {
                 respond {
@@ -468,23 +469,23 @@ class LinkingSystem : Extension() {
 
     inner class SingleIgnArguments : Arguments() {
         val ign by string {
-            name = "ign"
-            description = "The users ingame-name"
+            name = "ign".toKey()
+            description = "The users ingame-name".toKey()
             minLength = 2
         }
     }
 
     inner class ForceSyncArguments : Arguments() {
         val user by user {
-            name = "user"
-            description = "The user to sync."
+            name = "user".toKey()
+            description = "The user to sync.".toKey()
         }
     }
 
     inner class IgnArguments : Arguments() {
         val user by user {
-            name = "user"
-            description = "The user to show the IGN for."
+            name = "user".toKey()
+            description = "The user to show the IGN for.".toKey()
         }
     }
 }
