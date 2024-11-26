@@ -15,6 +15,7 @@ import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ProfileModerationService
 import me.taubsie.dungeonhub.application.service.addEmbed
 import me.taubsie.dungeonhub.application.service.color
+import net.dungeonhub.i18n.Translations
 
 /**
  * Command to ban all users in a comma-separated list.
@@ -26,7 +27,7 @@ class BanAllCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand(::BanAllArguments) {
-            name = "ban-all".toKey()
+            name = Translations.Command.BanAll.name
             description = "Uses the profile moderation to ban all given users.".toKey()
             defaultMemberPermissions = Permissions(Permission.BanMembers)
             allowInDms = false
