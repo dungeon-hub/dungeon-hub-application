@@ -1,6 +1,13 @@
+import dev.kordex.gradle.plugins.kordex.DataCollection
+
 plugins {
-    application
-    kotlin("jvm")
+    id("org.jetbrains.kotlin.jvm") version "2.0.21"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
+
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("io.gitlab.arturbosch.detekt") version "1.23.6"
+
+    id("dev.kordex.gradle.kordex") version "1.5.8"
 }
 
 group = "me.taubsie"
@@ -8,32 +15,38 @@ version = "1.0.0"
 description = "dungeon-hub-application"
 
 repositories {
-    mavenCentral()
-
     maven {
         url = uri("https://repo.hypixel.net/repository/Hypixel/")
         name = "Hypixel Repository"
     }
+}
 
-    maven {
-        url = uri("https://releases-repo.kordex.dev")
-        name = "KordEx (Releases)"
+kordEx {
+    kordExVersion = "2.3.1-SNAPSHOT"
+    jvmTarget = 17
+
+    bot {
+        // See https://docs.kordex.dev/data-collection.html
+        dataCollection(DataCollection.Extra)
+
+        mainClass = "me.taubsie.dungeonhub.application.connection.DiscordConnection"
     }
 
-    maven {
-        url = uri("https://snapshots-repo.kordex.dev")
-        name = "KordEx (Snapshots)"
+    i18n {
+        classPackage = "net.dungeonhub.i18n"
+        translationBundle = "dhub.strings"
     }
+}
 
-    maven {
-        url = uri("https://oss.sonatype.org/content/repositories/snapshots")
-        name = "Sonatype Snapshots (Legacy)"
-    }
+detekt {
+    buildUponDefaultConfig = true
 
-    mavenLocal()
+    config.from(rootProject.files("detekt.yml"))
 }
 
 dependencies {
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.6")
+
     //Lombok, might remove at some time
     implementation("org.projectlombok:lombok:1.18.28")
 
@@ -53,9 +66,6 @@ dependencies {
     //HTTP Client
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
 
-    //Discord Framework
-    implementation("dev.kordex:kord-extensions:2.2.1-SNAPSHOT")
-
     //Logging
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.20.0")
@@ -74,10 +84,6 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xjvm-default=all")
     }
-}
-
-application {
-    mainClass.set("me.taubsie.dungeonhub.application.connection.DiscordConnection")
 }
 
 tasks.withType<JavaCompile> {
