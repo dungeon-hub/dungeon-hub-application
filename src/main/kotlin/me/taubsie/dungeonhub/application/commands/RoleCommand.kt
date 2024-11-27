@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.commands
 
+import dev.kord.common.asJavaLocale
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.core.entity.Member
@@ -98,7 +99,7 @@ class RoleCommand : Extension() {
                                 if (currentRole == null) {
                                     throw NoOptionFoundException()
                                 } else {
-                                    embeds = mutableListOf(ApplicationService.loadEmbedFromDiscordRole(currentRole))
+                                    embeds = mutableListOf(ApplicationService.loadEmbedFromDiscordRole(currentRole, locale = event.interaction.locale?.asJavaLocale()))
                                 }
                                 return@respond
                             }

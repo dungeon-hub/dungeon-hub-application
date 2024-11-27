@@ -22,6 +22,7 @@ import dev.kordex.core.components.ephemeralButton
 import dev.kordex.core.components.linkButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
+import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.addReaction
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.respond
@@ -441,7 +442,7 @@ class MessageListener : Extension() {
 
                 components {
                     linkButton {
-                        label = "SkyCrypt"
+                        label = "SkyCrypt".toKey()
                         url = ConfigProperty.SKYCRYPT_API_URL.value + "stats/" + ign
                     }
                 }
@@ -456,26 +457,26 @@ class MessageListener : Extension() {
 
                 components(Duration.ofMinutes(5).toKotlinDuration()) {
                     linkButton {
-                        label = "SkyCrypt"
+                        label = "SkyCrypt".toKey()
                         url = ConfigProperty.SKYCRYPT_API_URL.value + "stats/" + ign
                     }
 
                     ephemeralButton {
                         style = ButtonStyle.Secondary
-                        label = "Reload"
+                        label = "Reload".toKey()
                         id = "reload_playerdata"
 
                         action {
                             edit {
                                 components {
                                     linkButton {
-                                        label = "SkyCrypt"
+                                        label = "SkyCrypt".toKey()
                                         url = ConfigProperty.SKYCRYPT_API_URL.value + "stats/" + ign
                                     }
 
                                     disabledButton {
                                         style = ButtonStyle.Secondary
-                                        label = "Reload"
+                                        label = "Reload".toKey()
                                         id = "reload_playerdata"
                                     }
                                 }

@@ -54,7 +54,7 @@ class HelpCommand : Extension() {
                 embedBuilder.color = helpDisplay.embedColor.color
                 embedBuilder.description = helpDisplay.description
 
-                helpDisplay.fields.forEach { (name: String?, value: String?) ->
+                helpDisplay.fields.forEach { (name: String, value: String) ->
                     embedBuilder.field(name, false) { value }
                 }
 
@@ -90,7 +90,7 @@ class HelpCommand : Extension() {
         val helpDisplay: HelpDisplay = helpTopic.description.getDescription(user!!, guild)
         embed.description = helpDisplay.description
         embed.color = helpDisplay.embedColor.color
-        helpDisplay.fields.forEach { (name: String?, value: String?) ->
+        helpDisplay.fields.forEach { (name: String, value: String) ->
             embed.field(name, false) { value }
         }
 

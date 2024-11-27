@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.commands
 
+import dev.kord.common.asJavaLocale
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.converters.impl.optionalUser
 import dev.kordex.core.extensions.Extension
@@ -39,7 +40,8 @@ class ScoreCommand : Extension() {
                             event.interaction.user,
                             guild,
                             scores,
-                            carryCount
+                            carryCount,
+                            locale = event.interaction.locale?.asJavaLocale()
                         )
                     )
                 }

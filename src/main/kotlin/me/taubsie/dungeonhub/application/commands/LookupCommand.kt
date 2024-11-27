@@ -19,6 +19,7 @@ import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.addEmbed
 import me.taubsie.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.i18n.Translations
 
 @LoadExtension
 class LookupCommand : Extension() {
@@ -26,7 +27,7 @@ class LookupCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "lookup".toKey()
+            name = Translations.Command.Lookup.name
             description = "Lookup a player or discord user.".toKey()
             allowInDms = true
 

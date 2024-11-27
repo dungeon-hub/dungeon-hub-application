@@ -20,6 +20,7 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.embed
 import dev.kord.rest.request.RestRequestException
 import dev.kordex.core.ExtensibleBot
+import dev.kordex.core.i18n.SupportedLocales
 import dev.kordex.data.api.DataCollection
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -186,7 +187,7 @@ object DiscordConnection : StartupListener {
             }
 
             errorResponse { message, type ->
-                embeds = ApplicationService.getErrorEmbeds(type.error, message)
+                embeds = ApplicationService.getErrorEmbeds(type.error, message.key)
             }
 
             hooks {
@@ -204,6 +205,15 @@ object DiscordConnection : StartupListener {
             presence {
                 state = "Loading..."
                 status = PresenceStatus.Idle
+            }
+
+            i18n {
+                defaultLocale = SupportedLocales.ENGLISH
+
+                applicationCommandLocale(setOf(Locale.GERMAN))
+
+                interactionUserLocaleResolver()
+                interactionGuildLocaleResolver()
             }
         }
 

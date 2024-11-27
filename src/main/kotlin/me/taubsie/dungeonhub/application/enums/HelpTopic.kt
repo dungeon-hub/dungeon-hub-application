@@ -3,6 +3,8 @@ package me.taubsie.dungeonhub.application.enums
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.User
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
+import dev.kordex.core.i18n.toKey
+import dev.kordex.core.i18n.types.Key
 import lombok.Getter
 import me.taubsie.dungeonhub.application.enums.HelpTopic.DescriptionSupplier
 import me.taubsie.dungeonhub.application.exceptions.MustBeServerException
@@ -14,7 +16,7 @@ import net.dungeonhub.model.carry_type.CarryTypeModel
 
 @Getter
 enum class HelpTopic(
-    override val readableName: String,
+    override val readableName: Key,
     val title: String,
     val description: DescriptionSupplier
 ) : ChoiceEnum {
@@ -168,6 +170,8 @@ enum class HelpTopic(
                         + ")."
             )
         });
+
+    constructor(readableName: String, title: String, description: DescriptionSupplier) : this(readableName.toKey(), title, description)
 
     fun interface DescriptionSupplier {
         fun getDescription(user: User, server: Guild?): HelpDisplay
