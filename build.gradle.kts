@@ -19,6 +19,8 @@ repositories {
         url = uri("https://repo.hypixel.net/repository/Hypixel/")
         name = "Hypixel Repository"
     }
+
+    mavenLocal()
 }
 
 kordEx {
