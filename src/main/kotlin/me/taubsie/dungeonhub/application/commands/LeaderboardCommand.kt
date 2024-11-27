@@ -35,7 +35,7 @@ class LeaderboardCommand : Extension() {
 
                 val scoreType: ScoreType = arguments.scoreType ?: ScoreType.Default
 
-                val leaderboardTitle = LeaderboardService.getLeaderboardTitle(carryType, scoreType)
+                val leaderboardTitle = scoreType.getLeaderboardTitle(carryType)
 
                 val firstPage = if (carryType != null) {
                     ScoreConnection[carryType]
