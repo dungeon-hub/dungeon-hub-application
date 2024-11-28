@@ -187,7 +187,7 @@ object DiscordConnection : StartupListener {
             }
 
             errorResponse { message, type ->
-                embeds = ApplicationService.getErrorEmbeds(type.error, message.key)
+                embeds = ApplicationService.getErrorEmbeds(type.error, message.translate())
             }
 
             hooks {
