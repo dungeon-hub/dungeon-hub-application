@@ -8,7 +8,6 @@ import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
@@ -28,7 +27,7 @@ class BanAllCommand : Extension() {
     override suspend fun setup() {
         publicSlashCommand(::BanAllArguments) {
             name = Translations.Command.BanAll.name
-            description = "Uses the profile moderation to ban all given users.".toKey()
+            description = Translations.Command.BanAll.description
             defaultMemberPermissions = Permissions(Permission.BanMembers)
             allowInDms = false
 
@@ -80,14 +79,14 @@ class BanAllCommand : Extension() {
 
     inner class BanAllArguments : Arguments() {
         val users by string {
-            name = "users".toKey()
-            description = "Comma-separated list of users to ban.".toKey()
+            name = Translations.Command.BanAll.Arguments.Users.name
+            description = Translations.Command.BanAll.Arguments.Users.description
             minLength = 6
         }
 
         val reason by string {
-            name = "reason".toKey()
-            description = "Reason for the ban.".toKey()
+            name = Translations.Command.BanAll.Arguments.Reason.name
+            description = Translations.Command.BanAll.Arguments.Reason.description
             minLength = 2
         }
     }

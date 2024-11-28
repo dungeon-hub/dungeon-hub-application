@@ -7,7 +7,6 @@ import dev.kordex.core.commands.converters.impl.long
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
@@ -18,6 +17,7 @@ import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.CarryTierConnection
 import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.i18n.Translations
 
 /**
  * Command to calculate the price for some amount of carries.
@@ -31,8 +31,8 @@ class CalcPriceCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand(::CalcPriceArguments) {
-            name = "calc-price".toKey()
-            description = "Calculate the price for some amount of carries.".toKey()
+            name = Translations.Command.CalcPrice.name
+            description = Translations.Command.CalcPrice.description
             allowInDms = false
 
             action {
@@ -98,29 +98,29 @@ class CalcPriceCommand : Extension() {
 
     inner class CalcPriceArguments : Arguments() {
         val carryType by string {
-            name = "carry-type".toKey()
-            description = "The identifier of the carry type".toKey()
+            name = Translations.CommonArguments.CarryType.name
+            description = Translations.CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier".toKey()
-            description = "The identifier of the carry tier".toKey()
+            name = Translations.CommonArguments.CarryTier.name
+            description = Translations.CommonArguments.CarryTier.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val carryDifficulty by string {
-            name = "carry-difficulty".toKey()
-            description = "The identifier of the carry difficulty".toKey()
+            name = Translations.CommonArguments.CarryDifficulty.name
+            description = Translations.CommonArguments.CarryDifficulty.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
 
         val amount by long {
-            name = "amount".toKey()
-            description = "The amount of carries you want.".toKey()
+            name = Translations.Command.CalcPrice.Arguments.Amount.name
+            description = Translations.Command.CalcPrice.Arguments.Amount.description
             maxValue = 200
             minValue = 1
         }
