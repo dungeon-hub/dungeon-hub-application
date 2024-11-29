@@ -7,6 +7,7 @@ import dev.kordex.core.commands.converters.impl.long
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.utils.getLocale
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
@@ -80,13 +81,26 @@ class CalcPriceCommand : Extension() {
 
                     val embed = ApplicationService.embed
                     embed.color = EmbedColor.Information.color
-                    embed.title = "Carry-Price"
-                    embed.field("Type", true) {
+                    embed.title =
+                        Translations.Command.CalcPrice.Response.title.withLocale(event.getLocale()).translate()
+                    embed.field(
+                        Translations.Command.CalcPrice.Response.Fields.type.translateLocale(event.getLocale()),
+                        true
+                    ) {
                         carryTier.displayName + " | " + carryDifficulty.displayName
                     }
-                    embed.field("Amount", true) { arguments.amount.toString() }
-                    embed.field("Price", true) { priceText }
-                    embed.field("Price per Carry", true) { pricePerCarryText }
+                    embed.field(
+                        Translations.Command.CalcPrice.Response.Fields.amount.translateLocale(event.getLocale()),
+                        true
+                    ) { arguments.amount.toString() }
+                    embed.field(
+                        Translations.Command.CalcPrice.Response.Fields.price.translateLocale(event.getLocale()),
+                        true
+                    ) { priceText }
+                    embed.field(
+                        Translations.Command.CalcPrice.Response.Fields.pricePerCarry.translateLocale(event.getLocale()),
+                        true
+                    ) { pricePerCarryText }
 
                     carryDifficulty.thumbnailUrl?.let { embed.thumbnail { url = it } }
 
