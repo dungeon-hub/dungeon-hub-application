@@ -5,7 +5,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
 
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("io.gitlab.arturbosch.detekt") version "1.23.6"
+    //TODO fix errors
+    //id("io.gitlab.arturbosch.detekt") version "1.23.6"
 
     id("dev.kordex.gradle.kordex") version "1.5.8"
 }
@@ -40,14 +41,16 @@ kordEx {
     }
 }
 
-detekt {
+//TODO fix errors
+/*detekt {
     buildUponDefaultConfig = true
 
     config.from(rootProject.files("detekt.yml"))
-}
+}*/
 
 dependencies {
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.6")
+    //TODO fix errors
+    //detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.6")
 
     //Lombok, might remove at some time
     implementation("org.projectlombok:lombok:1.18.28")

@@ -8,6 +8,7 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
+import dev.kordex.core.utils.getLocale
 import me.taubsie.dungeonhub.application.connection.copy
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
@@ -35,7 +36,7 @@ class LeaderboardCommand : Extension() {
 
                 val scoreType: ScoreType = arguments.scoreType ?: ScoreType.Default
 
-                val leaderboardTitle = scoreType.getLeaderboardTitle(carryType)
+                val leaderboardTitle = scoreType.getLeaderboardTitle(carryType, event.getLocale())
 
                 val firstPage = if (carryType != null) {
                     ScoreConnection[carryType]
