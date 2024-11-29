@@ -3,7 +3,7 @@ package me.taubsie.dungeonhub.application.commands
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
+import dev.kordex.core.utils.getLocale
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.getGuildOrNull
 import me.taubsie.dungeonhub.application.enums.EmbedColor
@@ -12,6 +12,7 @@ import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.addEmbed
 import me.taubsie.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.i18n.Translations.Command.Stats
 import java.time.ZonedDateTime
 
 @LoadExtension
@@ -20,8 +21,8 @@ class StatsCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "stats".toKey()
-            description = "Shows some stats about this server.".toKey()
+            name = Stats.name
+            description = Stats.description
             allowInDms = false
 
             action {
@@ -29,6 +30,8 @@ class StatsCommand : Extension() {
                     val guild = DiscordConnection.bot!!.kordRef
                         .with(EntitySupplyStrategy.rest)
                         .getGuildOrNull(guild!!.id, true)!!
+
+                    val locale = event.getLocale()
 
                     val memberCount = guild.approximateMemberCount ?: 0
                     val spentMoney = ApplicationService.makeNumberReadable(
@@ -50,11 +53,19 @@ class StatsCommand : Extension() {
 
                     addEmbed {
                         color(EmbedColor.Default)
-                        title = "Stats for server ${guild.name}"
+                        title = Stats.Response.title.withNamedPlaceholders(
+                            "name" to guild.name
+                        ).translateLocale(locale)
 
-                        field("Member count", true) { memberCount.toString() }
-                        field("Total money spent (30 days)", true) { "$spentMoney ($spentMoneyMonthly)" }
-                        field("Total amount of carries (30 days)", true) { "$totalCarries ($monthlyCarries)" }
+                        field(
+                            Stats.Response.Fields.MemberCount.name.translateLocale(locale), true
+                        ) { memberCount.toString() }
+                        field(
+                            Stats.Response.Fields.MoneySpent.name.translateLocale(locale), true
+                        ) { "$spentMoney ($spentMoneyMonthly)" }
+                        field(
+                            Stats.Response.Fields.CarryAmount.name.translateLocale(locale), true
+                        ) { "$totalCarries ($monthlyCarries)" }
                     }
                 }
             }

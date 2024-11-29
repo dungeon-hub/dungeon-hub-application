@@ -17,6 +17,8 @@ import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.i18n.Translations.Command.Leaderboard
+import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.carry_type.CarryTypeModel
 
 @LoadExtension
@@ -26,8 +28,8 @@ class LeaderboardCommand : Extension() {
     @OptIn(AlwaysPublicResponse::class)
     override suspend fun setup() {
         publicSlashCommand(::LeaderboardArguments) {
-            name = "leaderboard".toKey()
-            description = "Shows you a certain leaderboard.".toKey()
+            name = Leaderboard.name
+            description = Leaderboard.description
             allowInDms = false
 
             action {
@@ -83,8 +85,8 @@ class LeaderboardCommand : Extension() {
 
     inner class LeaderboardArguments : Arguments() {
         val carryType by optionalString {
-            name = "carry-type".toKey()
-            description = "The identifier of the carry type".toKey()
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }

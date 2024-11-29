@@ -38,6 +38,13 @@ import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.*
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.i18n.Translations
+import net.dungeonhub.i18n.Translations.Command.FindUser
+import net.dungeonhub.i18n.Translations.Command.ForceSync
+import net.dungeonhub.i18n.Translations.Command.Ign
+import net.dungeonhub.i18n.Translations.Command.Link
+import net.dungeonhub.i18n.Translations.Command.Sync
+import net.dungeonhub.i18n.Translations.Command.Unlink
 import kotlin.concurrent.thread
 
 @PrivilegedIntent
@@ -47,8 +54,8 @@ class LinkingSystem : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand(::SingleIgnArguments) {
-            name = "link".toKey()
-            description = "Link your discord to your hypixel account.".toKey()
+            name = Link.name
+            description = Link.description
             allowInDms = true
 
             action {
@@ -165,8 +172,8 @@ class LinkingSystem : Extension() {
             }
 
         publicSlashCommand {
-            name = "sync".toKey()
-            description = "Update your roles and nickname based on your linked account.".toKey()
+            name = Sync.name
+            description = Sync.description
             //TODO maybe rewrite to also allow usage in dms
             allowInDms = false
 
@@ -232,8 +239,8 @@ class LinkingSystem : Extension() {
         }
 
         publicSlashCommand(::ForceSyncArguments) {
-            name = "force-sync".toKey()
-            description = "Forces the update of the users roles and nickname.".toKey()
+            name = ForceSync.name
+            description = ForceSync.description
             defaultMemberPermissions = Permissions(Permission.ManageNicknames, Permission.ManageRoles)
             allowInDms = false
 
@@ -247,7 +254,7 @@ class LinkingSystem : Extension() {
         }
 
         publicUserCommand {
-            name = "Force Sync".toKey()
+            name = Translations.UserCommand.ForceSync.name
             allowInDms = false
             defaultMemberPermissions = Permissions(Permission.ManageNicknames, Permission.ManageRoles)
 
@@ -261,8 +268,8 @@ class LinkingSystem : Extension() {
         }
 
         publicSlashCommand {
-            name = "unlink".toKey()
-            description = "Unlink from your ingame-account.".toKey()
+            name = Unlink.name
+            description = Unlink.description
             allowInDms = true
 
             action {
@@ -302,8 +309,8 @@ class LinkingSystem : Extension() {
         }
 
         publicSlashCommand(::IgnArguments) {
-            name = "ign".toKey()
-            description = "Shows the IGN of a linked user.".toKey()
+            name = Ign.name
+            description = Ign.description
 
             action {
                 respond {
@@ -331,8 +338,8 @@ class LinkingSystem : Extension() {
         }
 
         publicSlashCommand(::SingleIgnArguments) {
-            name = "find-user".toKey()
-            description = "Shows which user is linked to the given IGN.".toKey()
+            name = FindUser.name
+            description = FindUser.description
 
             action {
                 respond {

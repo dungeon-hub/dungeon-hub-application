@@ -30,6 +30,7 @@ import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.ContentConnection
+import net.dungeonhub.i18n.Translations.Command.Embed
 import net.dungeonhub.service.GsonService
 import java.nio.charset.StandardCharsets
 import java.util.function.Consumer
@@ -49,8 +50,8 @@ class EmbedCommand : Extension() {
     @Suppress("kotlin:S3776")
     override suspend fun setup() {
         publicSlashCommand {
-            name = "embed".toKey()
-            description = "Makes it possible to manage embeds.".toKey()
+            name = Embed.name
+            description = Embed.description
             allowInDms = false
             defaultMemberPermissions = Permissions(Permission.ManageMessages)
 

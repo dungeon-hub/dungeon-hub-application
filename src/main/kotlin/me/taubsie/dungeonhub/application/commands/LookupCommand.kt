@@ -20,6 +20,7 @@ import me.taubsie.dungeonhub.application.service.addEmbed
 import me.taubsie.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.i18n.Translations
+import net.dungeonhub.i18n.Translations.Command.Lookup
 
 @LoadExtension
 class LookupCommand : Extension() {
@@ -27,13 +28,13 @@ class LookupCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = Translations.Command.Lookup.name
-            description = "Lookup a player or discord user.".toKey()
+            name = Lookup.name
+            description = Lookup.description
             allowInDms = true
 
             publicSubCommand(::LookupPlayerArguments) {
-                name = "player".toKey()
-                description = "Lookup a minecraft user.".toKey()
+                name = Lookup.Player.name
+                description = Lookup.Player.description
 
                 action {
                     respond {
@@ -43,8 +44,8 @@ class LookupCommand : Extension() {
             }
 
             publicSubCommand(::LookupUserArguments) {
-                name = "user".toKey()
-                description = "Lookup a discord user.".toKey()
+                name = Lookup.User.name
+                description = Lookup.User.description
 
                 action {
                     respond {
@@ -55,7 +56,7 @@ class LookupCommand : Extension() {
         }
 
         publicUserCommand {
-            name = "Lookup User".toKey()
+            name = Translations.UserCommand.Lookup.name
 
             action {
                 respond {

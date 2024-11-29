@@ -30,6 +30,8 @@ import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.connection.DungeonHubConnection
 import net.dungeonhub.connection.WarningConnection
 import net.dungeonhub.enums.WarningType
+import net.dungeonhub.i18n.Translations.Command.Warn
+import net.dungeonhub.i18n.Translations.Command.Warns
 import net.dungeonhub.model.warning.WarningCreationModel
 import net.dungeonhub.model.warning.WarningEvidenceCreationModel
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -44,8 +46,8 @@ class WarningSystem : Extension() {
 
     override suspend fun setup() {
         ephemeralSlashCommand(::WarnsArguments) {
-            name = "warns".toKey()
-            description = "Lets you see your active warnings.".toKey()
+            name = Warns.name
+            description = Warns.description
             allowInDms = false
 
             action {
@@ -127,8 +129,8 @@ class WarningSystem : Extension() {
         }
 
         publicSlashCommand {
-            name = "warn".toKey()
-            description = "Manage the warnings of a server member.".toKey()
+            name = Warn.name
+            description = Warn.description
             allowInDms = false
             defaultMemberPermissions = Permissions(Permission.ModerateMembers)
 

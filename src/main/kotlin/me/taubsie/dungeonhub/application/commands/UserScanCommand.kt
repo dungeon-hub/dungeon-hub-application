@@ -25,6 +25,7 @@ import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.ProfileModerationService
 import java.util.stream.Collectors
 
+//TODO remove this, together with profile moderation?
 @LoadExtension
 class UserScanCommand : Extension() {
     override val name = "user-scan-command"

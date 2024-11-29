@@ -26,6 +26,8 @@ import me.taubsie.dungeonhub.application.service.color
 import net.dungeonhub.connection.*
 import net.dungeonhub.enums.QueueStep
 import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.i18n.Translations.Command.Purge
+import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.discord_user.DiscordUserModel
 import net.dungeonhub.model.purge_type.PurgeTypeRoleModel
@@ -52,8 +54,8 @@ class PurgeCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "purge".toKey()
-            description = "Allows you to purge inactive carriers.".toKey()
+            name = Purge.name
+            description = Purge.description
             defaultMemberPermissions = Permissions(Permission.Administrator)
             allowInDms = false
 
@@ -320,8 +322,8 @@ class PurgeCommand : Extension() {
 
     inner class PurgeArguments : Arguments() {
         val carryType by string {
-            name = "carry-type".toKey()
-            description = "The identifier of the carry type".toKey()
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }

@@ -31,6 +31,7 @@ import me.taubsie.dungeonhub.application.service.NicknameService
 import me.taubsie.dungeonhub.application.service.RolesService
 import net.dungeonhub.connection.DiscordRoleConnection
 import net.dungeonhub.enums.RoleAction
+import net.dungeonhub.i18n.Translations.Command.Role
 import net.dungeonhub.model.discord_role.DiscordRoleCreationModel
 import net.dungeonhub.model.discord_role.DiscordRoleUpdateModel
 import kotlin.concurrent.thread
@@ -41,8 +42,8 @@ class RoleCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "role".toKey()
-            description = "Manage a user's roles.".toKey()
+            name = Role.name
+            description = Role.description
             defaultMemberPermissions = Permissions(Permission.ManageRoles)
             allowInDms = false
 

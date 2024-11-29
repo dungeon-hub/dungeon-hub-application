@@ -43,6 +43,8 @@ import net.dungeonhub.connection.QueueConnection
 import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.QueueStep
 import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.i18n.Translations.Command.Log
+import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.carry_queue.CarryQueueCreationModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
 import net.dungeonhub.model.score.ScoreModel
@@ -56,8 +58,8 @@ class LoggingSystem : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand(::LogArguments) {
-            name = "log".toKey()
-            description = "Use this to log your carries.".toKey()
+            name = Log.name
+            description = Log.description
             allowInDms = false
 
             action {
@@ -430,15 +432,15 @@ class LoggingSystem : Extension() {
 
     inner class LogArguments : Arguments() {
         val carryAmount by long {
-            name = "amount".toKey()
-            description = "The amount of carries you did.".toKey()
+            name = Log.Arguments.Amount.name
+            description = Log.Arguments.Amount.description
             minValue = 1
             maxValue = 200
         }
 
         val carryDifficulty by string {
-            name = "carry-difficulty".toKey()
-            description = "The difficulty of the carry.".toKey()
+            name = CommonArguments.CarryDifficulty.name
+            description = Log.Arguments.CarryDifficulty.description
             autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
     }

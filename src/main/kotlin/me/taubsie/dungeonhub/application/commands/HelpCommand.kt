@@ -16,6 +16,7 @@ import me.taubsie.dungeonhub.application.enums.HelpTopic
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.misc.HelpDisplay
 import me.taubsie.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.i18n.Translations.Command.Help
 
 @LoadExtension
 class HelpCommand : Extension() {
@@ -23,8 +24,8 @@ class HelpCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand(::HelpArguments) {
-            name = "help".toKey()
-            description = "List of available commands.".toKey()
+            name = Help.name
+            description = Help.description
 
             action {
                 respond {

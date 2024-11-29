@@ -34,6 +34,7 @@ import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.ScoreResetType
 import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.i18n.Translations.Command.ManageScore
 import net.dungeonhub.model.score.ScoreModel
 import net.dungeonhub.model.score.ScoreUpdateModel
 
@@ -43,8 +44,8 @@ class ManageScoreCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "manage-score".toKey()
-            description = "Use this to manage the score of service team members.".toKey()
+            name = ManageScore.name
+            description = ManageScore.description
             defaultMemberPermissions = Permissions(Permission.ManageMessages)
             allowInDms = false
 
