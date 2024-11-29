@@ -8,13 +8,15 @@ import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.*
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
+import dev.kordex.core.utils.getLocale
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.connection.CarryTypeConnection
+import net.dungeonhub.i18n.Translations.Command.CarryType
+import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.carry_type.CarryTypeCreationModel
 import java.util.*
 
@@ -36,14 +38,14 @@ class CarryTypeCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "carry-type".toKey()
-            description = "Set up the carry types for this server.".toKey()
+            name = CarryType.name
+            description = CarryType.description
             defaultMemberPermissions = Permissions(Permission.Administrator)
             allowInDms = false
 
             publicSubCommand(::CarryTypeCreateArguments) {
-                name = "create".toKey()
-                description = "Create a new carry type".toKey()
+                name = CarryType.Create.name
+                description = CarryType.Create.description
 
                 action {
                     respond {
@@ -53,7 +55,10 @@ class CarryTypeCommand : Extension() {
                             .replace(" ", "_")
 
                         if (CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(identifier) != null) {
-                            throw InvalidOptionException("identifier", "That carry type already exists!")
+                            throw InvalidOptionException(
+                                CommonArguments.identifier.translateLocale(event.getLocale()),
+                                "That carry type already exists!"
+                            )
                         }
 
                         val creationModel = CarryTypeCreationModel(identifier, arguments.displayName)
@@ -75,15 +80,15 @@ class CarryTypeCommand : Extension() {
                                 ?: throw CommandExecutionWarning("Couldn't add that carry type.")
 
                         val embed = ApplicationService.getCarryTypeEmbed(carryTypeModel)
-                        embed.title = "Carry Type created"
+                        embed.title = CarryType.Create.Response.title.translateLocale(event.getLocale())
                         embeds = mutableListOf(embed)
                     }
                 }
             }
 
             publicSubCommand(::CarryTypeArguments) {
-                name = "delete".toKey()
-                description = "Delete a carry type".toKey()
+                name = CarryType.Delete.name
+                description = CarryType.Delete.description
 
                 action {
                     respond {
@@ -96,15 +101,15 @@ class CarryTypeCommand : Extension() {
                             ?: throw CommandExecutionWarning("Carry type couldn't be deleted!")
 
                         val embed = ApplicationService.getCarryTypeEmbed(deletedCarryType)
-                        embed.title = "Deleted Carry Type"
+                        embed.title = CarryType.Delete.Response.title.translateLocale(event.getLocale())
                         embeds = mutableListOf(embed)
                     }
                 }
             }
 
             publicSubCommand(::CarryTypeArguments) {
-                name = "get".toKey()
-                description = "Get information about a carry type".toKey()
+                name = CarryType.Get.name
+                description = CarryType.Get.description
 
                 action {
                     respond {
@@ -119,8 +124,8 @@ class CarryTypeCommand : Extension() {
             }
 
             publicSubCommand(::CarryTypeEditArguments) {
-                name = "edit".toKey()
-                description = "Edit a carry type".toKey()
+                name = CarryType.Edit.name
+                description = CarryType.Edit.description
 
                 action {
                     respond {
@@ -155,15 +160,15 @@ class CarryTypeCommand : Extension() {
                                 ?: throw CommandExecutionWarning("Couldn't update carry type.")
 
                         val embed = ApplicationService.getCarryTypeEmbed(updatedCarryType)
-                        embed.title = "Updated Carry Type"
+                        embed.title = CarryType.Edit.Response.title.translateLocale(event.getLocale())
                         embeds = mutableListOf(embed)
                     }
                 }
             }
 
             publicSubCommand(::CarryTypeResetArguments) {
-                name = "reset".toKey()
-                description = "Reset properties of a carry type".toKey()
+                name = CarryType.Reset.name
+                description = CarryType.Reset.description
 
                 action {
                     respond {
@@ -190,7 +195,7 @@ class CarryTypeCommand : Extension() {
                                 ?: throw CommandExecutionWarning("Couldn't update carry type.")
 
                         val embed = ApplicationService.getCarryTypeEmbed(updatedCarryType)
-                        embed.title = "Updated Carry Type with reset values"
+                        embed.title = CarryType.Reset.Response.title.translateLocale(event.getLocale())
                         embeds = mutableListOf(embed)
                     }
                 }
@@ -200,39 +205,39 @@ class CarryTypeCommand : Extension() {
 
     inner class CarryTypeCreateArguments : Arguments() {
         val identifier by string {
-            name = "identifier".toKey()
-            description = "The identifier of the carry type.".toKey()
+            name = CommonArguments.identifier
+            description = CommonArguments.CarryType.description
             maxLength = 30
         }
 
         val displayName by string {
-            name = "display-name".toKey()
-            description = "The display name of the carry type".toKey()
+            name = CommonArguments.displayName
+            description = CarryType.Create.Arguments.DisplayName.description
             maxLength = 30
         }
 
         val logChannel by optionalChannel {
-            name = "log-channel".toKey()
-            description = "Set the channel that will be used for logging".toKey()
+            name = CarryType.Create.Arguments.LogChannel.name
+            description = CarryType.Create.Arguments.LogChannel.description
             requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
         val leaderboardChannel by optionalChannel {
-            name = "leaderboard-channel".toKey()
-            description = "Set the channel that will be used to show a static leaderboard".toKey()
+            name = CarryType.Create.Arguments.LeaderboardChannel.name
+            description = CarryType.Create.Arguments.LeaderboardChannel.description
             requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
         val eventActive by optionalBoolean {
-            name = "event-active".toKey()
-            description = "Set if there if an active event for score".toKey()
+            name = CarryType.Create.Arguments.EventActive.name
+            description = CarryType.Create.Arguments.EventActive.description
         }
     }
 
     inner class CarryTypeArguments : Arguments() {
         val carryType by string {
-            name = "carry-type".toKey()
-            description = "The identifier of the carry type".toKey()
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
@@ -240,52 +245,52 @@ class CarryTypeCommand : Extension() {
 
     inner class CarryTypeEditArguments : Arguments() {
         val carryType by string {
-            name = "carry-type".toKey()
-            description = "The identifier of the carry type".toKey()
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val displayName by optionalString {
-            name = "display-name".toKey()
-            description = "Set the display name".toKey()
+            name = CommonArguments.displayName
+            description = CarryType.Edit.Arguments.DisplayName.description
             maxLength = 30
         }
 
         val logChannel by optionalChannel {
-            name = "log-channel".toKey()
-            description = "Set the channel that will be used for logging".toKey()
+            name = CarryType.Edit.Arguments.LogChannel.name
+            description = CarryType.Edit.Arguments.LogChannel.description
             requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
         val leaderboardChannel by optionalChannel {
-            name = "leaderboard-channel".toKey()
-            description = "Set the channel that will be used to show a static leaderboard".toKey()
+            name = CarryType.Edit.Arguments.LeaderboardChannel.name
+            description = CarryType.Edit.Arguments.LeaderboardChannel.description
             requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
         val eventActive by optionalBoolean {
-            name = "event-active".toKey()
-            description = "Set if there if an active event for score".toKey()
+            name = CarryType.Edit.Arguments.EventActive.name
+            description = CarryType.Edit.Arguments.EventActive.description
         }
     }
 
     inner class CarryTypeResetArguments : Arguments() {
         val carryType by string {
-            name = "carry-type".toKey()
-            description = "The identifier of the carry type".toKey()
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val logChannel by boolean {
-            name = "log-channel".toKey()
-            description = "Set if the log channel should be reset".toKey()
+            name = CarryType.Reset.Arguments.LogChannel.name
+            description = CarryType.Reset.Arguments.LogChannel.description
         }
 
         val leaderboardChannel by boolean {
-            name = "leaderboard-channel".toKey()
-            description = "Set if the leaderboard channel should be reset".toKey()
+            name = CarryType.Reset.Arguments.LeaderboardChannel.name
+            description = CarryType.Reset.Arguments.LeaderboardChannel.description
         }
     }
 }

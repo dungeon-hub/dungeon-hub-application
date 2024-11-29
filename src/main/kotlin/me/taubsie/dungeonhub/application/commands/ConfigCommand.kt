@@ -20,6 +20,7 @@ import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.ServerService
+import net.dungeonhub.i18n.Translations.Command.Config
 import java.util.stream.Collectors
 
 /**
@@ -43,8 +44,8 @@ class ConfigCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "config".toKey()
-            description = "Edits the config for the server.".toKey()
+            name = Config.name
+            description = Config.description
             defaultMemberPermissions = Permissions(Permission.Administrator)
             allowInDms = false
 
