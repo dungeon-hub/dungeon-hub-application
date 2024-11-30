@@ -20,6 +20,10 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.embed
 import dev.kord.rest.request.RestRequestException
 import dev.kordex.core.ExtensibleBot
+import dev.kordex.core.components.components
+import dev.kordex.core.components.linkButton
+import dev.kordex.core.i18n.SupportedLocales
+import dev.kordex.core.i18n.toKey
 import dev.kordex.data.api.DataCollection
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -178,15 +182,31 @@ object DiscordConnection : StartupListener {
                     message {
                         embed {
                             color(EmbedColor.Default)
-                            title = "Dungeon Hub"
-                            description = "Soon you can see more here!"
+                            description = "## Thanks for using our bot!\n" +
+                                    "While this bot was initially created only to be used on the Dungeon Hub Discord " +
+                                    "server, we have since decided to allow it to be used on other servers as well!\n" +
+                                    "If you're confused about how to configure the bot, you can check out the " +
+                                    "[documentation](https://docs.dungeon-hub.net/) or ask for help " +
+                                    "[in our discord](https://discord.dungeon-hub.net/)."
+                        }
+
+                        components {
+                            linkButton {
+                                label = "Documentation".toKey()
+                                url = "https://docs.dungeon-hub.net/"
+                            }
+
+                            linkButton {
+                                label = "Discord".toKey()
+                                url = "https://discord.dungeon-hub.net/"
+                            }
                         }
                     }
                 }
             }
 
             errorResponse { message, type ->
-                embeds = ApplicationService.getErrorEmbeds(type.error, message)
+                embeds = ApplicationService.getErrorEmbeds(type.error, message.translate())
             }
 
             hooks {
@@ -204,6 +224,15 @@ object DiscordConnection : StartupListener {
             presence {
                 state = "Loading..."
                 status = PresenceStatus.Idle
+            }
+
+            i18n {
+                defaultLocale = SupportedLocales.ENGLISH
+
+                applicationCommandLocale(setOf(Locale.GERMAN))
+
+                interactionUserLocaleResolver()
+                interactionGuildLocaleResolver()
             }
         }
 

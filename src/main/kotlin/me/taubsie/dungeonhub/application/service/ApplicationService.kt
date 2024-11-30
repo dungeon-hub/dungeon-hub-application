@@ -196,7 +196,7 @@ object ApplicationService {
         return embedBuilder
     }
 
-    fun loadEmbedFromDiscordRole(discordRoleModel: DiscordRoleModel): EmbedBuilder {
+    fun loadEmbedFromDiscordRole(discordRoleModel: DiscordRoleModel, locale: Locale? = null): EmbedBuilder {
         val embed = embed
 
         embed.field("Role", true) { "<@&" + discordRoleModel.id + ">" }
@@ -204,7 +204,7 @@ object ApplicationService {
             "Name schema",
             true
         ) { discordRoleModel.nameSchema ?: "none" }
-        embed.field("Role action", true) { discordRoleModel.roleAction.readableName }
+        embed.field("Role action", true) { discordRoleModel.roleAction.readableName.withLocale(locale).translate() }
 
         return embed
     }
@@ -344,7 +344,8 @@ object ApplicationService {
         user: User,
         server: GuildBehavior?,
         scoreCount: List<ScoreModel>,
-        carryCount: Int? = null
+        carryCount: Int? = null,
+        locale: Locale? = null
     ): EmbedBuilder {
         if (scoreCount.isEmpty()) {
             return noCarryTypeFoundEmbed
@@ -375,10 +376,9 @@ object ApplicationService {
             }
         }
 
-        scoreDescriptions
-            .forEach { (carryType: ScoreType, strings: List<String>?) ->
-                embed.field(carryType.displayName, true) { java.lang.String.join(System.lineSeparator(), strings) }
-            }
+        scoreDescriptions.forEach { (scoreType: ScoreType, strings: List<String>?) ->
+            embed.field(scoreType.readableName.withLocale(locale).translate(), true) { java.lang.String.join(System.lineSeparator(), strings) }
+        }
 
         return embed
     }
@@ -447,7 +447,11 @@ object ApplicationService {
                 discordField.name =
                     (if (flagResponse.discord?.flagged == true) ":x: " else if (flagResponse.discord == null) ":question_mark: " else ":white_check_mark: ") + flagResponse.name + " (by discord)"
                 discordField.value =
-                    if (flagResponse.discord?.flagged == true) "This user is flagged!\n${flagResponse.discord.format(false)}" else if (flagResponse.discord == null) "Service is currently unreachable." else "User isn't flagged"
+                    if (flagResponse.discord?.flagged == true) "This user is flagged!\n${
+                        flagResponse.discord.format(
+                            false
+                        )
+                    }" else if (flagResponse.discord == null) "Service is currently unreachable." else "User isn't flagged"
                 discordField.inline = true
                 result.add(discordField)
             }

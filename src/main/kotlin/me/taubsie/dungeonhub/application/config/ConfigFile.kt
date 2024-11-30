@@ -12,7 +12,7 @@ import java.nio.file.Files
 import java.util.*
 
 @OnStart(priority = StartPriority.CONFIGURATION_LOADER)
-abstract class ConfigFile<T : ChoiceEnum?> : StartupListener {
+abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
     private val properties = Properties()
 
     protected abstract val possibleProperties: Set<T>
@@ -21,16 +21,16 @@ abstract class ConfigFile<T : ChoiceEnum?> : StartupListener {
 
     fun setConfig(property: T, value: String?) {
         if(value == null) {
-            properties.remove(property!!.readableName)
+            properties.remove(property.readableName.key)
         } else {
-            properties.setProperty(property!!.readableName, value)
+            properties.setProperty(property.readableName.key, value)
         }
 
         saveProperties()
     }
 
     fun getConfig(property: T): String? {
-        return properties.getProperty(property!!.readableName)
+        return properties.getProperty(property.readableName.key)
     }
 
     fun saveProperties() {
@@ -61,7 +61,7 @@ abstract class ConfigFile<T : ChoiceEnum?> : StartupListener {
             }
 
             for (property in possibleProperties) {
-                properties.setProperty(property!!.readableName, "")
+                properties.setProperty(property.readableName.key, "")
             }
         } else {
             try {
@@ -73,8 +73,8 @@ abstract class ConfigFile<T : ChoiceEnum?> : StartupListener {
             }
 
             for (property in possibleProperties) {
-                if (!properties.containsKey(property!!.readableName)) {
-                    properties.setProperty(property.readableName, "")
+                if (!properties.containsKey(property.readableName.key)) {
+                    properties.setProperty(property.readableName.key, "")
                 }
             }
         }

@@ -11,6 +11,7 @@ import dev.kordex.core.commands.converters.impl.optionalString
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.utils.getLocale
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
@@ -19,6 +20,8 @@ import me.taubsie.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.connection.CarryTierConnection
 import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.i18n.Translations.Command.CarryTier
+import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.carry_tier.CarryTierCreationModel
 import java.util.*
 
@@ -41,14 +44,14 @@ class CarryTierCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "carry-tier"
-            description = "Set up the carry tiers for this server."
+            name = CarryTier.name
+            description = CarryTier.description
             defaultMemberPermissions = Permissions(Permission.Administrator)
             allowInDms = false
 
             publicSubCommand(::CarryTierCreateArguments) {
-                name = "create"
-                description = "Create a new carry tier"
+                name = CarryTier.Create.name
+                description = CarryTier.Create.description
 
                 action {
                     respond {
@@ -91,15 +94,15 @@ class CarryTierCommand : Extension() {
                             ?: throw CommandExecutionWarning("Couldn't add that carry tier.")
 
                         val embed = ApplicationService.getCarryTierEmbed(carryTier)
-                        embed.title = "Carry Tier created"
+                        embed.title = CarryTier.Create.Response.title.translateLocale(event.getLocale())
                         embeds = mutableListOf(embed)
                     }
                 }
             }
 
             publicSubCommand(::CarryTierArguments) {
-                name = "delete"
-                description = "Delete a carry tier"
+                name = CarryTier.Delete.name
+                description = CarryTier.Delete.description
 
                 action {
                     respond {
@@ -118,15 +121,15 @@ class CarryTierCommand : Extension() {
                             ?: throw CommandExecutionWarning("Couldn't delete the carry tier.")
 
                         val embed = ApplicationService.getCarryTierEmbed(deletedCarryTier)
-                        embed.title = "Deleted Carry Tier"
+                        embed.title = CarryTier.Delete.Response.title.translateLocale(event.getLocale())
                         embeds = mutableListOf(embed)
                     }
                 }
             }
 
             publicSubCommand(::CarryTierArguments) {
-                name = "get"
-                description = "Get information about a carry tier"
+                name = CarryTier.Get.name
+                description = CarryTier.Get.description
 
                 action {
                     respond {
@@ -144,8 +147,8 @@ class CarryTierCommand : Extension() {
             }
 
             publicSubCommand(::CarryTierEditArguments) {
-                name = "edit"
-                description = "Edit a carry tier"
+                name = CarryTier.Edit.name
+                description = CarryTier.Edit.description
 
                 action {
                     respond {
@@ -206,15 +209,15 @@ class CarryTierCommand : Extension() {
                             ?: throw CommandExecutionWarning("Couldn't update carry tier.")
 
                         val embed = ApplicationService.getCarryTierEmbed(updatedCarryTier)
-                        embed.title = "Updated Carry Tier"
+                        embed.title = CarryTier.Edit.Response.title.translateLocale(event.getLocale())
                         embeds = mutableListOf(embed)
                     }
                 }
             }
 
             publicSubCommand(::CarryTierResetArguments) {
-                name = "reset"
-                description = "Reset a carry tier"
+                name = CarryTier.Reset.name
+                description = CarryTier.Reset.description
 
                 action {
                     respond {
@@ -256,7 +259,7 @@ class CarryTierCommand : Extension() {
                                 ?: throw CommandExecutionWarning("Couldn't update carry tier.")
 
                         val embed = ApplicationService.getCarryTierEmbed(updatedCarryTier)
-                        embed.title = "Updated Carry Tier with reset values"
+                        embed.title = CarryTier.Reset.Response.title.translateLocale(event.getLocale())
                         embeds = mutableListOf(embed)
                     }
                 }
@@ -266,67 +269,67 @@ class CarryTierCommand : Extension() {
 
     inner class CarryTierCreateArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val identifier by string {
-            name = "identifier"
-            description = "The identifier of the carry tier"
+            name = CommonArguments.identifier
+            description = CommonArguments.CarryTier.description
         }
 
         val displayName by string {
-            name = "display-name"
-            description = "The display name of the carry tier"
+            name = CommonArguments.displayName
+            description = CarryTier.Create.Arguments.DisplayName.description
             maxLength = 30
         }
 
         val descriptiveName by optionalString {
-            name = "descriptive-name"
-            description = "Set the descriptive name which replaces the display name in some places"
+            name = CarryTier.Create.Arguments.DescriptiveName.name
+            description = CarryTier.Create.Arguments.DescriptiveName.description
         }
 
         val category by optionalChannel {
-            name = "category"
-            description = "Set the category of the tickets"
+            name = CarryTier.Create.Arguments.Category.name
+            description = CarryTier.Create.Arguments.Category.description
             requiredChannelTypes = mutableSetOf(ChannelType.GuildCategory)
         }
 
         val priceChannel by optionalChannel {
-            name = "price-channel"
-            description = "Set the channel where the price list should appear"
+            name = CarryTier.Create.Arguments.PriceChannel.name
+            description = CarryTier.Create.Arguments.PriceChannel.description
             requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
         val priceDescription by optionalString {
-            name = "price-description"
-            description = "Set the price description which is shown on the top of the price message."
+            name = CarryTier.Create.Arguments.PriceDescription.name
+            description = CarryTier.Create.Arguments.PriceDescription.description
         }
 
         val thumbnailUrl by optionalString {
-            name = "thumbnail-url"
-            description = "Set the thumbnail which is used to make some embeds look nicer"
+            name = CarryTier.Create.Arguments.ThumbnailUrl.name
+            description = CarryTier.Create.Arguments.ThumbnailUrl.description
         }
 
         val priceTitle by optionalString {
-            name = "price-title"
-            description = "Set the title of the price embed"
+            name = CarryTier.Create.Arguments.PriceTitle.name
+            description = CarryTier.Create.Arguments.PriceTitle.description
         }
     }
 
     inner class CarryTierArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier"
-            description = "The identifier of the carry tier"
+            name = CommonArguments.CarryTier.name
+            description = CommonArguments.CarryTier.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
@@ -334,90 +337,90 @@ class CarryTierCommand : Extension() {
 
     inner class CarryTierEditArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier"
-            description = "The identifier of the carry tier"
+            name = CommonArguments.CarryTier.name
+            description = CommonArguments.CarryTier.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val displayName by optionalString {
-            name = "display-name"
-            description = "Set the display name of the carry tier"
+            name = CommonArguments.displayName
+            description = CarryTier.Edit.Arguments.DisplayName.description
         }
 
         val descriptiveName by optionalString {
-            name = "descriptive-name"
-            description = "Set the descriptive name which replaces the display name in some places"
+            name = CarryTier.Edit.Arguments.DescriptiveName.name
+            description = CarryTier.Edit.Arguments.DescriptiveName.description
         }
 
         val category by optionalChannel {
-            name = "category"
-            description = "Set the category of the tickets"
+            name = CarryTier.Edit.Arguments.Category.name
+            description = CarryTier.Edit.Arguments.Category.description
             requiredChannelTypes = mutableSetOf(ChannelType.GuildCategory)
         }
 
         val priceChannel by optionalChannel {
-            name = "price-channel"
-            description = "Set the channel where the price list should appear"
+            name = CarryTier.Edit.Arguments.PriceChannel.name
+            description = CarryTier.Edit.Arguments.PriceChannel.description
             requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
         val thumbnailUrl by optionalString {
-            name = "thumbnail-url"
-            description = "Set the thumbnail which is used to make some embeds look nicer"
+            name = CarryTier.Edit.Arguments.ThumbnailUrl.name
+            description = CarryTier.Edit.Arguments.ThumbnailUrl.description
         }
 
         val priceTitle by optionalString {
-            name = "price-title"
-            description = "Set the title of the price embed"
+            name = CarryTier.Edit.Arguments.PriceTitle.name
+            description = CarryTier.Edit.Arguments.PriceTitle.description
         }
     }
 
     inner class CarryTierResetArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier"
-            description = "The identifier of the carry tier"
+            name = CommonArguments.CarryTier.name
+            description = CommonArguments.CarryTier.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val descriptiveName by boolean {
-            name = "descriptive-name"
-            description = "Reset the descriptive name which replaces the display name in some places"
+            name = CarryTier.Reset.Arguments.DescriptiveName.name
+            description = CarryTier.Reset.Arguments.DescriptiveName.description
         }
 
         val category by boolean {
-            name = "category"
-            description = "Reset the category of the tickets"
+            name = CarryTier.Reset.Arguments.Category.name
+            description = CarryTier.Reset.Arguments.Category.description
         }
 
         val priceChannel by boolean {
-            name = "price-channel"
-            description = "Reset the channel where the price list should appear"
+            name = CarryTier.Reset.Arguments.PriceChannel.name
+            description = CarryTier.Reset.Arguments.PriceChannel.description
         }
 
         val thumbnailUrl by boolean {
-            name = "thumbnail-url"
-            description = "Reset the thumbnail which is used to make some embeds look nicer"
+            name = CarryTier.Reset.Arguments.ThumbnailUrl.name
+            description = CarryTier.Reset.Arguments.ThumbnailUrl.description
         }
 
         val priceTitle by boolean {
-            name = "price-title"
-            description = "Reset the title of the price embed"
+            name = CarryTier.Reset.Arguments.PriceTitle.name
+            description = CarryTier.Reset.Arguments.PriceTitle.description
         }
     }
 }

@@ -1,12 +1,14 @@
 package me.taubsie.dungeonhub.application.config
 
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
+import dev.kordex.core.i18n.toKey
+import dev.kordex.core.i18n.types.Key
 import lombok.Getter
 import java.util.*
 import java.util.stream.Collectors
 
 @Getter
-enum class ConfigProperty(override val readableName: String) : ChoiceEnum {
+enum class ConfigProperty(override val readableName: Key) : ChoiceEnum {
     DISCORD_BOT_TOKEN("discord-bot.token"),
 
     //Internal API
@@ -28,6 +30,8 @@ enum class ConfigProperty(override val readableName: String) : ChoiceEnum {
 
     JERRY_API_KEY("jerry.key"),
     JERRY_API_URL("jerry.url");
+
+    constructor(readableName: String) : this(readableName.toKey())
 
     var value: String?
         get() = ConfigService.getConfig(this)

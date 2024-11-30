@@ -24,7 +24,6 @@ import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.ScoreType
-import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.score.LeaderboardModel
 import net.dungeonhub.model.score.ScoreModel
 import org.slf4j.Logger
@@ -40,16 +39,6 @@ object LeaderboardService : StartupListener {
     private const val LEADERBOARD_DESCRIPTION = "To see how score works, use `/help score`"
     private val logger: Logger = LoggerFactory.getLogger(LeaderboardService::class.java)
     private var lastRefresh: Instant? = null
-
-    fun getLeaderboardTitle(carryType: CarryTypeModel?, scoreType: ScoreType): String {
-        val suffix = scoreType.leaderboardSuffix ?: ""
-
-        if (carryType == null) {
-            return "Leaderboard | Total score$suffix"
-        }
-
-        return "Leaderboard | ${carryType.displayName}-Carries$suffix"
-    }
 
     fun getLeaderboardEmbed(title: String?, leaderboardModel: LeaderboardModel?): EmbedBuilder {
         if (leaderboardModel == null) {
@@ -185,7 +174,7 @@ object LeaderboardService : StartupListener {
                             return@runBlocking Optional.empty()
                         }
                     }
-                }
+                }?.orElse(null)
 
                 if (leaderboardChannel == null) {
                     continue
@@ -196,17 +185,17 @@ object LeaderboardService : StartupListener {
                         continue
                     }
 
-                    if (leaderboards.containsKey(leaderboardChannel.get())) {
-                        leaderboards[leaderboardChannel.get()]!!.add(
+                    if (leaderboards.containsKey(leaderboardChannel)) {
+                        leaderboards[leaderboardChannel]!!.add(
                             Leaderboard(
-                                getLeaderboardTitle(carryType, scoreType),
+                                scoreType.getLeaderboardTitle(carryType),
                                 ScoreConnection[carryType].loadLeaderboard(scoreType, 0)
                             )
                         )
                     } else {
-                        leaderboards[leaderboardChannel.get()] = mutableListOf(
+                        leaderboards[leaderboardChannel] = mutableListOf(
                             Leaderboard(
-                                getLeaderboardTitle(carryType, scoreType),
+                                scoreType.getLeaderboardTitle(carryType),
                                 ScoreConnection[carryType].loadLeaderboard(scoreType, 0)
                             )
                         )
@@ -236,14 +225,14 @@ object LeaderboardService : StartupListener {
                         if (leaderboards.containsKey(leaderboardChannel)) {
                             leaderboards[leaderboardChannel]!!.add(
                                 Leaderboard(
-                                    getLeaderboardTitle(null, scoreType),
+                                    scoreType.getLeaderboardTitle(null),
                                     DiscordServerConnection.loadTotalLeaderboard(serverModel.id, scoreType, 0)
                                 )
                             )
                         } else {
                             leaderboards[leaderboardChannel] = mutableListOf(
                                 Leaderboard(
-                                    getLeaderboardTitle(null, scoreType),
+                                    scoreType.getLeaderboardTitle(null),
                                     DiscordServerConnection.loadTotalLeaderboard(serverModel.id, scoreType, 0)
                                 )
                             )

@@ -10,11 +10,13 @@ import dev.kordex.core.commands.application.slash.converters.impl.optionalEnumCh
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.HelpTopic
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.misc.HelpDisplay
 import me.taubsie.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.i18n.Translations.Command.Help
 
 @LoadExtension
 class HelpCommand : Extension() {
@@ -22,8 +24,8 @@ class HelpCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand(::HelpArguments) {
-            name = "help"
-            description = "List of available commands."
+            name = Help.name
+            description = Help.description
 
             action {
                 respond {
@@ -53,7 +55,7 @@ class HelpCommand : Extension() {
                 embedBuilder.color = helpDisplay.embedColor.color
                 embedBuilder.description = helpDisplay.description
 
-                helpDisplay.fields.forEach { (name: String?, value: String?) ->
+                helpDisplay.fields.forEach { (name: String, value: String) ->
                     embedBuilder.field(name, false) { value }
                 }
 
@@ -89,7 +91,7 @@ class HelpCommand : Extension() {
         val helpDisplay: HelpDisplay = helpTopic.description.getDescription(user!!, guild)
         embed.description = helpDisplay.description
         embed.color = helpDisplay.embedColor.color
-        helpDisplay.fields.forEach { (name: String?, value: String?) ->
+        helpDisplay.fields.forEach { (name: String, value: String) ->
             embed.field(name, false) { value }
         }
 
@@ -98,9 +100,9 @@ class HelpCommand : Extension() {
 
     inner class HelpArguments : Arguments() {
         val helpTopic by optionalEnumChoice<HelpTopic> {
-            name = "topic"
-            description = "Select what topic you need help with."
-            typeName = "HelpTopic"
+            name = "topic".toKey()
+            description = "Select what topic you need help with.".toKey()
+            typeName = "HelpTopic".toKey()
         }
     }
 }
