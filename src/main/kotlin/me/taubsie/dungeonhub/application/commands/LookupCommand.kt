@@ -1,6 +1,7 @@
 package me.taubsie.dungeonhub.application.commands
 
 import dev.kord.core.behavior.UserBehavior
+import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.publicSubCommand
@@ -116,25 +117,19 @@ class LookupCommand : Extension() {
                 }
             }
 
-            if (flagged.isNotEmpty()) {
-                addEmbed {
-                    footer = null
-                    timestamp = null
-                    color(EmbedColor.Negative)
-                    description = formatDescription(flagged.isNotEmpty(), target != null, actualTarget, actualIgn)
-                }
-            } else {
-                addEmbed {
-                    footer = null
-                    timestamp = null
-                    color(EmbedColor.Positive)
-                    description = formatDescription(flagged.isNotEmpty(), target != null, actualTarget, actualIgn)
-                }
+            addEmbed {
+                footer = null
+                timestamp = null
+                color(if(flagged.isNotEmpty()) EmbedColor.Negative else EmbedColor.Positive)
+                description = formatDescription(flagged.isNotEmpty(), target != null, actualTarget, actualIgn)
             }
 
             addEmbed {
                 color(if (flagged.isNotEmpty()) EmbedColor.Negative else if (downedServices.isNotEmpty()) EmbedColor.Information else EmbedColor.Positive)
                 fields = ApplicationService.formatTotalFlagDetails(flagResponses)
+                val infoFooter = EmbedBuilder.Footer()
+                infoFooter.text = "discord.dungeon-hub.net • Did you know that this is included in /player?"
+                footer = infoFooter
             }
         }
 
