@@ -3,6 +3,7 @@ package me.taubsie.dungeonhub.application.commands
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
+import com.squareup.moshi.adapter
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
@@ -28,10 +29,12 @@ import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
+import me.taubsie.dungeonhub.application.misc.EmbedModel
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.i18n.Translations.Command.Embed
 import net.dungeonhub.service.GsonService
+import net.dungeonhub.service.MoshiService
 import java.nio.charset.StandardCharsets
 import java.util.function.Consumer
 
@@ -47,6 +50,7 @@ class EmbedCommand : Extension() {
     override val name = "embed-command"
 
     //Suppress "method too complex" because it's pretty understandable and the size is required
+    @OptIn(ExperimentalStdlibApi::class)
     @Suppress("kotlin:S3776")
     override suspend fun setup() {
         publicSlashCommand {
@@ -101,11 +105,11 @@ class EmbedCommand : Extension() {
                                     }
                                 })
                         } else {
-                            @Suppress("DEPRECATION")
-                            val embedSource = GsonService.gson.toJson(
-                                if (embeds.size == 1) embeds[0].toModel()
-                                else embeds.map { it.toModel() }
-                            )
+                            val embedSource = if(embeds.size == 1) {
+                                MoshiService.moshi.adapter<EmbedModel>().toJson(embeds[0].toModel())
+                            } else {
+                                MoshiService.moshi.adapter<List<EmbedModel>>().toJson( embeds.map { it.toModel() } )
+                            }
 
                             val description =
                                 if (embedSource.length >= 4000 || arguments.type.equals("cdn", ignoreCase = true)) {
