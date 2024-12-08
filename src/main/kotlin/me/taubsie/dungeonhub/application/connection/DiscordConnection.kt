@@ -422,11 +422,8 @@ fun EmbedBuilder.applyJson(key: String, value: JsonElement) {
 
         "fields" -> setFields(value)
         "footer" -> setFooter(value)
-        "timestamp" -> timestamp = (
-                MoshiService.moshi.adapter(Instant::class.java).fromJson(
-                    value.asString
-                )!!.toKotlinInstant()
-                )
+        "timestamp" -> timestamp =
+            MoshiService.moshi.adapter(Instant::class.java).fromJson(value.asString)!!.toKotlinInstant()
 
         "thumbnail" -> setThumbnail(value)
     }
