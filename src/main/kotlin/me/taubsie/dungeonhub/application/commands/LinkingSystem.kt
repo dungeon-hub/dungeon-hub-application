@@ -30,7 +30,6 @@ import dev.kordex.core.i18n.toKey
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
-import me.taubsie.dungeonhub.application.connection.HypixelConnection.getHypixelLinkedDiscord
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.HelpTopic
@@ -38,6 +37,7 @@ import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.*
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.connection.HypixelApiConnection
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.i18n.Translations.Command.FindUser
 import net.dungeonhub.i18n.Translations.Command.ForceSync
@@ -139,14 +139,12 @@ class LinkingSystem : Extension() {
                         respond {
                             val uuid = MojangConnection.getUUIDByName(arguments.ign)
 
-                            val discordUser = getHypixelLinkedDiscord(uuid)
-                                .orElseThrow {
-                                    InvalidOptionWarning(
-                                        "ign",
-                                        "Please add the correct discord-account to your hypixel social menu.\n"
-                                                + "To learn more about how to do this, use `/help verification`."
-                                    )
-                                }
+                            val discordUser = HypixelApiConnection().getHypixelLinkedDiscord(uuid)
+                                ?: throw InvalidOptionWarning(
+                                    "ign",
+                                    "Please add the correct discord-account to your hypixel social menu.\n"
+                                            + "To learn more about how to do this, use `/help verification`."
+                                )
 
                             val users = guild!!.requestMembers { query = discordUser; limit = 5 }
                                 .map { it.members }

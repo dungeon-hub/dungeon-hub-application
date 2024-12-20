@@ -6,13 +6,13 @@ import dev.kord.core.entity.Member
 import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
 import kotlinx.coroutines.flow.toList
-import me.taubsie.dungeonhub.application.connection.HypixelConnection.getHypixelLinkedDiscord
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.getMutualServers
 import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.misc.PlayerInformation
 import net.dungeonhub.connection.DiscordRoleConnection
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.connection.HypixelConnection.getHypixelLinkedDiscord
 import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.discord_user.DiscordUserModel
 import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
@@ -235,8 +235,10 @@ object NicknameService {
      */
     @Contract(pure = true, value = "-> new")
     private fun toMap(): Collector<DiscordRoleModel, *, Map<Long, DiscordRoleModel>> {
-        return Collectors.toMap({ obj: DiscordRoleModel -> obj.id },
-            { discordRoleModel: DiscordRoleModel -> discordRoleModel })
+        return Collectors.toMap(
+            { obj: DiscordRoleModel -> obj.id },
+            { discordRoleModel: DiscordRoleModel -> discordRoleModel }
+        )
     }
 }
 

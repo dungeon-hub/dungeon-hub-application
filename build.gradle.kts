@@ -58,12 +58,12 @@ dependencies {
     //Internal API
     implementation(libs.dungeon.hub.api.client)
 
+    //Hypixel API
+    implementation(libs.hypixel.wrapper)
+
     //Functionality
     implementation("net.dungeon-hub:transcripts-kord:0.1.1")
-    implementation("org.jsoup:jsoup:1.15.3")
     implementation("net.codebox:homoglyph:1.2.1")
-    implementation("net.hypixel:hypixel-api-core:4.4")
-    implementation("me.nullicorn:Nedit:2.2.0")
     implementation("com.google.zxing:javase:3.5.2")
     implementation("com.google.guava:guava:33.0.0-jre")
     implementation("org.mnode.ical4j:ical4j:4.0.5")

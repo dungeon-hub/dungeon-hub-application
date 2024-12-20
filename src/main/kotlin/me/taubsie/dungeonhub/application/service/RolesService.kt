@@ -80,6 +80,7 @@ object RolesService {
             }
             .toList()
 
+        //TODO what if role is null
         discordRoles.addAll(rolesToAdd.map { role -> role.await()?.id!! })
         discordRoles.removeAll(rolesToRemove.map { role -> role.await()?.id!! }.toSet())
 

@@ -29,7 +29,6 @@ import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
-import me.taubsie.dungeonhub.application.connection.HypixelConnection
 import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
@@ -37,6 +36,7 @@ import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import me.taubsie.dungeonhub.application.misc.FlagResponse
+import net.dungeonhub.connection.HypixelConnection
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
 import net.dungeonhub.model.carry.CarryModel

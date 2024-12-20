@@ -6,9 +6,9 @@ import lombok.AllArgsConstructor
 import lombok.Getter
 import lombok.NoArgsConstructor
 import lombok.Setter
-import me.taubsie.dungeonhub.application.connection.HypixelConnection.getCataLevelByUUID
-import me.taubsie.dungeonhub.application.connection.HypixelConnection.getSkyblockLevelByUUID
 import me.taubsie.dungeonhub.application.connection.MojangConnection
+import net.dungeonhub.connection.HypixelConnection.getCataLevelByUUID
+import net.dungeonhub.connection.HypixelConnection.getSkyblockLevelByUUID
 import net.dungeonhub.model.discord_user.DiscordUserModel
 
 @Getter
