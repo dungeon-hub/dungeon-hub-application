@@ -29,16 +29,15 @@ import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
-import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import me.taubsie.dungeonhub.application.misc.FlagResponse
-import net.dungeonhub.connection.HypixelConnection
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
+import net.dungeonhub.hypixel.connection.HypixelConnection
 import net.dungeonhub.model.carry.CarryModel
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
@@ -50,6 +49,7 @@ import net.dungeonhub.model.score.ScoreModel
 import net.dungeonhub.model.warning.DetailedWarningModel
 import net.dungeonhub.model.warning.WarningActionModel
 import net.dungeonhub.model.warning.WarningModel
+import net.dungeonhub.mojang.connection.MojangConnection
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage

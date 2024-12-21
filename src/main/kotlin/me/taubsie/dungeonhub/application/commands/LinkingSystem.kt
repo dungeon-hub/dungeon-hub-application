@@ -30,14 +30,13 @@ import dev.kordex.core.i18n.toKey
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
-import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.HelpTopic
 import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.*
 import net.dungeonhub.connection.DiscordUserConnection
-import net.dungeonhub.connection.HypixelApiConnection
+import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.i18n.Translations.Command.FindUser
 import net.dungeonhub.i18n.Translations.Command.ForceSync
@@ -45,6 +44,7 @@ import net.dungeonhub.i18n.Translations.Command.Ign
 import net.dungeonhub.i18n.Translations.Command.Link
 import net.dungeonhub.i18n.Translations.Command.Sync
 import net.dungeonhub.i18n.Translations.Command.Unlink
+import net.dungeonhub.mojang.connection.MojangConnection
 import kotlin.concurrent.thread
 
 @PrivilegedIntent

@@ -6,16 +6,16 @@ import dev.kord.core.entity.Member
 import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
 import kotlinx.coroutines.flow.toList
-import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.getMutualServers
 import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.misc.PlayerInformation
 import net.dungeonhub.connection.DiscordRoleConnection
 import net.dungeonhub.connection.DiscordUserConnection
-import net.dungeonhub.connection.HypixelConnection.getHypixelLinkedDiscord
+import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.discord_user.DiscordUserModel
 import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
+import net.dungeonhub.mojang.connection.MojangConnection
 import org.jetbrains.annotations.Contract
 import java.util.*
 import java.util.function.Function
@@ -44,10 +44,10 @@ object NicknameService {
     fun linkToIgn(ign: String, user: User): UUID {
         val uuid = MojangConnection.getUUIDByName(ign)
 
-        val hypixelName = getHypixelLinkedDiscord(uuid)
+        val hypixelName = HypixelApiConnection().getHypixelLinkedDiscord(uuid)
         val username = user.tag
 
-        if (hypixelName.isEmpty) {
+        if (hypixelName == null) {
             throw InvalidOptionWarning(
                 "ign", """
      Please add the correct discord-account (`${user.username}`) to your hypixel social menu.
@@ -56,10 +56,10 @@ object NicknameService {
             )
         }
 
-        if (!hypixelName.get().equals(username, ignoreCase = true)) {
+        if (!hypixelName.equals(username, ignoreCase = true)) {
             throw HypixelLinkedToOtherWarning(
                 ign,
-                hypixelName.get(),
+                hypixelName,
                 user.username
             )
         }

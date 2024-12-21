@@ -6,10 +6,9 @@ import lombok.AllArgsConstructor
 import lombok.Getter
 import lombok.NoArgsConstructor
 import lombok.Setter
-import me.taubsie.dungeonhub.application.connection.MojangConnection
-import net.dungeonhub.connection.HypixelConnection.getCataLevelByUUID
-import net.dungeonhub.connection.HypixelConnection.getSkyblockLevelByUUID
+import net.dungeonhub.hypixel.connection.HypixelConnection
 import net.dungeonhub.model.discord_user.DiscordUserModel
+import net.dungeonhub.mojang.connection.MojangConnection
 
 @Getter
 @Setter
@@ -26,9 +25,9 @@ class PlayerInformation(private val user: User, private val discordUserModel: Di
                 MojangConnection.getNameByUUID(discordUserModel.minecraftId!!)
             }
             replacements["skyblock.catacombs.level"] =
-                { getCataLevelByUUID(discordUserModel.minecraftId!!).toString() }
+                { HypixelConnection.getCataLevelByUUID(discordUserModel.minecraftId!!).toString() }
             replacements["skyblock.level"] = {
-                getSkyblockLevelByUUID(
+                HypixelConnection.getSkyblockLevelByUUID(
                     discordUserModel.minecraftId!!
                 ).stream().mapToObj { i: Int -> java.lang.String.valueOf(i) }.findAny().orElse("?")
             }

@@ -12,7 +12,6 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.extensions.publicUserCommand
 import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
-import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.misc.FlagResponse
@@ -22,6 +21,7 @@ import me.taubsie.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.i18n.Translations.Command.Lookup
+import net.dungeonhub.mojang.connection.MojangConnection
 
 @LoadExtension
 class LookupCommand : Extension() {

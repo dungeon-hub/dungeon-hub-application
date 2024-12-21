@@ -10,8 +10,8 @@ import net.dungeonhub.connection.DungeonHubConnection.cdnUrl
 import net.dungeonhub.connection.DungeonHubConnection.clientId
 import net.dungeonhub.connection.DungeonHubConnection.clientSecret
 import net.dungeonhub.connection.DungeonHubConnection.staticUrl
-import net.dungeonhub.connection.HypixelConnection.apiKey
-import net.dungeonhub.provider.CacheApiClientProvider
+import net.dungeonhub.hypixel.connection.HypixelConnection
+import net.dungeonhub.hypixel.provider.CacheApiClientProvider
 
 @OnStart(priority = StartPriority.PRE_BOT)
 class ConfigurationService : StartupListener {
@@ -24,7 +24,7 @@ class ConfigurationService : StartupListener {
         ConfigProperty.AUTH_CLIENT_ID.value?.let { clientId = it }
         ConfigProperty.AUTH_CLIENT_SECRET.value?.let { clientSecret = it }
 
-        ConfigProperty.HYPIXEL_API_KEY.value?.let { apiKey = it }
+        ConfigProperty.HYPIXEL_API_KEY.value?.let { HypixelConnection.apiKey = it }
         CacheApiClientProvider.cacheTypeString = "Memory"
     }
 }

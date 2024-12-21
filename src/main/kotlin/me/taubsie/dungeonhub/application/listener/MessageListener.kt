@@ -34,7 +34,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
-import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.isDungeonHub
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
@@ -50,6 +49,7 @@ import net.dungeonhub.enums.QueueStep
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.model.carry_queue.CarryQueueModel
 import net.dungeonhub.model.score.ScoreModel
+import net.dungeonhub.mojang.connection.MojangConnection
 import net.dungeonhub.service.MoshiService
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
