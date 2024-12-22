@@ -80,9 +80,8 @@ object RolesService {
             }
             .toList()
 
-        //TODO what if role is null
-        discordRoles.addAll(rolesToAdd.map { role -> role.await()?.id!! })
-        discordRoles.removeAll(rolesToRemove.map { role -> role.await()?.id!! }.toSet())
+        discordRoles.addAll(rolesToAdd.filter { it.await() != null }.map { role -> role.await()?.id!! })
+        discordRoles.removeAll(rolesToRemove.filter { it.await() != null }.map { role -> role.await()?.id!! }.toSet())
 
         var lastRoles = 0
         while (lastRoles != discordRoles.size) {
@@ -93,18 +92,18 @@ object RolesService {
         return discordRoles.map { id -> member.guild.getRole(id) }
     }
 
-    fun applyRoleGroups(server: GuildBehavior, roles: MutableSet<Snowflake>): MutableSet<Snowflake> {
-        @Suppress("NAME_SHADOWING") var roles = roles
+    fun applyRoleGroups(server: GuildBehavior, roles: Set<Snowflake>): MutableSet<Snowflake> {
+        var mutableRoles = roles.toMutableSet()
         val roleGroups = DiscordRoleGroupConnection[server.id.value.toLong()].all ?: emptyList()
 
         var lastRoles = 0
-        while (lastRoles != roles.size) {
-            lastRoles = roles.size
+        while (lastRoles != mutableRoles.size) {
+            lastRoles = mutableRoles.size
 
-            roles = applyRoleGroups(roles, roleGroups)
+            mutableRoles = applyRoleGroups(mutableRoles, roleGroups)
         }
 
-        return roles
+        return mutableRoles
     }
 
     fun applyRoleGroups(
