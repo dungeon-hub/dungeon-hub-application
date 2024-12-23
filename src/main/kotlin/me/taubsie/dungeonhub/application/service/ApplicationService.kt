@@ -45,6 +45,7 @@ import net.dungeonhub.model.carry_tier.CarryTierModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.cnt_request.CntRequestModel
 import net.dungeonhub.model.discord_role.DiscordRoleModel
+import net.dungeonhub.model.role_requirement.RoleRequirementModel
 import net.dungeonhub.model.score.ScoreModel
 import net.dungeonhub.model.warning.DetailedWarningModel
 import net.dungeonhub.model.warning.WarningActionModel
@@ -377,7 +378,10 @@ object ApplicationService {
         }
 
         scoreDescriptions.forEach { (scoreType: ScoreType, strings: List<String>?) ->
-            embed.field(scoreType.readableName.withLocale(locale).translate(), true) { java.lang.String.join(System.lineSeparator(), strings) }
+            embed.field(
+                scoreType.readableName.withLocale(locale).translate(),
+                true
+            ) { java.lang.String.join(System.lineSeparator(), strings) }
         }
 
         return embed
@@ -790,6 +794,49 @@ object ApplicationService {
 
             mutableListOf(embed)
         }
+    }
+
+    fun RoleRequirementModel.toEmbed(locale: Locale? = null): EmbedBuilder {
+        val embed = embed
+        embed.title = "Role Requirement #$id"
+
+        embed.field {
+            name = "Role"
+            inline = true
+            value = "<@&${discordRole.id}>"
+        }
+
+        embed.field {
+            name = "Type"
+            inline = true
+            value = requirementType.readableName.withLocale(locale).translate()
+        }
+
+        embed.field {
+            name = "Comparison"
+            inline = true
+            value = comparison.comparison
+        }
+
+        embed.field {
+            name = "Count"
+            inline = true
+            value = count.toString()
+        }
+
+        embed.field {
+            name = "Full Comparison"
+            inline = true
+            value = "${requirementType.name} ${comparison.comparison} $count"
+        }
+
+        embed.field {
+            name = "Extra Data"
+            inline = true
+            value = extraData ?: "`None`"
+        }
+
+        return embed
     }
 }
 
