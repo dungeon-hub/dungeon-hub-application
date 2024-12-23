@@ -114,7 +114,7 @@ object RolesService {
     }
 
     fun checkRoleRequirement(roleRequirement: RoleRequirementModel, member: Member): Boolean {
-        if(!roleRequirement.checkExtraData(roleRequirement.extraData)) return false
+        if(!roleRequirement.checkExtraData()) return false
 
         val discordServer = DiscordServerConnection.findServerById(member.guild.id.value.toLong())
             ?: return false
