@@ -114,7 +114,7 @@ object RolesService {
     }
 
     fun checkRoleRequirement(roleRequirement: RoleRequirementModel, member: Member): Boolean {
-        if(!roleRequirement.checkExtraData()) return false
+        if (!roleRequirement.checkExtraData()) return false
 
         val discordServer = DiscordServerConnection.findServerById(member.guild.id.value.toLong())
             ?: return false
@@ -147,25 +147,49 @@ object RolesService {
 
             RoleRequirementType.FarmingLevel -> {
                 return roleRequirement.compare(
-                    profileMembers.maxOf { it.playerData.nonCosmeticExperience?.get(KnownSkill.Farming) ?: 0.0 }.toInt()
+                    profileMembers.maxOf {
+                        KnownSkill.Farming.calculateLevel(
+                            it.playerData.nonCosmeticExperience?.get(
+                                KnownSkill.Farming
+                            ) ?: 0.0
+                        )
+                    }
                 )
             }
 
             RoleRequirementType.MiningLevel -> {
                 return roleRequirement.compare(
-                    profileMembers.maxOf { it.playerData.nonCosmeticExperience?.get(KnownSkill.Mining) ?: 0.0 }.toInt()
+                    profileMembers.maxOf {
+                        KnownSkill.Mining.calculateLevel(
+                            it.playerData.nonCosmeticExperience?.get(
+                                KnownSkill.Mining
+                            ) ?: 0.0
+                        )
+                    }
                 )
             }
 
             RoleRequirementType.CombatLevel -> {
                 return roleRequirement.compare(
-                    profileMembers.maxOf { it.playerData.nonCosmeticExperience?.get(KnownSkill.Combat) ?: 0.0 }.toInt()
+                    profileMembers.maxOf {
+                        KnownSkill.Combat.calculateLevel(
+                            it.playerData.nonCosmeticExperience?.get(
+                                KnownSkill.Combat
+                            ) ?: 0.0
+                        )
+                    }
                 )
             }
 
             RoleRequirementType.FishingLevel -> {
                 return roleRequirement.compare(
-                    profileMembers.maxOf { it.playerData.nonCosmeticExperience?.get(KnownSkill.Fishing) ?: 0.0 }.toInt()
+                    profileMembers.maxOf {
+                        KnownSkill.Fishing.calculateLevel(
+                            it.playerData.nonCosmeticExperience?.get(
+                                KnownSkill.Fishing
+                            ) ?: 0.0
+                        )
+                    }
                 )
             }
 

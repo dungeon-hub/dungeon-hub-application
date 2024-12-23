@@ -5,35 +5,38 @@ import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.core.entity.Member
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kordex.core.annotations.AlwaysPublicResponse
 import dev.kordex.core.checks.hasPermission
 import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
 import dev.kordex.core.commands.application.slash.converters.impl.optionalEnumChoice
 import dev.kordex.core.commands.application.slash.group
 import dev.kordex.core.commands.application.slash.publicSubCommand
-import dev.kordex.core.commands.converters.impl.boolean
-import dev.kordex.core.commands.converters.impl.optionalString
-import dev.kordex.core.commands.converters.impl.role
-import dev.kordex.core.commands.converters.impl.user
+import dev.kordex.core.commands.converters.impl.*
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
+import me.taubsie.dungeonhub.application.connection.copy
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.NoNameSchemaWarning
 import me.taubsie.dungeonhub.application.exceptions.NoOptionFoundException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
-import me.taubsie.dungeonhub.application.service.ApplicationService
-import me.taubsie.dungeonhub.application.service.NicknameService
-import me.taubsie.dungeonhub.application.service.RolesService
+import me.taubsie.dungeonhub.application.service.*
+import me.taubsie.dungeonhub.application.service.ApplicationService.toEmbed
 import net.dungeonhub.connection.DiscordRoleConnection
+import net.dungeonhub.connection.RoleRequirementConnection
 import net.dungeonhub.enums.RoleAction
+import net.dungeonhub.enums.RoleRequirementComparison
+import net.dungeonhub.enums.RoleRequirementType
 import net.dungeonhub.i18n.Translations.Command.Role
 import net.dungeonhub.model.discord_role.DiscordRoleCreationModel
 import net.dungeonhub.model.discord_role.DiscordRoleUpdateModel
+import net.dungeonhub.model.role_requirement.RoleRequirementCreationModel
 import kotlin.concurrent.thread
 
 @LoadExtension
@@ -83,13 +86,13 @@ class RoleCommand : Extension() {
             group("config".toKey()) {
                 description = "Change the settings of a role.".toKey()
 
+                check {
+                    hasPermission(Permission.Administrator)
+                }
+
                 publicSubCommand(::RoleConfigSetArguments) {
                     name = "set".toKey()
                     description = "Set a role config value".toKey()
-
-                    check {
-                        hasPermission(Permission.Administrator)
-                    }
 
                     action {
                         respond {
@@ -100,7 +103,12 @@ class RoleCommand : Extension() {
                                 if (currentRole == null) {
                                     throw NoOptionFoundException()
                                 } else {
-                                    embeds = mutableListOf(ApplicationService.loadEmbedFromDiscordRole(currentRole, locale = event.interaction.locale?.asJavaLocale()))
+                                    embeds = mutableListOf(
+                                        ApplicationService.loadEmbedFromDiscordRole(
+                                            currentRole,
+                                            locale = event.interaction.locale?.asJavaLocale()
+                                        )
+                                    )
                                 }
                                 return@respond
                             }
@@ -146,10 +154,6 @@ class RoleCommand : Extension() {
                     name = "reset".toKey()
                     description = "Reset a role config value".toKey()
 
-                    check {
-                        hasPermission(Permission.Administrator)
-                    }
-
                     action {
                         respond {
                             val currentRole = DiscordRoleConnection[guild!!.id.value.toLong()]
@@ -193,6 +197,118 @@ class RoleCommand : Extension() {
                             val embed = ApplicationService.loadEmbedFromDiscordRole(modifiedRole)
                             embed.color = EmbedColor.Positive.color
                             embed.title = "Modified role"
+                            embeds = mutableListOf(embed)
+                        }
+                    }
+                }
+            }
+
+            group(Role.Requirements.name) {
+                description = Role.Requirements.description
+
+                check {
+                    hasPermission(Permission.Administrator)
+                }
+
+                publicSubCommand(::RoleRequirementsGetArguments) {
+                    name = Role.Requirements.Get.name
+                    description = Role.Requirements.Get.description
+
+                    action {
+                        val roleRequirements = RoleRequirementConnection[guild!!.id.value.toLong()].allRoleRequirements
+                            ?.filter { it.discordRole.id == arguments.role.id.value.toLong() } ?: listOf()
+
+                        if (roleRequirements.isEmpty()) {
+                            respond {
+                                addEmbed {
+                                    color(EmbedColor.Negative)
+                                    description = "This role doesn't have any role requirements set up!\n" +
+                                            "Check how to create them [in the documentation](https://docs.dungeon-hub.net/role-management.html)."
+                                }
+                            }
+                            return@action
+                        }
+
+                        @OptIn(AlwaysPublicResponse::class)
+                        respondingPaginator {
+                            for (roleRequirement in roleRequirements) {
+                                page {
+                                    copy(roleRequirement.toEmbed(getLocale()))
+                                }
+                            }
+                        }.send()
+                    }
+                }
+
+                publicSubCommand {
+                    name = Role.Requirements.List.name
+                    description = Role.Requirements.List.description
+
+                    action {
+                        val roleRequirements = RoleRequirementConnection[guild!!.id.value.toLong()].allRoleRequirements
+                            ?: listOf()
+
+                        if (roleRequirements.isEmpty()) {
+                            respond {
+                                addEmbed {
+                                    color(EmbedColor.Negative)
+                                    description = "No role requirements are set up!\n" +
+                                            "Check how to create them [in the documentation](https://docs.dungeon-hub.net/role-management.html)."
+                                }
+                            }
+                            return@action
+                        }
+
+                        @OptIn(AlwaysPublicResponse::class)
+                        respondingPaginator {
+                            for (roleRequirement in roleRequirements) {
+                                page {
+                                    copy(roleRequirement.toEmbed(getLocale()))
+                                }
+                            }
+                        }.send()
+                    }
+                }
+
+                publicSubCommand(::RoleRequirementsAddArguments) {
+                    name = Role.Requirements.Add.name
+                    description = Role.Requirements.Add.description
+
+                    action {
+                        val creationModel = RoleRequirementCreationModel(
+                            arguments.role.id.value.toLong(),
+                            arguments.requirementType,
+                            arguments.comparison,
+                            arguments.count,
+                            arguments.extraData
+                        )
+
+                        val createdRoleRequirement =
+                            RoleRequirementConnection[guild!!.id.value.toLong()].addNewRoleRequirement(creationModel)
+                                ?: throw CommandExecutionException("Couldn't add the role requirement.")
+
+                        respond {
+                            val embed = createdRoleRequirement.toEmbed(getLocale())
+                            embed.title = "Created role requirement #${createdRoleRequirement.id}"
+                            embeds = mutableListOf(embed)
+                        }
+                    }
+                }
+
+                publicSlashCommand(::RoleRequirementsDeleteArguments) {
+                    name = Role.Requirements.Delete.name
+                    description = Role.Requirements.Delete.description
+
+                    action {
+                        val roleRequirement = RoleRequirementConnection[guild!!.id.value.toLong()].getById(arguments.id)
+                            ?: throw CommandExecutionWarning("That role requirement wasn't found!")
+
+                        val deletedRoleRequirement =
+                            RoleRequirementConnection[guild!!.id.value.toLong()].deleteRoleRequirement(roleRequirement)
+                                ?: throw CommandExecutionException("Role requirement couldn't be deleted.")
+
+                        respond {
+                            val embed = deletedRoleRequirement.toEmbed(getLocale())
                             embeds = mutableListOf(embed)
                         }
                     }
@@ -351,6 +467,49 @@ class RoleCommand : Extension() {
         val resetNameSchema by boolean {
             name = "name-schema".toKey()
             description = "Reset the name schema for this role.".toKey()
+        }
+    }
+
+    inner class RoleRequirementsGetArguments : Arguments() {
+        val role by role {
+            name = "role".toKey()
+            description = "Select which role you want to get the role requirements for.".toKey()
+        }
+    }
+
+    inner class RoleRequirementsAddArguments : Arguments() {
+        val role by role {
+            name = "role".toKey()
+            description = "Select which role you want to add a requirement for.".toKey()
+        }
+
+        val requirementType by enumChoice<RoleRequirementType> {
+            name = "requirement-type".toKey()
+            description = "Select what you want to use as the requirement.".toKey()
+            typeName = "RoleRequirementType".toKey()
+        }
+
+        val comparison by enumChoice<RoleRequirementComparison> {
+            name = "comparison".toKey()
+            description = "Select which comparison you want to use for the requirement.".toKey()
+            typeName = "RoleRequirementComparison".toKey()
+        }
+
+        val count by int {
+            name = "count".toKey()
+            description = "Select the required amount.".toKey()
+        }
+
+        val extraData by optionalString {
+            name = "extra-data".toKey()
+            description = "Enter some extra data, if applicable.".toKey()
+        }
+    }
+
+    inner class RoleRequirementsDeleteArguments : Arguments() {
+        val id by long {
+            name = "id".toKey()
+            description = "The id of the role requirement.".toKey()
         }
     }
 }

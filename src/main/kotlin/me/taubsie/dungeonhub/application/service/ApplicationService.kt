@@ -807,27 +807,9 @@ object ApplicationService {
         }
 
         embed.field {
-            name = "Type"
-            inline = true
-            value = requirementType.readableName.withLocale(locale).translate()
-        }
-
-        embed.field {
-            name = "Comparison"
-            inline = true
-            value = comparison.comparison
-        }
-
-        embed.field {
-            name = "Count"
-            inline = true
-            value = count.toString()
-        }
-
-        embed.field {
             name = "Full Comparison"
             inline = true
-            value = "${requirementType.name} ${comparison.comparison} $count"
+            value = "${requirementType.readableName.withLocale(locale).translate()} ${comparison.readableName.translate()} $count"
         }
 
         embed.field {
