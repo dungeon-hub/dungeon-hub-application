@@ -25,6 +25,6 @@ class ConfigurationService : StartupListener {
         ConfigProperty.AUTH_CLIENT_SECRET.value?.let { clientSecret = it }
 
         ConfigProperty.HYPIXEL_API_KEY.value?.let { HypixelConnection.apiKey = it }
-        CacheApiClientProvider.cacheTypeString = "Memory"
+        CacheApiClientProvider.cacheTypeString = "Disk"
     }
 }
