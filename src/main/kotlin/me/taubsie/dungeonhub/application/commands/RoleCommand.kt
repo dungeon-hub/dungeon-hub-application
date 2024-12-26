@@ -86,13 +86,13 @@ class RoleCommand : Extension() {
             group("config".toKey()) {
                 description = "Change the settings of a role.".toKey()
 
-                check {
-                    hasPermission(Permission.Administrator)
-                }
-
                 publicSubCommand(::RoleConfigSetArguments) {
                     name = "set".toKey()
                     description = "Set a role config value".toKey()
+
+                    check {
+                        hasPermission(Permission.Administrator)
+                    }
 
                     action {
                         respond {
@@ -154,6 +154,10 @@ class RoleCommand : Extension() {
                     name = "reset".toKey()
                     description = "Reset a role config value".toKey()
 
+                    check {
+                        hasPermission(Permission.Administrator)
+                    }
+
                     action {
                         respond {
                             val currentRole = DiscordRoleConnection[guild!!.id.value.toLong()]
@@ -206,13 +210,13 @@ class RoleCommand : Extension() {
             group(Role.Requirements.name) {
                 description = Role.Requirements.description
 
-                check {
-                    hasPermission(Permission.Administrator)
-                }
-
                 publicSubCommand(::RoleRequirementsGetArguments) {
                     name = Role.Requirements.Get.name
                     description = Role.Requirements.Get.description
+
+                    check {
+                        hasPermission(Permission.Administrator)
+                    }
 
                     action {
                         val roleRequirements = RoleRequirementConnection[guild!!.id.value.toLong()].allRoleRequirements
@@ -244,6 +248,10 @@ class RoleCommand : Extension() {
                     name = Role.Requirements.List.name
                     description = Role.Requirements.List.description
 
+                    check {
+                        hasPermission(Permission.Administrator)
+                    }
+
                     action {
                         val roleRequirements = RoleRequirementConnection[guild!!.id.value.toLong()].allRoleRequirements
                             ?: listOf()
@@ -274,6 +282,10 @@ class RoleCommand : Extension() {
                     name = Role.Requirements.Add.name
                     description = Role.Requirements.Add.description
 
+                    check {
+                        hasPermission(Permission.Administrator)
+                    }
+
                     action {
                         val creationModel = RoleRequirementCreationModel(
                             arguments.role.id.value.toLong(),
@@ -298,6 +310,10 @@ class RoleCommand : Extension() {
                 publicSlashCommand(::RoleRequirementsDeleteArguments) {
                     name = Role.Requirements.Delete.name
                     description = Role.Requirements.Delete.description
+
+                    check {
+                        hasPermission(Permission.Administrator)
+                    }
 
                     action {
                         val roleRequirement = RoleRequirementConnection[guild!!.id.value.toLong()].getById(arguments.id)
