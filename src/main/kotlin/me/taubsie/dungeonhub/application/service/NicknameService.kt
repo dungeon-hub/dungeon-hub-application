@@ -5,6 +5,7 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
+import dev.kord.rest.request.KtorRequestException
 import kotlinx.coroutines.flow.toList
 import me.taubsie.dungeonhub.application.connection.getMutualServers
 import me.taubsie.dungeonhub.application.exceptions.*
@@ -139,8 +140,17 @@ object NicknameService {
             return
         }
 
-        member.edit {
-            this@edit.nickname = nickname
+        try {
+            member.edit {
+                this@edit.nickname = nickname
+            }
+        } catch (ktor: KtorRequestException) {
+            if(ktor.status.code == 403) {
+                throw CommandExecutionWarning(
+                    "Couldn't update the nickname due to permission problems.\n" +
+                            "I tried to set it to:\n```\n$nickname\n```"
+                )
+            }
         }
     }
 
