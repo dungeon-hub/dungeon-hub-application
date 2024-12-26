@@ -10,9 +10,11 @@ import net.dungeonhub.connection.DungeonHubConnection.cdnUrl
 import net.dungeonhub.connection.DungeonHubConnection.clientId
 import net.dungeonhub.connection.DungeonHubConnection.clientSecret
 import net.dungeonhub.connection.DungeonHubConnection.staticUrl
+import net.dungeonhub.hypixel.connection.HypixelConnection
+import net.dungeonhub.hypixel.provider.CacheApiClientProvider
 
 @OnStart(priority = StartPriority.PRE_BOT)
-class ApiConfigurationService : StartupListener {
+class ConfigurationService : StartupListener {
     override suspend fun preStart() {
         ConfigProperty.API_URL.value?.let { apiUrl = it }
         ConfigProperty.CDN_URL.value?.let { cdnUrl = it }
@@ -21,5 +23,8 @@ class ApiConfigurationService : StartupListener {
         ConfigProperty.AUTH_LOGIN_URL.value?.let { authLoginUrl = it }
         ConfigProperty.AUTH_CLIENT_ID.value?.let { clientId = it }
         ConfigProperty.AUTH_CLIENT_SECRET.value?.let { clientSecret = it }
+
+        ConfigProperty.HYPIXEL_API_KEY.value?.let { HypixelConnection.apiKey = it }
+        CacheApiClientProvider.cacheTypeString = "Disk"
     }
 }

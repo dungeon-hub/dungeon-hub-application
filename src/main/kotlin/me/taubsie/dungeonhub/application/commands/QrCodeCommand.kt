@@ -11,11 +11,13 @@ import dev.kordex.core.commands.converters.impl.attachment
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.ContentConnection
+import net.dungeonhub.i18n.Translations.Command.QrCode
 import java.net.URL
 import javax.imageio.ImageIO
 
@@ -25,13 +27,13 @@ class QrCodeCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "qr-code"
-            description = "Work with QR codes."
+            name = QrCode.name
+            description = QrCode.description
             allowInDms = true
 
             publicSubCommand(::GenerateArguments) {
-                name = "generate"
-                description = "Generate a QR code from an URL."
+                name = "generate".toKey()
+                description = "Generate a QR code from an URL.".toKey()
 
                 action {
                     respond {
@@ -64,8 +66,8 @@ class QrCodeCommand : Extension() {
             }
 
             publicSubCommand(::ReadArguments) {
-                name = "read"
-                description = "Read the URL from a QR code."
+                name = "read".toKey()
+                description = "Read the URL from a QR code.".toKey()
 
                 action {
                     respond {
@@ -117,15 +119,15 @@ class QrCodeCommand : Extension() {
 
     inner class ReadArguments : Arguments() {
         val attachment by attachment {
-            name = "qr-code"
-            description = "The QR code to get the content from."
+            name = "qr-code".toKey()
+            description = "The QR code to get the content from.".toKey()
         }
     }
 
     inner class GenerateArguments : Arguments() {
         val url by string {
-            name = "url"
-            description = "The url of the QR code."
+            name = "url".toKey()
+            description = "The url of the QR code.".toKey()
         }
     }
 }

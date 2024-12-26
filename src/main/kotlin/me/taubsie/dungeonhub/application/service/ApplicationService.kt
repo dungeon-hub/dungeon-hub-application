@@ -29,8 +29,6 @@ import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
-import me.taubsie.dungeonhub.application.connection.HypixelConnection
-import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
@@ -39,6 +37,7 @@ import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import me.taubsie.dungeonhub.application.misc.FlagResponse
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
+import net.dungeonhub.hypixel.connection.HypixelConnection
 import net.dungeonhub.model.carry.CarryModel
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
@@ -46,10 +45,12 @@ import net.dungeonhub.model.carry_tier.CarryTierModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.cnt_request.CntRequestModel
 import net.dungeonhub.model.discord_role.DiscordRoleModel
+import net.dungeonhub.model.role_requirement.RoleRequirementModel
 import net.dungeonhub.model.score.ScoreModel
 import net.dungeonhub.model.warning.DetailedWarningModel
 import net.dungeonhub.model.warning.WarningActionModel
 import net.dungeonhub.model.warning.WarningModel
+import net.dungeonhub.mojang.connection.MojangConnection
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.image.BufferedImage
@@ -196,7 +197,7 @@ object ApplicationService {
         return embedBuilder
     }
 
-    fun loadEmbedFromDiscordRole(discordRoleModel: DiscordRoleModel): EmbedBuilder {
+    fun loadEmbedFromDiscordRole(discordRoleModel: DiscordRoleModel, locale: Locale? = null): EmbedBuilder {
         val embed = embed
 
         embed.field("Role", true) { "<@&" + discordRoleModel.id + ">" }
@@ -204,7 +205,7 @@ object ApplicationService {
             "Name schema",
             true
         ) { discordRoleModel.nameSchema ?: "none" }
-        embed.field("Role action", true) { discordRoleModel.roleAction.readableName }
+        embed.field("Role action", true) { discordRoleModel.roleAction.readableName.withLocale(locale).translate() }
 
         return embed
     }
@@ -344,7 +345,8 @@ object ApplicationService {
         user: User,
         server: GuildBehavior?,
         scoreCount: List<ScoreModel>,
-        carryCount: Int? = null
+        carryCount: Int? = null,
+        locale: Locale? = null
     ): EmbedBuilder {
         if (scoreCount.isEmpty()) {
             return noCarryTypeFoundEmbed
@@ -375,10 +377,12 @@ object ApplicationService {
             }
         }
 
-        scoreDescriptions
-            .forEach { (carryType: ScoreType, strings: List<String>?) ->
-                embed.field(carryType.displayName, true) { java.lang.String.join(System.lineSeparator(), strings) }
-            }
+        scoreDescriptions.forEach { (scoreType: ScoreType, strings: List<String>?) ->
+            embed.field(
+                scoreType.readableName.withLocale(locale).translate(),
+                true
+            ) { java.lang.String.join(System.lineSeparator(), strings) }
+        }
 
         return embed
     }
@@ -447,7 +451,11 @@ object ApplicationService {
                 discordField.name =
                     (if (flagResponse.discord?.flagged == true) ":x: " else if (flagResponse.discord == null) ":question_mark: " else ":white_check_mark: ") + flagResponse.name + " (by discord)"
                 discordField.value =
-                    if (flagResponse.discord?.flagged == true) "This user is flagged!\n${flagResponse.discord.format(false)}" else if (flagResponse.discord == null) "Service is currently unreachable." else "User isn't flagged"
+                    if (flagResponse.discord?.flagged == true) "This user is flagged!\n${
+                        flagResponse.discord.format(
+                            false
+                        )
+                    }" else if (flagResponse.discord == null) "Service is currently unreachable." else "User isn't flagged"
                 discordField.inline = true
                 result.add(discordField)
             }
@@ -786,6 +794,31 @@ object ApplicationService {
 
             mutableListOf(embed)
         }
+    }
+
+    fun RoleRequirementModel.toEmbed(locale: Locale? = null): EmbedBuilder {
+        val embed = embed
+        embed.title = "Role Requirement #$id"
+
+        embed.field {
+            name = "Role"
+            inline = true
+            value = "<@&${discordRole.id}>"
+        }
+
+        embed.field {
+            name = "Full Comparison"
+            inline = true
+            value = "${requirementType.readableName.withLocale(locale).translate()} ${comparison.readableName.translate()} $count"
+        }
+
+        embed.field {
+            name = "Extra Data"
+            inline = true
+            value = extraData ?: "`None`"
+        }
+
+        return embed
     }
 }
 

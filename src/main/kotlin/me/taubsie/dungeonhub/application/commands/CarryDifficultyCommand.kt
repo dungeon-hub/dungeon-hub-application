@@ -4,21 +4,20 @@ import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.publicSubCommand
-import dev.kordex.core.commands.converters.impl.int
-import dev.kordex.core.commands.converters.impl.optionalInt
-import dev.kordex.core.commands.converters.impl.optionalString
-import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.commands.converters.impl.*
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.utils.getLocale
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionWarning
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
-import me.taubsie.dungeonhub.application.exceptions.InvalidSubCommandException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.CarryTierConnection
 import net.dungeonhub.connection.CarryTypeConnection
+import net.dungeonhub.i18n.Translations.Command.CarryDifficulty
+import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyCreationModel
 import java.util.*
 
@@ -33,14 +32,14 @@ class CarryDifficultyCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "carry-difficulty"
-            description = "Set up the carry difficulties for this server."
+            name = CarryDifficulty.name
+            description = CarryDifficulty.description
             defaultMemberPermissions = Permissions(Permission.Administrator)
             allowInDms = false
 
             publicSubCommand(::CarryDifficultyCreateArguments) {
-                name = "create"
-                description = "Create a new carry difficulty"
+                name = CarryDifficulty.Create.name
+                description = CarryDifficulty.Create.description
 
                 action {
                     respond {
@@ -75,15 +74,15 @@ class CarryDifficultyCommand : Extension() {
                             ?: throw CommandExecutionWarning("Couldn't create carry difficulty.")
 
                         val embed = ApplicationService.getCarryDifficultyEmbed(carryDifficulty)
-                        embed.title = "Carry Difficulty created"
+                        embed.title = CarryDifficulty.Create.Response.title.translateLocale(event.getLocale())
                         embeds = mutableListOf(embed)
                     }
                 }
             }
 
             publicSubCommand(::CarryDifficultyArguments) {
-                name = "delete"
-                description = "Delete a carry difficulty"
+                name = CarryDifficulty.Delete.name
+                description = CarryDifficulty.Delete.description
 
                 action {
                     respond {
@@ -111,15 +110,15 @@ class CarryDifficultyCommand : Extension() {
                                 ?: throw CommandExecutionWarning("Couldn't delete the carry difficulty.")
 
                         val embed = ApplicationService.getCarryDifficultyEmbed(deletedCarryDifficulty)
-                        embed.title = "Deleted Carry Difficulty"
+                        embed.title = CarryDifficulty.Delete.Response.title.translateLocale(event.getLocale())
                         embeds = mutableListOf(embed)
                     }
                 }
             }
 
             publicSubCommand(::CarryDifficultyArguments) {
-                name = "get"
-                description = "Get information about a carry difficulty"
+                name = CarryDifficulty.Get.name
+                description = CarryDifficulty.Get.description
 
                 action {
                     respond {
@@ -145,8 +144,8 @@ class CarryDifficultyCommand : Extension() {
             }
 
             publicSubCommand(::CarryDifficultyEditArguments) {
-                name = "edit"
-                description = "Edit a carry difficulty"
+                name = CarryDifficulty.Edit.name
+                description = CarryDifficulty.Edit.description
 
                 action {
                     respond {
@@ -160,7 +159,7 @@ class CarryDifficultyCommand : Extension() {
                         val carryDifficulty =
                             CarryDifficultyConnection[carryTier].getByIdentifier(arguments.carryDifficulty)
                                 ?: throw InvalidOptionException(
-                                    "carry.difficulty",
+                                    "carry-difficulty",
                                     "That carry difficulty doesn't exist"
                                 )
 
@@ -203,19 +202,62 @@ class CarryDifficultyCommand : Extension() {
                             ?: throw CommandExecutionWarning("Couldn't update carry difficulty.")
 
                         val embed = ApplicationService.getCarryDifficultyEmbed(updatedCarryDifficulty)
-                        embed.title = "Updated Carry Difficulty"
+                        embed.title = CarryDifficulty.Edit.Response.title.translateLocale(event.getLocale())
                         embeds = mutableListOf(embed)
                     }
                 }
             }
 
             publicSubCommand(::CarryDifficultyResetArguments) {
-                name = "reset"
-                description = "Reset a carry difficulty"
+                name = CarryDifficulty.Reset.name
+                description = CarryDifficulty.Reset.description
 
-                //TODO implement
                 action {
-                    throw InvalidSubCommandException()
+                    respond {
+                        val carryType =
+                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                                ?: throw CommandExecutionWarning("That carry type doesn't exists!")
+
+                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
+                            ?: throw InvalidOptionException("carry-tier", "That carry tier doesn't exist")
+
+                        val carryDifficulty =
+                            CarryDifficultyConnection[carryTier].getByIdentifier(arguments.carryDifficulty)
+                                ?: throw InvalidOptionException(
+                                    "carry-difficulty",
+                                    "That carry difficulty doesn't exist"
+                                )
+
+                        if (!arguments.thumbnailUrl && !arguments.bulkAmount && !arguments.bulkPrice && !arguments.priceName) {
+                            throw CommandExecutionWarning("Please provide something you want to reset.")
+                        }
+
+                        val updateModel = carryDifficulty.getUpdateModel()
+
+                        if (arguments.thumbnailUrl) {
+                            updateModel.thumbnailUrl = null
+                        }
+
+                        if (arguments.bulkAmount) {
+                            updateModel.bulkAmount = null
+                        }
+
+                        if (arguments.bulkPrice) {
+                            updateModel.bulkPrice = null
+                        }
+
+                        if (arguments.priceName) {
+                            updateModel.priceName = null
+                        }
+
+                        val updatedCarryDifficulty =
+                            CarryDifficultyConnection[carryTier].updateCarryDifficulty(carryTier.id, updateModel)
+                                ?: throw CommandExecutionWarning("Couldn't update carry difficulty.")
+
+                        val embed = ApplicationService.getCarryDifficultyEmbed(updatedCarryDifficulty)
+                        embed.title = CarryDifficulty.Reset.Response.title.translateLocale(event.getLocale())
+                        embeds = mutableListOf(embed)
+                    }
                 }
             }
         }
@@ -223,61 +265,61 @@ class CarryDifficultyCommand : Extension() {
 
     inner class CarryDifficultyCreateArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier"
-            description = "The identifier of the carry tier"
+            name = CommonArguments.CarryTier.name
+            description = CommonArguments.CarryTier.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val identifier by string {
-            name = "identifier"
-            description = "The identifier of the carry difficulty"
+            name = CommonArguments.identifier
+            description = CommonArguments.CarryDifficulty.description
         }
 
         val displayName by string {
-            name = "display-name"
-            description = "The display name of the carry difficulty"
+            name = CommonArguments.displayName
+            description = CarryDifficulty.Create.Arguments.DisplayName.description
             maxLength = 30
         }
 
         val price by int {
-            name = "price"
-            description = "The price per carry"
+            name = CarryDifficulty.Create.Arguments.Price.name
+            description = CarryDifficulty.Create.Arguments.Price.description
             minValue = 0
         }
 
         val score by int {
-            name = "score"
-            description = "The score gained per carry"
+            name = CarryDifficulty.Create.Arguments.Score.name
+            description = CarryDifficulty.Create.Arguments.Score.description
             minValue = 0
         }
     }
 
     inner class CarryDifficultyArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier"
-            description = "The identifier of the carry tier"
+            name = CommonArguments.CarryTier.name
+            description = CommonArguments.CarryTier.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val carryDifficulty by string {
-            name = "carry-difficulty"
-            description = "The identifier of the carry difficulty"
+            name = CommonArguments.CarryDifficulty.name
+            description = CommonArguments.CarryDifficulty.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
@@ -285,90 +327,108 @@ class CarryDifficultyCommand : Extension() {
 
     inner class CarryDifficultyEditArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier"
-            description = "The identifier of the carry tier"
+            name = CommonArguments.CarryTier.name
+            description = CommonArguments.CarryTier.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val carryDifficulty by string {
-            name = "carry-difficulty"
-            description = "The identifier of the carry difficulty"
+            name = CommonArguments.CarryDifficulty.name
+            description = CommonArguments.CarryDifficulty.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
 
         val displayName by optionalString {
-            name = "display-name"
-            description = "Set the display name of the carry difficulty"
+            name = CommonArguments.displayName
+            description = CarryDifficulty.Edit.Arguments.DisplayName.description
         }
 
         val price by optionalInt {
-            name = "price"
-            description = "Set the price per carry"
+            name = CarryDifficulty.Edit.Arguments.Price.name
+            description = CarryDifficulty.Edit.Arguments.Price.description
             minValue = 0
         }
 
         val score by optionalInt {
-            name = "score"
-            description = "Set the score gained per carry"
+            name = CarryDifficulty.Edit.Arguments.Score.name
+            description = CarryDifficulty.Edit.Arguments.Score.description
             minValue = 0
             maxValue = 500
         }
 
         val bulkAmount by optionalInt {
-            name = "bulk-amount"
-            description = "Set the amount after which the carries use the bulk price."
+            name = CarryDifficulty.Edit.Arguments.BulkAmount.name
+            description = CarryDifficulty.Edit.Arguments.BulkAmount.description
             minValue = 1
             maxValue = 500
         }
 
         val bulkPrice by optionalInt {
-            name = "bulk-price"
-            description = "Set price for bulk carries. Needs to have bulk-price set to be used."
+            name = CarryDifficulty.Edit.Arguments.BulkPrice.name
+            description = CarryDifficulty.Edit.Arguments.BulkPrice.description
             minValue = 1
         }
 
         val thumbnailUrl by optionalString {
-            name = "thumbnail-url"
-            description = "Set the url for the thumbnail. This only acts as an override for the carry tier."
+            name = CarryDifficulty.Edit.Arguments.ThumbnailUrl.name
+            description = CarryDifficulty.Edit.Arguments.ThumbnailUrl.description
         }
 
         val priceName by optionalString {
-            name = "price-name"
-            description = "Set this if this carry difficulty should have a different name in the price embed."
+            name = CarryDifficulty.Edit.Arguments.PriceName.name
+            description = CarryDifficulty.Edit.Arguments.PriceName.description
         }
     }
 
     inner class CarryDifficultyResetArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier"
-            description = "The identifier of the carry tier"
+            name = CommonArguments.CarryTier.name
+            description = CommonArguments.CarryTier.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val carryDifficulty by string {
-            name = "carry-difficulty"
-            description = "The identifier of the carry difficulty"
+            name = CommonArguments.CarryDifficulty.name
+            description = CommonArguments.CarryDifficulty.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
 
-        //TODO add options to reset command
+        val thumbnailUrl by boolean {
+            name = CarryDifficulty.Reset.Arguments.ThumbnailUrl.name
+            description = CarryDifficulty.Reset.Arguments.ThumbnailUrl.description
+        }
+
+        val bulkPrice by boolean {
+            name = CarryDifficulty.Reset.Arguments.BulkPrice.name
+            description = CarryDifficulty.Reset.Arguments.BulkPrice.description
+        }
+
+        val bulkAmount by boolean {
+            name = CarryDifficulty.Reset.Arguments.BulkAmount.name
+            description = CarryDifficulty.Reset.Arguments.BulkAmount.description
+        }
+
+        val priceName by boolean {
+            name = CarryDifficulty.Reset.Arguments.PriceName.name
+            description = CarryDifficulty.Reset.Arguments.PriceName.description
+        }
     }
 }

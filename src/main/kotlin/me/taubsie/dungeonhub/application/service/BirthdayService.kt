@@ -173,5 +173,9 @@ object BirthdayService : StartupListener {
                 return Birthday(name, date, userId, year)
             }
         }
+
+        override fun toString(): String {
+            return "Birthday(eventName='$eventName', date=$date, userId=$userId, birthYear=$birthYear, username='$username')"
+        }
     }
 }
