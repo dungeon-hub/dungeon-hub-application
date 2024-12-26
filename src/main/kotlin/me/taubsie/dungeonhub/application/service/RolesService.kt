@@ -26,18 +26,18 @@ import java.util.stream.Collectors
 import kotlin.time.Duration
 
 object RolesService {
-    fun updateRoles(user: User): Map<Long, List<Role>> {
+    fun updateRoles(user: User, cacheExpiration: Int = 60 * 3): Map<Long, List<Role>> {
         return runBlocking {
             async {
                 user.getMutualServers().map { member ->
-                    member.guildId.value.toLong() to updateRoles(member)
+                    member.guildId.value.toLong() to updateRoles(member, cacheExpiration)
                 }.toList().toMap()
             }.await()
         }
     }
 
-    suspend fun updateRoles(member: Member): List<Role> {
-        val newRoles = calculateRoles(member)
+    suspend fun updateRoles(member: Member, cacheExpiration: Int = 60 * 3): List<Role> {
+        val newRoles = calculateRoles(member, cacheExpiration)
 
         member.edit {
             roles = newRoles.map { role -> role.id }.toMutableSet()
@@ -46,7 +46,7 @@ object RolesService {
         return newRoles
     }
 
-    suspend fun calculateRoles(member: Member): List<Role> {
+    suspend fun calculateRoles(member: Member, cacheExpiration: Int): List<Role> {
         val serverRoles = (DiscordRoleConnection[member.guildId.value.toLong()].allRoles ?: emptyList())
             .stream()
             .collect(
@@ -90,7 +90,7 @@ object RolesService {
         discordRoles.addAll(rolesToAdd.filter { it.await() != null }.map { role -> role.await()?.id!! })
         discordRoles.removeAll(rolesToRemove.filter { it.await() != null }.map { role -> role.await()?.id!! }.toSet())
 
-        val roleRequirements = calculateRoleRequirements(member)
+        val roleRequirements = calculateRoleRequirements(member, cacheExpiration)
 
         discordRoles.addAll(roleRequirements.filter { it.value }.map { Snowflake(it.key.discordRole.id) })
         discordRoles.removeAll(roleRequirements.filter { !it.value }.map { Snowflake(it.key.discordRole.id) }.toSet())
@@ -104,16 +104,16 @@ object RolesService {
         return discordRoles.map { id -> member.guild.getRole(id) }
     }
 
-    fun calculateRoleRequirements(member: Member): Map<RoleRequirementModel, Boolean> {
+    fun calculateRoleRequirements(member: Member, cacheExpiration: Int): Map<RoleRequirementModel, Boolean> {
         val roleRequirements =
             RoleRequirementConnection[member.guild.id.value.toLong()].allRoleRequirements ?: emptyList()
 
         return roleRequirements.associateWith {
-            checkRoleRequirement(it, member)
+            checkRoleRequirement(it, member, cacheExpiration)
         }
     }
 
-    fun checkRoleRequirement(roleRequirement: RoleRequirementModel, member: Member): Boolean {
+    fun checkRoleRequirement(roleRequirement: RoleRequirementModel, member: Member, cacheExpiration: Int): Boolean {
         if (!roleRequirement.checkExtraData()) return false
 
         val discordServer = DiscordServerConnection.findServerById(member.guild.id.value.toLong())
@@ -125,7 +125,7 @@ object RolesService {
         val uuid = discordUser.minecraftId
             ?: return false
 
-        val profiles = HypixelApiConnection().getSkyblockProfiles(uuid) ?: return false
+        val profiles = HypixelApiConnection().withCacheExpiration(cacheExpiration).getSkyblockProfiles(uuid) ?: return false
 
         val profileMembers = profiles.profiles.mapNotNull { it.members.firstOrNull { member -> member.uuid == uuid } }
             .filterIsInstance<CurrentMember>()

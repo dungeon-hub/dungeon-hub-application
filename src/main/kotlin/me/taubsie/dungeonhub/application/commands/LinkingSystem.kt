@@ -218,7 +218,7 @@ class LinkingSystem : Extension() {
 
         fun respondToForceSync(target: Member): suspend FollowupMessageCreateBuilder.() -> Unit {
             return {
-                val roles = RolesService.updateRoles(target)
+                val roles = RolesService.updateRoles(target, cacheExpiration = 5)
 
                 val embed = ApplicationService.embed
 

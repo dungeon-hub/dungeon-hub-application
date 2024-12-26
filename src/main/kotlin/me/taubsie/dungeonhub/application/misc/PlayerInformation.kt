@@ -7,7 +7,6 @@ import lombok.Getter
 import lombok.NoArgsConstructor
 import lombok.Setter
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
-import net.dungeonhub.hypixel.connection.HypixelConnection
 import net.dungeonhub.model.discord_user.DiscordUserModel
 import net.dungeonhub.mojang.connection.MojangConnection
 
@@ -18,6 +17,8 @@ import net.dungeonhub.mojang.connection.MojangConnection
 class PlayerInformation(private val user: User, private val discordUserModel: DiscordUserModel) {
     val replacements: Map<String, () -> String>
         get() {
+            val apiConnection = HypixelApiConnection().withCacheExpiration(60 * 3)
+
             val replacements: MutableMap<String, () -> String> = HashMap()
 
             replacements["discord.name"] = { user.username }
@@ -27,14 +28,14 @@ class PlayerInformation(private val user: User, private val discordUserModel: Di
             }
             replacements["skyblock.catacombs.level"] =
                 {
-                    HypixelApiConnection().getSkyblockProfiles(discordUserModel.minecraftId!!)?.profiles?.maxOf {
+                    apiConnection.getSkyblockProfiles(discordUserModel.minecraftId!!)?.profiles?.maxOf {
                         it.getCurrentMember(discordUserModel.minecraftId!!)?.dungeons?.catacombsLevel ?: 0
                     }?.toString() ?: "?"
                 }
             replacements["skyblock.level"] = {
-                HypixelConnection.getSkyblockLevelByUUID(
-                    discordUserModel.minecraftId!!
-                ).stream().mapToObj { i: Int -> java.lang.String.valueOf(i) }.findAny().orElse("?")
+                apiConnection.getSkyblockProfiles(discordUserModel.minecraftId!!)?.profiles?.maxOf {
+                    it.getCurrentMember(discordUserModel.minecraftId!!)?.leveling?.level ?: 0
+                }?.toString() ?: "?"
             }
 
             return replacements
