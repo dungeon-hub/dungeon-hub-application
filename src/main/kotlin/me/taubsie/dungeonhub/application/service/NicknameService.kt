@@ -45,7 +45,7 @@ object NicknameService {
     fun linkToIgn(ign: String, user: User): UUID {
         val uuid = MojangConnection.getUUIDByName(ign)
 
-        val hypixelName = HypixelApiConnection().getHypixelLinkedDiscord(uuid)
+        val hypixelName = HypixelApiConnection().withCacheExpiration(1).getHypixelLinkedDiscord(uuid)
         val username = user.tag
 
         if (hypixelName == null) {
