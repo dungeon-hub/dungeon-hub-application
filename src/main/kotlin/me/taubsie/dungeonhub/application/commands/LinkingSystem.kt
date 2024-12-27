@@ -13,6 +13,7 @@ import dev.kord.core.entity.interaction.ButtonInteraction
 import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
+import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -20,6 +21,7 @@ import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
 import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.converters.impl.role
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
@@ -27,6 +29,7 @@ import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.extensions.publicUserCommand
 import dev.kordex.core.i18n.toKey
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -162,6 +165,31 @@ class LinkingSystem : Extension() {
                             val embed = ApplicationService.embed
                             embed.color = EmbedColor.Positive.color
                             embed.description = "Linked `${arguments.ign}` to: ${user.tag}"
+
+                            embeds = mutableListOf(embed)
+                        }
+                    }
+                }
+
+                publicSlashCommand(::MassSyncArguments) {
+                    name = "mass-sync".toKey()
+                    description = "Sync a large amount of users.".toKey()
+                    guild(guildId)
+                    defaultMemberPermissions = Permissions(Permission.Administrator)
+
+                    action {
+                        respond {
+                            val role = arguments.role
+
+                            val members = guild!!.withStrategy(EntitySupplyStrategy.cachingRest).members.filter {
+                                it.roleIds.contains(role.id)
+                            }.toList()
+
+                            MassSyncService.usersToSync += members.map { it.id }
+
+                            val embed = ApplicationService.embed
+                            embed.color = EmbedColor.Positive.color
+                            embed.description = "Added ${members.size} users to the mass-sync queue."
 
                             embeds = mutableListOf(embed)
                         }
@@ -491,6 +519,13 @@ class LinkingSystem : Extension() {
         val user by user {
             name = "user".toKey()
             description = "The user to show the IGN for.".toKey()
+        }
+    }
+
+    inner class MassSyncArguments : Arguments() {
+        val role by role {
+            name = "role".toKey()
+            description = "The role in which users should be synced.".toKey()
         }
     }
 }
