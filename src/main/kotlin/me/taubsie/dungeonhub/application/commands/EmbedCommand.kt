@@ -27,6 +27,7 @@ import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.*
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.application.exceptions.InvalidEmbedJsonWarning
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.misc.EmbedModel
@@ -190,7 +191,7 @@ class EmbedCommand : Extension() {
                                     }
                             }
                         } catch (jsonSyntaxException: JsonSyntaxException) {
-                            throw CommandExecutionException("The embed JSON you entered is invalid formatted.")
+                            throw InvalidEmbedJsonWarning()
                         } catch (exception: Exception) {
                             throw CommandExecutionException(exception)
                         }
@@ -259,7 +260,7 @@ class EmbedCommand : Extension() {
                                     }
                             }
                         } catch (jsonSyntaxException: JsonSyntaxException) {
-                            throw CommandExecutionException("The embed JSON you entered is invalid formatted.")
+                            throw InvalidEmbedJsonWarning()
                         } catch (exception: java.lang.Exception) {
                             throw CommandExecutionException(exception)
                         }
@@ -319,7 +320,7 @@ class EmbedCommand : Extension() {
                                 )
                             }
                         } catch (jsonSyntaxException: JsonSyntaxException) {
-                            throw CommandExecutionException("The embed JSON you entered is invalid formatted.")
+                            throw InvalidEmbedJsonWarning()
                         } catch (exception: Exception) {
                             throw CommandExecutionException(exception)
                         }
