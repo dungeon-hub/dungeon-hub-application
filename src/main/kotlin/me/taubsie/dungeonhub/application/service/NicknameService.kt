@@ -106,7 +106,7 @@ object NicknameService {
      * @throws NotLinkedException    if the user is not linked to a Minecraft account
      */
     @Throws(NoNameSchemaWarning::class, NotLinkedException::class)
-    suspend fun updateNickname(member: Member, serverRoles: List<Role>?, cacheExpiration: Int) {
+    suspend fun updateNickname(member: Member, serverRoles: List<Role>?, cacheExpiration: Int = 60 * 3) {
         val discordUserModel = DiscordUserConnection.getLinkedById(member.id.value.toLong())
             ?: throw NotLinkedException()
         updateNickname(member, discordUserModel, serverRoles, cacheExpiration)
