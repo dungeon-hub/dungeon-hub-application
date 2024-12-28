@@ -40,6 +40,7 @@ import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.*
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.exception.PlayerNotFoundException
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.i18n.Translations.Command.FindUser
@@ -95,6 +96,13 @@ class LinkingSystem : Extension() {
                             addLinkHelpButton()
                         }
 
+                        return@respond
+                    } catch (playerNotFoundException: PlayerNotFoundException) {
+                        embeds = mutableListOf(
+                            ApplicationService.getErrorEmbed(
+                                CommandExecutionWarning(playerNotFoundException.message)
+                            )
+                        )
                         return@respond
                     }
 
@@ -210,7 +218,8 @@ class LinkingSystem : Extension() {
                             respond {
                                 addEmbed {
                                     color(EmbedColor.Information)
-                                    description = "There are currently ${MassSyncService.usersToSync.size} users in the mass sync queue."
+                                    description =
+                                        "There are currently ${MassSyncService.usersToSync.size} users in the mass sync queue."
                                 }
                             }
                         }
