@@ -126,7 +126,12 @@ object NicknameService {
      * @throws NoNameSchemaWarning if no valid role with a non-blank name schema is found while determining the role model
      */
     @Throws(NoNameSchemaWarning::class)
-    suspend fun updateNickname(member: Member, discordUserModel: DiscordUserModel, serverRoles: List<Role>?, cacheExpiration: Int) {
+    suspend fun updateNickname(
+        member: Member,
+        discordUserModel: DiscordUserModel,
+        serverRoles: List<Role>?,
+        cacheExpiration: Int = 60 * 3
+    ) {
         val roles: List<Role> = serverRoles ?: member.roles.toList()
         val sortedRoles = roles.sortedWith(
             Comparator.comparingInt { obj: Role -> obj.rawPosition }.reversed()
@@ -134,7 +139,8 @@ object NicknameService {
 
         val role = getRoleModel(member, sortedRoles)
 
-        val nickname = loadUsername(role.nameSchema!!, PlayerInformation(member.asUser(), discordUserModel, cacheExpiration))
+        val nickname =
+            loadUsername(role.nameSchema!!, PlayerInformation(member.asUser(), discordUserModel, cacheExpiration))
 
         if (nickname.isBlank()) {
             return
@@ -145,7 +151,7 @@ object NicknameService {
                 this@edit.nickname = nickname
             }
         } catch (ktor: KtorRequestException) {
-            if(ktor.status.code == 403) {
+            if (ktor.status.code == 403) {
                 throw CommandExecutionWarning(
                     "Couldn't update the nickname due to permission problems.\n" +
                             "I tried to set it to:\n```\n$nickname\n```"
