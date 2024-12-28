@@ -191,6 +191,7 @@ class LinkingSystem : Extension() {
                                 }.toList()
 
                                 MassSyncService.usersToSync += members.map { it.id }
+                                MassSyncService.lastGuild = guild!!.id
 
                                 val embed = ApplicationService.embed
                                 embed.color = EmbedColor.Positive.color

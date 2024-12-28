@@ -1,7 +1,7 @@
 package me.taubsie.dungeonhub.application.service
 
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.entity.User
+import dev.kord.core.entity.Member
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.exceptions.NotLinkedException
@@ -18,31 +18,36 @@ object MassSyncService : StartupListener {
     private var timerTask: ScheduledFuture<*>? = null
     private val logger = LoggerFactory.getLogger(MassSyncService::class.java)
 
+    var lastGuild: Snowflake? = null
     val usersToSync = mutableListOf<Snowflake>()
 
     suspend fun syncWave() {
+        if(lastGuild == null) {
+            return
+        }
+
         val currentWave = usersToSync.stream()
             .limit(1)
             .toList().toImmutableList()
 
         usersToSync.removeAll(currentWave)
 
-        currentWave.map { DiscordConnection.bot!!.kordRef.getUser(it) }.filterNotNull().forEach { user ->
+        currentWave.mapNotNull { DiscordConnection.bot!!.kordRef.getGuild(lastGuild!!).getMember(it) }.forEach { user ->
             syncUser(user)
         }
     }
 
-    suspend fun syncUser(user: User) {
+    private suspend fun syncUser(member: Member) {
         try {
-            val roles = RolesService.updateRoles(user, cacheExpiration = 60 * 24 * 365)
+            val roles = RolesService.updateRoles(member, cacheExpiration = 60 * 24 * 365)
 
-            NicknameService.updateNickname(user, roles)
+            NicknameService.updateNickname(member, roles, cacheExpiration = 60 * 24 * 365)
         }
         catch (_: NotLinkedException) {
             //ignore, just don't sync those users
         }
         catch (e: Exception) {
-            logger.error("Error during mass sync for user ${user.id}", e)
+            logger.error("Error during mass sync for user ${member.id}", e)
         }
     }
 

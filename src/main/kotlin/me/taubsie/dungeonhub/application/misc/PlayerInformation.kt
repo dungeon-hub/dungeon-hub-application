@@ -14,10 +14,10 @@ import net.dungeonhub.mojang.connection.MojangConnection
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-class PlayerInformation(private val user: User, private val discordUserModel: DiscordUserModel) {
+class PlayerInformation(private val user: User, private val discordUserModel: DiscordUserModel, private val cacheExpiration: Int) {
     val replacements: Map<String, () -> String>
         get() {
-            val apiConnection = HypixelApiConnection().withCacheExpiration(60 * 3)
+            val apiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
 
             val replacements: MutableMap<String, () -> String> = HashMap()
 
