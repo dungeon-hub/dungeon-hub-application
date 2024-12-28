@@ -21,6 +21,7 @@ import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
 import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.role
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.commands.converters.impl.user
@@ -171,27 +172,46 @@ class LinkingSystem : Extension() {
                     }
                 }
 
-                publicSlashCommand(::MassSyncArguments) {
+                publicSlashCommand {
                     name = "mass-sync".toKey()
                     description = "Sync a large amount of users.".toKey()
                     guild(guildId)
                     defaultMemberPermissions = Permissions(Permission.Administrator)
 
-                    action {
-                        respond {
-                            val role = arguments.role
+                    publicSubCommand(::MassSyncArguments) {
+                        name = "add".toKey()
+                        description = "Adds users in a role to the mass sync queue.".toKey()
 
-                            val members = guild!!.withStrategy(EntitySupplyStrategy.cachingRest).members.filter {
-                                it.roleIds.contains(role.id)
-                            }.toList()
+                        action {
+                            respond {
+                                val role = arguments.role
 
-                            MassSyncService.usersToSync += members.map { it.id }
+                                val members = guild!!.withStrategy(EntitySupplyStrategy.cachingRest).members.filter {
+                                    it.roleIds.contains(role.id)
+                                }.toList()
 
-                            val embed = ApplicationService.embed
-                            embed.color = EmbedColor.Positive.color
-                            embed.description = "Added ${members.size} users to the mass-sync queue."
+                                MassSyncService.usersToSync += members.map { it.id }
 
-                            embeds = mutableListOf(embed)
+                                val embed = ApplicationService.embed
+                                embed.color = EmbedColor.Positive.color
+                                embed.description = "Added ${members.size} users to the mass-sync queue."
+
+                                embeds = mutableListOf(embed)
+                            }
+                        }
+                    }
+
+                    publicSubCommand {
+                        name = "list".toKey()
+                        description = "Show the number of users currently in the mass sync queue.".toKey()
+
+                        action {
+                            respond {
+                                addEmbed {
+                                    color(EmbedColor.Information)
+                                    description = "There are currently ${MassSyncService.usersToSync.size} users in the mass sync queue."
+                                }
+                            }
                         }
                     }
                 }

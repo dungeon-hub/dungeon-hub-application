@@ -22,7 +22,7 @@ object MassSyncService : StartupListener {
 
     suspend fun syncWave() {
         val currentWave = usersToSync.stream()
-            .limit(10)
+            .limit(1)
             .toList().toImmutableList()
 
         usersToSync.removeAll(currentWave)
@@ -55,6 +55,6 @@ object MassSyncService : StartupListener {
             runBlocking {
                 syncWave()
             }
-        }, 15, 30, TimeUnit.SECONDS)
+        }, 15, 3, TimeUnit.SECONDS)
     }
 }
