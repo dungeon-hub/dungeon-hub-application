@@ -414,7 +414,7 @@ fun EmbedBuilder.applyJson(key: String, value: JsonElement) {
         "author" -> setAuthor(value)
         "url" -> url = value.asString
         "color" -> color = run {
-            val internalColor = MoshiService.moshi.adapter(Color::class.java).fromJson(
+            val internalColor = MoshiService.moshi.adapter(Color::class.java).fromJsonValue(
                 value.asString
             )!!
             dev.kord.common.Color(internalColor.red, internalColor.green, internalColor.blue)
