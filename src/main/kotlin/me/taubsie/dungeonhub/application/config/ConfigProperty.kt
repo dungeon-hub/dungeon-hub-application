@@ -23,6 +23,7 @@ enum class ConfigProperty(override val readableName: Key) : ChoiceEnum {
     //External APIs
     HYPIXEL_API_KEY("hypixel-api.key"),
 
+    //TODO remove this
     SKYCRYPT_API_URL("skycrypt-api.url"),
 
     SAFETY_API_KEY("safety-api.key"),

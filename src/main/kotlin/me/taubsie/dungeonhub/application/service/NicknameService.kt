@@ -45,6 +45,7 @@ object NicknameService {
     fun linkToIgn(ign: String, user: User): UUID {
         val uuid = MojangConnection.getUUIDByName(ign)
 
+        //TODO test if cache expiration 1 actually works
         val hypixelName = HypixelApiConnection().withCacheExpiration(1).getHypixelLinkedDiscord(uuid)
         val username = user.tag
 
