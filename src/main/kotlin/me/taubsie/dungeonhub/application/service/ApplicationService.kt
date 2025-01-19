@@ -37,6 +37,7 @@ import me.taubsie.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import me.taubsie.dungeonhub.application.misc.FlagResponse
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
+import net.dungeonhub.exception.PlayerNotFoundException
 import net.dungeonhub.hypixel.connection.HypixelConnection
 import net.dungeonhub.model.carry.CarryModel
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
@@ -786,6 +787,8 @@ object ApplicationService {
             mutableListOf(getErrorEmbed(throwable))
         } else if (throwable is CommandExecutionWarning) {
             mutableListOf(getErrorEmbed(throwable))
+        } else if (throwable is PlayerNotFoundException) {
+            mutableListOf(getErrorEmbed(CommandExecutionWarning(throwable.message)))
         } else {
             val embed = getErrorEmbed(CommandExecutionException(throwable))
             if (message.isNotBlank()) {
@@ -809,7 +812,9 @@ object ApplicationService {
         embed.field {
             name = "Full Comparison"
             inline = true
-            value = "${requirementType.readableName.withLocale(locale).translate()} ${comparison.readableName.translate()} $count"
+            value = "${
+                requirementType.readableName.withLocale(locale).translate()
+            } ${comparison.readableName.translate()} $count"
         }
 
         embed.field {

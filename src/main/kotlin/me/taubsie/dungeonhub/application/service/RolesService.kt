@@ -130,6 +130,7 @@ object RolesService {
         val profileMembers = profiles.profiles.mapNotNull { it.members.firstOrNull { member -> member.uuid == uuid } }
             .filterIsInstance<CurrentMember>()
 
+        //TODO add check for legendary griffin pet
         return when (roleRequirement.requirementType) {
             RoleRequirementType.SkyblockLevel -> {
                 return roleRequirement.compare(
@@ -274,6 +275,24 @@ object RolesService {
 
             RoleRequirementType.GuildRank -> {
                 //TODO complete once guild mapping is complete in the hypixel wrapper
+                return false
+            }
+
+            RoleRequirementType.MagicalPower -> {
+                // TODO complete when mapping is complete
+                return false
+            }
+
+            RoleRequirementType.ClassAverage -> {
+                return roleRequirement.compare(
+                    profileMembers.maxOf {
+                        it.dungeons?.classAverage ?: 0.0
+                    }.toInt()
+                )
+            }
+
+            RoleRequirementType.HighestCritDamage -> {
+                // TODO complete when mapping is complete
                 return false
             }
         }

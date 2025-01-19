@@ -307,7 +307,7 @@ class RoleCommand : Extension() {
                     }
                 }
 
-                publicSlashCommand(::RoleRequirementsDeleteArguments) {
+                publicSubCommand(::RoleRequirementsDeleteArguments) {
                     name = Role.Requirements.Delete.name
                     description = Role.Requirements.Delete.description
 
