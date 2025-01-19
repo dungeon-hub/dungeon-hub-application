@@ -4,6 +4,7 @@ import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralSlashCommand
+import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
@@ -23,8 +24,8 @@ class TestTranscriptCommand : Extension() {
 
     override suspend fun setup() {
         ephemeralSlashCommand {
-            name = "test-transcript"
-            description = "Tests the transcript feature."
+            name = "test-transcript".toKey()
+            description = "Tests the transcript feature.".toKey()
             allowInDms = false
             check {
                 failIfNot("You aren't allowed to use this command.") {

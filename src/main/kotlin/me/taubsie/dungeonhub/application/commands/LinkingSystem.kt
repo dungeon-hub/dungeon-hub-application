@@ -13,6 +13,7 @@ import dev.kord.core.entity.interaction.ButtonInteraction
 import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
+import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -20,23 +21,35 @@ import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
 import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.role
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.extensions.publicUserCommand
+import dev.kordex.core.i18n.toKey
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
-import me.taubsie.dungeonhub.application.connection.HypixelConnection.getHypixelLinkedDiscord
-import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.HelpTopic
 import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.*
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.exception.PlayerNotFoundException
+import net.dungeonhub.hypixel.connection.HypixelApiConnection
+import net.dungeonhub.i18n.Translations
+import net.dungeonhub.i18n.Translations.Command.FindUser
+import net.dungeonhub.i18n.Translations.Command.ForceSync
+import net.dungeonhub.i18n.Translations.Command.Ign
+import net.dungeonhub.i18n.Translations.Command.Link
+import net.dungeonhub.i18n.Translations.Command.Sync
+import net.dungeonhub.i18n.Translations.Command.Unlink
+import net.dungeonhub.mojang.connection.MojangConnection
 import kotlin.concurrent.thread
 
 @PrivilegedIntent
@@ -46,8 +59,8 @@ class LinkingSystem : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand(::SingleIgnArguments) {
-            name = "link"
-            description = "Link your discord to your hypixel account."
+            name = Link.name
+            description = Link.description
             allowInDms = true
 
             action {
@@ -84,6 +97,13 @@ class LinkingSystem : Extension() {
                         }
 
                         return@respond
+                    } catch (playerNotFoundException: PlayerNotFoundException) {
+                        embeds = mutableListOf(
+                            ApplicationService.getErrorEmbed(
+                                CommandExecutionWarning(playerNotFoundException.message)
+                            )
+                        )
+                        return@respond
                     }
 
                     val embed = ApplicationService.embed
@@ -118,8 +138,8 @@ class LinkingSystem : Extension() {
         listOf(693263712626278553L, 633621474183217163L, 1023684107877761196L).map { Snowflake(it) }
             .forEach { guildId ->
                 publicSlashCommand(::SingleIgnArguments) {
-                    name = "manual-link"
-                    description = "Manually link someone by IGN."
+                    name = "manual-link".toKey()
+                    description = "Manually link someone by IGN.".toKey()
                     guild(guildId)
                     check {
                         failIfNot("You aren't allowed to use this command.") {
@@ -131,14 +151,12 @@ class LinkingSystem : Extension() {
                         respond {
                             val uuid = MojangConnection.getUUIDByName(arguments.ign)
 
-                            val discordUser = getHypixelLinkedDiscord(uuid)
-                                .orElseThrow {
-                                    InvalidOptionWarning(
-                                        "ign",
-                                        "Please add the correct discord-account to your hypixel social menu.\n"
-                                                + "To learn more about how to do this, use `/help verification`."
-                                    )
-                                }
+                            val discordUser = HypixelApiConnection().getHypixelLinkedDiscord(uuid)
+                                ?: throw InvalidOptionWarning(
+                                    "ign",
+                                    "Please add the correct discord-account to your hypixel social menu.\n"
+                                            + "To learn more about how to do this, use `/help verification`."
+                                )
 
                             val users = guild!!.requestMembers { query = discordUser; limit = 5 }
                                 .map { it.members }
@@ -161,11 +179,57 @@ class LinkingSystem : Extension() {
                         }
                     }
                 }
+
+                publicSlashCommand {
+                    name = "mass-sync".toKey()
+                    description = "Sync a large amount of users.".toKey()
+                    guild(guildId)
+                    defaultMemberPermissions = Permissions(Permission.Administrator)
+
+                    publicSubCommand(::MassSyncArguments) {
+                        name = "add".toKey()
+                        description = "Adds users in a role to the mass sync queue.".toKey()
+
+                        action {
+                            respond {
+                                val role = arguments.role
+
+                                val members = guild!!.withStrategy(EntitySupplyStrategy.cachingRest).members.filter {
+                                    it.roleIds.contains(role.id)
+                                }.toList()
+
+                                MassSyncService.usersToSync += members.map { it.id }
+                                MassSyncService.lastGuild = guild!!.id
+
+                                val embed = ApplicationService.embed
+                                embed.color = EmbedColor.Positive.color
+                                embed.description = "Added ${members.size} users to the mass-sync queue."
+
+                                embeds = mutableListOf(embed)
+                            }
+                        }
+                    }
+
+                    publicSubCommand {
+                        name = "list".toKey()
+                        description = "Show the number of users currently in the mass sync queue.".toKey()
+
+                        action {
+                            respond {
+                                addEmbed {
+                                    color(EmbedColor.Information)
+                                    description =
+                                        "There are currently ${MassSyncService.usersToSync.size} users in the mass sync queue."
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
         publicSlashCommand {
-            name = "sync"
-            description = "Update your roles and nickname based on your linked account."
+            name = Sync.name
+            description = Sync.description
             //TODO maybe rewrite to also allow usage in dms
             allowInDms = false
 
@@ -212,7 +276,7 @@ class LinkingSystem : Extension() {
 
         fun respondToForceSync(target: Member): suspend FollowupMessageCreateBuilder.() -> Unit {
             return {
-                val roles = RolesService.updateRoles(target)
+                val roles = RolesService.updateRoles(target, cacheExpiration = 5)
 
                 val embed = ApplicationService.embed
 
@@ -231,8 +295,8 @@ class LinkingSystem : Extension() {
         }
 
         publicSlashCommand(::ForceSyncArguments) {
-            name = "force-sync"
-            description = "Forces the update of the users roles and nickname."
+            name = ForceSync.name
+            description = ForceSync.description
             defaultMemberPermissions = Permissions(Permission.ManageNicknames, Permission.ManageRoles)
             allowInDms = false
 
@@ -246,7 +310,7 @@ class LinkingSystem : Extension() {
         }
 
         publicUserCommand {
-            name = "Force Sync"
+            name = Translations.UserCommand.ForceSync.name
             allowInDms = false
             defaultMemberPermissions = Permissions(Permission.ManageNicknames, Permission.ManageRoles)
 
@@ -260,8 +324,8 @@ class LinkingSystem : Extension() {
         }
 
         publicSlashCommand {
-            name = "unlink"
-            description = "Unlink from your ingame-account."
+            name = Unlink.name
+            description = Unlink.description
             allowInDms = true
 
             action {
@@ -301,8 +365,8 @@ class LinkingSystem : Extension() {
         }
 
         publicSlashCommand(::IgnArguments) {
-            name = "ign"
-            description = "Shows the IGN of a linked user."
+            name = Ign.name
+            description = Ign.description
 
             action {
                 respond {
@@ -330,8 +394,8 @@ class LinkingSystem : Extension() {
         }
 
         publicSlashCommand(::SingleIgnArguments) {
-            name = "find-user"
-            description = "Shows which user is linked to the given IGN."
+            name = FindUser.name
+            description = FindUser.description
 
             action {
                 respond {
@@ -468,23 +532,30 @@ class LinkingSystem : Extension() {
 
     inner class SingleIgnArguments : Arguments() {
         val ign by string {
-            name = "ign"
-            description = "The users ingame-name"
+            name = "ign".toKey()
+            description = "The users ingame-name".toKey()
             minLength = 2
         }
     }
 
     inner class ForceSyncArguments : Arguments() {
         val user by user {
-            name = "user"
-            description = "The user to sync."
+            name = "user".toKey()
+            description = "The user to sync.".toKey()
         }
     }
 
     inner class IgnArguments : Arguments() {
         val user by user {
-            name = "user"
-            description = "The user to show the IGN for."
+            name = "user".toKey()
+            description = "The user to show the IGN for.".toKey()
+        }
+    }
+
+    inner class MassSyncArguments : Arguments() {
+        val role by role {
+            name = "role".toKey()
+            description = "The role in which users should be synced.".toKey()
         }
     }
 }

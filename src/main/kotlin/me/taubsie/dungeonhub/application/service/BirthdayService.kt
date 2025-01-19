@@ -18,19 +18,25 @@ import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 @OnStart
 object BirthdayService : StartupListener {
     private val logger = LoggerFactory.getLogger(BirthdayService::class.java)
     private const val EXECUTION_HOUR = 9
+    private var timerTask: ScheduledFuture<*>? = null
     var birthdays: List<Birthday> = listOf()
 
     override suspend fun postStart() {
         val timeUntilExecutionTime =
             calculateExecutionTime(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time)
 
-        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate({
+        if(timerTask != null) {
+            timerTask!!.cancel(false)
+        }
+
+        timerTask = Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate({
             updateBirthdayData()
 
             sendBirthdays()
@@ -166,6 +172,10 @@ object BirthdayService : StartupListener {
 
                 return Birthday(name, date, userId, year)
             }
+        }
+
+        override fun toString(): String {
+            return "Birthday(eventName='$eventName', date=$date, userId=$userId, birthYear=$birthYear, username='$username')"
         }
     }
 }

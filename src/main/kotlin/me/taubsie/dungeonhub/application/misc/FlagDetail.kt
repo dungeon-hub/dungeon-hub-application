@@ -8,7 +8,29 @@ data class FlagDetail(val flagged: Boolean, val reason: String?, val staff: Long
     private fun evidence() = evidence?.let { "||$evidence||" } ?: ""
 
     fun format(asList: Boolean): String {
-        return "${if (asList) "-# - " else ""}Reason: ${reason()}\n${if (asList) "-# - " else ""}Added by: ${staff()}\n${if (asList) "-# - " else ""}${evidence()}".trim()
+        return "${
+            if (asList) "-# - " else ""
+        }Reason: ${
+            reason().ifBlank {
+                "No reason provided"
+            }
+        }\n${
+            if(staff().isBlank()) {
+                ""
+            } else {
+                "${
+                    if (asList) "-# - " else ""
+                }Added by: ${staff()}\n"
+            }
+        }${
+            if(evidence().isBlank()) {
+                ""
+            } else {
+                "${
+                    if (asList) "-# - " else ""
+                }${evidence()}"
+            }
+        }".trim()
     }
 
     override fun toString(): String {

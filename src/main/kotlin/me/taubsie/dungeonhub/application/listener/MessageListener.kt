@@ -22,6 +22,7 @@ import dev.kordex.core.components.ephemeralButton
 import dev.kordex.core.components.linkButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
+import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.addReaction
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.respond
@@ -33,7 +34,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
-import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.isDungeonHub
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
@@ -49,6 +49,7 @@ import net.dungeonhub.enums.QueueStep
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.model.carry_queue.CarryQueueModel
 import net.dungeonhub.model.score.ScoreModel
+import net.dungeonhub.mojang.connection.MojangConnection
 import net.dungeonhub.service.MoshiService
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
@@ -441,7 +442,7 @@ class MessageListener : Extension() {
 
                 components {
                     linkButton {
-                        label = "SkyCrypt"
+                        label = "SkyCrypt".toKey()
                         url = ConfigProperty.SKYCRYPT_API_URL.value + "stats/" + ign
                     }
                 }
@@ -456,26 +457,26 @@ class MessageListener : Extension() {
 
                 components(Duration.ofMinutes(5).toKotlinDuration()) {
                     linkButton {
-                        label = "SkyCrypt"
+                        label = "SkyCrypt".toKey()
                         url = ConfigProperty.SKYCRYPT_API_URL.value + "stats/" + ign
                     }
 
                     ephemeralButton {
                         style = ButtonStyle.Secondary
-                        label = "Reload"
+                        label = "Reload".toKey()
                         id = "reload_playerdata"
 
                         action {
                             edit {
                                 components {
                                     linkButton {
-                                        label = "SkyCrypt"
+                                        label = "SkyCrypt".toKey()
                                         url = ConfigProperty.SKYCRYPT_API_URL.value + "stats/" + ign
                                     }
 
                                     disabledButton {
                                         style = ButtonStyle.Secondary
-                                        label = "Reload"
+                                        label = "Reload".toKey()
                                         id = "reload_playerdata"
                                     }
                                 }

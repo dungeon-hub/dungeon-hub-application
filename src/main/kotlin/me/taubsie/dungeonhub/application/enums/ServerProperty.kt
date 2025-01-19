@@ -1,6 +1,8 @@
 package me.taubsie.dungeonhub.application.enums
 
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
+import dev.kordex.core.i18n.toKey
+import dev.kordex.core.i18n.types.Key
 import me.taubsie.dungeonhub.application.service.ServerService.getActualServerProperty
 import java.util.*
 
@@ -13,7 +15,7 @@ import java.util.*
  * added to.
  */
 enum class ServerProperty(
-    override val readableName: String,
+    override val readableName: Key,
     val propertyType: ServerPropertyType = ServerPropertyType.STRING,
     val enabled: Boolean = true,
     val relatedProperties: Array<ServerProperty> = arrayOf()
@@ -36,10 +38,17 @@ enum class ServerProperty(
 
     SCORE_MANAGEMENT_ROLE("id_score_management_score", ServerPropertyType.ROLE);
 
-    constructor(name: String, enabled: Boolean) : this(name, ServerPropertyType.STRING, enabled)
+    constructor(
+        readableName: String,
+        propertyType: ServerPropertyType = ServerPropertyType.STRING,
+        enabled: Boolean = true,
+        relatedProperties: Array<ServerProperty> = arrayOf()
+    ) : this(readableName.toKey(), propertyType, enabled, relatedProperties)
+
+    constructor(name: String, enabled: Boolean) : this(name.toKey(), ServerPropertyType.STRING, enabled)
 
     constructor(name: String, propertyType: ServerPropertyType, relatedProperties: Array<ServerProperty>) : this(
-        name,
+        name.toKey(),
         propertyType,
         true,
         relatedProperties

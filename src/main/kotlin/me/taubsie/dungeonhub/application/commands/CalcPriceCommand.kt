@@ -7,6 +7,7 @@ import dev.kordex.core.commands.converters.impl.long
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.utils.getLocale
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
@@ -17,6 +18,7 @@ import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.CarryTierConnection
 import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.i18n.Translations
 
 /**
  * Command to calculate the price for some amount of carries.
@@ -30,8 +32,8 @@ class CalcPriceCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand(::CalcPriceArguments) {
-            name = "calc-price"
-            description = "Calculate the price for some amount of carries."
+            name = Translations.Command.CalcPrice.name
+            description = Translations.Command.CalcPrice.description
             allowInDms = false
 
             action {
@@ -79,13 +81,26 @@ class CalcPriceCommand : Extension() {
 
                     val embed = ApplicationService.embed
                     embed.color = EmbedColor.Information.color
-                    embed.title = "Carry-Price"
-                    embed.field("Type", true) {
+                    embed.title =
+                        Translations.Command.CalcPrice.Response.title.withLocale(event.getLocale()).translate()
+                    embed.field(
+                        Translations.Command.CalcPrice.Response.Fields.type.translateLocale(event.getLocale()),
+                        true
+                    ) {
                         carryTier.displayName + " | " + carryDifficulty.displayName
                     }
-                    embed.field("Amount", true) { arguments.amount.toString() }
-                    embed.field("Price", true) { priceText }
-                    embed.field("Price per Carry", true) { pricePerCarryText }
+                    embed.field(
+                        Translations.Command.CalcPrice.Response.Fields.amount.translateLocale(event.getLocale()),
+                        true
+                    ) { arguments.amount.toString() }
+                    embed.field(
+                        Translations.Command.CalcPrice.Response.Fields.price.translateLocale(event.getLocale()),
+                        true
+                    ) { priceText }
+                    embed.field(
+                        Translations.Command.CalcPrice.Response.Fields.pricePerCarry.translateLocale(event.getLocale()),
+                        true
+                    ) { pricePerCarryText }
 
                     carryDifficulty.thumbnailUrl?.let { embed.thumbnail { url = it } }
 
@@ -97,29 +112,29 @@ class CalcPriceCommand : Extension() {
 
     inner class CalcPriceArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = Translations.CommonArguments.CarryType.name
+            description = Translations.CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val carryTier by string {
-            name = "carry-tier"
-            description = "The identifier of the carry tier"
+            name = Translations.CommonArguments.CarryTier.name
+            description = Translations.CommonArguments.CarryTier.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val carryDifficulty by string {
-            name = "carry-difficulty"
-            description = "The identifier of the carry difficulty"
+            name = Translations.CommonArguments.CarryDifficulty.name
+            description = Translations.CommonArguments.CarryDifficulty.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
 
         val amount by long {
-            name = "amount"
-            description = "The amount of carries you want."
+            name = Translations.Command.CalcPrice.Arguments.Amount.name
+            description = Translations.Command.CalcPrice.Arguments.Amount.description
             maxValue = 200
             minValue = 1
         }

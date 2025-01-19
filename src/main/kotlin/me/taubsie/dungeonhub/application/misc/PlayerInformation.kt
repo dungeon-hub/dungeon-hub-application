@@ -6,18 +6,19 @@ import lombok.AllArgsConstructor
 import lombok.Getter
 import lombok.NoArgsConstructor
 import lombok.Setter
-import me.taubsie.dungeonhub.application.connection.HypixelConnection.getCataLevelByUUID
-import me.taubsie.dungeonhub.application.connection.HypixelConnection.getSkyblockLevelByUUID
-import me.taubsie.dungeonhub.application.connection.MojangConnection
+import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.model.discord_user.DiscordUserModel
+import net.dungeonhub.mojang.connection.MojangConnection
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-class PlayerInformation(private val user: User, private val discordUserModel: DiscordUserModel) {
+class PlayerInformation(private val user: User, private val discordUserModel: DiscordUserModel, private val cacheExpiration: Int) {
     val replacements: Map<String, () -> String>
         get() {
+            val apiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
+
             val replacements: MutableMap<String, () -> String> = HashMap()
 
             replacements["discord.name"] = { user.username }
@@ -26,11 +27,15 @@ class PlayerInformation(private val user: User, private val discordUserModel: Di
                 MojangConnection.getNameByUUID(discordUserModel.minecraftId!!)
             }
             replacements["skyblock.catacombs.level"] =
-                { getCataLevelByUUID(discordUserModel.minecraftId!!).toString() }
+                {
+                    apiConnection.getSkyblockProfiles(discordUserModel.minecraftId!!)?.profiles?.maxOf {
+                        it.getCurrentMember(discordUserModel.minecraftId!!)?.dungeons?.catacombsLevel ?: 0
+                    }?.toString() ?: "?"
+                }
             replacements["skyblock.level"] = {
-                getSkyblockLevelByUUID(
-                    discordUserModel.minecraftId!!
-                ).stream().mapToObj { i: Int -> java.lang.String.valueOf(i) }.findAny().orElse("?")
+                apiConnection.getSkyblockProfiles(discordUserModel.minecraftId!!)?.profiles?.maxOf {
+                    it.getCurrentMember(discordUserModel.minecraftId!!)?.leveling?.level ?: 0
+                }?.toString() ?: "?"
             }
 
             return replacements

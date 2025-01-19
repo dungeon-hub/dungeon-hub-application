@@ -5,17 +5,18 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
+import dev.kord.rest.request.KtorRequestException
 import kotlinx.coroutines.flow.toList
-import me.taubsie.dungeonhub.application.connection.HypixelConnection.getHypixelLinkedDiscord
-import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.connection.getMutualServers
 import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.misc.PlayerInformation
 import net.dungeonhub.connection.DiscordRoleConnection
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.discord_user.DiscordUserModel
 import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
+import net.dungeonhub.mojang.connection.MojangConnection
 import org.jetbrains.annotations.Contract
 import java.util.*
 import java.util.function.Function
@@ -44,10 +45,11 @@ object NicknameService {
     fun linkToIgn(ign: String, user: User): UUID {
         val uuid = MojangConnection.getUUIDByName(ign)
 
-        val hypixelName = getHypixelLinkedDiscord(uuid)
+        //TODO test if cache expiration 1 actually works
+        val hypixelName = HypixelApiConnection().withCacheExpiration(1).getHypixelLinkedDiscord(uuid)
         val username = user.tag
 
-        if (hypixelName.isEmpty) {
+        if (hypixelName == null) {
             throw InvalidOptionWarning(
                 "ign", """
      Please add the correct discord-account (`${user.username}`) to your hypixel social menu.
@@ -56,10 +58,10 @@ object NicknameService {
             )
         }
 
-        if (!hypixelName.get().equals(username, ignoreCase = true)) {
+        if (!hypixelName.equals(username, ignoreCase = true)) {
             throw HypixelLinkedToOtherWarning(
                 ign,
-                hypixelName.get(),
+                hypixelName,
                 user.username
             )
         }
@@ -82,11 +84,11 @@ object NicknameService {
      * @param user the Discord user for whom to update the nickname on all mutual servers
      * @throws NoNameSchemaWarning if no valid role with a non-blank name schema is found while updating the nickname
      */
-    suspend fun updateNickname(user: User, roles: Map<Long, List<Role>>) {
+    suspend fun updateNickname(user: User, roles: Map<Long, List<Role>>, cacheExpiration: Int = 60 * 3) {
         user.getMutualServers().collect { member: Member ->
             val serverRoles = roles.getOrDefault(member.guild.id.value.toLong(), null)
             try {
-                updateNickname(member, serverRoles)
+                updateNickname(member, serverRoles, cacheExpiration)
             } catch (ignored: NoNameSchemaWarning) {
                 //ignored, just don't set a username
             }
@@ -105,10 +107,10 @@ object NicknameService {
      * @throws NotLinkedException    if the user is not linked to a Minecraft account
      */
     @Throws(NoNameSchemaWarning::class, NotLinkedException::class)
-    suspend fun updateNickname(member: Member, serverRoles: List<Role>?) {
+    suspend fun updateNickname(member: Member, serverRoles: List<Role>?, cacheExpiration: Int = 60 * 3) {
         val discordUserModel = DiscordUserConnection.getLinkedById(member.id.value.toLong())
             ?: throw NotLinkedException()
-        updateNickname(member, discordUserModel, serverRoles)
+        updateNickname(member, discordUserModel, serverRoles, cacheExpiration)
     }
 
     /**
@@ -125,7 +127,12 @@ object NicknameService {
      * @throws NoNameSchemaWarning if no valid role with a non-blank name schema is found while determining the role model
      */
     @Throws(NoNameSchemaWarning::class)
-    suspend fun updateNickname(member: Member, discordUserModel: DiscordUserModel, serverRoles: List<Role>?) {
+    suspend fun updateNickname(
+        member: Member,
+        discordUserModel: DiscordUserModel,
+        serverRoles: List<Role>?,
+        cacheExpiration: Int = 60 * 3
+    ) {
         val roles: List<Role> = serverRoles ?: member.roles.toList()
         val sortedRoles = roles.sortedWith(
             Comparator.comparingInt { obj: Role -> obj.rawPosition }.reversed()
@@ -133,14 +140,24 @@ object NicknameService {
 
         val role = getRoleModel(member, sortedRoles)
 
-        val nickname = loadUsername(role.nameSchema!!, PlayerInformation(member.asUser(), discordUserModel))
+        val nickname =
+            loadUsername(role.nameSchema!!, PlayerInformation(member.asUser(), discordUserModel, cacheExpiration))
 
         if (nickname.isBlank()) {
             return
         }
 
-        member.edit {
-            this@edit.nickname = nickname
+        try {
+            member.edit {
+                this@edit.nickname = nickname
+            }
+        } catch (ktor: KtorRequestException) {
+            if (ktor.status.code == 403) {
+                throw CommandExecutionWarning(
+                    "Couldn't update the nickname due to permission problems.\n" +
+                            "I tried to set it to:\n```\n$nickname\n```"
+                )
+            }
         }
     }
 
@@ -235,8 +252,10 @@ object NicknameService {
      */
     @Contract(pure = true, value = "-> new")
     private fun toMap(): Collector<DiscordRoleModel, *, Map<Long, DiscordRoleModel>> {
-        return Collectors.toMap({ obj: DiscordRoleModel -> obj.id },
-            { discordRoleModel: DiscordRoleModel -> discordRoleModel })
+        return Collectors.toMap(
+            { obj: DiscordRoleModel -> obj.id },
+            { discordRoleModel: DiscordRoleModel -> discordRoleModel }
+        )
     }
 }
 

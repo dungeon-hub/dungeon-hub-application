@@ -1,6 +1,8 @@
 package me.taubsie.dungeonhub.application.enums
 
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
+import dev.kordex.core.i18n.toKey
+import dev.kordex.core.i18n.types.Key
 import lombok.Getter
 
 //TODO implement in carry tier / carry difficulty thumbnail settings ?
@@ -29,8 +31,8 @@ enum class KnownStaticResource(@field:Getter val path: String, val displayName: 
         return path
     }
 
-    override val readableName: String
-        get() = loadDisplayName()
+    override val readableName: Key
+        get() = loadDisplayName().toKey()
 
     fun loadDisplayName(): String {
         if (!displayName.isNullOrBlank()) {

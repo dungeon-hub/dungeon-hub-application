@@ -1,6 +1,7 @@
 package me.taubsie.dungeonhub.application.commands
 
 import dev.kord.core.behavior.UserBehavior
+import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.publicSubCommand
@@ -9,8 +10,8 @@ import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.extensions.publicUserCommand
+import dev.kordex.core.i18n.toKey
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
-import me.taubsie.dungeonhub.application.connection.MojangConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.misc.FlagResponse
@@ -18,6 +19,9 @@ import me.taubsie.dungeonhub.application.service.ApplicationService
 import me.taubsie.dungeonhub.application.service.addEmbed
 import me.taubsie.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.i18n.Translations
+import net.dungeonhub.i18n.Translations.Command.Lookup
+import net.dungeonhub.mojang.connection.MojangConnection
 
 @LoadExtension
 class LookupCommand : Extension() {
@@ -25,13 +29,13 @@ class LookupCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "lookup"
-            description = "Lookup a player or discord user."
+            name = Lookup.name
+            description = Lookup.description
             allowInDms = true
 
             publicSubCommand(::LookupPlayerArguments) {
-                name = "player"
-                description = "Lookup a minecraft user."
+                name = Lookup.Player.name
+                description = Lookup.Player.description
 
                 action {
                     respond {
@@ -41,8 +45,8 @@ class LookupCommand : Extension() {
             }
 
             publicSubCommand(::LookupUserArguments) {
-                name = "user"
-                description = "Lookup a discord user."
+                name = Lookup.User.name
+                description = Lookup.User.description
 
                 action {
                     respond {
@@ -53,7 +57,7 @@ class LookupCommand : Extension() {
         }
 
         publicUserCommand {
-            name = "Lookup User"
+            name = Translations.UserCommand.Lookup.name
 
             action {
                 respond {
@@ -113,39 +117,33 @@ class LookupCommand : Extension() {
                 }
             }
 
-            if (flagged.isNotEmpty()) {
-                addEmbed {
-                    footer = null
-                    timestamp = null
-                    color(EmbedColor.Negative)
-                    description = formatDescription(flagged.isNotEmpty(), target != null, actualTarget, actualIgn)
-                }
-            } else {
-                addEmbed {
-                    footer = null
-                    timestamp = null
-                    color(EmbedColor.Positive)
-                    description = formatDescription(flagged.isNotEmpty(), target != null, actualTarget, actualIgn)
-                }
+            addEmbed {
+                footer = null
+                timestamp = null
+                color(if(flagged.isNotEmpty()) EmbedColor.Negative else EmbedColor.Positive)
+                description = formatDescription(flagged.isNotEmpty(), target != null, actualTarget, actualIgn)
             }
 
             addEmbed {
                 color(if (flagged.isNotEmpty()) EmbedColor.Negative else if (downedServices.isNotEmpty()) EmbedColor.Information else EmbedColor.Positive)
                 fields = ApplicationService.formatTotalFlagDetails(flagResponses)
+                val infoFooter = EmbedBuilder.Footer()
+                infoFooter.text = "discord.dungeon-hub.net • Did you know that this is included in /player?"
+                footer = infoFooter
             }
         }
 
     inner class LookupUserArguments : Arguments() {
         val user by user {
-            name = "user"
-            description = "The discord user to lookup."
+            name = "user".toKey()
+            description = "The discord user to lookup.".toKey()
         }
     }
 
     inner class LookupPlayerArguments : Arguments() {
         val ign by string {
-            name = "ign"
-            description = "The IGN of the player."
+            name = "ign".toKey()
+            description = "The IGN of the player.".toKey()
             minLength = 2
         }
     }

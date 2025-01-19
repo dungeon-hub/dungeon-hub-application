@@ -18,6 +18,7 @@ import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
@@ -33,6 +34,7 @@ import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.ScoreResetType
 import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.i18n.Translations.Command.ManageScore
 import net.dungeonhub.model.score.ScoreModel
 import net.dungeonhub.model.score.ScoreUpdateModel
 
@@ -42,14 +44,14 @@ class ManageScoreCommand : Extension() {
 
     override suspend fun setup() {
         publicSlashCommand {
-            name = "manage-score"
-            description = "Use this to manage the score of service team members."
+            name = ManageScore.name
+            description = ManageScore.description
             defaultMemberPermissions = Permissions(Permission.ManageMessages)
             allowInDms = false
 
             publicSubCommand(::ManageScoreArguments) {
-                name = "add"
-                description = "Add score."
+                name = "add".toKey()
+                description = "Add score.".toKey()
 
                 action {
                     respond {
@@ -59,8 +61,8 @@ class ManageScoreCommand : Extension() {
             }
 
             publicSubCommand(::ManageScoreArguments) {
-                name = "remove"
-                description = "Remove score."
+                name = "remove".toKey()
+                description = "Remove score.".toKey()
 
                 action {
                     respond {
@@ -70,8 +72,8 @@ class ManageScoreCommand : Extension() {
             }
 
             publicSubCommand(::ResetScoreArguments) {
-                name = "reset"
-                description = "Reset score for a given carry type."
+                name = "reset".toKey()
+                description = "Reset score for a given carry type.".toKey()
 
                 check {
                     hasPermission(Permission.Administrator)
@@ -163,20 +165,20 @@ class ManageScoreCommand : Extension() {
 
     inner class ManageScoreArguments : Arguments() {
         val user by user {
-            name = "user"
-            description = "The user to manage score."
+            name = "user".toKey()
+            description = "The user to manage score.".toKey()
         }
 
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = "carry-type".toKey()
+            description = "The identifier of the carry type".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val amount by long {
-            name = "amount"
-            description = "The amount of score to add/remove."
+            name = "amount".toKey()
+            description = "The amount of score to add/remove.".toKey()
             maxValue = 10000
             minValue = 0
         }
@@ -184,16 +186,16 @@ class ManageScoreCommand : Extension() {
 
     inner class ResetScoreArguments : Arguments() {
         val carryType by string {
-            name = "carry-type"
-            description = "The identifier of the carry type"
+            name = "carry-type".toKey()
+            description = "The identifier of the carry type".toKey()
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val resetType by enumChoice<ScoreResetType> {
-            name = "reset-type"
-            description = "Choose which score should be reset"
-            typeName = "ScoreResetType"
+            name = "reset-type".toKey()
+            description = "Choose which score should be reset".toKey()
+            typeName = "ScoreResetType".toKey()
         }
     }
 }

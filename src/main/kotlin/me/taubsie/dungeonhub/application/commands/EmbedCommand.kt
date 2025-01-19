@@ -3,6 +3,7 @@ package me.taubsie.dungeonhub.application.commands
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
+import com.squareup.moshi.adapter
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
@@ -20,16 +21,21 @@ import dev.kordex.core.commands.converters.impl.optionalInt
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.getJumpUrl
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.*
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
+import me.taubsie.dungeonhub.application.exceptions.InvalidEmbedJsonWarning
 import me.taubsie.dungeonhub.application.exceptions.InvalidOptionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
+import me.taubsie.dungeonhub.application.misc.EmbedModel
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.ContentConnection
+import net.dungeonhub.i18n.Translations.Command.Embed
 import net.dungeonhub.service.GsonService
+import net.dungeonhub.service.MoshiService
 import java.nio.charset.StandardCharsets
 import java.util.function.Consumer
 
@@ -45,17 +51,18 @@ class EmbedCommand : Extension() {
     override val name = "embed-command"
 
     //Suppress "method too complex" because it's pretty understandable and the size is required
+    @OptIn(ExperimentalStdlibApi::class)
     @Suppress("kotlin:S3776")
     override suspend fun setup() {
         publicSlashCommand {
-            name = "embed"
-            description = "Makes it possible to manage embeds."
+            name = Embed.name
+            description = Embed.description
             allowInDms = false
             defaultMemberPermissions = Permissions(Permission.ManageMessages)
 
             publicSubCommand(::GetArguments) {
-                name = "get"
-                description = "Gets the embed data of a message."
+                name = "get".toKey()
+                description = "Gets the embed data of a message.".toKey()
 
                 action {
                     respond {
@@ -99,11 +106,11 @@ class EmbedCommand : Extension() {
                                     }
                                 })
                         } else {
-                            @Suppress("DEPRECATION")
-                            val embedSource = GsonService.gson.toJson(
-                                if (embeds.size == 1) embeds[0].toModel()
-                                else embeds.map { it.toModel() }
-                            )
+                            val embedSource = if(embeds.size == 1) {
+                                MoshiService.moshi.adapter<EmbedModel>().toJson(embeds[0].toModel())
+                            } else {
+                                MoshiService.moshi.adapter<List<EmbedModel>>().toJson( embeds.map { it.toModel() } )
+                            }
 
                             val description =
                                 if (embedSource.length >= 4000 || arguments.type.equals("cdn", ignoreCase = true)) {
@@ -123,8 +130,8 @@ class EmbedCommand : Extension() {
             }
 
             publicSubCommand(::SendArguments) {
-                name = "send"
-                description = "Sends a custom embed."
+                name = "send".toKey()
+                description = "Sends a custom embed.".toKey()
 
                 action {
                     respond {
@@ -184,7 +191,7 @@ class EmbedCommand : Extension() {
                                     }
                             }
                         } catch (jsonSyntaxException: JsonSyntaxException) {
-                            throw CommandExecutionException("The embed JSON you entered is invalid formatted.")
+                            throw InvalidEmbedJsonWarning()
                         } catch (exception: Exception) {
                             throw CommandExecutionException(exception)
                         }
@@ -206,8 +213,8 @@ class EmbedCommand : Extension() {
             }
 
             publicSubCommand(::MessageLinkEmbedArguments) {
-                name = "add"
-                description = "Add an embed to a message sent by this bot."
+                name = "add".toKey()
+                description = "Add an embed to a message sent by this bot.".toKey()
 
                 action {
                     respond {
@@ -253,7 +260,7 @@ class EmbedCommand : Extension() {
                                     }
                             }
                         } catch (jsonSyntaxException: JsonSyntaxException) {
-                            throw CommandExecutionException("The embed JSON you entered is invalid formatted.")
+                            throw InvalidEmbedJsonWarning()
                         } catch (exception: java.lang.Exception) {
                             throw CommandExecutionException(exception)
                         }
@@ -293,8 +300,8 @@ class EmbedCommand : Extension() {
             }
 
             publicSubCommand(::EditArguments) {
-                name = "edit"
-                description = "Edit an embed sent by this bot."
+                name = "edit".toKey()
+                description = "Edit an embed sent by this bot.".toKey()
 
                 action {
                     respond {
@@ -313,7 +320,7 @@ class EmbedCommand : Extension() {
                                 )
                             }
                         } catch (jsonSyntaxException: JsonSyntaxException) {
-                            throw CommandExecutionException("The embed JSON you entered is invalid formatted.")
+                            throw InvalidEmbedJsonWarning()
                         } catch (exception: Exception) {
                             throw CommandExecutionException(exception)
                         }
@@ -365,8 +372,8 @@ class EmbedCommand : Extension() {
 
     open inner class MessageLinkArguments : Arguments() {
         private val messageLink by string {
-            name = "link"
-            description = "Please paste the link to the message here."
+            name = "link".toKey()
+            description = "Please paste the link to the message here.".toKey()
         }
 
         suspend fun getMessage(): Message? {
@@ -376,14 +383,14 @@ class EmbedCommand : Extension() {
 
     inner class GetArguments : MessageLinkArguments() {
         val type by optionalStringChoice {
-            name = "type"
-            description = "Select how you want to get the embed data."
-            choices = mutableMapOf("beautiful" to "beautiful", "source" to "source", "cdn" to "cdn")
+            name = "type".toKey()
+            description = "Select how you want to get the embed data.".toKey()
+            choices = mutableMapOf("beautiful".toKey() to "beautiful", "source".toKey() to "source", "cdn".toKey() to "cdn")
         }
 
         val count by optionalInt {
-            name = "count"
-            description = "Select which embed you want to get (0-based counting)."
+            name = "count".toKey()
+            description = "Select which embed you want to get (0-based counting).".toKey()
             minValue = 0
             maxValue = 25
         }
@@ -391,20 +398,20 @@ class EmbedCommand : Extension() {
 
     open inner class MessageLinkEmbedArguments : MessageLinkArguments() {
         val embed by string {
-            name = "embed"
-            description = "The embed data to send."
+            name = "embed".toKey()
+            description = "The embed data to send.".toKey()
         }
     }
 
     inner class SendArguments : Arguments() {
         val embed by string {
-            name = "embed"
-            description = "The embed data to send."
+            name = "embed".toKey()
+            description = "The embed data to send.".toKey()
         }
 
         val channel by optionalChannel {
-            name = "channel"
-            description = "The channel to send the embed into."
+            name = "channel".toKey()
+            description = "The channel to send the embed into.".toKey()
 
             requiredChannelTypes = mutableSetOf(
                 ChannelType.GuildText,
@@ -417,8 +424,8 @@ class EmbedCommand : Extension() {
 
     inner class EditArguments : MessageLinkEmbedArguments() {
         val count by optionalInt {
-            name = "count"
-            description = "Select which embed you want to edit (0-based counting)."
+            name = "count".toKey()
+            description = "Select which embed you want to edit (0-based counting).".toKey()
             minValue = 0
             maxValue = 25
         }
