@@ -38,7 +38,7 @@ import me.taubsie.dungeonhub.application.misc.FlagResponse
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
 import net.dungeonhub.exception.PlayerNotFoundException
-import net.dungeonhub.hypixel.connection.HypixelConnection
+import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.model.carry.CarryModel
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
@@ -132,6 +132,7 @@ object ApplicationService {
         return kord.getUser(ownerId)
     }
 
+    //TODO move to the method by the hypixel-wrapper
     /**
      * This formats a decimal number as a String.
      */
@@ -393,24 +394,7 @@ object ApplicationService {
     //probably first load skycrypt, then the rest?
     @Throws(FailedToLoadEmbedException::class)
     fun getPlayerDataEmbed(ign: String, discordId: Long?): EmbedBuilder {
-        val skycryptData: Map<String, String?> = HypixelConnection.getSkyCryptDataSync(ign)
-
-        val description = skycryptData.getOrDefault(
-            "description", "Couldn't load SkyCrypt data. Please try again " +
-                    "later."
-        )
-
         val embed = embed
-        embed.color = EmbedColor.Information.color
-        embed.description = description
-        embed.title = skycryptData.getOrDefault("title", ign)
-        embed.url = ConfigProperty.SKYCRYPT_API_URL.toString() + "stats/" + ign
-
-        if (skycryptData.containsKey("icon")) {
-            embed.thumbnail {
-                url = skycryptData["icon"]!!
-            }
-        }
 
         val uuid: UUID = MojangConnection.getUUIDByName(ign)
 
@@ -436,8 +420,19 @@ object ApplicationService {
             embed.color = EmbedColor.Positive.color
         }
 
-        if (!skycryptData.containsKey("description") || !skycryptData.containsKey("title")) {
-            throw FailedToLoadEmbedException(embed)
+        val statsOverview = HypixelApiConnection().getStatsOverview(uuid)
+            ?: throw FailedToLoadEmbedException(embed)
+
+        embed.description = statsOverview.description
+        embed.title = "${try {
+            MojangConnection.getNameByUUID(uuid)
+        } catch (_: PlayerNotFoundException) {
+            ign
+        }} (${statsOverview.profileName})"
+        embed.url = ConfigProperty.SKYCRYPT_API_URL.toString() + "stats/" + ign
+
+        embed.thumbnail {
+            url = "https://visage.surgeplay.com/face/$uuid"
         }
 
         return embed
