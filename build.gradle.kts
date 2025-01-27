@@ -1,7 +1,7 @@
 import dev.kordex.gradle.plugins.kordex.DataCollection
 
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "2.1.0"
+    id("org.jetbrains.kotlin.jvm") version "2.1.10"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0"
 
     id("com.github.johnrengelman.shadow") version "8.1.1"
