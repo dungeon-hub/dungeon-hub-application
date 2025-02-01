@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%d{dd.MM.yyyy HH:mm:ss}] %-6level> %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>${user.home}/dungeon-hub/logs/application/%d{yyyy_MM_dd-HH_mm_ss}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${user.home}/dungeon-hub/logs/application/archive/%d{yyyy_MM_dd-HH_mm_ss}.gz</fileNamePattern>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+        <append>false</append>
+        <encoder>
+            <pattern>[%d{dd.MM.yyyy HH:mm:ss}] %-6level %logger> %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ExceptionAppender" class="me.taubsie.dungeonhub.application.exceptions.ExceptionAppender" />
+
+    <root level="info">
+        <appender-ref ref="STDOUT" level="info" />
+        <appender-ref ref="FILE" level="info"/>
+        <appender-ref ref="ExceptionAppender" level="warn"/>
+    </root>
+</configuration>
