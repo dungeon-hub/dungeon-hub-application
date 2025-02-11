@@ -4,25 +4,32 @@
         <encoder>
             <pattern>[%d{dd.MM.yyyy HH:mm:ss}] %-6level> %msg%n</pattern>
         </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
     </appender>
 
-    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>${user.home}/dungeon-hub/logs/application/%d{yyyy_MM_dd-HH_mm_ss}.log</file>
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${user.home}/dungeon-hub/logs/application/dungeon-hub.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${user.home}/dungeon-hub/logs/application/archive/%d{yyyy_MM_dd-HH_mm_ss}.gz</fileNamePattern>
-            <totalSizeCap>500MB</totalSizeCap>
+            <fileNamePattern>${user.home}/dungeon-hub/logs/application/archive/%d{yyyy_MM_dd}.gz</fileNamePattern>
+            <totalSizeCap>50MB</totalSizeCap>
+            <maxHistory>365</maxHistory>
         </rollingPolicy>
-        <append>false</append>
         <encoder>
             <pattern>[%d{dd.MM.yyyy HH:mm:ss}] %-6level %logger> %msg%n</pattern>
         </encoder>
     </appender>
 
-    <appender name="ExceptionAppender" class="me.taubsie.dungeonhub.application.exceptions.ExceptionAppender" />
+    <appender name="ExceptionAppender" class="me.taubsie.dungeonhub.application.exceptions.ExceptionAppender" >
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+    </appender>
 
-    <root level="info">
+    <root level="debug">
         <appender-ref ref="STDOUT" level="info" />
-        <appender-ref ref="FILE" level="info"/>
+        <appender-ref ref="FILE" level="debug"/>
         <appender-ref ref="ExceptionAppender" level="warn"/>
     </root>
 </configuration>

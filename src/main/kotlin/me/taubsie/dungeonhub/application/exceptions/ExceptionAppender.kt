@@ -19,17 +19,17 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
     override fun append(logEvent: ILoggingEvent) {
         val throwable = logEvent.throwableProxy
 
-        if(throwable !is ThrowableProxy) {
+        if(throwable != null && throwable !is ThrowableProxy) {
             return
         }
 
-        if (throwable.throwable is CommandExecutionWarning) {
+        if (throwable?.throwable is CommandExecutionWarning) {
             return
         }
 
         val embed = ApplicationService.embed
         embed.color = EmbedColor.Negative.color
-        val title = logEvent.message
+        val title = logEvent.formattedMessage
 
         if (title.length < (EmbedBuilder.Limits.title - 3)) {
             embed.title = title
@@ -42,9 +42,9 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
             }
         }
 
-        embed.title = logEvent.message
+        embed.title = logEvent.formattedMessage
 
-        if (throwable.throwable != null) {
+        if (throwable?.throwable != null) {
             var description = getExceptionMessage(throwable.throwable)
 
             if (description != null && description.length > 3000) {
