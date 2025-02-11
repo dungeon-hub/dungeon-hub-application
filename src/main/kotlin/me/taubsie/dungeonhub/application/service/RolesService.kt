@@ -17,8 +17,9 @@ import net.dungeonhub.connection.*
 import net.dungeonhub.enums.RoleRequirementType
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
-import net.dungeonhub.hypixel.entities.CurrentMember
-import net.dungeonhub.hypixel.entities.KnownSkill
+import net.dungeonhub.hypixel.entities.skyblock.CurrentMember
+import net.dungeonhub.hypixel.entities.skyblock.KnownSkill
+import net.dungeonhub.hypixel.entities.player.KnownRank
 import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.discord_role_group.DiscordRoleGroupModel
 import net.dungeonhub.model.role_requirement.RoleRequirementModel
@@ -113,6 +114,7 @@ object RolesService {
         }
     }
 
+    //TODO maybe make profile loading lazy? -> would then only be loaded if needed
     fun checkRoleRequirement(roleRequirement: RoleRequirementModel, member: Member, cacheExpiration: Int): Boolean {
         if (!roleRequirement.checkExtraData()) return false
 
@@ -125,10 +127,13 @@ object RolesService {
         val uuid = discordUser.minecraftId
             ?: return false
 
-        val profiles = HypixelApiConnection().withCacheExpiration(cacheExpiration).getSkyblockProfiles(uuid) ?: return false
+        val profiles =
+            HypixelApiConnection().withCacheExpiration(cacheExpiration).getSkyblockProfiles(uuid) ?: return false
 
         val profileMembers = profiles.profiles.mapNotNull { it.members.firstOrNull { member -> member.uuid == uuid } }
             .filterIsInstance<CurrentMember>()
+
+        val playerData = HypixelApiConnection().withCacheExpiration(cacheExpiration).getPlayerData(uuid) ?: return false
 
         //TODO add check for legendary griffin pet
         return when (roleRequirement.requirementType) {
@@ -264,8 +269,13 @@ object RolesService {
             }
 
             RoleRequirementType.HypixelRank -> {
-                //TODO complete once guild mapping is complete in the hypixel wrapper
-                return false
+                val rank = playerData.rank
+
+                if(rank !is KnownRank) return false
+
+                return roleRequirement.compare(
+                    rank.ordinal
+                )
             }
 
             RoleRequirementType.GuildMembership -> {
@@ -279,8 +289,7 @@ object RolesService {
             }
 
             RoleRequirementType.MagicalPower -> {
-                // TODO complete when mapping is complete
-                return false
+                return roleRequirement.compare(profileMembers.maxOf { it.accessoryBag?.highestMagicalPower ?: 0 })
             }
 
             RoleRequirementType.ClassAverage -> {
