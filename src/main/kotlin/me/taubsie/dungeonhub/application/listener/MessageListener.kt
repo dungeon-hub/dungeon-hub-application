@@ -406,30 +406,10 @@ class MessageListener : Extension() {
             return
         }
 
-        val ignOptional = DiscordUserConnection.getLinkedById(user.id.value.toLong())
+        val ign = DiscordUserConnection.getLinkedById(user.id.value.toLong())
             ?.minecraftId
             ?.let { MojangConnection.getNameByUUID(it) }
-            ?: (lines.firstOrNull { s -> s.startsWith("IGN: ") || s.startsWith("- **IGN**: ") || s.startsWith("**IGN**: ") })
-            ?: (user.asMemberOrNull(event.guildId!!)?.effectiveName)
             ?: return
-
-        val ign = ignOptional
-            .replace("IGN: ", "")
-            .replace("- **IGN**: ", "")
-            .replace("**IGN**: ", "")
-            .replace("❮(\\S*)❯".toRegex(), "")
-            .replace("❊", "")
-            .replace("❉", "")
-            .replace("❃", "")
-            .replace("✽", "")
-            .replace("✸", "")
-            .replace("✷", "")
-            .replace("✶", "")
-            .replace("✧", "")
-            .replace("✦", "")
-            .replace("☆", "")
-            .replace("★", "")
-            .trim()
 
         sendPlayerDataEmbed(ign, event.message.channel)
     }
