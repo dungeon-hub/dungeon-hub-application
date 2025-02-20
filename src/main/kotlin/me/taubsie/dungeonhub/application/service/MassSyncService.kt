@@ -60,6 +60,6 @@ object MassSyncService : StartupListener {
             runBlocking {
                 syncWave()
             }
-        }, 15, 3, TimeUnit.SECONDS)
+        }, 15, 6, TimeUnit.SECONDS)
     }
 }
