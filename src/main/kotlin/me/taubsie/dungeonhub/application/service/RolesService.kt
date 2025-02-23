@@ -17,9 +17,9 @@ import net.dungeonhub.connection.*
 import net.dungeonhub.enums.RoleRequirementType
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
+import net.dungeonhub.hypixel.entities.player.KnownRank
 import net.dungeonhub.hypixel.entities.skyblock.CurrentMember
 import net.dungeonhub.hypixel.entities.skyblock.KnownSkill
-import net.dungeonhub.hypixel.entities.player.KnownRank
 import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.discord_role_group.DiscordRoleGroupModel
 import net.dungeonhub.model.role_requirement.RoleRequirementModel

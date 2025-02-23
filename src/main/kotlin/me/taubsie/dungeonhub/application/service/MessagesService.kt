@@ -3,7 +3,6 @@ package me.taubsie.dungeonhub.application.service
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
-import dev.kord.core.entity.Guild
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.flow.firstOrNull
@@ -77,12 +76,6 @@ object MessagesService : StartupListener {
     suspend fun refreshPriceMessages(serverId: Long) {
         refreshPriceMessages(
             (DiscordServerConnection.getAllCarryTiers(serverId) ?: listOf()).stream()
-        )
-    }
-
-    suspend fun refreshPriceMessages(server: Guild) {
-        refreshPriceMessages(
-            (DiscordServerConnection.getAllCarryTiers(server.id.value.toLong()) ?: listOf()).stream()
         )
     }
 
