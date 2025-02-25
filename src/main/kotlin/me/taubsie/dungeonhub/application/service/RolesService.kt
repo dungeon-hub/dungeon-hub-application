@@ -118,6 +118,8 @@ object RolesService {
     fun checkRoleRequirement(roleRequirement: RoleRequirementModel, member: Member, cacheExpiration: Int): Boolean {
         if (!roleRequirement.checkExtraData()) return false
 
+        val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
+
         val discordServer = DiscordServerConnection.findServerById(member.guild.id.value.toLong())
             ?: return false
 
@@ -127,13 +129,12 @@ object RolesService {
         val uuid = discordUser.minecraftId
             ?: return false
 
-        val profiles =
-            HypixelApiConnection().withCacheExpiration(cacheExpiration).getSkyblockProfiles(uuid) ?: return false
+        val profiles = hypixelApiConnection.getSkyblockProfiles(uuid) ?: return false
 
         val profileMembers = profiles.profiles.mapNotNull { it.members.firstOrNull { member -> member.uuid == uuid } }
             .filterIsInstance<CurrentMember>()
 
-        val playerData = HypixelApiConnection().withCacheExpiration(cacheExpiration).getPlayerData(uuid) ?: return false
+        val playerData = hypixelApiConnection.getPlayerData(uuid) ?: return false
 
         //TODO add check for legendary griffin pet
         return when (roleRequirement.requirementType) {
@@ -271,7 +272,7 @@ object RolesService {
             RoleRequirementType.HypixelRank -> {
                 val rank = playerData.rank
 
-                if(rank !is KnownRank) return false
+                if (rank !is KnownRank) return false
 
                 return roleRequirement.compare(
                     rank.ordinal
@@ -279,13 +280,19 @@ object RolesService {
             }
 
             RoleRequirementType.GuildMembership -> {
-                //TODO complete once guild mapping is complete in the hypixel wrapper
-                return false
+                val guild = roleRequirement.extraData?.let { hypixelApiConnection.getGuild(it) } ?: return false
+
+                return roleRequirement.compare(
+                    if (guild.members.any { it.uuid == uuid }) 1 else 0
+                )
             }
 
             RoleRequirementType.GuildRank -> {
-                //TODO complete once guild mapping is complete in the hypixel wrapper
-                return false
+                val guild = roleRequirement.extraData?.let { hypixelApiConnection.getGuild(it) } ?: return false
+
+                return roleRequirement.compare(
+                    guild.members.firstOrNull { it.uuid == uuid }?.rank?.priority ?: 0
+                )
             }
 
             RoleRequirementType.MagicalPower -> {
