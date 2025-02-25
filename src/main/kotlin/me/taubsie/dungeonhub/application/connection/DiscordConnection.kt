@@ -66,6 +66,7 @@ import kotlin.time.toKotlinDuration
 @OnStart(priority = StartPriority.DISCORD_BOT)
 object DiscordConnection : StartupListener {
     private val logger: Logger = LoggerFactory.getLogger(DiscordConnection::class.java)
+    private var started: Boolean = false
     private var uptime: Instant = Instant.now()
     private var currentAppearance = 0
     private val possibleAppearances: List<Pair<AppearanceType, suspend () -> String>> = listOf(
@@ -113,7 +114,7 @@ object DiscordConnection : StartupListener {
             val amount = try {
                 DiscordServerConnection.getTotalAmountOfMoneySpent(693263712626278553L)
                     ?: throw CommandExecutionException("Couldn't load the total amount of money spent.")
-            } catch (commandExecutionException: CommandExecutionException) {
+            } catch (_: CommandExecutionException) {
                 0
             }
 
@@ -239,9 +240,12 @@ object DiscordConnection : StartupListener {
         ClassLoader.loadExtensions(bot!!)
 
         bot?.on<ReadyEvent> {
-            ClassLoader.executePostStart()
+            if(!started) {
+                ClassLoader.executePostStart()
 
-            uptime = Instant.now()
+                started = true
+                uptime = Instant.now()
+            }
         }
 
         bot?.start()
