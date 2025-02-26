@@ -24,6 +24,7 @@ import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.discord_role_group.DiscordRoleGroupModel
 import net.dungeonhub.model.role_requirement.RoleRequirementModel
 import java.util.stream.Collectors
+import kotlin.math.roundToInt
 import kotlin.time.Duration
 
 object RolesService {
@@ -135,6 +136,10 @@ object RolesService {
             .filterIsInstance<CurrentMember>()
 
         val playerData = hypixelApiConnection.getPlayerData(uuid) ?: return false
+
+        val guild by lazy {
+            roleRequirement.extraData?.let { hypixelApiConnection.getGuild(it) }
+        }
 
         //TODO add check for legendary griffin pet
         return when (roleRequirement.requirementType) {
@@ -280,18 +285,14 @@ object RolesService {
             }
 
             RoleRequirementType.GuildMembership -> {
-                val guild = roleRequirement.extraData?.let { hypixelApiConnection.getGuild(it) } ?: return false
-
                 return roleRequirement.compare(
-                    if (guild.members.any { it.uuid == uuid }) 1 else 0
+                    if (guild?.members?.any { it.uuid == uuid } == true) 1 else 0
                 )
             }
 
             RoleRequirementType.GuildRank -> {
-                val guild = roleRequirement.extraData?.let { hypixelApiConnection.getGuild(it) } ?: return false
-
                 return roleRequirement.compare(
-                    guild.members.firstOrNull { it.uuid == uuid }?.rank?.priority ?: 0
+                    guild?.members?.firstOrNull { it.uuid == uuid }?.rank?.priority ?: 0
                 )
             }
 
@@ -308,8 +309,9 @@ object RolesService {
             }
 
             RoleRequirementType.HighestCritDamage -> {
-                // TODO complete when mapping is complete
-                return false
+                return roleRequirement.compare(
+                    profileMembers.maxOf { it.playerStats?.highestCritDamage ?: 0.0 }.roundToInt()
+                )
             }
         }
     }
