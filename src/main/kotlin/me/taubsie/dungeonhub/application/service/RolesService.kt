@@ -138,7 +138,7 @@ object RolesService {
         val playerData = hypixelApiConnection.getPlayerData(uuid) ?: return false
 
         val guild by lazy {
-            roleRequirement.extraData?.let { hypixelApiConnection.getGuild(it) }
+            roleRequirement.extraData?.let { HypixelApiConnection().withCacheExpiration(5).getGuild(it) }
         }
 
         //TODO add check for legendary griffin pet
