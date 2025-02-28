@@ -50,6 +50,7 @@ import net.dungeonhub.i18n.Translations.Command.Link
 import net.dungeonhub.i18n.Translations.Command.Sync
 import net.dungeonhub.i18n.Translations.Command.Unlink
 import net.dungeonhub.mojang.connection.MojangConnection
+import java.util.*
 import kotlin.concurrent.thread
 
 @PrivilegedIntent
@@ -186,8 +187,8 @@ class LinkingSystem : Extension() {
                     guild(guildId)
                     defaultMemberPermissions = Permissions(Permission.Administrator)
 
-                    publicSubCommand(::MassSyncArguments) {
-                        name = "add".toKey()
+                    publicSubCommand(::MassSyncRoleArguments) {
+                        name = "role".toKey()
                         description = "Adds users in a role to the mass sync queue.".toKey()
 
                         action {
@@ -204,6 +205,49 @@ class LinkingSystem : Extension() {
                                 val embed = ApplicationService.embed
                                 embed.color = EmbedColor.Positive.color
                                 embed.description = "Added ${members.size} users to the mass-sync queue."
+
+                                embeds = mutableListOf(embed)
+                            }
+                        }
+                    }
+
+                    publicSubCommand(::MassSyncGuildArguments) {
+                        name = "guild".toKey()
+                        description = "Adds users in a guild to the mass sync queue.".toKey()
+
+                        action {
+                            respond {
+                                val guild = HypixelApiConnection().getGuild(arguments.guild)
+
+                                if (guild == null) {
+                                    addEmbed {
+                                        description = "Couldn't find the Hypixel guild \"${arguments.guild}\"."
+                                        color(EmbedColor.Negative)
+                                    }
+                                    return@respond
+                                }
+
+                                var count = 0
+                                val unknownUsers = mutableSetOf<UUID>()
+                                for (member in guild.members) {
+                                    val discordUser = DiscordUserConnection.findUserByUuid(member.uuid)
+
+                                    if(discordUser == null) {
+                                        unknownUsers.add(member.uuid)
+                                        continue
+                                    }
+
+                                    count++
+                                    MassSyncService.usersToSync += Snowflake(discordUser.id)
+                                }
+
+                                val embed = ApplicationService.embed
+                                embed.color = EmbedColor.Positive.color
+                                embed.description = "Added $count users for the guild ${guild.displayName} to the mass-sync queue.${
+                                    if(unknownUsers.isNotEmpty()) {
+                                        "\nCouldn't link the following players: " + unknownUsers.joinToString(", ")
+                                    } else ""
+                                }"
 
                                 embeds = mutableListOf(embed)
                             }
@@ -552,10 +596,17 @@ class LinkingSystem : Extension() {
         }
     }
 
-    inner class MassSyncArguments : Arguments() {
+    inner class MassSyncRoleArguments : Arguments() {
         val role by role {
             name = "role".toKey()
             description = "The role in which users should be synced.".toKey()
+        }
+    }
+
+    inner class MassSyncGuildArguments : Arguments() {
+        val guild by string {
+            name = "guild".toKey()
+            description = "The guild in which users should be synced.".toKey()
         }
     }
 }
