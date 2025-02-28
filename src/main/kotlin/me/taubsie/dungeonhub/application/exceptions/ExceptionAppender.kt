@@ -14,6 +14,7 @@ import net.dungeonhub.connection.ContentConnection
 import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.stream.Collectors
+import kotlin.concurrent.thread
 
 class ExceptionAppender : AppenderBase<ILoggingEvent>() {
     override fun append(logEvent: ILoggingEvent) {
@@ -56,14 +57,16 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
             embed.description = description
         }
 
-        runBlocking {
-            val kord: Kord? = DiscordConnection.bot?.kordRef
+        thread(start=true) {
+            runBlocking {
+                val kord: Kord? = DiscordConnection.bot?.kordRef
 
-            if (kord != null) {
-                ApplicationService.getBotOwner(kord)
-                    ?.dm {
-                        embeds = mutableListOf(embed)
-                    }
+                if (kord != null) {
+                    ApplicationService.getBotOwner(kord)
+                        ?.dm {
+                            embeds = mutableListOf(embed)
+                        }
+                }
             }
         }
     }
