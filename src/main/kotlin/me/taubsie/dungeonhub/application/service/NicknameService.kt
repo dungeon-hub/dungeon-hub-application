@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.service
 
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Member
@@ -64,6 +65,14 @@ object NicknameService {
                 hypixelName,
                 user.username
             )
+        }
+
+        DiscordUserConnection.findUserByUuid(uuid)?.let {
+            val updateModel = it.getUpdateModel()
+            updateModel.minecraftId = null
+            DiscordUserConnection.updateUser(it.id, updateModel)
+
+            MassSyncService.usersToSync += Snowflake(it.id)
         }
 
         val updateModel = DiscordUserUpdateModel(uuid)
