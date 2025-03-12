@@ -32,9 +32,12 @@ object MassSyncService : StartupListener {
 
         usersToSync.removeAll(currentWave)
 
-        currentWave.mapNotNull { DiscordConnection.bot!!.kordRef.getGuild(lastGuild!!).getMember(it) }.forEach { user ->
-            syncUser(user)
-        }
+        try {
+            currentWave.mapNotNull { DiscordConnection.bot!!.kordRef.getGuild(lastGuild!!).getMember(it) }
+                .forEach { user ->
+                    syncUser(user)
+                }
+        } catch (e: Exception) { logger.error("Uncaught error during mass sync for users: $usersToSync", e) }
     }
 
     private suspend fun syncUser(member: Member) {
