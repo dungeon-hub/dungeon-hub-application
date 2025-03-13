@@ -37,7 +37,7 @@ object MassSyncService : StartupListener {
                 .forEach { user ->
                     syncUser(user)
                 }
-        } catch (e: Exception) { logger.error("Uncaught error during mass sync for users: $usersToSync", e) }
+        } catch (e: Exception) { logger.error("Uncaught error during mass sync for users: $currentWave", e) }
     }
 
     private suspend fun syncUser(member: Member) {
