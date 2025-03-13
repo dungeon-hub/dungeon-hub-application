@@ -540,7 +540,7 @@ class LinkingSystem : Extension() {
                 val response: InteractionResponseCreateBuilder.() -> Unit = {
                     val embed = ApplicationService.embed
                     embed.title = "Linked successfully"
-                    embed.description = "${event.interaction.user.mention}, your UUID is now `$linkedId`"
+                    embed.description = "${event.interaction.user.mention}, you're now linked to `${MojangConnection.getNameByUUID(linkedId)}`."
                     embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
