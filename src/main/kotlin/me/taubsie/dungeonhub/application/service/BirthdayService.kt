@@ -32,7 +32,7 @@ object BirthdayService : StartupListener {
         val timeUntilExecutionTime =
             calculateExecutionTime(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time)
 
-        if(timerTask != null) {
+        if (timerTask != null) {
             timerTask!!.cancel(false)
         }
 
@@ -66,6 +66,8 @@ object BirthdayService : StartupListener {
         val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
         for (birthday in todayBirthdays) {
+            val channel = birthday.channel ?: 701887299696328814
+
             val embed = EmbedBuilder()
             embed.color(EmbedColor.Positive)
             embed.title = birthday.eventName
@@ -85,7 +87,7 @@ object BirthdayService : StartupListener {
                     } else {
                         ""
                     }
-                }\nMake sure to congratulate them in <#701887299696328814>!"
+                }\nMake sure to congratulate them in <#$channel>!"
 
             embeds += embed
         }
@@ -142,12 +144,18 @@ object BirthdayService : StartupListener {
 
         return try {
             LocalDate.parse("$year-$month-$day")
-        } catch (illegalArgumentException: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             null
         }
     }
 
-    class Birthday(val eventName: String, val date: LocalDate, val userId: Long? = null, val birthYear: Int? = null) {
+    class Birthday(
+        val eventName: String,
+        val date: LocalDate,
+        val userId: Long? = null,
+        val birthYear: Int? = null,
+        val channel: Long? = null
+    ) {
         val username: String = if (eventName.endsWith(" | Birthday")) {
             eventName.substring(0, eventName.length - 11)
         } else {
@@ -166,11 +174,13 @@ object BirthdayService : StartupListener {
 
                 val userId = properties.firstOrNull { it.name == "LOCATION" }?.value?.toLongOrNull()
 
-                val year =
-                    properties.firstOrNull { it.name == "DESCRIPTION" }?.value?.split("\n")?.firstOrNull()?.trim()
-                        ?.toIntOrNull()
+                val description = properties.firstOrNull { it.name == "DESCRIPTION" }?.value?.split("\n")
 
-                return Birthday(name, date, userId, year)
+                val year = description?.firstOrNull()?.trim()?.toIntOrNull()
+
+                val channel = description?.drop(1)?.firstOrNull()?.trim()?.toLongOrNull()
+
+                return Birthday(name, date, userId, year, channel)
             }
         }
 
