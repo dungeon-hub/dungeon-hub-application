@@ -101,7 +101,7 @@ object BirthdayService : StartupListener {
     }
 
     fun getTodayBirthdays(today: LocalDate): List<Birthday> {
-        return birthdays.filter { it.date == today }
+        return birthdays.filter { it.date.dayOfMonth == today.dayOfMonth && it.date.month == today.month }
     }
 
     fun updateBirthdayData() {
