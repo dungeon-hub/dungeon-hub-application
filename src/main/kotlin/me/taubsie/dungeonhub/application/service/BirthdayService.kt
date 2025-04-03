@@ -13,6 +13,7 @@ import me.taubsie.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.connection.DungeonHubConnection.httpClient
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
+import net.fortuna.ical4j.model.Period
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -62,7 +63,7 @@ object BirthdayService : StartupListener {
     }
 
     private fun sendBirthdays() {
-        val todayBirthdays = getTodayBirthdays(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date)
+        val todayBirthdays = getTodayBirthdays(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()))
         val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
         for (birthday in todayBirthdays) {
@@ -102,8 +103,9 @@ object BirthdayService : StartupListener {
         }
     }
 
-    fun getTodayBirthdays(today: LocalDate): List<Birthday> {
-        return birthdays.filter { it.date.dayOfMonth == today.dayOfMonth && it.date.month == today.month }
+    fun getTodayBirthdays(today: LocalDateTime): List<Birthday> {
+        return birthdays.groupBy { it.userId }.map { it.value.maxBy { birthday -> birthday.date.year } }
+            .filter { it.isToday(today) }
     }
 
     fun updateBirthdayData() {
@@ -154,12 +156,21 @@ object BirthdayService : StartupListener {
         val date: LocalDate,
         val userId: Long? = null,
         val birthYear: Int? = null,
-        val channel: Long? = null
+        val channel: Long? = null,
+        val recurrenceSet: Set<Period<java.time.LocalDate>>
     ) {
         val username: String = if (eventName.endsWith(" | Birthday")) {
             eventName.substring(0, eventName.length - 11)
         } else {
             eventName
+        }
+
+        fun isToday(today: LocalDateTime): Boolean {
+            if(recurrenceSet.isEmpty()) {
+                return date.dayOfMonth == today.dayOfMonth && date.month == today.month
+            }
+
+            return recurrenceSet.any { it.includes(today.toJavaLocalDateTime()) }
         }
 
         companion object {
@@ -180,12 +191,21 @@ object BirthdayService : StartupListener {
 
                 val channel = description?.drop(1)?.firstOrNull()?.trim()?.toLongOrNull()
 
-                return Birthday(name, date, userId, year, channel)
+                val now = java.time.LocalDate.now()
+
+                val recurrenceSet = component.calculateRecurrenceSet<java.time.LocalDate>(
+                    Period(
+                        now.minusYears(1),
+                        now.plusYears(2)
+                    )
+                )
+
+                return Birthday(name, date, userId, year, channel, recurrenceSet)
             }
         }
 
         override fun toString(): String {
-            return "Birthday(eventName='$eventName', date=$date, userId=$userId, birthYear=$birthYear, username='$username')"
+            return "Birthday(eventName='$eventName', date=$date, userId=$userId, birthYear=$birthYear, channel='$channel', username='$username')"
         }
     }
 }
