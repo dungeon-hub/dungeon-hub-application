@@ -73,13 +73,7 @@ object BirthdayService : StartupListener {
             embed.color(EmbedColor.Positive)
             embed.title = birthday.eventName
             embed.description =
-                "Happy Birthday, ${birthday.username}${
-                    if (birthday.userId != null) {
-                        " (<@${birthday.userId}>)"
-                    } else {
-                        ""
-                    }
-                }! \uD83C\uDF89 \uD83E\uDD73 ❤\uFE0F ${
+                "Happy Birthday, ${birthday.username} (<@${birthday.userId}>)! \uD83C\uDF89 \uD83E\uDD73 ❤\uFE0F ${
                     if (birthday.birthYear != null) {
                         "\nToday, they are turning ${
                             Clock.System.now()
@@ -154,7 +148,7 @@ object BirthdayService : StartupListener {
     class Birthday(
         val eventName: String,
         val date: LocalDate,
-        val userId: Long? = null,
+        val userId: Long,
         val birthYear: Int? = null,
         val channel: Long? = null,
         val recurrenceSet: Set<Period<java.time.LocalDate>>
@@ -184,6 +178,7 @@ object BirthdayService : StartupListener {
                     ?: return null
 
                 val userId = properties.firstOrNull { it.name == "LOCATION" }?.value?.toLongOrNull()
+                    ?: return null
 
                 val description = properties.firstOrNull { it.name == "DESCRIPTION" }?.value?.split("\n")
 
