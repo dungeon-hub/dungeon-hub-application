@@ -24,8 +24,13 @@ import java.util.concurrent.TimeUnit
 
 @OnStart
 object BirthdayService : StartupListener {
-    private val logger = LoggerFactory.getLogger(BirthdayService::class.java)
+    private const val BIRTHDAY_CALENDAR_URL =
+        "https://cloud.dungeon-hub.net/remote.php/dav/public-calendars/g2tZRB2YpacJtAtt?export"
+    private const val BIRTHDAY_PING_ROLE = 1362023553066860594
+    private const val BIRTHDAYS_CHANNEL = 1362024376974839908
+    private const val BIRTHDAY_CONGRATS_CHANNEL = 1082583379226148874
     private const val EXECUTION_HOUR = 9
+    private val logger = LoggerFactory.getLogger(BirthdayService::class.java)
     private var timerTask: ScheduledFuture<*>? = null
     var birthdays: List<Birthday> = listOf()
 
@@ -67,8 +72,6 @@ object BirthdayService : StartupListener {
         val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
         for (birthday in todayBirthdays) {
-            val channel = birthday.channel ?: 701887299696328814
-
             val embed = EmbedBuilder()
             embed.color(EmbedColor.Positive)
             embed.title = birthday.eventName
@@ -82,15 +85,16 @@ object BirthdayService : StartupListener {
                     } else {
                         ""
                     }
-                }\nMake sure to congratulate them in <#$channel>!"
+                }\nMake sure to congratulate them in <#$BIRTHDAY_CONGRATS_CHANNEL>!"
 
             embeds += embed
         }
 
         if (embeds.isNotEmpty()) {
             runBlocking {
-                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(701552635391770714))
+                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(BIRTHDAYS_CHANNEL))
                     ?.createMessage {
+                        this.content = "<@$BIRTHDAY_PING_ROLE>"
                         this.embeds = embeds
                     }
             }
@@ -104,7 +108,7 @@ object BirthdayService : StartupListener {
 
     fun updateBirthdayData() {
         val request = Request.Builder()
-            .url("https://cloud.dungeon-hub.net/remote.php/dav/public-calendars/g2tZRB2YpacJtAtt?export")
+            .url(BIRTHDAY_CALENDAR_URL)
             .get()
             .build()
 
@@ -150,7 +154,6 @@ object BirthdayService : StartupListener {
         val date: LocalDate,
         val userId: Long,
         val birthYear: Int? = null,
-        val channel: Long? = null,
         val recurrenceSet: Set<Period<java.time.LocalDate>>
     ) {
         val username: String = if (eventName.endsWith(" | Birthday")) {
@@ -160,7 +163,7 @@ object BirthdayService : StartupListener {
         }
 
         fun isToday(today: LocalDateTime): Boolean {
-            if(recurrenceSet.isEmpty()) {
+            if (recurrenceSet.isEmpty()) {
                 return date.dayOfMonth == today.dayOfMonth && date.month == today.month
             }
 
@@ -184,8 +187,6 @@ object BirthdayService : StartupListener {
 
                 val year = description?.firstOrNull()?.trim()?.toIntOrNull()
 
-                val channel = description?.drop(1)?.firstOrNull()?.trim()?.toLongOrNull()
-
                 val now = java.time.LocalDate.now()
 
                 val recurrenceSet = component.calculateRecurrenceSet<java.time.LocalDate>(
@@ -195,12 +196,12 @@ object BirthdayService : StartupListener {
                     )
                 )
 
-                return Birthday(name, date, userId, year, channel, recurrenceSet)
+                return Birthday(name, date, userId, year, recurrenceSet)
             }
         }
 
         override fun toString(): String {
-            return "Birthday(eventName='$eventName', date=$date, userId=$userId, birthYear=$birthYear, channel='$channel', username='$username')"
+            return "Birthday(eventName='$eventName', date=$date, userId=$userId, birthYear=$birthYear, username='$username')"
         }
     }
 }
