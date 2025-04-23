@@ -94,7 +94,7 @@ object BirthdayService : StartupListener {
             runBlocking {
                 DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(BIRTHDAYS_CHANNEL))
                     ?.createMessage {
-                        this.content = "<@$BIRTHDAY_PING_ROLE>"
+                        this.content = "<@&$BIRTHDAY_PING_ROLE>"
                         this.embeds = embeds
                     }
             }
