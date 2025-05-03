@@ -177,9 +177,9 @@ object DiscordConnection : StartupListener {
             dataCollectionMode = DataCollection.Extra
 
             about {
-                general {
-                    ephemeral = true
+                ephemeral = true
 
+                general {
                     message {
                         embed {
                             color(EmbedColor.Default)
@@ -201,6 +201,18 @@ object DiscordConnection : StartupListener {
                                 label = "Discord".toKey()
                                 url = "https://discord.dungeon-hub.net/"
                             }
+                        }
+                    }
+                }
+
+                section("apis", "APIs we use") {
+                    message {
+                        embed {
+                            color(EmbedColor.Default)
+                            description = "### We use the following services and external APIs:\n" +
+                                    "- [Mojang API](https://minecraft.wiki/w/Mojang_API)\n" +
+                                    "- [Hypixel API](https://api.hypixel.net/)\n" +
+                                    "-# We are not affiliated with any of the above services/companies"
                         }
                     }
                 }
