@@ -117,8 +117,9 @@ object NicknameService {
      */
     @Throws(NoNameSchemaWarning::class, NotLinkedException::class)
     suspend fun updateNickname(member: Member, serverRoles: List<Role>?, cacheExpiration: Int = 60 * 3) {
-        val discordUserModel = DiscordUserConnection.getLinkedById(member.id.value.toLong())
-            ?: throw NotLinkedException()
+        val discordUserModel = DiscordUserConnection.getById(member.id.value.toLong())
+            ?: throw CommandExecutionWarning("Couldn't get that users data!")
+
         updateNickname(member, discordUserModel, serverRoles, cacheExpiration)
     }
 
