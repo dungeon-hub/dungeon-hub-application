@@ -118,7 +118,7 @@ object DiscordConnection : StartupListener {
                 0
             }
 
-            "${ApplicationService.makeNumberReadable(amount)} coins spent on Dungeon Hub!"
+            "${ApplicationService.makeNumberReadable(amount, 3)} coins spent on Dungeon Hub!"
         }
     )
 
