@@ -118,6 +118,7 @@ object NicknameService {
     @Throws(NoNameSchemaWarning::class, NotLinkedException::class)
     suspend fun updateNickname(member: Member, serverRoles: List<Role>?, cacheExpiration: Int = 60 * 3) {
         val discordUserModel = DiscordUserConnection.getById(member.id.value.toLong())
+            ?: DiscordUserConnection.updateUser(member.id.value.toLong(), DiscordUserUpdateModel(null)) //TODO use the method "getByIdOrAdd" from DiscordUserConnection directly
             ?: throw CommandExecutionWarning("Couldn't get that users data!")
 
         updateNickname(member, discordUserModel, serverRoles, cacheExpiration)
