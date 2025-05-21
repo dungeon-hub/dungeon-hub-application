@@ -402,12 +402,6 @@ class MessageListener : Extension() {
 
         val user = firstMessage.mentionedUsers.first()
 
-        val lines = firstMessage.content.split("\n".toRegex()).dropLastWhile { it.isEmpty() }
-
-        if (lines.size < 2) {
-            return
-        }
-
         val ign = DiscordUserConnection.getLinkedById(user.id.value.toLong())
             ?.minecraftId
             ?.let { MojangConnection.getNameByUUID(it) }
