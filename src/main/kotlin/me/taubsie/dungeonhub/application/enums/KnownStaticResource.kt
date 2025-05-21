@@ -6,24 +6,33 @@ import dev.kordex.core.i18n.types.Key
 import lombok.Getter
 
 //TODO implement in carry tier / carry difficulty thumbnail settings ?
-enum class KnownStaticResource(@field:Getter val path: String, val displayName: String?) : ChoiceEnum {
-    ICON_GIF("favicon.gif", "Icon (GIF)"),
-    ICON("favicon.ico", "Icon"),
-    BANNER("banner.png", "Banner"),
+enum class KnownStaticResource(@field:Getter val path: String, val displayName: String? = null) : ChoiceEnum {
+    IconGif("favicon.gif", "Dungeon Hub Icon (GIF)"),
+    Icon("favicon.ico", "Dungeon Hub Icon"),
+    Banner("banner.png", "Dungeon Hub Banner"),
 
-    BLAZE("blaze.png", "Blaze"),
-    ENDERMAN("enderman.png", "Enderman"),
-    MAGMA_CUBE("magma_cube.png", "Magma cube"),
-    WITHER("wither.webp", "Wither"),
+    Blaze("blaze.png"),
+    Enderman("enderman.png"),
+    MagmaCube("magma_cube.png", "Magma cube"),
+    Wither("wither.webp"),
 
-    BONZO("bonzo.png", "Bonzo"),
-    SCARF("scarf.png", "Scarf"),
-    PROFESSOR("professor.png", "Professor"),
-    THORN("thorn.png", "Thorn"),
-    LIVID("livid.png", "Livid"),
-    SADAN("sadan.png", "Sadan"),
+    Bonzo("bonzo.png", "Bonzo"),
+    Scarf("scarf.png", "Scarf"),
+    Professor("professor.png"),
+    Thorn("thorn.png"),
+    Livid("livid.png"),
+    Sadan("sadan.png"),
 
-    REDSTONE_KEY("redstone_key.png", "Redstone Key"),
+    CatacombsEntrance("catacombs_entrance", "Catacombs Entrance"),
+    CatacombsF1("catacombs_f1", "Catacombs Floor 1"),
+    CatacombsF2("catacombs_f2", "Catacombs Floor 2"),
+    CatacombsF3("catacombs_f3", "Catacombs Floor 3"),
+    CatacombsF4("catacombs_f4", "Catacombs Floor 4"),
+    CatacombsF5("catacombs_f5", "Catacombs Floor 5"),
+    CatacombsF6("catacombs_f6", "Catacombs Floor 6"),
+    CatacombsF7("catacombs_f7", "Catacombs Floor 7"),
+
+    RedstoneKey("redstone_key.png", "Redstone Key"),
 
     VERIFICATION_EXAMPLE("verification-example.mp4", "Verification Example");
 
