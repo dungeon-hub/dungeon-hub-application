@@ -27,6 +27,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
+import me.taubsie.dungeonhub.application.connection.CoflnetConnection
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.connection.FlaggingConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
@@ -39,6 +40,7 @@ import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
 import net.dungeonhub.exception.PlayerNotFoundException
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
+import net.dungeonhub.hypixel.entities.skyblock.CurrentMember
 import net.dungeonhub.model.carry.CarryModel
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
@@ -433,6 +435,17 @@ object ApplicationService {
 
         embed.thumbnail {
             url = "https://visage.surgeplay.com/face/$uuid"
+        }
+
+        val member = HypixelApiConnection().getSkyblockProfiles(uuid)?.profiles?.firstOrNull {
+            it.selected == true
+        }?.members?.firstOrNull { it.uuid == uuid } as? CurrentMember
+
+        if (member != null) {
+            embed.field("Networth") {
+                CoflnetConnection.getNetworth(member)?.let { makeNumberReadable(it, 3) }
+                    ?: "Networth couldn't be generated"
+            }
         }
 
         return embed

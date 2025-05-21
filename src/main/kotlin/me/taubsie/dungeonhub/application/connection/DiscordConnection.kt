@@ -212,7 +212,7 @@ object DiscordConnection : StartupListener {
                             description = "### We use the following services and external APIs:\n" +
                                     "- [Mojang API](https://minecraft.wiki/w/Mojang_API)\n" +
                                     "- [Hypixel API](https://api.hypixel.net/)\n" +
-                                    "- [Coflnet API](https://sky.coflnet.com/data)\n" +
+                                    "- [Coflnet API](https://sky.coflnet.com/data)\n" + //TODO remove at some point, once coflnet isnt used anymore
                                     "-# We are not affiliated with any of the above services/companies"
                         }
                     }
