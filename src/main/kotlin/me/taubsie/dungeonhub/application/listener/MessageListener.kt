@@ -411,14 +411,14 @@ class MessageListener : Extension() {
             ?.let { MojangConnection.getNameByUUID(it) }
             ?: return
 
-        sendPlayerDataEmbed(ign, event.message.channel)
+        sendPlayerDataEmbed(ign, event.message.channel, user.id.value.toLong())
     }
 
     //TODO threads threads threads
-    private suspend fun sendPlayerDataEmbed(ign: String, channel: MessageChannelBehavior) {
+    private suspend fun sendPlayerDataEmbed(ign: String, channel: MessageChannelBehavior, discordId: Long? = null) {
         try {
             channel.createMessage {
-                embeds = mutableListOf(ApplicationService.getPlayerDataEmbed(ign, null))
+                embeds = mutableListOf(ApplicationService.getPlayerDataEmbed(ign, discordId))
 
                 components {
                     linkButton {
