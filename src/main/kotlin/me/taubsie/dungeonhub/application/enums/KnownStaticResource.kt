@@ -23,14 +23,14 @@ enum class KnownStaticResource(@field:Getter val path: String, val displayName: 
     Livid("livid.png"),
     Sadan("sadan.png"),
 
-    CatacombsEntrance("catacombs_entrance", "Catacombs Entrance"),
-    CatacombsF1("catacombs_f1", "Catacombs Floor 1"),
-    CatacombsF2("catacombs_f2", "Catacombs Floor 2"),
-    CatacombsF3("catacombs_f3", "Catacombs Floor 3"),
-    CatacombsF4("catacombs_f4", "Catacombs Floor 4"),
-    CatacombsF5("catacombs_f5", "Catacombs Floor 5"),
-    CatacombsF6("catacombs_f6", "Catacombs Floor 6"),
-    CatacombsF7("catacombs_f7", "Catacombs Floor 7"),
+    CatacombsEntrance("catacombs_entrance.png", "Catacombs Entrance"),
+    CatacombsF1("catacombs_f1.png", "Catacombs Floor 1"),
+    CatacombsF2("catacombs_f2.png", "Catacombs Floor 2"),
+    CatacombsF3("catacombs_f3.png", "Catacombs Floor 3"),
+    CatacombsF4("catacombs_f4.png", "Catacombs Floor 4"),
+    CatacombsF5("catacombs_f5.png", "Catacombs Floor 5"),
+    CatacombsF6("catacombs_f6.png", "Catacombs Floor 6"),
+    CatacombsF7("catacombs_f7.png", "Catacombs Floor 7"),
 
     RedstoneKey("redstone_key.png", "Redstone Key"),
 
