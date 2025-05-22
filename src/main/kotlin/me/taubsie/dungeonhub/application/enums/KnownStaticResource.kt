@@ -31,14 +31,18 @@ enum class KnownStaticResource(@field:Getter val path: String, val displayName: 
     CatacombsF5("catacombs_f5.png", "Catacombs Floor 5"),
     CatacombsF6("catacombs_f6.png", "Catacombs Floor 6"),
     CatacombsF7("catacombs_f7.png", "Catacombs Floor 7"),
+    CatacombsM7("catacombs_m7.png", "Catacombs Master Mode 7"),
+
+    GoldorsHelmet("helmet_goldor.png", "Goldors Helmet"),
+    MaxorHelmet("helmet_maxor.png", "Maxor Helmet"),
+    NecronsHelmet("helmet_necron.png", "Necrons Helmet"),
+    StormHelmet("helmet_storm.png", "Storm Helmet"),
+
+    StrongArmor("armor_strong.png", "Strong Armor"),
 
     RedstoneKey("redstone_key.png", "Redstone Key"),
 
     VERIFICATION_EXAMPLE("verification-example.mp4", "Verification Example");
-
-    fun getName(): String {
-        return path
-    }
 
     override val readableName: Key
         get() = loadDisplayName().toKey()
@@ -48,6 +52,6 @@ enum class KnownStaticResource(@field:Getter val path: String, val displayName: 
             return displayName
         }
 
-        return getName()
+        return name
     }
 }
