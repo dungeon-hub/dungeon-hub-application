@@ -25,6 +25,7 @@ import java.util.stream.Stream
 @OnStart
 object MessagesService : StartupListener {
     private const val REFRESH_PERIOD = 1000L * 60 * 15
+    private var timer: Timer? = null
 
     fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder? {
         val carryDifficulties = CarryDifficultyConnection[carryTier].allCarryDifficulties ?: listOf()
@@ -112,11 +113,7 @@ object MessagesService : StartupListener {
                         refreshPriceMessageInChannel(
                             it,
                             addPriceFooterToLast(
-                                value.stream()
-                                    .map { carryTier -> getPriceEmbed(carryTier) }
-                                    .filter { embed -> embed != null }
-                                    .map { embed -> embed!! }
-                                    .toList()
+                                value.mapNotNull { carryTier -> getPriceEmbed(carryTier) }
                             )
                         )
                     }
@@ -153,7 +150,13 @@ object MessagesService : StartupListener {
     }
 
     override suspend fun postStart() {
-        Timer().scheduleAtFixedRate(object : TimerTask() {
+        if (timer != null) {
+            timer!!.cancel()
+        }
+
+        timer = Timer()
+
+        timer!!.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
                 runBlocking {
                     refreshPriceMessages()

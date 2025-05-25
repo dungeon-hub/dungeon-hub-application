@@ -36,9 +36,17 @@ import java.util.concurrent.CompletionException
 @OnStart(priority = StartPriority.POST_BOT)
 object LeaderboardService : StartupListener {
     private const val REFRESH_COOLDOWN: Long = 15L
-    private const val LEADERBOARD_DESCRIPTION = "To see how score works, use `/help score`"
+    private val LEADERBOARD_DESCRIPTION by lazy {
+        "To see how score is calculated, use `/help topic:score`.\n" +
+                "To check your current score, use ${runBlocking { getCommandId("score")?.let { "</score:$it>" } } ?: "`/score`"}."
+    }
     private val logger: Logger = LoggerFactory.getLogger(LeaderboardService::class.java)
+    private var timer: Timer? = null
     private var lastRefresh: Instant? = null
+
+    suspend fun getCommandId(name: String): Snowflake? {
+        return DiscordConnection.bot?.kordRef?.getGlobalApplicationCommands()?.firstOrNull { it.name == name }?.id
+    }
 
     fun getLeaderboardEmbed(title: String?, leaderboardModel: LeaderboardModel?): EmbedBuilder {
         if (leaderboardModel == null) {
@@ -94,14 +102,59 @@ object LeaderboardService : StartupListener {
     override suspend fun postStart() {
         this.lastRefresh = Instant.now().minusSeconds(REFRESH_COOLDOWN + 10L)
 
-        Timer().scheduleAtFixedRate(object : TimerTask() {
+        if (timer != null) {
+            timer!!.cancel()
+        }
+
+        timer = Timer()
+
+        timer!!.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
                 refreshLeaderboard()
             }
         }, Time(System.currentTimeMillis() + 15000), 1000L * 60 * 5)
     }
 
-    private fun refreshLeaderboardInChannel(channel: GuildMessageChannel, leaderboards: List<Leaderboard>) {
+    private fun generateCompactLeaderboard(leaderboards: List<Leaderboard>): List<EmbedBuilder> {
+        val embeds: MutableList<EmbedBuilder> = mutableListOf()
+
+        embeds.addAll(leaderboards.windowed(4, 4, true).map { leaderboardWindow ->
+            generateSingleCompactLeaderboard(leaderboardWindow)
+        })
+
+        return embeds
+    }
+
+    private fun generateSingleCompactLeaderboard(leaderboards: List<Leaderboard>): EmbedBuilder {
+        val result = embed
+        result.title = "Leaderboard"
+        result.color(EmbedColor.Default)
+
+        var count = 0
+
+        for (leaderboard in leaderboards) {
+            val embed = leaderboard.embed
+            result.field(embed.title?.replace("Leaderboard | ", "") ?: "", true) {
+                if (embed.fields.isEmpty()) {
+                    "No score has been gained yet!"
+                } else {
+                    embed.fields.joinToString(separator = "\n") { field ->
+                        field.name.replace("Carrier", "") + field.value
+                    }
+                }
+            }
+
+            // Add a dummy field as a 3rd entry to space out the entries
+            count++
+            if (count == 2 && leaderboards.size > 3) {
+                result.field(".", true) { "." }
+            }
+        }
+
+        return result
+    }
+
+    private fun generateLeaderboard(leaderboards: List<Leaderboard>): List<EmbedBuilder> {
         val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
         for (leaderboard in leaderboards) {
@@ -114,6 +167,19 @@ object LeaderboardService : StartupListener {
             }
 
             embeds.add(embed)
+        }
+
+        return embeds
+    }
+
+    private fun refreshLeaderboardInChannel(channel: GuildMessageChannel, leaderboards: List<Leaderboard>) {
+        val embeds: MutableList<EmbedBuilder> = mutableListOf()
+
+        if (ServerProperty.COMPACT_LEADERBOARD.getValue(channel.guildId.value.toLong()).map { it == "true" }
+                .orElse(false)) {
+            embeds.addAll(generateCompactLeaderboard(leaderboards))
+        } else {
+            embeds.addAll(generateLeaderboard(leaderboards))
         }
 
         if (embeds.isNotEmpty()) {
