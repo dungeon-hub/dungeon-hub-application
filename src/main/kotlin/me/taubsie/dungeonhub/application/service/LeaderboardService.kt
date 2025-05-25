@@ -6,11 +6,12 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
-import kotlinx.coroutines.flow.filter
+import dev.kord.rest.builder.message.actionRow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant.Companion.fromEpochMilliseconds
+import me.taubsie.dungeonhub.application.commands.addLeaderboardButtons
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
@@ -38,15 +39,11 @@ object LeaderboardService : StartupListener {
     private const val REFRESH_COOLDOWN: Long = 15L
     private val LEADERBOARD_DESCRIPTION by lazy {
         "To see how score is calculated, use `/help topic:score`.\n" +
-                "To check your current score, use ${runBlocking { getCommandId("score")?.let { "</score:$it>" } } ?: "`/score`"}."
+                "To check your current score, use ${runBlocking { ApplicationService.getGlobalCommandId("score")?.let { "</score:$it>" } } ?: "`/score`"}."
     }
     private val logger: Logger = LoggerFactory.getLogger(LeaderboardService::class.java)
     private var timer: Timer? = null
     private var lastRefresh: Instant? = null
-
-    suspend fun getCommandId(name: String): Snowflake? {
-        return DiscordConnection.bot?.kordRef?.getGlobalApplicationCommands()?.firstOrNull { it.name == name }?.id
-    }
 
     fun getLeaderboardEmbed(title: String?, leaderboardModel: LeaderboardModel?): EmbedBuilder {
         if (leaderboardModel == null) {
@@ -193,16 +190,21 @@ object LeaderboardService : StartupListener {
 
         runBlocking {
             launch {
-                val message = channel.messages.filter { message -> message.kord.selfId == message.author?.id }
-                    .firstOrNull()
+                val message = channel.messages.firstOrNull { message -> message.kord.selfId == message.author?.id }
 
                 if (message == null) {
                     channel.createMessage {
                         this.embeds = embeds
+                        actionRow {
+                            addLeaderboardButtons()
+                        }
                     }
                 } else {
                     message.edit {
                         this.embeds = embeds
+                        actionRow {
+                            addLeaderboardButtons()
+                        }
                     }
                 }
             }
