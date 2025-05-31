@@ -197,7 +197,7 @@ class LinkingSystem : Extension() {
 
                                 val members = guild!!.withStrategy(EntitySupplyStrategy.cachingRest).members.filter {
                                     // first check for @everyone, if it's not @everyone, check if the user has the role
-                                    role.id == guildId || it.roleIds.contains(role.id)
+                                    (role.id == guildId && !it.isBot) || it.roleIds.contains(role.id)
                                 }.toList()
 
                                 MassSyncService.syncUsers(guildId, members.map { it.id })
