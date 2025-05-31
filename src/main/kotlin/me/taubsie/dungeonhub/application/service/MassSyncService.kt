@@ -17,6 +17,8 @@ object MassSyncService : StartupListener {
     private var timerTask: ScheduledFuture<*>? = null
     private val logger = LoggerFactory.getLogger(MassSyncService::class.java)
 
+    // Map structure to segregate users by guild (key: guild ID, value: set of user IDs).
+    // This prevents duplicate sync entries and ensures users are processed per guild.
     private val usersToSync = mutableMapOf<Snowflake, MutableSet<Snowflake>>()
 
     suspend fun syncWave() {
