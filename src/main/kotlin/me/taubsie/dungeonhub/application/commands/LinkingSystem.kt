@@ -196,7 +196,8 @@ class LinkingSystem : Extension() {
                                 val role = arguments.role
 
                                 val members = guild!!.withStrategy(EntitySupplyStrategy.cachingRest).members.filter {
-                                    it.roleIds.contains(role.id)
+                                    // first check for @everyone, if it's not @everyone, check if the user has the role
+                                    role.id == guildId || it.roleIds.contains(role.id)
                                 }.toList()
 
                                 MassSyncService.usersToSync += members.map { it.id }
@@ -264,6 +265,22 @@ class LinkingSystem : Extension() {
                                     color(EmbedColor.Information)
                                     description =
                                         "There are currently ${MassSyncService.usersToSync.size} users in the mass sync queue."
+                                }
+                            }
+                        }
+                    }
+
+                    publicSubCommand {
+                        name = "clear".toKey()
+                        description = "Clear the users currently in the mass sync queue.".toKey()
+
+                        action {
+                            respond {
+                                val count = MassSyncService.usersToSync.size
+                                MassSyncService.usersToSync.clear()
+                                addEmbed {
+                                    color(EmbedColor.Information)
+                                    description = "Cleared $count users from the mass sync queue."
                                 }
                             }
                         }

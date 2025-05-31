@@ -19,7 +19,7 @@ object MassSyncService : StartupListener {
     private val logger = LoggerFactory.getLogger(MassSyncService::class.java)
 
     var lastGuild: Snowflake? = null
-    val usersToSync = mutableListOf<Snowflake>()
+    val usersToSync = mutableSetOf<Snowflake>()
 
     suspend fun syncWave() {
         if(lastGuild == null) {
