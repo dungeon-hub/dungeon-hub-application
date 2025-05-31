@@ -7,7 +7,6 @@ import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.exceptions.NotLinkedException
 import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartupListener
-import okhttp3.internal.toImmutableList
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
@@ -18,8 +17,7 @@ object MassSyncService : StartupListener {
     private var timerTask: ScheduledFuture<*>? = null
     private val logger = LoggerFactory.getLogger(MassSyncService::class.java)
 
-    var lastGuild: Snowflake? = null
-    val usersToSync = mutableSetOf<Snowflake>()
+    private val usersToSync = mutableMapOf<Snowflake, MutableSet<Snowflake>>()
 
     suspend fun syncWave() {
         if(lastGuild == null) {

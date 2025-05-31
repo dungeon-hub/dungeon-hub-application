@@ -200,8 +200,7 @@ class LinkingSystem : Extension() {
                                     role.id == guildId || it.roleIds.contains(role.id)
                                 }.toList()
 
-                                MassSyncService.usersToSync += members.map { it.id }
-                                MassSyncService.lastGuild = guild!!.id
+                                MassSyncService.syncUsers(guildId, members.map { it.id })
 
                                 val embed = ApplicationService.embed
                                 embed.color = EmbedColor.Positive.color
@@ -239,7 +238,7 @@ class LinkingSystem : Extension() {
                                     }
 
                                     count++
-                                    MassSyncService.usersToSync += Snowflake(discordUser.id)
+                                    MassSyncService.syncUser(guildId, Snowflake(discordUser.id))
                                 }
 
                                 val embed = ApplicationService.embed
@@ -264,7 +263,7 @@ class LinkingSystem : Extension() {
                                 addEmbed {
                                     color(EmbedColor.Information)
                                     description =
-                                        "There are currently ${MassSyncService.usersToSync.size} users in the mass sync queue."
+                                        "There are currently ${MassSyncService.getUsersToSync(guildId).size} users in the mass sync queue."
                                 }
                             }
                         }
@@ -276,8 +275,8 @@ class LinkingSystem : Extension() {
 
                         action {
                             respond {
-                                val count = MassSyncService.usersToSync.size
-                                MassSyncService.usersToSync.clear()
+                                val count = MassSyncService.getUsersToSync(guildId).size
+                                MassSyncService.getUsersToSync(guildId).clear()
                                 addEmbed {
                                     color(EmbedColor.Information)
                                     description = "Cleared $count users from the mass sync queue."
