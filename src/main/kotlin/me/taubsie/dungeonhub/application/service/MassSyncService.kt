@@ -63,7 +63,7 @@ object MassSyncService : StartupListener {
     }
 
     fun getUsersToSync(guildId: Snowflake) : MutableSet<Snowflake> {
-        return usersToSync.getOrPut(guildId) { ConcurrentSet() }
+        return usersToSync.computeIfAbsent(guildId) { ConcurrentSet() }
     }
 
     fun clearUsers(guildId: Snowflake) : Int {
