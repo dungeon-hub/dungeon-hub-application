@@ -133,7 +133,7 @@ object RolesService {
         val profiles = hypixelApiConnection.getSkyblockProfiles(uuid) ?: return false
 
         val profileMembers = profiles.profiles.mapNotNull { it.members.firstOrNull { member -> member.uuid == uuid } }
-            .filterIsInstance<CurrentMember>()
+            .filterIsInstance<CurrentMember>().takeIf { it.isNotEmpty() } ?: return false
 
         val playerData = hypixelApiConnection.getPlayerData(uuid) ?: return false
 
