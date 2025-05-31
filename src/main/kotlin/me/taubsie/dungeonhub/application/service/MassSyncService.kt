@@ -2,12 +2,14 @@ package me.taubsie.dungeonhub.application.service
 
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
+import io.ktor.util.collections.*
 import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.exceptions.NotLinkedException
 import me.taubsie.dungeonhub.application.loader.OnStart
 import me.taubsie.dungeonhub.application.loader.StartupListener
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -21,7 +23,7 @@ object MassSyncService : StartupListener {
 
     // Map structure to segregate users by guild (key: guild ID, value: set of user IDs).
     // This prevents duplicate sync entries and ensures users are processed per guild.
-    private val usersToSync = mutableMapOf<Snowflake, MutableSet<Snowflake>>()
+    private val usersToSync = ConcurrentHashMap<Snowflake, MutableSet<Snowflake>>()
 
     private suspend fun syncWave() {
         val guildId = usersToSync.filter { it.value.isNotEmpty() }.entries.randomOrNull()?.key ?: return
@@ -61,7 +63,7 @@ object MassSyncService : StartupListener {
     }
 
     fun getUsersToSync(guildId: Snowflake) : MutableSet<Snowflake> {
-        return usersToSync.getOrPut(guildId) { mutableSetOf() }
+        return usersToSync.getOrPut(guildId) { ConcurrentSet() }
     }
 
     fun clearUsers(guildId: Snowflake) : Int {
