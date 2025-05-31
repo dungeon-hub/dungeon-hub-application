@@ -180,111 +180,113 @@ class LinkingSystem : Extension() {
                         }
                     }
                 }
+            }
 
-                publicSlashCommand {
-                    name = "mass-sync".toKey()
-                    description = "Sync a large amount of users.".toKey()
-                    guild(guildId)
-                    defaultMemberPermissions = Permissions(Permission.Administrator)
+        publicSlashCommand {
+            name = "mass-sync".toKey()
+            description = "Sync a large amount of users.".toKey()
+            allowInDms = false
+            defaultMemberPermissions = Permissions(Permission.Administrator)
 
-                    publicSubCommand(::MassSyncRoleArguments) {
-                        name = "role".toKey()
-                        description = "Adds users in a role to the mass sync queue.".toKey()
+            publicSubCommand(::MassSyncRoleArguments) {
+                name = "role".toKey()
+                description = "Adds users in a role to the mass sync queue.".toKey()
 
-                        action {
-                            respond {
-                                val role = arguments.role
+                action {
+                    respond {
+                        val role = arguments.role
 
-                                val members = guild!!.withStrategy(EntitySupplyStrategy.cachingRest).members.filter {
-                                    // first check for @everyone, if it's not @everyone, check if the user has the role
-                                    (role.id == guildId && !it.isBot) || it.roleIds.contains(role.id)
-                                }.toList()
+                        val members = guild!!.withStrategy(EntitySupplyStrategy.cachingRest).members.filter {
+                            // first check for @everyone, if it's not @everyone, check if the user has the role
+                            (role.id == guild!!.id && !it.isBot) || it.roleIds.contains(role.id)
+                        }.toList()
 
-                                MassSyncService.syncUsers(guildId, members.map { it.id })
+                        MassSyncService.syncUsers(guild!!.id, members.map { it.id })
 
-                                val embed = ApplicationService.embed
-                                embed.color = EmbedColor.Positive.color
-                                embed.description = "Added ${members.size} users to the mass-sync queue."
+                        val embed = ApplicationService.embed
+                        embed.color = EmbedColor.Positive.color
+                        embed.description = "Added ${members.size} users to the mass-sync queue."
 
-                                embeds = mutableListOf(embed)
-                            }
-                        }
+                        embeds = mutableListOf(embed)
                     }
+                }
+            }
 
-                    publicSubCommand(::MassSyncGuildArguments) {
-                        name = "guild".toKey()
-                        description = "Adds users in a guild to the mass sync queue.".toKey()
+            publicSubCommand(::MassSyncGuildArguments) {
+                name = "guild".toKey()
+                description = "Adds users in a guild to the mass sync queue.".toKey()
 
-                        action {
-                            respond {
-                                val guild = HypixelApiConnection().getGuild(arguments.guild)
+                action {
+                    val guildId = guild!!.id
 
-                                if (guild == null) {
-                                    addEmbed {
-                                        description = "Couldn't find the Hypixel guild \"${arguments.guild}\"."
-                                        color(EmbedColor.Negative)
-                                    }
-                                    return@respond
-                                }
+                    respond {
+                        val guild = HypixelApiConnection().getGuild(arguments.guild)
 
-                                var count = 0
-                                val unknownUsers = mutableSetOf<UUID>()
-                                for (member in guild.members) {
-                                    val discordUser = DiscordUserConnection.findUserByUuid(member.uuid)
-
-                                    if(discordUser == null) {
-                                        unknownUsers.add(member.uuid)
-                                        continue
-                                    }
-
-                                    count++
-                                    MassSyncService.syncUser(guildId, Snowflake(discordUser.id))
-                                }
-
-                                val embed = ApplicationService.embed
-                                embed.color = EmbedColor.Positive.color
-                                embed.description = "Added $count users for the guild ${guild.displayName} to the mass-sync queue.${
-                                    if(unknownUsers.isNotEmpty()) {
-                                        "\nCouldn't link the following players: " + unknownUsers.joinToString(", ")
-                                    } else ""
-                                }"
-
-                                embeds = mutableListOf(embed)
+                        if (guild == null) {
+                            addEmbed {
+                                description = "Couldn't find the Hypixel guild \"${arguments.guild}\"."
+                                color(EmbedColor.Negative)
                             }
+                            return@respond
                         }
-                    }
 
-                    publicSubCommand {
-                        name = "list".toKey()
-                        description = "Show the number of users currently in the mass sync queue.".toKey()
+                        var count = 0
+                        val unknownUsers = mutableSetOf<UUID>()
+                        for (member in guild.members) {
+                            val discordUser = DiscordUserConnection.findUserByUuid(member.uuid)
 
-                        action {
-                            respond {
-                                addEmbed {
-                                    color(EmbedColor.Information)
-                                    description =
-                                        "There are currently ${MassSyncService.getUsersToSync(guildId).size} users in the mass sync queue."
-                                }
+                            if(discordUser == null) {
+                                unknownUsers.add(member.uuid)
+                                continue
                             }
+
+                            count++
+                            MassSyncService.syncUser(guildId, Snowflake(discordUser.id))
                         }
+
+                        val embed = ApplicationService.embed
+                        embed.color = EmbedColor.Positive.color
+                        embed.description = "Added $count users for the guild ${guild.displayName} to the mass-sync queue.${
+                            if(unknownUsers.isNotEmpty()) {
+                                "\nCouldn't link the following players: " + unknownUsers.joinToString(", ")
+                            } else ""
+                        }"
+
+                        embeds = mutableListOf(embed)
                     }
+                }
+            }
 
-                    publicSubCommand {
-                        name = "clear".toKey()
-                        description = "Clear the users currently in the mass sync queue.".toKey()
+            publicSubCommand {
+                name = "list".toKey()
+                description = "Show the number of users currently in the mass sync queue.".toKey()
 
-                        action {
-                            respond {
-                                val count = MassSyncService.clearUsers(guildId)
-                                addEmbed {
-                                    color(EmbedColor.Information)
-                                    description = "Cleared $count users from the mass sync queue."
-                                }
-                            }
+                action {
+                    respond {
+                        addEmbed {
+                            color(EmbedColor.Information)
+                            description =
+                                "There are currently ${MassSyncService.getUsersToSync(guild!!.id).size} users in the mass sync queue."
                         }
                     }
                 }
             }
+
+            publicSubCommand {
+                name = "clear".toKey()
+                description = "Clear the users currently in the mass sync queue.".toKey()
+
+                action {
+                    respond {
+                        val count = MassSyncService.clearUsers(guild!!.id)
+                        addEmbed {
+                            color(EmbedColor.Information)
+                            description = "Cleared $count users from the mass sync queue."
+                        }
+                    }
+                }
+            }
+        }
 
         publicSlashCommand {
             name = Sync.name
