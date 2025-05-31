@@ -29,12 +29,12 @@ class PlayerInformation(private val user: User, private val discordUserModel: Di
             }
             replacements["skyblock.catacombs.level"] =
                 {
-                    apiConnection.getSkyblockProfiles(discordUserModel.minecraftId!!)?.profiles?.maxOf {
+                    apiConnection.getSkyblockProfiles(discordUserModel.minecraftId!!)?.profiles?.maxOfOrNull {
                         it.getCurrentMember(discordUserModel.minecraftId!!)?.dungeons?.catacombsLevel ?: 0
                     }?.toString() ?: "?"
                 }
             replacements["skyblock.level"] = {
-                apiConnection.getSkyblockProfiles(discordUserModel.minecraftId!!)?.profiles?.maxOf {
+                apiConnection.getSkyblockProfiles(discordUserModel.minecraftId!!)?.profiles?.maxOfOrNull {
                     it.getCurrentMember(discordUserModel.minecraftId!!)?.leveling?.level ?: 0
                 }?.toString() ?: "?"
             }
