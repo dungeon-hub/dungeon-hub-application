@@ -14,24 +14,22 @@ import java.util.concurrent.TimeUnit
 
 @OnStart
 object MassSyncService : StartupListener {
+    private const val WAVE_SIZE = 1
+
     private var timerTask: ScheduledFuture<*>? = null
     private val logger = LoggerFactory.getLogger(MassSyncService::class.java)
 
     private val usersToSync = mutableMapOf<Snowflake, MutableSet<Snowflake>>()
 
-    suspend fun syncWave() {
-        if(lastGuild == null) {
-            return
-        }
+    private suspend fun syncWave() {
+        val guildId = usersToSync.filter { it.value.isNotEmpty() }.entries.randomOrNull()?.key ?: return
 
-        val currentWave = usersToSync.stream()
-            .limit(1)
-            .toList().toImmutableList()
+        val currentWave = getUsersToSync(guildId).take(WAVE_SIZE).toSet()
 
-        usersToSync.removeAll(currentWave)
+        getUsersToSync(guildId).removeAll(currentWave)
 
         try {
-            currentWave.mapNotNull { DiscordConnection.bot!!.kordRef.getGuild(lastGuild!!).getMember(it) }
+            currentWave.mapNotNull { DiscordConnection.bot!!.kordRef.getGuild(guildId).getMemberOrNull(it) }
                 .forEach { user ->
                     syncUser(user)
                 }
@@ -50,6 +48,26 @@ object MassSyncService : StartupListener {
         catch (e: Exception) {
             logger.error("Error during mass sync for user ${member.id}", e)
         }
+    }
+
+    fun syncUser(guildId: Snowflake, userId: Snowflake) {
+        getUsersToSync(guildId).add(userId)
+    }
+
+    fun syncUsers(guildId: Snowflake, userIds: Collection<Snowflake>) {
+        getUsersToSync(guildId).addAll(userIds)
+    }
+
+    fun getUsersToSync(guildId: Snowflake) : MutableSet<Snowflake> {
+        return usersToSync.getOrPut(guildId) { mutableSetOf() }
+    }
+
+    fun clearUsers(guildId: Snowflake) : Int {
+        val count = getUsersToSync(guildId).size
+
+        getUsersToSync(guildId).clear()
+
+        return count
     }
 
     override suspend fun postStart() {

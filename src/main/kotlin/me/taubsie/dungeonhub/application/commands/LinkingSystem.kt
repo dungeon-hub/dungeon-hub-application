@@ -275,8 +275,7 @@ class LinkingSystem : Extension() {
 
                         action {
                             respond {
-                                val count = MassSyncService.getUsersToSync(guildId).size
-                                MassSyncService.getUsersToSync(guildId).clear()
+                                val count = MassSyncService.clearUsers(guildId)
                                 addEmbed {
                                     color(EmbedColor.Information)
                                     description = "Cleared $count users from the mass sync queue."

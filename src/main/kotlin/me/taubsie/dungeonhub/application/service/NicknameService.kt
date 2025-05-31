@@ -8,6 +8,7 @@ import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
 import dev.kord.rest.request.KtorRequestException
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.getMutualServers
 import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.misc.PlayerInformation
@@ -25,6 +26,7 @@ import java.util.function.Predicate
 import java.util.regex.Pattern
 import java.util.stream.Collector
 import java.util.stream.Collectors
+import kotlin.concurrent.thread
 
 /**
  * Service class for managing nicknames.
@@ -72,7 +74,13 @@ object NicknameService {
             updateModel.minecraftId = null
             DiscordUserConnection.updateUser(it.id, updateModel)
 
-            MassSyncService.usersToSync += Snowflake(it.id)
+            thread(true) {
+                runBlocking {
+                    user.getMutualServers().collect { member ->
+                        MassSyncService.syncUser(member.guildId, Snowflake(it.id))
+                    }
+                }
+            }
         }
 
         val updateModel = DiscordUserUpdateModel(uuid)
