@@ -34,7 +34,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import me.taubsie.dungeonhub.application.config.ConfigProperty
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
-import me.taubsie.dungeonhub.application.connection.isDungeonHub
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
@@ -362,10 +361,7 @@ class MessageListener : Extension() {
     }
 
     private suspend fun loadSkycryptFromTicket(event: MessageCreateEvent) {
-        if (event.guildId == null
-            || event.message.channel is DmChannel
-            || event.guildId?.isDungeonHub() != true
-        ) {
+        if (event.guildId == null || event.message.channel is DmChannel) {
             return
         }
 
@@ -382,7 +378,13 @@ class MessageListener : Extension() {
                 805833601748828200,
                 805833672678309908,
                 805833843633815664,
-                805834037108670464
+                805834037108670464,
+                1360864176238493767,
+                1360489146321338461,
+                1360579229221130421,
+                1360575091640897546,
+                1364432423345061928,
+                1360860377315020941
             ).contains(categoryId)
         ) {
             return
@@ -400,45 +402,19 @@ class MessageListener : Extension() {
 
         val user = firstMessage.mentionedUsers.first()
 
-        val lines = firstMessage.content.split("\n".toRegex()).dropLastWhile { it.isEmpty() }
-
-        if (lines.size < 2) {
-            return
-        }
-
-        val ignOptional = DiscordUserConnection.getLinkedById(user.id.value.toLong())
+        val ign = DiscordUserConnection.getLinkedById(user.id.value.toLong())
             ?.minecraftId
             ?.let { MojangConnection.getNameByUUID(it) }
-            ?: (lines.firstOrNull { s -> s.startsWith("IGN: ") || s.startsWith("- **IGN**: ") || s.startsWith("**IGN**: ") })
-            ?: (user.asMemberOrNull(event.guildId!!)?.effectiveName)
             ?: return
 
-        val ign = ignOptional
-            .replace("IGN: ", "")
-            .replace("- **IGN**: ", "")
-            .replace("**IGN**: ", "")
-            .replace("❮(\\S*)❯".toRegex(), "")
-            .replace("❊", "")
-            .replace("❉", "")
-            .replace("❃", "")
-            .replace("✽", "")
-            .replace("✸", "")
-            .replace("✷", "")
-            .replace("✶", "")
-            .replace("✧", "")
-            .replace("✦", "")
-            .replace("☆", "")
-            .replace("★", "")
-            .trim()
-
-        sendPlayerDataEmbed(ign, event.message.channel)
+        sendPlayerDataEmbed(ign, event.message.channel, user.id.value.toLong())
     }
 
     //TODO threads threads threads
-    private suspend fun sendPlayerDataEmbed(ign: String, channel: MessageChannelBehavior) {
+    private suspend fun sendPlayerDataEmbed(ign: String, channel: MessageChannelBehavior, discordId: Long? = null) {
         try {
             channel.createMessage {
-                embeds = mutableListOf(ApplicationService.getPlayerDataEmbed(ign, null))
+                embeds = mutableListOf(ApplicationService.getPlayerDataEmbed(ign, discordId))
 
                 components {
                     linkButton {

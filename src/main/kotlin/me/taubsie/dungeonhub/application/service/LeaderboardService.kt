@@ -6,11 +6,12 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
-import kotlinx.coroutines.flow.filter
+import dev.kord.rest.builder.message.actionRow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant.Companion.fromEpochMilliseconds
+import me.taubsie.dungeonhub.application.commands.addLeaderboardButtons
 import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.enums.ServerProperty
@@ -36,8 +37,12 @@ import java.util.concurrent.CompletionException
 @OnStart(priority = StartPriority.POST_BOT)
 object LeaderboardService : StartupListener {
     private const val REFRESH_COOLDOWN: Long = 15L
-    private const val LEADERBOARD_DESCRIPTION = "To see how score works, use `/help score`"
+    private val LEADERBOARD_DESCRIPTION by lazy {
+        "To see how score is calculated, use `/help topic:score`.\n" +
+                "To check your current score, use ${runBlocking { ApplicationService.getGlobalCommandId("score")?.let { "</score:$it>" } } ?: "`/score`"}."
+    }
     private val logger: Logger = LoggerFactory.getLogger(LeaderboardService::class.java)
+    private var timer: Timer? = null
     private var lastRefresh: Instant? = null
 
     fun getLeaderboardEmbed(title: String?, leaderboardModel: LeaderboardModel?): EmbedBuilder {
@@ -94,14 +99,59 @@ object LeaderboardService : StartupListener {
     override suspend fun postStart() {
         this.lastRefresh = Instant.now().minusSeconds(REFRESH_COOLDOWN + 10L)
 
-        Timer().scheduleAtFixedRate(object : TimerTask() {
+        if (timer != null) {
+            timer!!.cancel()
+        }
+
+        timer = Timer()
+
+        timer!!.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
                 refreshLeaderboard()
             }
         }, Time(System.currentTimeMillis() + 15000), 1000L * 60 * 5)
     }
 
-    private fun refreshLeaderboardInChannel(channel: GuildMessageChannel, leaderboards: List<Leaderboard>) {
+    private fun generateCompactLeaderboard(leaderboards: List<Leaderboard>): List<EmbedBuilder> {
+        val embeds: MutableList<EmbedBuilder> = mutableListOf()
+
+        embeds.addAll(leaderboards.windowed(4, 4, true).map { leaderboardWindow ->
+            generateSingleCompactLeaderboard(leaderboardWindow)
+        })
+
+        return embeds
+    }
+
+    private fun generateSingleCompactLeaderboard(leaderboards: List<Leaderboard>): EmbedBuilder {
+        val result = embed
+        result.title = "Leaderboard"
+        result.color(EmbedColor.Default)
+
+        var count = 0
+
+        for (leaderboard in leaderboards) {
+            val embed = leaderboard.embed
+            result.field(embed.title?.replace("Leaderboard | ", "") ?: "", true) {
+                if (embed.fields.isEmpty()) {
+                    "No score has been gained yet!"
+                } else {
+                    embed.fields.joinToString(separator = "\n") { field ->
+                        field.name.replace("Carrier", "") + field.value
+                    }
+                }
+            }
+
+            // Add a dummy field as a 3rd entry to space out the entries
+            count++
+            if (count == 2 && leaderboards.size > 3) {
+                result.field(".", true) { "." }
+            }
+        }
+
+        return result
+    }
+
+    private fun generateLeaderboard(leaderboards: List<Leaderboard>): List<EmbedBuilder> {
         val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
         for (leaderboard in leaderboards) {
@@ -116,6 +166,19 @@ object LeaderboardService : StartupListener {
             embeds.add(embed)
         }
 
+        return embeds
+    }
+
+    private fun refreshLeaderboardInChannel(channel: GuildMessageChannel, leaderboards: List<Leaderboard>) {
+        val embeds: MutableList<EmbedBuilder> = mutableListOf()
+
+        if (ServerProperty.COMPACT_LEADERBOARD.getValue(channel.guildId.value.toLong()).map { it == "true" }
+                .orElse(false)) {
+            embeds.addAll(generateCompactLeaderboard(leaderboards))
+        } else {
+            embeds.addAll(generateLeaderboard(leaderboards))
+        }
+
         if (embeds.isNotEmpty()) {
             if (!leaderboards[0].isEmpty) {
                 embeds[0].description = LEADERBOARD_DESCRIPTION
@@ -127,16 +190,21 @@ object LeaderboardService : StartupListener {
 
         runBlocking {
             launch {
-                val message = channel.messages.filter { message -> message.kord.selfId == message.author?.id }
-                    .firstOrNull()
+                val message = channel.messages.firstOrNull { message -> message.kord.selfId == message.author?.id }
 
                 if (message == null) {
                     channel.createMessage {
                         this.embeds = embeds
+                        actionRow {
+                            addLeaderboardButtons()
+                        }
                     }
                 } else {
                     message.edit {
                         this.embeds = embeds
+                        actionRow {
+                            addLeaderboardButtons()
+                        }
                     }
                 }
             }

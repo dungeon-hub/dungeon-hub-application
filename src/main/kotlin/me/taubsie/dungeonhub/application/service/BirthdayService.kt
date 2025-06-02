@@ -13,6 +13,7 @@ import me.taubsie.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.connection.DungeonHubConnection.httpClient
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
+import net.fortuna.ical4j.model.Period
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -23,8 +24,13 @@ import java.util.concurrent.TimeUnit
 
 @OnStart
 object BirthdayService : StartupListener {
-    private val logger = LoggerFactory.getLogger(BirthdayService::class.java)
+    private const val BIRTHDAY_CALENDAR_URL =
+        "https://cloud.dungeon-hub.net/remote.php/dav/public-calendars/g2tZRB2YpacJtAtt?export"
+    private const val BIRTHDAY_PING_ROLE = 1362023553066860594
+    private const val BIRTHDAYS_CHANNEL = 1362024376974839908
+    private const val BIRTHDAY_CONGRATS_CHANNEL = 1082583379226148874
     private const val EXECUTION_HOUR = 9
+    private val logger = LoggerFactory.getLogger(BirthdayService::class.java)
     private var timerTask: ScheduledFuture<*>? = null
     var birthdays: List<Birthday> = listOf()
 
@@ -32,7 +38,7 @@ object BirthdayService : StartupListener {
         val timeUntilExecutionTime =
             calculateExecutionTime(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time)
 
-        if(timerTask != null) {
+        if (timerTask != null) {
             timerTask!!.cancel(false)
         }
 
@@ -62,7 +68,7 @@ object BirthdayService : StartupListener {
     }
 
     private fun sendBirthdays() {
-        val todayBirthdays = getTodayBirthdays(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date)
+        val todayBirthdays = getTodayBirthdays(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()))
         val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
         for (birthday in todayBirthdays) {
@@ -70,13 +76,7 @@ object BirthdayService : StartupListener {
             embed.color(EmbedColor.Positive)
             embed.title = birthday.eventName
             embed.description =
-                "Happy Birthday, ${birthday.username}${
-                    if (birthday.userId != null) {
-                        " (<@${birthday.userId}>)"
-                    } else {
-                        ""
-                    }
-                }! \uD83C\uDF89 \uD83E\uDD73 ❤\uFE0F ${
+                "Happy Birthday, ${birthday.username} (<@${birthday.userId}>)! \uD83C\uDF89 \uD83E\uDD73 ❤\uFE0F ${
                     if (birthday.birthYear != null) {
                         "\nToday, they are turning ${
                             Clock.System.now()
@@ -85,28 +85,30 @@ object BirthdayService : StartupListener {
                     } else {
                         ""
                     }
-                }\nMake sure to congratulate them in <#701887299696328814>!"
+                }\nMake sure to congratulate them in <#$BIRTHDAY_CONGRATS_CHANNEL>!"
 
             embeds += embed
         }
 
         if (embeds.isNotEmpty()) {
             runBlocking {
-                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(701552635391770714))
+                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(BIRTHDAYS_CHANNEL))
                     ?.createMessage {
+                        this.content = "<@&$BIRTHDAY_PING_ROLE>"
                         this.embeds = embeds
                     }
             }
         }
     }
 
-    fun getTodayBirthdays(today: LocalDate): List<Birthday> {
-        return birthdays.filter { it.date == today }
+    fun getTodayBirthdays(today: LocalDateTime): List<Birthday> {
+        return birthdays.groupBy { it.userId }.map { it.value.maxBy { birthday -> birthday.date.year } }
+            .filter { it.isToday(today) }
     }
 
     fun updateBirthdayData() {
         val request = Request.Builder()
-            .url("https://cloud.dungeon-hub.net/remote.php/dav/public-calendars/g2tZRB2YpacJtAtt?export")
+            .url(BIRTHDAY_CALENDAR_URL)
             .get()
             .build()
 
@@ -142,16 +144,30 @@ object BirthdayService : StartupListener {
 
         return try {
             LocalDate.parse("$year-$month-$day")
-        } catch (illegalArgumentException: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             null
         }
     }
 
-    class Birthday(val eventName: String, val date: LocalDate, val userId: Long? = null, val birthYear: Int? = null) {
+    class Birthday(
+        val eventName: String,
+        val date: LocalDate,
+        val userId: Long,
+        val birthYear: Int? = null,
+        val recurrenceSet: Set<Period<java.time.LocalDate>>
+    ) {
         val username: String = if (eventName.endsWith(" | Birthday")) {
             eventName.substring(0, eventName.length - 11)
         } else {
             eventName
+        }
+
+        fun isToday(today: LocalDateTime): Boolean {
+            if (recurrenceSet.isEmpty()) {
+                return date.dayOfMonth == today.dayOfMonth && date.month == today.month
+            }
+
+            return recurrenceSet.any { it.includes(today.toJavaLocalDateTime()) }
         }
 
         companion object {
@@ -165,12 +181,22 @@ object BirthdayService : StartupListener {
                     ?: return null
 
                 val userId = properties.firstOrNull { it.name == "LOCATION" }?.value?.toLongOrNull()
+                    ?: return null
 
-                val year =
-                    properties.firstOrNull { it.name == "DESCRIPTION" }?.value?.split("\n")?.firstOrNull()?.trim()
-                        ?.toIntOrNull()
+                val description = properties.firstOrNull { it.name == "DESCRIPTION" }?.value?.split("\n")
 
-                return Birthday(name, date, userId, year)
+                val year = description?.firstOrNull()?.trim()?.toIntOrNull()
+
+                val now = java.time.LocalDate.now()
+
+                val recurrenceSet = component.calculateRecurrenceSet<java.time.LocalDate>(
+                    Period(
+                        now.minusYears(1),
+                        now.plusYears(2)
+                    )
+                )
+
+                return Birthday(name, date, userId, year, recurrenceSet)
             }
         }
 

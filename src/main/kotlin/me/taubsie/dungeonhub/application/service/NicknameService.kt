@@ -1,5 +1,6 @@
 package me.taubsie.dungeonhub.application.service
 
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Member
@@ -7,6 +8,7 @@ import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
 import dev.kord.rest.request.KtorRequestException
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import me.taubsie.dungeonhub.application.connection.getMutualServers
 import me.taubsie.dungeonhub.application.exceptions.*
 import me.taubsie.dungeonhub.application.misc.PlayerInformation
@@ -24,6 +26,7 @@ import java.util.function.Predicate
 import java.util.regex.Pattern
 import java.util.stream.Collector
 import java.util.stream.Collectors
+import kotlin.concurrent.thread
 
 /**
  * Service class for managing nicknames.
@@ -64,6 +67,20 @@ object NicknameService {
                 hypixelName,
                 user.username
             )
+        }
+
+        DiscordUserConnection.findUserByUuid(uuid)?.let {
+            val updateModel = it.getUpdateModel()
+            updateModel.minecraftId = null
+            DiscordUserConnection.updateUser(it.id, updateModel)
+
+            thread(true) {
+                runBlocking {
+                    user.getMutualServers().collect { member ->
+                        MassSyncService.syncUser(member.guildId, Snowflake(it.id))
+                    }
+                }
+            }
         }
 
         val updateModel = DiscordUserUpdateModel(uuid)
@@ -108,8 +125,10 @@ object NicknameService {
      */
     @Throws(NoNameSchemaWarning::class, NotLinkedException::class)
     suspend fun updateNickname(member: Member, serverRoles: List<Role>?, cacheExpiration: Int = 60 * 3) {
-        val discordUserModel = DiscordUserConnection.getLinkedById(member.id.value.toLong())
-            ?: throw NotLinkedException()
+        val discordUserModel = DiscordUserConnection.getById(member.id.value.toLong())
+            ?: DiscordUserConnection.updateUser(member.id.value.toLong(), DiscordUserUpdateModel(null)) //TODO use the method "getByIdOrAdd" from DiscordUserConnection directly
+            ?: throw CommandExecutionWarning("Couldn't get that users data!")
+
         updateNickname(member, discordUserModel, serverRoles, cacheExpiration)
     }
 

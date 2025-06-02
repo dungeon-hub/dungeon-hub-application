@@ -3,7 +3,6 @@ package me.taubsie.dungeonhub.application.service
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
-import dev.kord.core.entity.Guild
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.flow.firstOrNull
@@ -26,6 +25,7 @@ import java.util.stream.Stream
 @OnStart
 object MessagesService : StartupListener {
     private const val REFRESH_PERIOD = 1000L * 60 * 15
+    private var timer: Timer? = null
 
     fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder? {
         val carryDifficulties = CarryDifficultyConnection[carryTier].allCarryDifficulties ?: listOf()
@@ -80,12 +80,6 @@ object MessagesService : StartupListener {
         )
     }
 
-    suspend fun refreshPriceMessages(server: Guild) {
-        refreshPriceMessages(
-            (DiscordServerConnection.getAllCarryTiers(server.id.value.toLong()) ?: listOf()).stream()
-        )
-    }
-
     private suspend fun refreshPriceMessages() {
         for (serverData in allServers) {
             refreshPriceMessages(serverData.id)
@@ -119,11 +113,7 @@ object MessagesService : StartupListener {
                         refreshPriceMessageInChannel(
                             it,
                             addPriceFooterToLast(
-                                value.stream()
-                                    .map { carryTier -> getPriceEmbed(carryTier) }
-                                    .filter { embed -> embed != null }
-                                    .map { embed -> embed!! }
-                                    .toList()
+                                value.mapNotNull { carryTier -> getPriceEmbed(carryTier) }
                             )
                         )
                     }
@@ -160,7 +150,13 @@ object MessagesService : StartupListener {
     }
 
     override suspend fun postStart() {
-        Timer().scheduleAtFixedRate(object : TimerTask() {
+        if (timer != null) {
+            timer!!.cancel()
+        }
+
+        timer = Timer()
+
+        timer!!.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
                 runBlocking {
                     refreshPriceMessages()

@@ -1,15 +1,24 @@
 package me.taubsie.dungeonhub.application.commands
 
+import dev.kord.common.entity.ButtonStyle
+import dev.kord.core.behavior.interaction.respondEphemeral
+import dev.kord.core.builder.components.emoji
+import dev.kord.core.entity.ReactionEmoji
+import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
+import dev.kord.rest.builder.component.ActionRowBuilder
+import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.annotations.AlwaysPublicResponse
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.converters.impl.optionalEnumChoice
 import dev.kordex.core.commands.converters.impl.optionalString
 import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.getLocale
 import me.taubsie.dungeonhub.application.connection.copy
+import me.taubsie.dungeonhub.application.enums.HelpTopic
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.AutoCompletionService
 import me.taubsie.dungeonhub.application.service.LeaderboardService
@@ -81,6 +90,52 @@ class LeaderboardCommand : Extension() {
                 }.send()
             }
         }
+
+        event<GuildButtonInteractionCreateEvent> {
+            check {
+                failIfNot("help-score" == event.interaction.componentId)
+            }
+
+            action {
+                event.interaction.respondEphemeral {
+                    //TODO make this generation code a method somewhere
+
+                    val helpTopic = HelpTopic.SCORE
+
+                    val embedBuilder = EmbedBuilder()
+                    embedBuilder.title = "**" + helpTopic.title + "**"
+
+                    val helpDisplay = helpTopic.description.getDescription(
+                        event.interaction.user,
+                        event.interaction.getGuildOrNull()
+                    )
+
+                    embedBuilder.color = helpDisplay.embedColor.color
+                    embedBuilder.description = helpDisplay.description
+
+                    helpDisplay.fields.forEach { embedBuilder.field(it.key, false) { it.value } }
+
+                    embeds = mutableListOf(embedBuilder)
+                }
+            }
+        }
+
+        event<GuildButtonInteractionCreateEvent> {
+            check {
+                failIfNot("show-score" == event.interaction.componentId)
+            }
+
+            action {
+                event.interaction.respondEphemeral {
+                    embeds = ScoreCommand.generateScoreEmbeds(
+                        event.interaction.user,
+                        event.interaction.user,
+                        event.interaction.guild,
+                        event.getLocale()
+                    )
+                }
+            }
+        }
     }
 
     inner class LeaderboardArguments : Arguments() {
@@ -96,5 +151,17 @@ class LeaderboardCommand : Extension() {
             description = "Select which type of score you want.".toKey()
             typeName = "ScoreType".toKey()
         }
+    }
+}
+
+fun ActionRowBuilder.addLeaderboardButtons() {
+    interactionButton(ButtonStyle.Primary, "help-score") {
+        emoji(ReactionEmoji.Unicode("❔"))
+        label = "How score is calculated"
+    }
+
+    interactionButton(ButtonStyle.Primary, "show-score") {
+        emoji(ReactionEmoji.Unicode("\uD83C\uDFAF"))
+        label = "Your score"
     }
 }

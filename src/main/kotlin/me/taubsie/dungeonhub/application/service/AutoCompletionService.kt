@@ -7,6 +7,7 @@ import dev.kord.core.behavior.interaction.suggest
 import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kord.core.event.interaction.AutoCompleteInteractionCreateEvent
 import dev.kordex.core.commands.converters.AutoCompleteCallback
+import me.taubsie.dungeonhub.application.enums.KnownStaticResource
 import net.dungeonhub.connection.*
 
 object AutoCompletionService {
@@ -159,6 +160,23 @@ object AutoCompletionService {
         }
 
         listOf<Choice>()
+    }
+
+    val knownStaticResource: AutoCompleteCallback = { event ->
+        suggest(
+            KnownStaticResource.entries.filter { staticResource ->
+                focusedOption.value.isEmpty()
+                        || (staticResource.name.contains(focusedOption.value, true)
+                        || staticResource.path.contains(focusedOption.value, true)
+                        || staticResource.loadDisplayName().contains(focusedOption.value, true))
+            }.map { staticResource ->
+                Choice.StringChoice(
+                    name = staticResource.loadDisplayName(),
+                    value = staticResource.name,
+                    nameLocalizations = Optional()
+                )
+            }.take(25)
+        )
     }
 }
 

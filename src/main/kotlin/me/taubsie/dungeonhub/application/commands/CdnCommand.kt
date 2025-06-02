@@ -2,9 +2,9 @@ package me.taubsie.dungeonhub.application.commands
 
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.commands.Arguments
-import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
 import dev.kordex.core.commands.application.slash.ephemeralSubCommand
 import dev.kordex.core.commands.converters.impl.attachment
+import dev.kordex.core.commands.converters.impl.enum
 import dev.kordex.core.commands.converters.impl.optionalString
 import dev.kordex.core.components.components
 import dev.kordex.core.components.linkButton
@@ -16,6 +16,7 @@ import me.taubsie.dungeonhub.application.enums.KnownStaticResource
 import me.taubsie.dungeonhub.application.exceptions.CommandExecutionException
 import me.taubsie.dungeonhub.application.loader.LoadExtension
 import me.taubsie.dungeonhub.application.service.ApplicationService
+import me.taubsie.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.connection.DungeonHubConnection
 import net.dungeonhub.i18n.Translations.Command.Cdn
@@ -40,7 +41,8 @@ class CdnCommand : Extension() {
         1116284449190064220L,
         795048346955677748L,
         884589309037011015L,
-        346292488837005334L
+        346292488837005334L,
+        739132220723167335L
     )
 
     override suspend fun setup() {
@@ -120,7 +122,7 @@ class CdnCommand : Extension() {
                         embed.field(
                             Cdn.Static.Response.Fields.fileName.translateLocale(event.getLocale()),
                             true
-                        ) { arguments.resource.getName() }
+                        ) { arguments.resource.path }
                         embed.field(
                             Cdn.Static.Response.Fields.fullUrl.translateLocale(event.getLocale()),
                             false
@@ -154,10 +156,11 @@ class CdnCommand : Extension() {
     }
 
     inner class StaticArguments : Arguments() {
-        val resource by enumChoice<KnownStaticResource> {
+        val resource by enum<KnownStaticResource> {
             name = Cdn.Static.Arguments.File.name
             description = Cdn.Static.Arguments.File.description
             typeName = Cdn.Static.Arguments.File.typeName
+            autoCompleteCallback = AutoCompletionService.knownStaticResource
         }
     }
 }

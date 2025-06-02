@@ -75,9 +75,7 @@ class CalcPriceCommand : Extension() {
                         throw CommandExecutionException("Something went wrong.. The calculated price ($price) is negative?")
                     }
 
-                    val priceText = if (price != 0L) "${ApplicationService.makeNumberReadable(price)} coins" else "Free"
-                    val pricePerCarryText =
-                        if (price != 0L) "${ApplicationService.makeNumberReadable(pricePerCarry)} coins" else "Free"
+                    val priceText = if (price != 0L) "${ApplicationService.makeNumberReadable(price)} (${ApplicationService.makeNumberReadable(pricePerCarry)}) coins" else "Free"
 
                     val embed = ApplicationService.embed
                     embed.color = EmbedColor.Information.color
@@ -97,10 +95,6 @@ class CalcPriceCommand : Extension() {
                         Translations.Command.CalcPrice.Response.Fields.price.translateLocale(event.getLocale()),
                         true
                     ) { priceText }
-                    embed.field(
-                        Translations.Command.CalcPrice.Response.Fields.pricePerCarry.translateLocale(event.getLocale()),
-                        true
-                    ) { pricePerCarryText }
 
                     carryDifficulty.thumbnailUrl?.let { embed.thumbnail { url = it } }
 
