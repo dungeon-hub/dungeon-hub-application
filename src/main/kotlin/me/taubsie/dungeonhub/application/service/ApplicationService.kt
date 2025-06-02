@@ -22,6 +22,7 @@ import dev.kord.rest.builder.message.create.AbstractMessageCreateBuilder
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.timeoutUntil
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -819,6 +820,10 @@ object ApplicationService {
         }
 
         return embed
+    }
+
+    suspend fun getGlobalCommandId(name: String): Snowflake? {
+        return DiscordConnection.bot?.kordRef?.getGlobalApplicationCommands()?.firstOrNull { it.name == name }?.id
     }
 }
 

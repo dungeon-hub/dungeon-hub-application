@@ -8,7 +8,7 @@ plugins {
     //TODO fix errors
     //id("io.gitlab.arturbosch.detekt") version "1.23.6"
 
-    id("dev.kordex.gradle.kordex") version "1.6.2"
+    id("dev.kordex.gradle.kordex") version "1.7.1"
 }
 
 group = "me.taubsie"
@@ -66,18 +66,17 @@ dependencies {
     implementation("net.codebox:homoglyph:1.2.1")
     implementation("com.google.zxing:javase:3.5.2")
     implementation("com.google.guava:guava:33.0.0-jre")
-    implementation("org.mnode.ical4j:ical4j:4.0.5")
+    implementation("org.mnode.ical4j:ical4j:4.1.1")
 
     //HTTP Client
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
 
     //Logging
-    implementation("org.apache.logging.log4j:log4j-core:2.20.0")
-    implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.20.0")
+    implementation("ch.qos.logback:logback-core:1.5.6")
+    implementation("ch.qos.logback:logback-classic:1.5.6")
 
     //Annotations
     annotationProcessor("org.projectlombok:lombok:1.18.28")
-    annotationProcessor("org.apache.logging.log4j:log4j-core:2.20.0")
 
     //Testing
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

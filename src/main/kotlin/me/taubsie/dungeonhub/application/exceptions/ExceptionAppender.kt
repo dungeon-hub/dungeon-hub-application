@@ -1,5 +1,8 @@
 package me.taubsie.dungeonhub.application.exceptions
 
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.classic.spi.ThrowableProxy
+import ch.qos.logback.core.AppenderBase
 import dev.kord.core.Kord
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.utils.dm
@@ -8,32 +11,26 @@ import me.taubsie.dungeonhub.application.connection.DiscordConnection
 import me.taubsie.dungeonhub.application.enums.EmbedColor
 import me.taubsie.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.ContentConnection
-import org.apache.logging.log4j.core.Appender
-import org.apache.logging.log4j.core.Core
-import org.apache.logging.log4j.core.Filter
-import org.apache.logging.log4j.core.LogEvent
-import org.apache.logging.log4j.core.appender.AbstractAppender
-import org.apache.logging.log4j.core.config.Property
-import org.apache.logging.log4j.core.config.plugins.Plugin
-import org.apache.logging.log4j.core.config.plugins.PluginAttribute
-import org.apache.logging.log4j.core.config.plugins.PluginElement
-import org.apache.logging.log4j.core.config.plugins.PluginFactory
 import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.stream.Collectors
+import kotlin.concurrent.thread
 
-//TODO remove warning due to plugin scanning being deprecated (in log4j2.xml)
-@Plugin(name = "ExceptionAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
-open class ExceptionAppender protected constructor(name: String?, filter: Filter?) :
-    AbstractAppender(name, filter, null, true, Property.EMPTY_ARRAY) {
-    override fun append(logEvent: LogEvent) {
-        if (logEvent.thrown is CommandExecutionWarning) {
+class ExceptionAppender : AppenderBase<ILoggingEvent>() {
+    override fun append(logEvent: ILoggingEvent) {
+        val throwable = logEvent.throwableProxy
+
+        if(throwable != null && throwable !is ThrowableProxy) {
+            return
+        }
+
+        if (throwable?.throwable is CommandExecutionWarning) {
             return
         }
 
         val embed = ApplicationService.embed
         embed.color = EmbedColor.Negative.color
-        val title = logEvent.message.formattedMessage
+        val title = logEvent.formattedMessage
 
         if (title.length < (EmbedBuilder.Limits.title - 3)) {
             embed.title = title
@@ -46,10 +43,10 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
             }
         }
 
-        embed.title = logEvent.message.formattedMessage
+        embed.title = logEvent.formattedMessage
 
-        if (logEvent.thrown != null) {
-            var description = getExceptionMessage(logEvent.thrown)
+        if (throwable?.throwable != null) {
+            var description = getExceptionMessage(throwable.throwable)
 
             if (description != null && description.length > 3000) {
                 description = ContentConnection.uploadFile(description.toByteArray(StandardCharsets.UTF_8))
@@ -60,14 +57,16 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
             embed.description = description
         }
 
-        runBlocking {
-            val kord: Kord? = DiscordConnection.bot?.kordRef
+        thread(start=true) {
+            runBlocking {
+                val kord: Kord? = DiscordConnection.bot?.kordRef
 
-            if (kord != null) {
-                ApplicationService.getBotOwner(kord)
-                    ?.dm {
-                        embeds = mutableListOf(embed)
-                    }
+                if (kord != null) {
+                    ApplicationService.getBotOwner(kord)
+                        ?.dm {
+                            embeds = mutableListOf(embed)
+                        }
+                }
             }
         }
     }
@@ -105,16 +104,5 @@ open class ExceptionAppender protected constructor(name: String?, filter: Filter
             .map { obj: StackTraceElement -> obj.toString() }
             .map { s: String -> "> $s" }
             .collect(Collectors.joining(System.lineSeparator()))
-    }
-
-    companion object {
-        @JvmStatic
-        @PluginFactory
-        fun createAppender(
-            @PluginAttribute("name") name: String?,
-            @PluginElement("Filter") filter: Filter?
-        ): ExceptionAppender {
-            return ExceptionAppender(name, filter)
-        }
     }
 }

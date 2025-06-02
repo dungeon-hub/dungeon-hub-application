@@ -124,6 +124,7 @@ object PurgingService : StartupListener {
                         embed.description =
                             "Your ${purgeData.purgeType.displayName}-carry roles on `${server.name}` were removed since you only reached ${purgeData.score}/${purgeData.purgeThreshold} score."
                         embed.field("Roles removed", false) { rolesRemoved.joinToString(System.lineSeparator()) }
+                        embeds = mutableListOf(embed)
                     }
                 } catch (_: RequestException) {
                     // ignore since member doesn't need to know

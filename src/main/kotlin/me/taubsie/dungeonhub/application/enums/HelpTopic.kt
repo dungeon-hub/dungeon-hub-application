@@ -6,7 +6,6 @@ import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.i18n.types.Key
 import lombok.Getter
-import me.taubsie.dungeonhub.application.enums.HelpTopic.DescriptionSupplier
 import me.taubsie.dungeonhub.application.exceptions.MustBeServerException
 import me.taubsie.dungeonhub.application.misc.HelpDisplay
 import net.dungeonhub.connection.ContentConnection
@@ -166,7 +165,7 @@ enum class HelpTopic(
                         "settings, wait a few minutes and try again!\n" +
                         "\n" +
                         "You can find a video example [here]("
-                        + ContentConnection.getStaticUrl(KnownStaticResource.VERIFICATION_EXAMPLE.path).build().toUrl()
+                        + ContentConnection.getStaticUrl(KnownStaticResource.VerificationExample.path).build().toUrl()
                         + ")."
             )
         });
