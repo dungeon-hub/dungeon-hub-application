@@ -3,7 +3,6 @@ package net.dungeonhub.application.service
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
-import me.taubsie.dungeonhub.application.service.BirthdayService
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

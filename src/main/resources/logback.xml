@@ -21,7 +21,7 @@
         </encoder>
     </appender>
 
-    <appender name="ExceptionAppender" class="me.taubsie.dungeonhub.application.exceptions.ExceptionAppender" >
+    <appender name="ExceptionAppender" class="net.dungeonhub.application.exceptions.ExceptionAppender" >
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>WARN</level>
         </filter>

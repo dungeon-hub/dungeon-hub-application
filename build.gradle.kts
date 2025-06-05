@@ -11,7 +11,7 @@ plugins {
     id("dev.kordex.gradle.kordex") version "1.7.1"
 }
 
-group = "me.taubsie"
+group = "net.dungeon-hub"
 version = "1.0.0"
 description = "dungeon-hub-application"
 
@@ -32,7 +32,7 @@ kordEx {
         // See https://docs.kordex.dev/data-collection.html
         dataCollection(DataCollection.Extra)
 
-        mainClass = "me.taubsie.dungeonhub.application.connection.DiscordConnection"
+        mainClass = "net.dungeonhub.application.connection.DiscordConnection"
     }
 
     i18n {
