@@ -100,7 +100,7 @@ object ClassLoader {
             } else {
                 throw NoSuchMethodException()
             }
-        } catch (noSuchMethodException: NoSuchMethodException) {
+        } catch (_: NoSuchMethodException) {
             try {
                 if (Modifier.isStatic(clazz.getDeclaredField("INSTANCE").modifiers)
                     && clazz.getDeclaredField("INSTANCE").type == clazz
@@ -109,7 +109,7 @@ object ClassLoader {
                     field.setAccessible(true)
                     return field.get(this) as StartupListener
                 }
-            } catch (noSuchFieldException: NoSuchFieldException) {
+            } catch (_: NoSuchFieldException) {
                 return clazz.getDeclaredConstructor().newInstance()
             }
             return clazz.getDeclaredConstructor().newInstance()
@@ -152,10 +152,7 @@ object ClassLoader {
     private fun readPackage(clazz: Class<*>): String {
         val fullName = clazz.packageName
         val packageNameAfterFirstDot = fullName.substring(fullName.indexOf('.') + 1)
-        return fullName.substring(0, fullName.indexOf('.') + 1) + packageNameAfterFirstDot.substring(
-            0,
-            packageNameAfterFirstDot.indexOf('.')
-        )
+        return fullName.take(fullName.indexOf('.') + 1) + packageNameAfterFirstDot.substringBefore('.')
     }
 
     @DoNotCall("possibly unsafe")

@@ -286,7 +286,7 @@ class ConfigCommand : Extension() {
         val property by stringChoice {
             name = "property".toKey()
             description = "The property to choose.".toKey()
-            choices = ServerProperty.entries.map { it.name.toKey() to it.name }.toMap().toMutableMap()
+            choices = ServerProperty.entries.associate { it.name.toKey() to it.name }.toMutableMap()
         }
 
         fun getProperty(serverId: Long): ServerProperty {
@@ -311,8 +311,8 @@ class ConfigCommand : Extension() {
             description = "The string property to choose.".toKey()
             choices = ServerProperty.entries
                 .filter { it.propertyType == ServerPropertyType.STRING }
-                .map { it.name.toKey() to it.name }
-                .toMap().toMutableMap()
+                .associate { it.name.toKey() to it.name }
+                .toMutableMap()
         }
 
         val value by string {
@@ -342,8 +342,8 @@ class ConfigCommand : Extension() {
             description = "The number property to choose.".toKey()
             choices = ServerProperty.entries
                 .filter { it.propertyType == ServerPropertyType.NUMBER }
-                .map { it.name.toKey() to it.name }
-                .toMap().toMutableMap()
+                .associate { it.name.toKey() to it.name }
+                .toMutableMap()
         }
 
         val value by long {
@@ -373,8 +373,8 @@ class ConfigCommand : Extension() {
             description = "The boolean property to choose.".toKey()
             choices = ServerProperty.entries
                 .filter { it.propertyType == ServerPropertyType.BOOLEAN }
-                .map { it.name.toKey() to it.name }
-                .toMap().toMutableMap()
+                .associate { it.name.toKey() to it.name }
+                .toMutableMap()
         }
 
         val value by boolean {
@@ -404,8 +404,8 @@ class ConfigCommand : Extension() {
             description = "The channel property to choose.".toKey()
             choices = ServerProperty.entries
                 .filter { it.propertyType == ServerPropertyType.CHANNEL }
-                .map { it.name.toKey() to it.name }
-                .toMap().toMutableMap()
+                .associate { it.name.toKey() to it.name }
+                .toMutableMap()
         }
 
         val value by channel {
@@ -438,8 +438,8 @@ class ConfigCommand : Extension() {
             description = "The category property to choose.".toKey()
             choices = ServerProperty.entries
                 .filter { it.propertyType == ServerPropertyType.CATEGORY }
-                .map { it.name.toKey() to it.name }
-                .toMap().toMutableMap()
+                .associate { it.name.toKey() to it.name }
+                .toMutableMap()
         }
 
         val value by channel {
@@ -472,8 +472,8 @@ class ConfigCommand : Extension() {
             description = "The role property to choose.".toKey()
             choices = ServerProperty.entries
                 .filter { it.propertyType == ServerPropertyType.ROLE }
-                .map { it.name.toKey() to it.name }
-                .toMap().toMutableMap()
+                .associate { it.name.toKey() to it.name }
+                .toMutableMap()
         }
 
         val value by role {

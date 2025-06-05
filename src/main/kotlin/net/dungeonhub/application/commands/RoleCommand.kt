@@ -163,7 +163,7 @@ class RoleCommand : Extension() {
                             val currentRole = DiscordRoleConnection[guild!!.id.value.toLong()]
                                 .getById(arguments.role.id.value.toLong())
 
-                            if (arguments.resetNameSchema == false) {
+                            if (!arguments.resetNameSchema) {
                                 if (currentRole == null) {
                                     throw NoOptionFoundException()
                                 } else {
@@ -377,7 +377,7 @@ class RoleCommand : Extension() {
 
                 try {
                     NicknameService.updateNickname(member, updatedRoles)
-                } catch (ignored: NoNameSchemaWarning) {
+                } catch (_: NoNameSchemaWarning) {
                     //ignore this, in that case you just don't apply a nickname
                 }
             }
@@ -423,7 +423,7 @@ class RoleCommand : Extension() {
 
                 try {
                     NicknameService.updateNickname(member, updatedRoles)
-                } catch (ignored: NoNameSchemaWarning) {
+                } catch (_: NoNameSchemaWarning) {
                     //ignore this, in that case you just don't apply a nickname
                 }
             }

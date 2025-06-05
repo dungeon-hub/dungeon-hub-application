@@ -781,19 +781,27 @@ object ApplicationService {
     }
 
     fun getErrorEmbeds(throwable: Throwable, message: String): MutableList<EmbedBuilder> {
-        return if (throwable is CommandExecutionException) {
-            mutableListOf(getErrorEmbed(throwable))
-        } else if (throwable is CommandExecutionWarning) {
-            mutableListOf(getErrorEmbed(throwable))
-        } else if (throwable is PlayerNotFoundException) {
-            mutableListOf(getErrorEmbed(CommandExecutionWarning(throwable.message)))
-        } else {
-            val embed = getErrorEmbed(CommandExecutionException(throwable))
-            if (message.isNotBlank()) {
-                embed.title = message
+        return when (throwable) {
+            is CommandExecutionException -> {
+                mutableListOf(getErrorEmbed(throwable))
             }
 
-            mutableListOf(embed)
+            is CommandExecutionWarning -> {
+                mutableListOf(getErrorEmbed(throwable))
+            }
+
+            is PlayerNotFoundException -> {
+                mutableListOf(getErrorEmbed(CommandExecutionWarning(throwable.message)))
+            }
+
+            else -> {
+                val embed = getErrorEmbed(CommandExecutionException(throwable))
+                if (message.isNotBlank()) {
+                    embed.title = message
+                }
+
+                mutableListOf(embed)
+            }
         }
     }
 

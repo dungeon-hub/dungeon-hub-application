@@ -138,7 +138,7 @@ object BirthdayService : StartupListener {
     fun parseBirthdayDate(date: String): LocalDate? {
         if (date.length != 8) return null
 
-        val year = (date.substring(0, 4))
+        val year = (date.take(4))
         val month = (date.substring(4, 6))
         val day = (date.substring(6, 8))
 
@@ -157,7 +157,7 @@ object BirthdayService : StartupListener {
         val recurrenceSet: Set<Period<java.time.LocalDate>>
     ) {
         val username: String = if (eventName.endsWith(" | Birthday")) {
-            eventName.substring(0, eventName.length - 11)
+            eventName.dropLast(" | Birthday".length)
         } else {
             eventName
         }
