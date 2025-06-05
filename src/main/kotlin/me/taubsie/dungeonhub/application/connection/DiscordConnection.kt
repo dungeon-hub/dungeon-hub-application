@@ -24,6 +24,7 @@ import dev.kordex.core.components.components
 import dev.kordex.core.components.linkButton
 import dev.kordex.core.i18n.SupportedLocales
 import dev.kordex.core.i18n.toKey
+import dev.kordex.core.utils.dm
 import dev.kordex.data.api.DataCollection
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -322,6 +323,14 @@ object DiscordConnection : StartupListener {
                 }
             }
         }, Time(System.currentTimeMillis() + 5000), 1000 * 60 * 30)
+
+        ApplicationService.getBotOwner(bot?.kordRef!!)?.dm {
+            val embed = ApplicationService.embed
+            embed.color(EmbedColor.Positive)
+            embed.description = "Bot started"
+
+            embeds = mutableListOf(embed)
+        }
     }
 }
 
