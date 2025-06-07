@@ -103,11 +103,9 @@ object DiscordConnection : StartupListener {
             "Remember to close and /log"
         },
         AppearanceType.Listening to {
-            val time = Duration.between(uptime, Instant.now())
-                .withNanos(0)
-                .withSeconds(0)
-                .toKotlinDuration()
-                .toString()
+            val uptime = Duration.between(uptime, Instant.now()).withNanos(0)
+
+            val time = uptime.minusSeconds(uptime.seconds).toKotlinDuration().toString()
 
             "discord events since $time"
         },
