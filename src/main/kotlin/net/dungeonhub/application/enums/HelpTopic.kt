@@ -167,6 +167,8 @@ enum class HelpTopic(
                         "You can find a video example [here]("
                         + ContentConnection.getStaticUrl(KnownStaticResource.VerificationExample.path).build().toUrl()
                         + ")."
+                        "## 3. Unlinking your account\n" +
+                        "- Use the `/unlink` command to unlink your linked Minecraft account." 
             )
         });
 
