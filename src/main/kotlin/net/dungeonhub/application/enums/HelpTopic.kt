@@ -163,7 +163,7 @@ enum class HelpTopic(
                         "Please keep in mind that the API can take up to 15 minutes to update the changes made " +
                         "on Hypixel. If you have an issue with verification and only recently changed your " +
                         "settings, wait a few minutes and try again!\n\n" +
-                        "- If your Minecraft account is linked to a different Discord account, use the `/unlink` command.\n\n"
+                        "- If your Minecraft account is linked to a different Discord account, use the `/unlink` command.\n\n" +
                         "You can find a video example [here]("
                         + ContentConnection.getStaticUrl(KnownStaticResource.VerificationExample.path).build().toUrl()
                         + ")."
