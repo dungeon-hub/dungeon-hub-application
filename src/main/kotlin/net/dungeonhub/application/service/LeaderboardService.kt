@@ -7,6 +7,7 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
+import dev.kord.rest.request.KtorRequestException
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -190,22 +191,26 @@ object LeaderboardService : StartupListener {
 
         runBlocking {
             launch {
-                val message = channel.messages.firstOrNull { message -> message.kord.selfId == message.author?.id }
+                try {
+                    val message = channel.messages.firstOrNull { message -> message.kord.selfId == message.author?.id }
 
-                if (message == null) {
-                    channel.createMessage {
-                        this.embeds = embeds
-                        actionRow {
-                            addLeaderboardButtons()
+                    if (message == null) {
+                        channel.createMessage {
+                            this.embeds = embeds
+                            actionRow {
+                                addLeaderboardButtons()
+                            }
+                        }
+                    } else {
+                        message.edit {
+                            this.embeds = embeds
+                            actionRow {
+                                addLeaderboardButtons()
+                            }
                         }
                     }
-                } else {
-                    message.edit {
-                        this.embeds = embeds
-                        actionRow {
-                            addLeaderboardButtons()
-                        }
-                    }
+                } catch (_: KtorRequestException) {
+                    // Ignore, this simply means that the leaderboard channel can't be accessed anymore - Should this be handled / logged somewhere?
                 }
             }
         }
