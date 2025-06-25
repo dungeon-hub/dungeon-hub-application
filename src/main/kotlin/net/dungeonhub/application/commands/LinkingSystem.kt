@@ -16,7 +16,6 @@ import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.component.ActionRowBuilder
-import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
@@ -35,7 +34,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.enums.EmbedColor
-import net.dungeonhub.application.enums.HelpTopic
 import net.dungeonhub.application.exceptions.*
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.*
@@ -478,59 +476,33 @@ class LinkingSystem : Extension() {
                 failIfNot(
                     listOf(
                         "link_user",
-                        "link_user_silent",
-                        "show_help_linking"
+                        "link_user_silent"
                     ).contains(event.interaction.componentId)
                 )
             }
 
             action {
-                when (event.interaction.componentId) {
-                    "link_user", "link_user_silent" -> {
-                        val linkedTo =
-                            DiscordUserConnection.getById(event.interaction.user.id.value.toLong())?.minecraftId
+                val linkedTo =
+                    DiscordUserConnection.getById(event.interaction.user.id.value.toLong())?.minecraftId
 
-                        if (linkedTo != null) {
-                            event.interaction.respondEphemeral {
-                                val embed = ApplicationService.embed
-                                embed.color = EmbedColor.Information.color
-                                embed.description = "You're already linked to user `${
-                                    MojangConnection.getNameByUUID(linkedTo)
-                                }`! If you think that's incorrect, try using ${"`/unlink`"}."
+                if (linkedTo != null) {
+                    event.interaction.respondEphemeral {
+                        val embed = ApplicationService.embed
+                        embed.color = EmbedColor.Information.color
+                        embed.description = "You're already linked to user `${
+                            MojangConnection.getNameByUUID(linkedTo)
+                        }`! If you think that's incorrect, try using ${"`/unlink`"}."
 
-                                embeds = mutableListOf(embed)
-                            }
-
-                            return@action
-                        }
-
-                        if (event.interaction.componentId == "link_user") {
-                            event.interaction.sendLinkModal()
-                        } else {
-                            event.interaction.sendSilentLinkModal()
-                        }
+                        embeds = mutableListOf(embed)
                     }
 
-                    "show_help_linking" -> {
-                        event.interaction.respondEphemeral {
-                            val helpTopic = HelpTopic.VERIFICATION
+                    return@action
+                }
 
-                            val embedBuilder = EmbedBuilder()
-                            embedBuilder.title = "**" + helpTopic.title + "**"
-
-                            val helpDisplay = helpTopic.description.getDescription(
-                                event.interaction.user,
-                                event.interaction.getGuildOrNull()
-                            )
-
-                            embedBuilder.color = helpDisplay.embedColor.color
-                            embedBuilder.description = helpDisplay.description
-
-                            helpDisplay.fields.forEach { embedBuilder.field(it.key, false) { it.value } }
-
-                            embeds = mutableListOf(embedBuilder)
-                        }
-                    }
+                if (event.interaction.componentId == "link_user") {
+                    event.interaction.sendLinkModal()
+                } else {
+                    event.interaction.sendSilentLinkModal()
                 }
             }
         }
