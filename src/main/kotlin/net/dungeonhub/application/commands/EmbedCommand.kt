@@ -149,6 +149,7 @@ class EmbedCommand : Extension() {
                                 ?: throw CommandExecutionException("Couldn't download the file correctly.")
                         }
 
+                        //TODO write tests for this; maybe also add an improved command that uses discord fields
                         val embedBuilders: MutableList<EmbedBuilder> = ArrayList()
 
                         try {
