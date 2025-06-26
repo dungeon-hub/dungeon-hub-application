@@ -70,6 +70,7 @@ dependencies {
 
     //HTTP Client
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
+    implementation("io.ktor:ktor-client-java:3.0.0")
 
     //Logging
     implementation("ch.qos.logback:logback-core:1.5.6")
