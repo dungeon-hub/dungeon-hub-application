@@ -23,6 +23,7 @@ import org.jetbrains.annotations.Contract
 import java.util.*
 import java.util.function.Function
 import java.util.function.Predicate
+import java.util.regex.Matcher
 import java.util.regex.Pattern
 import java.util.stream.Collector
 import java.util.stream.Collectors
@@ -106,8 +107,8 @@ object NicknameService {
             val serverRoles = roles.getOrDefault(member.guild.id.value.toLong(), null)
             try {
                 updateNickname(member, serverRoles, cacheExpiration)
-            } catch (ignored: NoNameSchemaWarning) {
-                //ignored, just don't set a username
+            } catch (_: NoNameSchemaWarning) {
+                // ignored, just don't set a username
             }
         }
     }
@@ -193,7 +194,7 @@ object NicknameService {
 
             val repString = replacements[argument.substring(1, argument.length - 1)]?.invoke()
             if (repString != null) {
-                matcher.appendReplacement(usernameBuilder, repString)
+                matcher.appendReplacement(usernameBuilder, Matcher.quoteReplacement(repString))
             }
         }
         matcher.appendTail(usernameBuilder)
