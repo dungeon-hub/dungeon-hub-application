@@ -13,9 +13,11 @@ import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.core.supplier.RestEntitySupplier
+import dev.kord.gateway.DefaultGateway
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.gateway.builder.PresenceBuilder
+import dev.kord.gateway.ratelimit.IdentifyRateLimiter
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.embed
 import dev.kord.rest.request.RestRequestException
@@ -26,6 +28,9 @@ import dev.kordex.core.i18n.SupportedLocales
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.dm
 import dev.kordex.data.api.DataCollection
+import io.ktor.client.*
+import io.ktor.client.engine.java.*
+import io.ktor.client.plugins.websocket.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -172,8 +177,28 @@ object DiscordConnection : StartupListener {
      * This implementation starts the discord-bot.
      */
     override suspend fun preStart() {
+        val websocketClient = HttpClient(Java) {
+            engine {
+                protocolVersion = java.net.http.HttpClient.Version.HTTP_2
+            }
+
+            install(WebSockets)
+        }
+
         bot = ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value!!) {
             dataCollectionMode = DataCollection.Extra
+
+            kord {
+                gateways { resources, shards ->
+                    val rateLimiter = IdentifyRateLimiter(resources.maxConcurrency, defaultDispatcher)
+                    shards.map {
+                        DefaultGateway {
+                            identifyRateLimiter = rateLimiter
+                            client = websocketClient
+                        }
+                    }
+                }
+            }
 
             about {
                 ephemeral = true
