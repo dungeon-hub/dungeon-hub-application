@@ -159,8 +159,10 @@ enum class HelpTopic(
                         "- Paste your Discord username (**" + user.username + "**) exactly like that into the chat.\n" +
                         "- If you get shown a book, select \"I understand\".\n" +
                         "## 2. On Discord\n" +
-                        "- Use the `/link` command, this should complete the process.\n\n" +
-                        "**It may take up to 15 minutes for your stats to update**, please wait and try again if verification doesn't work right away.\n\n" +
+                        "- Use the `/link` command, this should complete the process.\n" +
+                        "\n" +
+                        "**It may take up to 15 minutes for your stats to update**, please wait and try again if verification doesn't work right away.\n" +
+                        "\n" +
                         "> If you think you're linked to the wrong Minecraft account, use the `/unlink` command.\n" +
                         "You can find a video example [here]("
                         + ContentConnection.getStaticUrl(KnownStaticResource.VerificationExample.path).build().toUrl()
