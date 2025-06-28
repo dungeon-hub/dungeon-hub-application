@@ -54,7 +54,9 @@ class CarryTypeCommand : Extension() {
                             .lowercase(Locale.getDefault())
                             .replace(" ", "_")
 
-                        if (CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(identifier) != null) {
+                        if (CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(identifier) != null
+                        ) {
                             throw InvalidOptionException(
                                 CommonArguments.identifier.translateLocale(event.getLocale()),
                                 "That carry type already exists!"
@@ -76,7 +78,8 @@ class CarryTypeCommand : Extension() {
                         }
 
                         val carryTypeModel =
-                            CarryTypeConnection[guild!!.id.value.toLong()].addNewCarryType(creationModel)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .addNewCarryType(creationModel)
                                 ?: throw CommandExecutionWarning("Couldn't add that carry type.")
 
                         val embed = ApplicationService.getCarryTypeEmbed(carryTypeModel)
@@ -94,11 +97,13 @@ class CarryTypeCommand : Extension() {
                     respond {
                         val identifier = arguments.carryType
 
-                        val carryType = CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(identifier)
-                            ?: throw CommandExecutionWarning("That carry type doesn't exists!")
+                        val carryType =
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated().getByIdentifier(identifier)
+                                ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        val deletedCarryType = CarryTypeConnection[carryType.server.id].deleteCarryType(carryType)
-                            ?: throw CommandExecutionWarning("Carry type couldn't be deleted!")
+                        val deletedCarryType =
+                            CarryTypeConnection[carryType.server.id].authenticated().deleteCarryType(carryType)
+                                ?: throw CommandExecutionWarning("Carry type couldn't be deleted!")
 
                         val embed = ApplicationService.getCarryTypeEmbed(deletedCarryType)
                         embed.title = CarryType.Delete.Response.title.translateLocale(event.getLocale())
@@ -114,7 +119,8 @@ class CarryTypeCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("Carry type not found.")
 
                         val embed = ApplicationService.getCarryTypeEmbed(carryType)
@@ -130,7 +136,8 @@ class CarryTypeCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
                         if (arguments.displayName == null && arguments.logChannel == null && arguments.leaderboardChannel == null && arguments.eventActive == null) {
@@ -156,7 +163,8 @@ class CarryTypeCommand : Extension() {
                         }
 
                         val updatedCarryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].updateCarryType(carryType.id, updateModel)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .updateCarryType(carryType.id, updateModel)
                                 ?: throw CommandExecutionWarning("Couldn't update carry type.")
 
                         val embed = ApplicationService.getCarryTypeEmbed(updatedCarryType)
@@ -173,7 +181,8 @@ class CarryTypeCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
                         if (!arguments.logChannel && !arguments.leaderboardChannel) {
@@ -191,7 +200,8 @@ class CarryTypeCommand : Extension() {
                         }
 
                         val updatedCarryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].updateCarryType(carryType.id, updateModel)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .updateCarryType(carryType.id, updateModel)
                                 ?: throw CommandExecutionWarning("Couldn't update carry type.")
 
                         val embed = ApplicationService.getCarryTypeEmbed(updatedCarryType)
@@ -203,7 +213,7 @@ class CarryTypeCommand : Extension() {
         }
     }
 
-    inner class CarryTypeCreateArguments : Arguments() {
+    class CarryTypeCreateArguments : Arguments() {
         val identifier by string {
             name = CommonArguments.identifier
             description = CommonArguments.CarryType.description
@@ -234,7 +244,7 @@ class CarryTypeCommand : Extension() {
         }
     }
 
-    inner class CarryTypeArguments : Arguments() {
+    class CarryTypeArguments : Arguments() {
         val carryType by string {
             name = CommonArguments.CarryType.name
             description = CommonArguments.CarryType.description
@@ -243,7 +253,7 @@ class CarryTypeCommand : Extension() {
         }
     }
 
-    inner class CarryTypeEditArguments : Arguments() {
+    class CarryTypeEditArguments : Arguments() {
         val carryType by string {
             name = CommonArguments.CarryType.name
             description = CommonArguments.CarryType.description
@@ -275,7 +285,7 @@ class CarryTypeCommand : Extension() {
         }
     }
 
-    inner class CarryTypeResetArguments : Arguments() {
+    class CarryTypeResetArguments : Arguments() {
         val carryType by string {
             name = CommonArguments.CarryType.name
             description = CommonArguments.CarryType.description

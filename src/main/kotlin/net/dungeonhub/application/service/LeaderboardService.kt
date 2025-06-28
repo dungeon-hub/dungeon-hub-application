@@ -233,8 +233,8 @@ object LeaderboardService : StartupListener {
 
         val leaderboards: MutableMap<GuildMessageChannel, MutableList<Leaderboard>> = HashMap()
 
-        for (serverModel in DiscordServerConnection.loadAllServers() ?: mutableListOf()) {
-            for (carryType in CarryTypeConnection[serverModel.id].allCarryTypes ?: listOf()) {
+        for (serverModel in DiscordServerConnection.authenticated().loadAllServers() ?: mutableListOf()) {
+            for (carryType in CarryTypeConnection[serverModel.id].authenticated().allCarryTypes ?: listOf()) {
                 val leaderboardChannel = carryType.leaderboardChannel?.let { id: Long? ->
                     runBlocking {
                         try {
@@ -243,7 +243,7 @@ object LeaderboardService : StartupListener {
                                     ?.kordRef
                                     ?.getChannelOf<GuildMessageChannel>(Snowflake(id!!))
                             )
-                        } catch (exception: RequestException) {
+                        } catch (_: RequestException) {
                             return@runBlocking Optional.empty()
                         }
                     }
@@ -262,14 +262,14 @@ object LeaderboardService : StartupListener {
                         leaderboards[leaderboardChannel]!!.add(
                             Leaderboard(
                                 scoreType.getLeaderboardTitle(carryType),
-                                ScoreConnection[carryType].loadLeaderboard(scoreType, 0)
+                                ScoreConnection[carryType].authenticated().loadLeaderboard(scoreType, 0)
                             )
                         )
                     } else {
                         leaderboards[leaderboardChannel] = mutableListOf(
                             Leaderboard(
                                 scoreType.getLeaderboardTitle(carryType),
-                                ScoreConnection[carryType].loadLeaderboard(scoreType, 0)
+                                ScoreConnection[carryType].authenticated().loadLeaderboard(scoreType, 0)
                             )
                         )
                     }
@@ -286,11 +286,11 @@ object LeaderboardService : StartupListener {
                                         ?.kordRef
                                         ?.getChannelOf<GuildMessageChannel>(Snowflake(id!!))
                                 )
-                            } catch (exception: RequestException) {
+                            } catch (_: RequestException) {
                                 return@runBlocking Optional.empty()
                             }
                         }
-                    } catch (completionException: CompletionException) {
+                    } catch (_: CompletionException) {
                         return@flatMap Optional.empty()
                     }
                 }.ifPresent { leaderboardChannel: GuildMessageChannel ->
@@ -299,14 +299,14 @@ object LeaderboardService : StartupListener {
                             leaderboards[leaderboardChannel]!!.add(
                                 Leaderboard(
                                     scoreType.getLeaderboardTitle(null),
-                                    DiscordServerConnection.loadTotalLeaderboard(serverModel.id, scoreType, 0)
+                                    DiscordServerConnection.authenticated().loadTotalLeaderboard(serverModel.id, scoreType, 0)
                                 )
                             )
                         } else {
                             leaderboards[leaderboardChannel] = mutableListOf(
                                 Leaderboard(
                                     scoreType.getLeaderboardTitle(null),
-                                    DiscordServerConnection.loadTotalLeaderboard(serverModel.id, scoreType, 0)
+                                    DiscordServerConnection.authenticated().loadTotalLeaderboard(serverModel.id, scoreType, 0)
                                 )
                             )
                         }

@@ -242,7 +242,7 @@ object ProfileModerationService {
     }
 
     fun isVerified(user: Member): Boolean {
-        return DiscordUserConnection.getLinkedById(user.id.value.toLong()) != null
+        return DiscordUserConnection.authenticated().getLinkedById(user.id.value.toLong()) != null
     }
 
     fun isExcluded(user: Member): Boolean {

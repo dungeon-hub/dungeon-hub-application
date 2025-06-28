@@ -26,8 +26,8 @@ import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.InvalidOptionException
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.client.DungeonHubClient
 import net.dungeonhub.connection.ContentConnection
-import net.dungeonhub.connection.DungeonHubConnection
 import net.dungeonhub.connection.WarningConnection
 import net.dungeonhub.enums.WarningType
 import net.dungeonhub.i18n.Translations.Command.Warn
@@ -71,7 +71,8 @@ class WarningSystem : Extension() {
                 noPermissionEmbed.description =
                     "You don't have the permission to see the warns of other people, so you're seeing your own."
 
-                val warns = WarningConnection[guild!!.id.value.toLong()].getActiveWarns(target.id.value.toLong())
+                val warns = WarningConnection[guild!!.id.value.toLong()].authenticated()
+                    .getActiveWarns(target.id.value.toLong())
                     ?: throw CommandExecutionException("Couldn't load active warns of the given user.")
 
                 if (warns.isEmpty()) {
@@ -144,7 +145,7 @@ class WarningSystem : Extension() {
 
                         val type = try {
                             WarningType.valueOf(arguments.type)
-                        } catch (illegalArgumentException: IllegalArgumentException) {
+                        } catch (_: IllegalArgumentException) {
                             val embed = ApplicationService.getErrorEmbed(InvalidOptionException("type"))
                             embeds = mutableListOf(embed)
                             return@respond
@@ -158,8 +159,9 @@ class WarningSystem : Extension() {
                             true
                         )
 
-                        val addedWarning = WarningConnection[guild!!.id.value.toLong()].addWarning(creationModel)
-                            ?: throw CommandExecutionException("Error while trying to add a warning")
+                        val addedWarning =
+                            WarningConnection[guild!!.id.value.toLong()].authenticated().addWarning(creationModel)
+                                ?: throw CommandExecutionException("Error while trying to add a warning")
 
                         val actionDescription = ApplicationService.applyWarningActions(
                             addedWarning.warningActionModel,
@@ -167,7 +169,8 @@ class WarningSystem : Extension() {
                         )
 
                         val activeWarnings =
-                            WarningConnection[guild!!.id.value.toLong()].getActiveWarns(target.id.value.toLong())
+                            WarningConnection[guild!!.id.value.toLong()].authenticated()
+                                .getActiveWarns(target.id.value.toLong())
                                 ?: listOf()
 
                         val embed = ApplicationService.formatWarn(addedWarning.warningModel)
@@ -236,7 +239,7 @@ class WarningSystem : Extension() {
                 action {
                     respond {
                         val removedWarning =
-                            WarningConnection[guild!!.id.value.toLong()].deactivateWarning(arguments.id)
+                            WarningConnection[guild!!.id.value.toLong()].authenticated().deactivateWarning(arguments.id)
                                 ?: throw InvalidOptionException("id", "Couldn't find a warning with the given id.")
 
                         val embed = ApplicationService.embed
@@ -286,7 +289,8 @@ class WarningSystem : Extension() {
 
                 action {
                     val warns =
-                        WarningConnection[guild!!.id.value.toLong()].getAllWarns(arguments.user.id.value.toLong())
+                        WarningConnection[guild!!.id.value.toLong()].authenticated()
+                            .getAllWarns(arguments.user.id.value.toLong())
                             ?: throw CommandExecutionException("Couldn't load all warns of the given user.")
 
                     if (warns.isEmpty()) {
@@ -327,13 +331,13 @@ class WarningSystem : Extension() {
                             val attachmentRequest =
                                 Request.Builder().url(arguments.attachment!!.url.toHttpUrl()).build()
 
-                            val attachmentData = DungeonHubConnection.executeRawRequest(attachmentRequest)?.result
+                            val attachmentData = DungeonHubClient().executeRawRequest(attachmentRequest)?.result
                                 ?: throw CommandExecutionException("Couldn't read file data.")
 
-                            val uri = ContentConnection.uploadFile(attachmentData)
+                            val uri = ContentConnection.authenticated().uploadFile(attachmentData)
                                 ?: throw CommandExecutionException("Couldn't upload file data to the cdn.")
 
-                            ContentConnection.getCdnUrl(uri).toString()
+                            ContentConnection.authenticated().getCdnUrl(uri).toString()
                         } else if (arguments.text != null) {
                             arguments.text!!
                         } else {
@@ -343,7 +347,8 @@ class WarningSystem : Extension() {
                         val creationModel = WarningEvidenceCreationModel(evidence, user.id.value.toLong())
 
                         val warning =
-                            WarningConnection[guild!!.id.value.toLong()].addEvidence(arguments.id, creationModel)
+                            WarningConnection[guild!!.id.value.toLong()].authenticated()
+                                .addEvidence(arguments.id, creationModel)
                                 ?: throw CommandExecutionException("Failed to add evidence to that warning. Did you enter a correct id?")
 
                         if (arguments.attachment != null && arguments.text != null) {
@@ -382,14 +387,14 @@ class WarningSystem : Extension() {
         }
     }
 
-    inner class WarnsArguments : Arguments() {
+    class WarnsArguments : Arguments() {
         val target by optionalMember {
             name = "user".toKey()
             description = "The user to get the warns of.".toKey()
         }
     }
 
-    inner class WarnAddArguments : Arguments() {
+    class WarnAddArguments : Arguments() {
         val user by user {
             name = "user".toKey()
             description = "The user to warn.".toKey()
@@ -409,7 +414,7 @@ class WarningSystem : Extension() {
         }
     }
 
-    inner class WarnRemoveArguments : Arguments() {
+    class WarnRemoveArguments : Arguments() {
         val id by long {
             name = "id".toKey()
             description = "The id of the warning.".toKey()
@@ -417,14 +422,14 @@ class WarningSystem : Extension() {
         }
     }
 
-    inner class WarnListAllArguments : Arguments() {
+    class WarnListAllArguments : Arguments() {
         val user by user {
             name = "user".toKey()
             description = "The user to see the warnings of.".toKey()
         }
     }
 
-    inner class WarnAddEvidenceArguments : Arguments() {
+    class WarnAddEvidenceArguments : Arguments() {
         val id by long {
             name = "id".toKey()
             description = "The id of the warning.".toKey()
@@ -445,7 +450,7 @@ class WarningSystem : Extension() {
     private fun getChannelProperty(warningType: WarningType): ServerProperty {
         return when (warningType) {
             WarningType.Serious, WarningType.Major, WarningType.Minor -> ServerProperty.MODERATION_LOGS_CHANNEL
-            WarningType.Strike -> ServerProperty.STRIKES_LOGS_CHANNEL
+            WarningType.Strike, WarningType.Warning -> ServerProperty.STRIKES_LOGS_CHANNEL
         }
     }
 }

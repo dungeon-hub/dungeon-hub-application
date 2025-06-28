@@ -70,7 +70,7 @@ class CntSystem : Extension() {
             }
 
             action {
-                val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
+                val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
                     .findCntRequest(event.interaction.message.id.value.toLong())
                     ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
 
@@ -83,14 +83,14 @@ class CntSystem : Extension() {
 
                 val claimerId = event.interaction.user.id.value.toLong()
 
-                val claimer = DiscordUserConnection.getById(claimerId)
-                    ?: DiscordUserConnection.updateUser(claimerId, DiscordUserUpdateModel(null))
+                val claimer = DiscordUserConnection.authenticated().getById(claimerId)
+                    ?: DiscordUserConnection.authenticated().updateUser(claimerId, DiscordUserUpdateModel(null))
                     ?: throw CommandExecutionException("Couldn't load CNT claimer!")
 
                 val updateModel = cntRequest.getUpdateModel()
                 updateModel.claimer = claimer
 
-                val updatedCntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
+                val updatedCntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
                     .updateCntRequest(cntRequest.id, updateModel)
                     ?: throw CommandExecutionException("Couldn't update CNT request!")
 
@@ -123,7 +123,7 @@ class CntSystem : Extension() {
             }
 
             action {
-                val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
+                val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
                     .findCntRequest(event.interaction.message.id.value.toLong())
                     ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
 
@@ -145,7 +145,7 @@ class CntSystem : Extension() {
                 val updateModel = cntRequest.getUpdateModel()
                 updateModel.claimer = null
 
-                val updatedCntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
+                val updatedCntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
                     .updateCntRequest(cntRequest.id, updateModel)
                     ?: throw CommandExecutionException("Couldn't update CNT request!")
 
@@ -168,7 +168,7 @@ class CntSystem : Extension() {
             }
 
             action {
-                val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
+                val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
                     .findCntRequest(event.interaction.message.id.value.toLong())
                     ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
 
@@ -186,7 +186,7 @@ class CntSystem : Extension() {
                 val updateModel = cntRequest.getUpdateModel()
                 updateModel.completed = true
 
-                val updatedCntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()]
+                val updatedCntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
                     .updateCntRequest(cntRequest.id, updateModel)
                     ?: throw CommandExecutionException("Couldn't update CNT request!")
 
@@ -282,7 +282,7 @@ class CntSystem : Extension() {
                         requirement
                     )
 
-                    val embed = CntRequestConnection[channel.guildId.value.toLong()]
+                    val embed = CntRequestConnection[channel.guildId.value.toLong()].authenticated()
                         .createCntRequest(creationModel)
                         ?.let { mutableListOf(ApplicationService.getCntEmbed(it)) }
                         ?: ApplicationService.getErrorEmbeds(

@@ -35,18 +35,18 @@ class StatsCommand : Extension() {
 
                     val memberCount = guild.approximateMemberCount ?: 0
                     val spentMoney = ApplicationService.makeNumberReadable(
-                        DiscordServerConnection.getTotalAmountOfMoneySpent(guild.id.value.toLong()) ?: 0,
+                        DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(guild.id.value.toLong()) ?: 0,
                         3
                     )
                     val spentMoneyMonthly = ApplicationService.makeNumberReadable(
-                        DiscordServerConnection.getTotalAmountOfMoneySpent(
+                        DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(
                             guild.id.value.toLong(),
                             since = ZonedDateTime.now().minusDays(30).toInstant()
                         ) ?: 0, 3
                     )
                     val totalCarries =
-                        DiscordServerConnection.getCarryAmount(guild.id.value.toLong()) ?: 0
-                    val monthlyCarries = DiscordServerConnection.getCarryAmount(
+                        DiscordServerConnection.authenticated().getCarryAmount(guild.id.value.toLong()) ?: 0
+                    val monthlyCarries = DiscordServerConnection.authenticated().getCarryAmount(
                         guild.id.value.toLong(),
                         since = ZonedDateTime.now().minusDays(30).toInstant()
                     ) ?: 0

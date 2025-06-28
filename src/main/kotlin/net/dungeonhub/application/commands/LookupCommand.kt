@@ -71,7 +71,6 @@ class LookupCommand : Extension() {
             }
         }
 
-
         publicUserCommand {
             name = Translations.UserCommand.Lookup.name
 
@@ -82,7 +81,6 @@ class LookupCommand : Extension() {
             }
         }
     }
-
 
     private fun respondToLookup(target: UserBehavior?, ign: String?): suspend FollowupMessageCreateBuilder.() -> Unit =
         respond@{
@@ -96,11 +94,15 @@ class LookupCommand : Extension() {
             }
 
             val uuid =
-                target?.let { target -> DiscordUserConnection.getLinkedById(target.id.value.toLong())?.minecraftId }
+                target?.let { target ->
+                    DiscordUserConnection.authenticated().getLinkedById(target.id.value.toLong())?.minecraftId
+                }
                     ?: ign?.let { ign -> MojangConnection.getUUIDByName(ign) }
 
             val actualIgn = uuid?.let { MojangConnection.getNameByUUID(uuid) }
-            val actualTarget = target?.id?.value?.toLong() ?: uuid?.let { DiscordUserConnection.findUserByUuid(it)?.id }
+            val actualTarget = target?.id?.value?.toLong() ?: uuid?.let {
+                DiscordUserConnection.authenticated().findUserByUuid(it)?.id
+            }
 
             val flagResponses = FlaggingConnection.isFlagged(uuid, actualTarget)
 
@@ -137,7 +139,7 @@ class LookupCommand : Extension() {
             addEmbed {
                 footer = null
                 timestamp = null
-                color(if(flagged.isNotEmpty()) EmbedColor.Negative else EmbedColor.Positive)
+                color(if (flagged.isNotEmpty()) EmbedColor.Negative else EmbedColor.Positive)
                 description = formatDescription(flagged.isNotEmpty(), target != null, actualTarget, actualIgn)
             }
 
@@ -150,15 +152,14 @@ class LookupCommand : Extension() {
             }
         }
 
-    inner class LookupUserArguments : Arguments() {
+    class LookupUserArguments : Arguments() {
         val user by user {
             name = "user".toKey()
             description = "The discord user to lookup.".toKey()
         }
     }
 
-
-    inner class LookupPlayerArguments : Arguments() {
+    class LookupPlayerArguments : Arguments() {
         val ign by string {
             name = "ign".toKey()
             description = "The IGN of the player.".toKey()

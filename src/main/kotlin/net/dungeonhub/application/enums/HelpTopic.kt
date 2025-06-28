@@ -28,7 +28,7 @@ enum class HelpTopic(
             val fields: MutableMap<CarryTypeModel, MutableMap<String, Int>> = HashMap()
 
             val carryDifficulties =
-                DiscordServerConnection.getAllCarryDifficulties(server.id.value.toLong()) ?: ArrayList()
+                DiscordServerConnection.authenticated().getAllCarryDifficulties(server.id.value.toLong()) ?: ArrayList()
 
             if (carryDifficulties.isEmpty()) {
                 return@DescriptionSupplier HelpDisplay.fromDescription(
@@ -165,7 +165,7 @@ enum class HelpTopic(
                         "\n" +
                         "> If you think you're linked to the wrong Minecraft account, use the `/unlink` command.\n" +
                         "You can find a video example [here]("
-                        + ContentConnection.getStaticUrl(KnownStaticResource.VerificationExample.path).build().toUrl()
+                        + ContentConnection.authenticated().getStaticUrl(KnownStaticResource.VerificationExample.path).build().toUrl()
                         + ")."
             )
         });

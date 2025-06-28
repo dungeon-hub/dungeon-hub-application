@@ -44,18 +44,20 @@ class CarryDifficultyCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
-                            ?: throw CommandExecutionWarning("That carry tier doesn't exists!")
+                        val carryTier =
+                            CarryTierConnection[carryType].authenticated().getByIdentifier(arguments.carryTier)
+                                ?: throw CommandExecutionWarning("That carry tier doesn't exists!")
 
                         val identifier = arguments.identifier
                             .trim()
                             .lowercase(Locale.getDefault())
                             .replace(" ", "_")
 
-                        if (CarryDifficultyConnection[carryTier].getByIdentifier(identifier) != null) {
+                        if (CarryDifficultyConnection[carryTier].authenticated().getByIdentifier(identifier) != null) {
                             throw InvalidOptionException("identifier", "That carry difficulty already exists!")
                         }
 
@@ -70,8 +72,9 @@ class CarryDifficultyCommand : Extension() {
                             priceName = null
                         )
 
-                        val carryDifficulty = CarryDifficultyConnection[carryTier].createCarryDifficulty(creationModel)
-                            ?: throw CommandExecutionWarning("Couldn't create carry difficulty.")
+                        val carryDifficulty =
+                            CarryDifficultyConnection[carryTier].authenticated().createCarryDifficulty(creationModel)
+                                ?: throw CommandExecutionWarning("Couldn't create carry difficulty.")
 
                         val embed = ApplicationService.getCarryDifficultyEmbed(carryDifficulty)
                         embed.title = CarryDifficulty.Create.Response.title.translateLocale(event.getLocale())
@@ -87,18 +90,21 @@ class CarryDifficultyCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
-                            ?: throw InvalidOptionException("carry-tier")
+                        val carryTier =
+                            CarryTierConnection[carryType].authenticated().getByIdentifier(arguments.carryTier)
+                                ?: throw InvalidOptionException("carry-tier")
 
                         if (carryTier.carryType != carryType) {
                             throw CommandExecutionWarning("Well this is weird.. Something doesn't really add up!")
                         }
 
                         val carryDifficulty =
-                            CarryDifficultyConnection[carryTier].getByIdentifier(arguments.carryDifficulty)
+                            CarryDifficultyConnection[carryTier].authenticated()
+                                .getByIdentifier(arguments.carryDifficulty)
                                 ?: throw InvalidOptionException("carry-difficulty")
 
                         if (carryDifficulty.carryTier != carryTier) {
@@ -106,7 +112,8 @@ class CarryDifficultyCommand : Extension() {
                         }
 
                         val deletedCarryDifficulty =
-                            CarryDifficultyConnection[carryTier].deleteCarryDifficulty(carryDifficulty.id)
+                            CarryDifficultyConnection[carryTier].authenticated()
+                                .deleteCarryDifficulty(carryDifficulty.id)
                                 ?: throw CommandExecutionWarning("Couldn't delete the carry difficulty.")
 
                         val embed = ApplicationService.getCarryDifficultyEmbed(deletedCarryDifficulty)
@@ -123,15 +130,16 @@ class CarryDifficultyCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        val carryTier = CarryTierConnection[carryType]
-                            .getByIdentifier(arguments.carryTier)
-                            ?: throw CommandExecutionWarning("That carry tier doesn't exists!")
+                        val carryTier =
+                            CarryTierConnection[carryType].authenticated().getByIdentifier(arguments.carryTier)
+                                ?: throw CommandExecutionWarning("That carry tier doesn't exists!")
 
                         val carryDifficulty =
-                            CarryDifficultyConnection[carryTier].getByIdentifier(arguments.carryDifficulty)
+                            CarryDifficultyConnection[carryTier].authenticated().getByIdentifier(arguments.carryDifficulty)
                                 ?: throw InvalidOptionException(
                                     "carry-difficulty",
                                     "That carry difficulty doesn't exist!"
@@ -150,14 +158,14 @@ class CarryDifficultyCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated().getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
+                        val carryTier = CarryTierConnection[carryType].authenticated().getByIdentifier(arguments.carryTier)
                             ?: throw InvalidOptionException("carry-tier", "That carry tier doesn't exist")
 
                         val carryDifficulty =
-                            CarryDifficultyConnection[carryTier].getByIdentifier(arguments.carryDifficulty)
+                            CarryDifficultyConnection[carryTier].authenticated().getByIdentifier(arguments.carryDifficulty)
                                 ?: throw InvalidOptionException(
                                     "carry-difficulty",
                                     "That carry difficulty doesn't exist"
@@ -197,7 +205,7 @@ class CarryDifficultyCommand : Extension() {
                             updateModel.priceName = arguments.priceName
                         }
 
-                        val updatedCarryDifficulty = CarryDifficultyConnection[carryTier]
+                        val updatedCarryDifficulty = CarryDifficultyConnection[carryTier].authenticated()
                             .updateCarryDifficulty(carryDifficulty.id, updateModel)
                             ?: throw CommandExecutionWarning("Couldn't update carry difficulty.")
 
@@ -215,14 +223,14 @@ class CarryDifficultyCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated().getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
+                        val carryTier = CarryTierConnection[carryType].authenticated().getByIdentifier(arguments.carryTier)
                             ?: throw InvalidOptionException("carry-tier", "That carry tier doesn't exist")
 
                         val carryDifficulty =
-                            CarryDifficultyConnection[carryTier].getByIdentifier(arguments.carryDifficulty)
+                            CarryDifficultyConnection[carryTier].authenticated().getByIdentifier(arguments.carryDifficulty)
                                 ?: throw InvalidOptionException(
                                     "carry-difficulty",
                                     "That carry difficulty doesn't exist"
@@ -251,7 +259,7 @@ class CarryDifficultyCommand : Extension() {
                         }
 
                         val updatedCarryDifficulty =
-                            CarryDifficultyConnection[carryTier].updateCarryDifficulty(carryTier.id, updateModel)
+                            CarryDifficultyConnection[carryTier].authenticated().updateCarryDifficulty(carryTier.id, updateModel)
                                 ?: throw CommandExecutionWarning("Couldn't update carry difficulty.")
 
                         val embed = ApplicationService.getCarryDifficultyEmbed(updatedCarryDifficulty)
@@ -263,7 +271,7 @@ class CarryDifficultyCommand : Extension() {
         }
     }
 
-    inner class CarryDifficultyCreateArguments : Arguments() {
+    class CarryDifficultyCreateArguments : Arguments() {
         val carryType by string {
             name = CommonArguments.CarryType.name
             description = CommonArguments.CarryType.description
@@ -302,7 +310,7 @@ class CarryDifficultyCommand : Extension() {
         }
     }
 
-    inner class CarryDifficultyArguments : Arguments() {
+    class CarryDifficultyArguments : Arguments() {
         val carryType by string {
             name = CommonArguments.CarryType.name
             description = CommonArguments.CarryType.description
@@ -325,7 +333,7 @@ class CarryDifficultyCommand : Extension() {
         }
     }
 
-    inner class CarryDifficultyEditArguments : Arguments() {
+    class CarryDifficultyEditArguments : Arguments() {
         val carryType by string {
             name = CommonArguments.CarryType.name
             description = CommonArguments.CarryType.description
@@ -389,7 +397,7 @@ class CarryDifficultyCommand : Extension() {
         }
     }
 
-    inner class CarryDifficultyResetArguments : Arguments() {
+    class CarryDifficultyResetArguments : Arguments() {
         val carryType by string {
             name = CommonArguments.CarryType.name
             description = CommonArguments.CarryType.description

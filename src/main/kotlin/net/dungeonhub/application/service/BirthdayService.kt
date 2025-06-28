@@ -10,7 +10,7 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
-import net.dungeonhub.connection.DungeonHubConnection.httpClient
+import net.dungeonhub.providers.HttpClientProvider.httpClient
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.Period

@@ -49,7 +49,7 @@ object RolesService {
     }
 
     suspend fun calculateRoles(member: Member, cacheExpiration: Int): List<Role> {
-        val serverRoles = (DiscordRoleConnection[member.guildId.value.toLong()].allRoles ?: emptyList())
+        val serverRoles = (DiscordRoleConnection[member.guildId.value.toLong()].authenticated().allRoles ?: emptyList())
             .stream()
             .collect(
                 Collectors.toMap(
@@ -59,7 +59,7 @@ object RolesService {
 
         var discordRoles: MutableSet<Snowflake> = member.roleIds.toMutableSet()
 
-        val isVerified = DiscordUserConnection.getLinkedById(member.id.value.toLong()) != null
+        val isVerified = DiscordUserConnection.authenticated().getLinkedById(member.id.value.toLong()) != null
 
         val rolesToAdd = serverRoles.values.stream()
             .filter { roleModel -> roleModel.shouldBeAdded(isVerified) }
@@ -108,7 +108,7 @@ object RolesService {
 
     fun calculateRoleRequirements(member: Member, cacheExpiration: Int): Map<RoleRequirementModel, Boolean> {
         val roleRequirements =
-            RoleRequirementConnection[member.guild.id.value.toLong()].allRoleRequirements ?: emptyList()
+            RoleRequirementConnection[member.guild.id.value.toLong()].authenticated().allRoleRequirements ?: emptyList()
 
         return roleRequirements.associateWith {
             checkRoleRequirement(it, member, cacheExpiration)
@@ -121,10 +121,10 @@ object RolesService {
 
         val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
 
-        val discordServer = DiscordServerConnection.findServerById(member.guild.id.value.toLong())
+        val discordServer = DiscordServerConnection.authenticated().findServerById(member.guild.id.value.toLong())
             ?: return false
 
-        val discordUser = DiscordUserConnection.getLinkedById(member.id.value.toLong())
+        val discordUser = DiscordUserConnection.authenticated().getLinkedById(member.id.value.toLong())
             ?: return false
 
         val uuid = discordUser.minecraftId
@@ -226,7 +226,7 @@ object RolesService {
             //TODO check for carry type
             RoleRequirementType.CurrentScore -> {
                 return roleRequirement.compare(
-                    DiscordServerConnection.getScores(discordServer, discordUser.id)?.filter {
+                    DiscordServerConnection.authenticated().getScores(discordServer, discordUser.id)?.filter {
                         it.scoreType == ScoreType.Default
                     }?.sumOf { it.scoreAmount ?: 0 }?.toInt() ?: 0
                 )
@@ -235,7 +235,7 @@ object RolesService {
             //TODO check for carry type
             RoleRequirementType.AlltimeScore -> {
                 return roleRequirement.compare(
-                    DiscordServerConnection.getScores(discordServer, discordUser.id)?.filter {
+                    DiscordServerConnection.authenticated().getScores(discordServer, discordUser.id)?.filter {
                         it.scoreType == ScoreType.Alltime
                     }?.sumOf { it.scoreAmount ?: 0 }?.toInt() ?: 0
                 )
@@ -254,7 +254,7 @@ object RolesService {
             //TODO maybe also add money earned?
             RoleRequirementType.MoneySpent -> {
                 return roleRequirement.compare(
-                    DiscordServerConnection.getTotalAmountOfMoneySpent(
+                    DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(
                         discordServer.id,
                         userId = discordUser.id
                     )?.toInt() ?: 0
@@ -266,7 +266,7 @@ object RolesService {
                     ?: return false
 
                 return roleRequirement.compare(
-                    DiscordServerConnection.getTotalAmountOfMoneySpent(
+                    DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(
                         discordServer.id,
                         userId = discordUser.id,
                         since = Clock.System.now().minus(duration).toJavaInstant()
@@ -313,12 +313,22 @@ object RolesService {
                     profileMembers.maxOf { it.playerStats?.highestCritDamage ?: 0.0 }.roundToInt()
                 )
             }
+
+            RoleRequirementType.BingoRank -> {
+                //TODO implement
+                return false
+            }
+
+            RoleRequirementType.TotalBingoPoints -> {
+                //TODO implement
+                return false
+            }
         }
     }
 
     fun applyRoleGroups(server: GuildBehavior, roles: Set<Snowflake>): MutableSet<Snowflake> {
         var mutableRoles = roles.toMutableSet()
-        val roleGroups = DiscordRoleGroupConnection[server.id.value.toLong()].all ?: emptyList()
+        val roleGroups = DiscordRoleGroupConnection[server.id.value.toLong()].authenticated().all ?: emptyList()
 
         var lastRoles = 0
         while (lastRoles != mutableRoles.size) {
@@ -393,7 +403,7 @@ object RolesService {
     suspend fun removeRoleGroup(member: Member, roleGroupId: Long) {
         var userRoles = member.roleIds.toMutableSet()
 
-        val roleGroups = DiscordRoleGroupConnection[member.guild.id.value.toLong()].all ?: listOf()
+        val roleGroups = DiscordRoleGroupConnection[member.guild.id.value.toLong()].authenticated().all ?: listOf()
 
         var lastRoles = 0
         while (lastRoles != userRoles.size) {

@@ -12,8 +12,6 @@ import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.ContentConnection
 import java.nio.charset.StandardCharsets
-import java.util.*
-import java.util.stream.Collectors
 import kotlin.concurrent.thread
 
 class ExceptionAppender : AppenderBase<ILoggingEvent>() {
@@ -37,8 +35,8 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
         } else {
             embed.title = "Title would be too long, see field"
             embed.field("Title") {
-                ContentConnection.uploadFile(title.toByteArray(StandardCharsets.UTF_8))
-                    ?.let { ContentConnection.getCdnUrl(it).toString() }
+                ContentConnection.authenticated().uploadFile(title.toByteArray(StandardCharsets.UTF_8))
+                    ?.let { ContentConnection.authenticated().getCdnUrl(it).toString() }
                     ?: title
             }
         }
@@ -49,8 +47,8 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
             var description = getExceptionMessage(throwable.throwable)
 
             if (description != null && description.length > 3000) {
-                description = ContentConnection.uploadFile(description.toByteArray(StandardCharsets.UTF_8))
-                    ?.let { ContentConnection.getCdnUrl(it).toString() }
+                description = ContentConnection.authenticated().uploadFile(description.toByteArray(StandardCharsets.UTF_8))
+                    ?.let { ContentConnection.authenticated().getCdnUrl(it).toString() }
                     ?: description
             }
 
@@ -80,29 +78,5 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
             throwable.fillInStackTrace()
         }
         return throwable.stackTraceToString()
-
-        /*val result = StringBuilder()
-            .append("Caused by ")
-            .append(throwable.javaClass.name)
-            .append(": ")
-            .append(throwable.message)
-            .append(System.lineSeparator())
-            .append(getStacktrace(throwable))
-
-        val nextMessage = getExceptionMessage(throwable.cause)
-
-        if (nextMessage != null) {
-            result.append(System.lineSeparator())
-                .append(nextMessage)
-        }
-
-        return result.toString()*/
-    }
-
-    private fun getStacktrace(throwable: Throwable): String {
-        return Arrays.stream(throwable.stackTrace)
-            .map { obj: StackTraceElement -> obj.toString() }
-            .map { s: String -> "> $s" }
-            .collect(Collectors.joining(System.lineSeparator()))
     }
 }

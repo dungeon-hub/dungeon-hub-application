@@ -14,6 +14,7 @@ import net.dungeonhub.application.exceptions.InvalidOptionException
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.AutoCompletionService
+import net.dungeonhub.auth.AuthenticationConnection
 import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.CarryTierConnection
 import net.dungeonhub.connection.CarryTypeConnection
@@ -41,7 +42,7 @@ class CalcPriceCommand : Extension() {
                     var carryTier = channel.asChannelOfOrNull<CategorizableChannel>()
                         ?.categoryId
                         ?.let { id ->
-                            DiscordServerConnection.getCarryTierFromCategory(
+                            DiscordServerConnection.authenticated(AuthenticationConnection).getCarryTierFromCategory(
                                 guild!!.id.value.toLong(),
                                 id.value.toLong()
                             )
@@ -49,10 +50,10 @@ class CalcPriceCommand : Extension() {
 
                     val previousCarryTier = carryTier
 
-                    carryTier = CarryTypeConnection[guild!!.id.value.toLong()]
+                    carryTier = CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
                         .getByIdentifier(arguments.carryType)
                         ?.let { carryType ->
-                            CarryTierConnection[carryType]
+                            CarryTierConnection[carryType].authenticated()
                                 .getByIdentifier(arguments.carryTier)
                                 ?: previousCarryTier
                         }
@@ -64,7 +65,7 @@ class CalcPriceCommand : Extension() {
                         )
                     }
 
-                    val carryDifficulty = CarryDifficultyConnection[carryTier]
+                    val carryDifficulty = CarryDifficultyConnection[carryTier].authenticated()
                         .getByIdentifier(arguments.carryDifficulty)
                         ?: throw InvalidOptionException("carry-difficulty")
 
@@ -75,7 +76,9 @@ class CalcPriceCommand : Extension() {
                         throw CommandExecutionException("Something went wrong.. The calculated price ($price) is negative?")
                     }
 
-                    val priceText = if (price != 0L) "${ApplicationService.makeNumberReadable(price)} (${ApplicationService.makeNumberReadable(pricePerCarry)}) coins" else "Free"
+                    val priceText = if (price != 0L) "${ApplicationService.makeNumberReadable(price)} (${
+                        ApplicationService.makeNumberReadable(pricePerCarry)
+                    }) coins" else "Free"
 
                     val embed = ApplicationService.embed
                     embed.color = EmbedColor.Information.color
@@ -104,7 +107,7 @@ class CalcPriceCommand : Extension() {
         }
     }
 
-    inner class CalcPriceArguments : Arguments() {
+    class CalcPriceArguments : Arguments() {
         val carryType by string {
             name = Translations.CommonArguments.CarryType.name
             description = Translations.CommonArguments.CarryType.description

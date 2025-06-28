@@ -66,19 +66,22 @@ class PurgeCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(arguments.carryType)
                                 ?: throw InvalidOptionException("carry-type", "Carry Type couldn't be found.")
 
-                        val queue = QueueConnection.getCarryQueuesByQueueStep(QueueStep.Approving) ?: setOf()
+                        val queue =
+                            QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Approving) ?: setOf()
 
-                        val purgeType = PurgeTypeConnection[carryType].getByIdentifier(arguments.purgeType)
-                            ?: throw InvalidOptionException("purge-type", "Purge Type couldn't be found.")
+                        val purgeType =
+                            PurgeTypeConnection[carryType].authenticated().getByIdentifier(arguments.purgeType)
+                                ?: throw InvalidOptionException("purge-type", "Purge Type couldn't be found.")
 
                         val rolesToRemove = purgeType.purgeTypeRoleModels.stream()
                             .map { obj: PurgeTypeRoleModel -> obj.discordRoleModel }
                             .toList()
 
-                        val scores = (ScoreConnection[carryType].scores ?: listOf())
+                        val scores = (ScoreConnection[carryType].authenticated().scores ?: listOf())
                             .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
 
                         val safeCarriers = scores.stream()
@@ -123,7 +126,8 @@ class PurgeCommand : Extension() {
                         } else "") +
                                 if (purgedList.length >= 4000) {
                                     (("The list of carriers purged would be too long.\n"
-                                            + ((ContentConnection.uploadFile(purgedList.toByteArray(StandardCharsets.UTF_8))
+                                            + ((ContentConnection.authenticated()
+                                        .uploadFile(purgedList.toByteArray(StandardCharsets.UTF_8))
                                         ?.let { s: String -> "https://cdn.dungeon-hub.net/$s" })
                                         ?: "The full list has been logged, contact administrators for more information.")))
                                 } else {
@@ -150,14 +154,15 @@ class PurgeCommand : Extension() {
 
                 action {
                     respond {
-                        val carryType = CarryTypeConnection[guild!!.id.value.toLong()]
+                        val carryType = CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
                             .getByIdentifier(arguments.carryType)
 
                         if (carryType == null) {
                             throw InvalidOptionException("carry-type", "Carry Type couldn't be found.")
                         }
 
-                        val queue = QueueConnection.getCarryQueuesByQueueStep(QueueStep.Approving) ?: setOf()
+                        val queue =
+                            QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Approving) ?: setOf()
 
                         if (queue.any { queueModel -> queueModel.carryType.id == carryType.id }) {
                             val embed = ApplicationService.embed
@@ -168,14 +173,15 @@ class PurgeCommand : Extension() {
                             return@respond
                         }
 
-                        val purgeType = PurgeTypeConnection[carryType].getByIdentifier(arguments.purgeType)
-                            ?: throw InvalidOptionException("purge-type", "Purge Type couldn't be found.")
+                        val purgeType =
+                            PurgeTypeConnection[carryType].authenticated().getByIdentifier(arguments.purgeType)
+                                ?: throw InvalidOptionException("purge-type", "Purge Type couldn't be found.")
 
                         val rolesToRemove = purgeType.purgeTypeRoleModels.stream()
                             .map { it.discordRoleModel }
                             .toList()
 
-                        val scores = (ScoreConnection[carryType].scores ?: listOf())
+                        val scores = (ScoreConnection[carryType].authenticated().scores ?: listOf())
                             .filter { it.scoreType == ScoreType.Default }
 
                         val safeCarriers = scores.stream()
@@ -227,7 +233,8 @@ class PurgeCommand : Extension() {
 
                         val description = if (purgedList.length >= 4000) {
                             ((("The list of carriers purged would be too long.\n"
-                                    + (((ContentConnection.uploadFile(purgedList.toByteArray(StandardCharsets.UTF_8))
+                                    + (((ContentConnection.authenticated()
+                                .uploadFile(purgedList.toByteArray(StandardCharsets.UTF_8))
                                 ?.let { s: String -> "https://cdn.dungeon-hub.net/$s" }))
                                 ?: "The full list has been logged, contact administrators for more information."))))
                         } else {
@@ -320,7 +327,7 @@ class PurgeCommand : Extension() {
         }
     }
 
-    inner class PurgeArguments : Arguments() {
+    class PurgeArguments : Arguments() {
         val carryType by string {
             name = CommonArguments.CarryType.name
             description = CommonArguments.CarryType.description

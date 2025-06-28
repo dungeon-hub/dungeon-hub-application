@@ -106,16 +106,17 @@ class EmbedCommand : Extension() {
                                     }
                                 })
                         } else {
-                            val embedSource = if(embeds.size == 1) {
+                            val embedSource = if (embeds.size == 1) {
                                 MoshiService.moshi.adapter<EmbedModel>().toJson(embeds[0].toModel())
                             } else {
-                                MoshiService.moshi.adapter<List<EmbedModel>>().toJson( embeds.map { it.toModel() } )
+                                MoshiService.moshi.adapter<List<EmbedModel>>().toJson(embeds.map { it.toModel() })
                             }
 
                             val description =
                                 if (embedSource.length >= 4000 || arguments.type.equals("cdn", ignoreCase = true)) {
-                                    ContentConnection.uploadFile(embedSource.toByteArray(StandardCharsets.UTF_8))
-                                        ?.let { ContentConnection.getCdnUrl(it).toString() }
+                                    ContentConnection.authenticated()
+                                        .uploadFile(embedSource.toByteArray(StandardCharsets.UTF_8))
+                                        ?.let { ContentConnection.authenticated().getCdnUrl(it).toString() }
                                         ?: embedSource
                                 } else {
                                     "```\n$embedSource\n```"
@@ -145,7 +146,7 @@ class EmbedCommand : Extension() {
                         if (source.startsWith(cdnPrefix)) {
                             source = source.substring(cdnPrefix.length)
 
-                            source = ContentConnection.downloadFile(source)
+                            source = ContentConnection.authenticated().downloadFile(source)
                                 ?: throw CommandExecutionException("Couldn't download the file correctly.")
                         }
 
@@ -191,7 +192,7 @@ class EmbedCommand : Extension() {
                                         }
                                     }
                             }
-                        } catch (jsonSyntaxException: JsonSyntaxException) {
+                        } catch (_: JsonSyntaxException) {
                             throw InvalidEmbedJsonWarning()
                         } catch (exception: Exception) {
                             throw CommandExecutionException(exception)
@@ -260,7 +261,7 @@ class EmbedCommand : Extension() {
                                         }
                                     }
                             }
-                        } catch (jsonSyntaxException: JsonSyntaxException) {
+                        } catch (_: JsonSyntaxException) {
                             throw InvalidEmbedJsonWarning()
                         } catch (exception: java.lang.Exception) {
                             throw CommandExecutionException(exception)
@@ -320,7 +321,7 @@ class EmbedCommand : Extension() {
                                     entry.value
                                 )
                             }
-                        } catch (jsonSyntaxException: JsonSyntaxException) {
+                        } catch (_: JsonSyntaxException) {
                             throw InvalidEmbedJsonWarning()
                         } catch (exception: Exception) {
                             throw CommandExecutionException(exception)
@@ -386,7 +387,8 @@ class EmbedCommand : Extension() {
         val type by optionalStringChoice {
             name = "type".toKey()
             description = "Select how you want to get the embed data.".toKey()
-            choices = mutableMapOf("beautiful".toKey() to "beautiful", "source".toKey() to "source", "cdn".toKey() to "cdn")
+            choices =
+                mutableMapOf("beautiful".toKey() to "beautiful", "source".toKey() to "source", "cdn".toKey() to "cdn")
         }
 
         val count by optionalInt {
@@ -404,7 +406,7 @@ class EmbedCommand : Extension() {
         }
     }
 
-    inner class SendArguments : Arguments() {
+    class SendArguments : Arguments() {
         val embed by string {
             name = "embed".toKey()
             description = "The embed data to send.".toKey()

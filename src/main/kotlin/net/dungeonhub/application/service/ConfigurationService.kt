@@ -4,12 +4,12 @@ import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartPriority
 import net.dungeonhub.application.loader.StartupListener
-import net.dungeonhub.connection.DungeonHubConnection.apiUrl
-import net.dungeonhub.connection.DungeonHubConnection.authLoginUrl
-import net.dungeonhub.connection.DungeonHubConnection.cdnUrl
-import net.dungeonhub.connection.DungeonHubConnection.clientId
-import net.dungeonhub.connection.DungeonHubConnection.clientSecret
-import net.dungeonhub.connection.DungeonHubConnection.staticUrl
+import net.dungeonhub.auth.AuthenticationConnection.authLoginUrl
+import net.dungeonhub.auth.AuthenticationConnection.clientId
+import net.dungeonhub.auth.AuthenticationConnection.clientSecret
+import net.dungeonhub.client.DungeonHubClient.Companion.apiUrl
+import net.dungeonhub.client.DungeonHubClient.Companion.cdnUrl
+import net.dungeonhub.client.DungeonHubClient.Companion.staticUrl
 import net.dungeonhub.hypixel.connection.HypixelConnection
 import net.dungeonhub.hypixel.provider.CacheApiClientProvider
 

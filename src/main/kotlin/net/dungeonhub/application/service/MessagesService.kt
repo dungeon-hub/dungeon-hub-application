@@ -28,7 +28,7 @@ object MessagesService : StartupListener {
     private var timer: Timer? = null
 
     fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder? {
-        val carryDifficulties = CarryDifficultyConnection[carryTier].allCarryDifficulties ?: listOf()
+        val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().allCarryDifficulties ?: listOf()
 
         if (carryDifficulties.isEmpty()) {
             return null
@@ -76,7 +76,7 @@ object MessagesService : StartupListener {
 
     suspend fun refreshPriceMessages(serverId: Long) {
         refreshPriceMessages(
-            (DiscordServerConnection.getAllCarryTiers(serverId) ?: listOf()).stream()
+            (DiscordServerConnection.authenticated().getAllCarryTiers(serverId) ?: listOf()).stream()
         )
     }
 
