@@ -44,6 +44,22 @@ class LookupCommand : Extension() {
                 }
             }
 
+              publicSubCommand {
+                name = Lookup.Appeal.name
+                description = Lookup.Appeal.description
+
+                action {
+                    respond {
+                        addEmbed {
+                            color(EmbedColor.Information)
+                            title = "Test Title"
+                            description = "Test Embed"
+                        }
+                    }
+                }
+            }
+
+
             publicSubCommand(::LookupUserArguments) {
                 name = Lookup.User.name
                 description = Lookup.User.description
