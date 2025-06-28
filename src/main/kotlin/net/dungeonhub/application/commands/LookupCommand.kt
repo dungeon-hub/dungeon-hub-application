@@ -44,7 +44,7 @@ class LookupCommand : Extension() {
                 }
             }
 
-              publicSubCommand {
+            publicSubCommand {
                 name = Lookup.Appeal.name
                 description = Lookup.Appeal.description
 
@@ -59,7 +59,6 @@ class LookupCommand : Extension() {
                 }
             }
 
-
             publicSubCommand(::LookupUserArguments) {
                 name = Lookup.User.name
                 description = Lookup.User.description
@@ -72,6 +71,7 @@ class LookupCommand : Extension() {
             }
         }
 
+
         publicUserCommand {
             name = Translations.UserCommand.Lookup.name
 
@@ -82,6 +82,7 @@ class LookupCommand : Extension() {
             }
         }
     }
+
 
     private fun respondToLookup(target: UserBehavior?, ign: String?): suspend FollowupMessageCreateBuilder.() -> Unit =
         respond@{
@@ -155,6 +156,7 @@ class LookupCommand : Extension() {
             description = "The discord user to lookup.".toKey()
         }
     }
+
 
     inner class LookupPlayerArguments : Arguments() {
         val ign by string {
