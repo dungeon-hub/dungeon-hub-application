@@ -51,9 +51,9 @@ class LookupCommand : Extension() {
                 action {
                     respond {
                         addEmbed {
-                            color(EmbedColor.Information)
-                            title = "Test Title"
-                            description = "Test Embed"
+                            color(EmbedColor.Default)
+                            title = "Account Review Request"
+                            description = "Please appeal at https://forms.gle/U6reUwtQSwSTvJB47\nPlease make sure your screenshots **are not cropped**!"
                         }
                     }
                 }
