@@ -11,7 +11,7 @@ plugins {
     id("dev.kordex.gradle.kordex") version "1.7.1"
 }
 
-group = "me.taubsie"
+group = "net.dungeon-hub"
 version = "1.0.0"
 description = "dungeon-hub-application"
 
@@ -32,7 +32,7 @@ kordEx {
         // See https://docs.kordex.dev/data-collection.html
         dataCollection(DataCollection.Extra)
 
-        mainClass = "me.taubsie.dungeonhub.application.connection.DiscordConnection"
+        mainClass = "net.dungeonhub.application.connection.DiscordConnection"
     }
 
     i18n {
@@ -66,18 +66,18 @@ dependencies {
     implementation("net.codebox:homoglyph:1.2.1")
     implementation("com.google.zxing:javase:3.5.2")
     implementation("com.google.guava:guava:33.0.0-jre")
-    implementation("org.mnode.ical4j:ical4j:4.0.5")
+    implementation("org.mnode.ical4j:ical4j:4.1.1")
 
     //HTTP Client
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
+    implementation("io.ktor:ktor-client-java:3.0.0")
 
     //Logging
-    implementation("org.apache.logging.log4j:log4j-core:2.20.0")
-    implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.20.0")
+    implementation("ch.qos.logback:logback-core:1.5.6")
+    implementation("ch.qos.logback:logback-classic:1.5.6")
 
     //Annotations
     annotationProcessor("org.projectlombok:lombok:1.18.28")
-    annotationProcessor("org.apache.logging.log4j:log4j-core:2.20.0")
 
     //Testing
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
