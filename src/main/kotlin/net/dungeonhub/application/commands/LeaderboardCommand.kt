@@ -43,17 +43,18 @@ class LeaderboardCommand : Extension() {
 
             action {
                 val carryType: CarryTypeModel? =
-                    CarryTypeConnection[guild?.id?.value!!.toLong()].getByIdentifier(arguments.carryType)
+                    CarryTypeConnection[guild?.id?.value!!.toLong()].authenticated()
+                        .getByIdentifier(arguments.carryType)
 
                 val scoreType: ScoreType = arguments.scoreType ?: ScoreType.Default
 
                 val leaderboardTitle = scoreType.getLeaderboardTitle(carryType, event.getLocale())
 
                 val firstPage = if (carryType != null) {
-                    ScoreConnection[carryType]
+                    ScoreConnection[carryType].authenticated()
                         .loadLeaderboard(scoreType, 0, user.id.value.toLong())
                 } else {
-                    DiscordServerConnection
+                    DiscordServerConnection.authenticated()
                         .loadTotalLeaderboard(guild?.id?.value!!.toLong(), scoreType, 0, user.id.value.toLong())
                 }
 
@@ -69,9 +70,10 @@ class LeaderboardCommand : Extension() {
 
                     for (i in 0..<firstPage.totalPages) {
                         val leaderboardModel = if (carryType != null) {
-                            ScoreConnection[carryType].loadLeaderboard(scoreType, i, user.id.value.toLong())
+                            ScoreConnection[carryType].authenticated()
+                                .loadLeaderboard(scoreType, i, user.id.value.toLong())
                         } else {
-                            DiscordServerConnection.loadTotalLeaderboard(
+                            DiscordServerConnection.authenticated().loadTotalLeaderboard(
                                 guild?.id?.value!!.toLong(),
                                 scoreType,
                                 i,
@@ -138,7 +140,7 @@ class LeaderboardCommand : Extension() {
         }
     }
 
-    inner class LeaderboardArguments : Arguments() {
+    class LeaderboardArguments : Arguments() {
         val carryType by optionalString {
             name = CommonArguments.CarryType.name
             description = CommonArguments.CarryType.description

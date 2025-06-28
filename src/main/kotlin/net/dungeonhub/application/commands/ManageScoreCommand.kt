@@ -82,10 +82,11 @@ class ManageScoreCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(arguments.carryType)
                                 ?: throw InvalidOptionException("carry-type")
 
-                        val resetModel = ScoreConnection[carryType].resetScore(arguments.resetType)
+                        val resetModel = ScoreConnection[carryType].authenticated().resetScore(arguments.resetType)
                             ?: throw CommandExecutionException("Error while getting a response when resetting score.")
 
                         val embed = ApplicationService.embed
@@ -120,12 +121,13 @@ class ManageScoreCommand : Extension() {
             throw MissingPermissionException()
         }
 
-        val carryType = CarryTypeConnection[guild.id.value.toLong()].getByIdentifier(arguments.carryType)
-            ?: throw InvalidOptionException("carry-type")
+        val carryType =
+            CarryTypeConnection[guild.id.value.toLong()].authenticated().getByIdentifier(arguments.carryType)
+                ?: throw InvalidOptionException("carry-type")
 
         val score = if (remove) -arguments.amount else arguments.amount
 
-        val updatedScores = ScoreConnection[carryType]
+        val updatedScores = ScoreConnection[carryType].authenticated()
             .updateScores(ScoreUpdateModel(arguments.user.id.value.toLong(), score)) ?: listOf()
 
         val updatedScore = updatedScores.stream()
@@ -163,7 +165,7 @@ class ManageScoreCommand : Extension() {
         embeds = mutableListOf(embed)
     }
 
-    inner class ManageScoreArguments : Arguments() {
+    class ManageScoreArguments : Arguments() {
         val user by user {
             name = "user".toKey()
             description = "The user to manage score.".toKey()
@@ -184,7 +186,7 @@ class ManageScoreCommand : Extension() {
         }
     }
 
-    inner class ResetScoreArguments : Arguments() {
+    class ResetScoreArguments : Arguments() {
         val carryType by string {
             name = "carry-type".toKey()
             description = "The identifier of the carry type".toKey()

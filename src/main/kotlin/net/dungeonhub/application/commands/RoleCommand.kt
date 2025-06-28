@@ -96,7 +96,7 @@ class RoleCommand : Extension() {
 
                     action {
                         respond {
-                            val currentRole = DiscordRoleConnection[guild!!.id.value.toLong()]
+                            val currentRole = DiscordRoleConnection[guild!!.id.value.toLong()].authenticated()
                                 .getById(arguments.role.id.value.toLong())
 
                             if (arguments.nameSchema == null && arguments.roleAction == null) {
@@ -114,7 +114,7 @@ class RoleCommand : Extension() {
                             }
 
                             val modifiedRole = if (currentRole != null) {
-                                DiscordRoleConnection[guild!!.id.value.toLong()]
+                                DiscordRoleConnection[guild!!.id.value.toLong()].authenticated()
                                     .updateRole(
                                         arguments.role.id.value.toLong(),
                                         DiscordRoleUpdateModel(
@@ -123,7 +123,7 @@ class RoleCommand : Extension() {
                                         )
                                     )
                             } else {
-                                DiscordRoleConnection[guild!!.id.value.toLong()]
+                                DiscordRoleConnection[guild!!.id.value.toLong()].authenticated()
                                     .addNewRole(
                                         DiscordRoleCreationModel(
                                             arguments.role.id.value.toLong(),
@@ -160,7 +160,7 @@ class RoleCommand : Extension() {
 
                     action {
                         respond {
-                            val currentRole = DiscordRoleConnection[guild!!.id.value.toLong()]
+                            val currentRole = DiscordRoleConnection[guild!!.id.value.toLong()].authenticated()
                                 .getById(arguments.role.id.value.toLong())
 
                             if (!arguments.resetNameSchema) {
@@ -179,10 +179,10 @@ class RoleCommand : Extension() {
                                     updateModel.nameSchema = null
                                 }
 
-                                DiscordRoleConnection[guild!!.id.value.toLong()]
+                                DiscordRoleConnection[guild!!.id.value.toLong()].authenticated()
                                     .updateRole(arguments.role.id.value.toLong(), updateModel)
                             } else {
-                                DiscordRoleConnection[guild!!.id.value.toLong()].addNewRole(
+                                DiscordRoleConnection[guild!!.id.value.toLong()].authenticated().addNewRole(
                                     DiscordRoleCreationModel(
                                         arguments.role.id.value.toLong()
                                     )
@@ -219,8 +219,9 @@ class RoleCommand : Extension() {
                     }
 
                     action {
-                        val roleRequirements = RoleRequirementConnection[guild!!.id.value.toLong()].allRoleRequirements
-                            ?.filter { it.discordRole.id == arguments.role.id.value.toLong() } ?: listOf()
+                        val roleRequirements =
+                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().allRoleRequirements
+                                ?.filter { it.discordRole.id == arguments.role.id.value.toLong() } ?: listOf()
 
                         if (roleRequirements.isEmpty()) {
                             respond {
@@ -253,8 +254,9 @@ class RoleCommand : Extension() {
                     }
 
                     action {
-                        val roleRequirements = RoleRequirementConnection[guild!!.id.value.toLong()].allRoleRequirements
-                            ?: listOf()
+                        val roleRequirements =
+                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().allRoleRequirements
+                                ?: listOf()
 
                         if (roleRequirements.isEmpty()) {
                             respond {
@@ -296,7 +298,8 @@ class RoleCommand : Extension() {
                         )
 
                         val createdRoleRequirement =
-                            RoleRequirementConnection[guild!!.id.value.toLong()].addNewRoleRequirement(creationModel)
+                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated()
+                                .addNewRoleRequirement(creationModel)
                                 ?: throw CommandExecutionException("Couldn't add the role requirement.")
 
                         respond {
@@ -316,11 +319,13 @@ class RoleCommand : Extension() {
                     }
 
                     action {
-                        val roleRequirement = RoleRequirementConnection[guild!!.id.value.toLong()].getById(arguments.id)
-                            ?: throw CommandExecutionWarning("That role requirement wasn't found!")
+                        val roleRequirement =
+                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().getById(arguments.id)
+                                ?: throw CommandExecutionWarning("That role requirement wasn't found!")
 
                         val deletedRoleRequirement =
-                            RoleRequirementConnection[guild!!.id.value.toLong()].deleteRoleRequirement(roleRequirement)
+                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated()
+                                .deleteRoleRequirement(roleRequirement)
                                 ?: throw CommandExecutionException("Role requirement couldn't be deleted.")
 
                         respond {
@@ -432,7 +437,7 @@ class RoleCommand : Extension() {
         return embed
     }
 
-    inner class RoleArguments : Arguments() {
+    class RoleArguments : Arguments() {
         val user by user {
             name = "user".toKey()
             description = "Select which user to modify the role of.".toKey()
@@ -444,7 +449,7 @@ class RoleCommand : Extension() {
         }
     }
 
-    inner class RoleGroupRemoveArguments : Arguments() {
+    class RoleGroupRemoveArguments : Arguments() {
         val target by user {
             name = "user".toKey()
             description = "Select which user to remove the role group of.".toKey()
@@ -456,7 +461,7 @@ class RoleCommand : Extension() {
         }
     }
 
-    inner class RoleConfigSetArguments : Arguments() {
+    class RoleConfigSetArguments : Arguments() {
         val role by role {
             name = "role".toKey()
             description = "Select which role you want to configure.".toKey()
@@ -474,7 +479,7 @@ class RoleCommand : Extension() {
         }
     }
 
-    inner class RoleConfigResetArguments : Arguments() {
+    class RoleConfigResetArguments : Arguments() {
         val role by role {
             name = "role".toKey()
             description = "Select which role you want to configure.".toKey()
@@ -486,14 +491,14 @@ class RoleCommand : Extension() {
         }
     }
 
-    inner class RoleRequirementsGetArguments : Arguments() {
+    class RoleRequirementsGetArguments : Arguments() {
         val role by role {
             name = "role".toKey()
             description = "Select which role you want to get the role requirements for.".toKey()
         }
     }
 
-    inner class RoleRequirementsAddArguments : Arguments() {
+    class RoleRequirementsAddArguments : Arguments() {
         val role by role {
             name = "role".toKey()
             description = "Select which role you want to add a requirement for.".toKey()
@@ -522,7 +527,7 @@ class RoleCommand : Extension() {
         }
     }
 
-    inner class RoleRequirementsDeleteArguments : Arguments() {
+    class RoleRequirementsDeleteArguments : Arguments() {
         val id by long {
             name = "id".toKey()
             description = "The id of the role requirement.".toKey()

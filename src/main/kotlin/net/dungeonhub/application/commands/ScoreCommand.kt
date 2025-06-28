@@ -36,7 +36,7 @@ class ScoreCommand : Extension() {
         }
     }
 
-    inner class ScoreArguments : Arguments() {
+    class ScoreArguments : Arguments() {
         val user by optionalUser {
             name = Score.Arguments.User.name
             description = Score.Arguments.User.description
@@ -45,13 +45,13 @@ class ScoreCommand : Extension() {
 
     companion object {
         suspend fun generateScoreEmbeds(userToCheck: User, issuer: User, guild: GuildBehavior, locale: Locale): MutableList<EmbedBuilder> {
-            val scores = DiscordServerConnection.getScores(
+            val scores = DiscordServerConnection.authenticated().getScores(
                 DiscordServerModel(guild.id.value.toLong()),
                 userToCheck.id.value.toLong()
             ) ?: listOf()
 
             val carryCount =
-                DiscordUserConnection.getCarryCount(userToCheck.id.value.toLong(), guild.id.value.toLong())
+                DiscordUserConnection.authenticated().getCarryCount(userToCheck.id.value.toLong(), guild.id.value.toLong())
 
             return mutableListOf(
                 ApplicationService.getScoreCountMessage(

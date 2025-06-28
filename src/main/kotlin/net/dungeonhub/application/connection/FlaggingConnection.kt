@@ -8,6 +8,7 @@ import net.dungeonhub.application.enums.FlaggingApi.HypixelSafetyDataContainer.H
 import net.dungeonhub.application.misc.FlagDetail
 import net.dungeonhub.application.misc.FlagDetail.FlagDetailBuilder.builder
 import net.dungeonhub.application.misc.FlagResponse
+import net.dungeonhub.client.DungeonHubClient
 import net.dungeonhub.service.MoshiService.moshi
 import net.dungeonhub.structure.ExternalConnection
 import okhttp3.HttpUrl
@@ -22,6 +23,7 @@ import java.util.*
 @OptIn(ExperimentalStdlibApi::class)
 object FlaggingConnection : ExternalConnection {
     override val logger: Logger = LoggerFactory.getLogger(FlaggingConnection::class.java)
+    override val client = DungeonHubClient()
 
     private var lastBlockGameRefresh: Instant? = null
     private var blockGameData: List<FlaggingApi.BlockGameData>? = null
@@ -160,7 +162,7 @@ object FlaggingConnection : ExternalConnection {
             builder.reason(detail.reason)
             if (detail.evidence != null) {
                 val evidences: MutableList<String> = ArrayList()
-                detail.evidence!!.forEach {
+                detail.evidence.forEach {
                     evidences.add(it)
                 }
 
@@ -169,9 +171,9 @@ object FlaggingConnection : ExternalConnection {
 
             if (detail.moderator != null) {
                 try {
-                    builder.staff(detail.moderator!!.toLong())
-                } catch (ignored: NumberFormatException) {
-                    //ignored since this basically only applies if the id isn't a number, meaning this shouldn't be set
+                    builder.staff(detail.moderator.toLong())
+                } catch (_: NumberFormatException) {
+                    // ignored since this basically only applies if the id isn't a number, meaning this shouldn't be set
                 }
             }
         }
@@ -226,8 +228,8 @@ object FlaggingConnection : ExternalConnection {
             if (detailObject.staff != null) {
                 try {
                     builder.staff(detailObject.staff.toLong())
-                } catch (ignored: NumberFormatException) {
-                    //ignored since this basically only applies if the id is redacted, meaning this shouldn't be set
+                } catch (_: NumberFormatException) {
+                    // ignored since this basically only applies if the id is redacted, meaning this shouldn't be set
                 }
             }
 

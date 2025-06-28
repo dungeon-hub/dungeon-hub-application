@@ -85,17 +85,17 @@ object ServerStatsService : StartupListener {
     }
 
     private suspend fun updateStatChannels(guild: Guild, channels: List<Pair<Long, String>>) {
-        val linkedUsers = DiscordUserConnection.countLinkedUsers() ?: 0
+        val linkedUsers = DiscordUserConnection.authenticated().countLinkedUsers() ?: 0
         val spentMoney = try {
             ApplicationService.makeNumberReadable(
-                DiscordServerConnection.getTotalAmountOfMoneySpent(guild.id.value.toLong())
+                DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(guild.id.value.toLong())
                     ?: throw CommandExecutionException("Couldn't load the total amount of money spent."),
                 3
             )
-        } catch (ex: Exception) {
+        } catch (_: Exception) {
             0
         }
-        val monthlyCarries = DiscordServerConnection.getCarryAmount(
+        val monthlyCarries = DiscordServerConnection.authenticated().getCarryAmount(
             guild.id.value.toLong(),
             ZonedDateTime.now().minusDays(30).toInstant()
         ) ?: 0

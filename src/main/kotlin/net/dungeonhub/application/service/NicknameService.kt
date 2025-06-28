@@ -70,10 +70,10 @@ object NicknameService {
             )
         }
 
-        DiscordUserConnection.findUserByUuid(uuid)?.let {
+        DiscordUserConnection.authenticated().findUserByUuid(uuid)?.let {
             val updateModel = it.getUpdateModel()
             updateModel.minecraftId = null
-            DiscordUserConnection.updateUser(it.id, updateModel)
+            DiscordUserConnection.authenticated().updateUser(it.id, updateModel)
 
             thread(true) {
                 runBlocking {
@@ -86,7 +86,7 @@ object NicknameService {
 
         val updateModel = DiscordUserUpdateModel(uuid)
 
-        val userModel = DiscordUserConnection.updateUser(user.id.value.toLong(), updateModel)
+        val userModel = DiscordUserConnection.authenticated().updateUser(user.id.value.toLong(), updateModel)
             ?: throw CommandExecutionException("Couldn't update your user data.")
 
         return userModel.minecraftId!!
@@ -126,8 +126,7 @@ object NicknameService {
      */
     @Throws(NoNameSchemaWarning::class, NotLinkedException::class)
     suspend fun updateNickname(member: Member, serverRoles: List<Role>?, cacheExpiration: Int = 60 * 3) {
-        val discordUserModel = DiscordUserConnection.getById(member.id.value.toLong())
-            ?: DiscordUserConnection.updateUser(member.id.value.toLong(), DiscordUserUpdateModel(null)) //TODO use the method "getByIdOrAdd" from DiscordUserConnection directly
+        val discordUserModel = DiscordUserConnection.authenticated().getByIdOrCreate(member.id.value.toLong())
             ?: throw CommandExecutionWarning("Couldn't get that users data!")
 
         updateNickname(member, discordUserModel, serverRoles, cacheExpiration)
@@ -257,7 +256,7 @@ object NicknameService {
      */
     @Contract(pure = true)
     private fun getRoleModels(guild: GuildBehavior): Map<Long, DiscordRoleModel> {
-        return (DiscordRoleConnection[guild.id.value.toLong()].allRoles ?: emptyList())
+        return (DiscordRoleConnection[guild.id.value.toLong()].authenticated().allRoles ?: emptyList())
             .stream().collect(toMap())
     }
 
@@ -281,7 +280,7 @@ object NicknameService {
 
 //TODO move to connection?
 fun User.getUUIDOrNull(): UUID? {
-    return DiscordUserConnection.getById(id.value.toLong())?.minecraftId
+    return DiscordUserConnection.authenticated().getById(id.value.toLong())?.minecraftId
 }
 
 @Throws(NotLinkedException::class)

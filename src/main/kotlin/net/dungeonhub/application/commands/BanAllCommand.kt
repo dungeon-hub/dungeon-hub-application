@@ -16,6 +16,7 @@ import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.i18n.Translations
 
+//TODO delete this; move into /warn punish ?
 /**
  * Command to ban all users in a comma-separated list.
  * @see net.dungeonhub.application.service.ProfileModerationService
@@ -48,7 +49,7 @@ class BanAllCommand : Extension() {
                     for (userId in users) {
                         val user = try {
                             user.kord.getUser(Snowflake(userId.trim()), EntitySupplyStrategy.cachingRest)
-                        } catch (exception: Exception) {
+                        } catch (_: Exception) {
                             null
                         }
 
@@ -77,7 +78,7 @@ class BanAllCommand : Extension() {
         }
     }
 
-    inner class BanAllArguments : Arguments() {
+    class BanAllArguments : Arguments() {
         val users by string {
             name = Translations.Command.BanAll.Arguments.Users.name
             description = Translations.Command.BanAll.Arguments.Users.description

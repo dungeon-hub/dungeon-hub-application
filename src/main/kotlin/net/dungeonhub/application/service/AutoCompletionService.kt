@@ -13,7 +13,7 @@ import net.dungeonhub.connection.*
 object AutoCompletionService {
     val carryType: AutoCompleteCallback = { event ->
         suggest(
-            (CarryTypeConnection[event.getGuildId()]
+            (CarryTypeConnection[event.getGuildId()].authenticated()
                 .allCarryTypes
                 ?: listOf())
                 .filter { carryType ->
@@ -40,10 +40,10 @@ object AutoCompletionService {
 
         if (carryType != null) {
             suggest(
-                (CarryTypeConnection[event.getGuildId()]
+                (CarryTypeConnection[event.getGuildId()].authenticated()
                     .getByIdentifier(carryType)
                     ?.let { carryTypeModel ->
-                        CarryTierConnection[carryTypeModel].allCarryTiers
+                        CarryTierConnection[carryTypeModel].authenticated().allCarryTiers
                     } ?: listOf())
                     .filter { carryTier ->
                         focusedOption.value.isEmpty()
@@ -76,15 +76,15 @@ object AutoCompletionService {
 
         if (carryTier != null) {
             val carryTierModel =
-                CarryTypeConnection[event.getGuildId()]
+                CarryTypeConnection[event.getGuildId()].authenticated()
                     .getByIdentifier(carryType)
                     ?.let { carryTypeModel ->
-                        CarryTierConnection[carryTypeModel].getByIdentifier(carryTier)
+                        CarryTierConnection[carryTypeModel].authenticated().getByIdentifier(carryTier)
                     }
 
             if (carryTierModel != null) {
                 suggest(
-                    (CarryDifficultyConnection[carryTierModel]
+                    (CarryDifficultyConnection[carryTierModel].authenticated()
                         .allCarryDifficulties ?: listOf())
                         .filter { carryDifficulty ->
                             focusedOption.value.isEmpty()
@@ -104,12 +104,12 @@ object AutoCompletionService {
             val categoryId = event.interaction.channel.asChannelOfOrNull<CategorizableChannel>()?.categoryId
 
             val carryTierByCategory = categoryId?.let { category ->
-                DiscordServerConnection.getCarryTierFromCategory(event.getGuildId(), category.value.toLong())
+                DiscordServerConnection.authenticated().getCarryTierFromCategory(event.getGuildId(), category.value.toLong())
             }
 
             if (carryTierByCategory != null) {
                 suggest(
-                    (CarryDifficultyConnection[carryTierByCategory]
+                    (CarryDifficultyConnection[carryTierByCategory].authenticated()
                         .allCarryDifficulties ?: listOf())
                         .filter { carryDifficulty ->
                             focusedOption.value.isEmpty()
@@ -139,10 +139,10 @@ object AutoCompletionService {
 
         if (carryType != null) {
             suggest(
-                (CarryTypeConnection[event.getGuildId()]
+                (CarryTypeConnection[event.getGuildId()].authenticated()
                     .getByIdentifier(carryType)
                     ?.let { carryTypeModel ->
-                        PurgeTypeConnection[carryTypeModel].allPurgeTypes
+                        PurgeTypeConnection[carryTypeModel].authenticated().allPurgeTypes
                     } ?: listOf())
                     .filter { purgeType ->
                         focusedOption.value.isEmpty()
@@ -162,7 +162,7 @@ object AutoCompletionService {
         listOf<Choice>()
     }
 
-    val knownStaticResource: AutoCompleteCallback = { event ->
+    val knownStaticResource: AutoCompleteCallback = { _ ->
         suggest(
             KnownStaticResource.entries.filter { staticResource ->
                 focusedOption.value.isEmpty()

@@ -17,8 +17,8 @@ import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.AutoCompletionService
+import net.dungeonhub.client.DungeonHubClient
 import net.dungeonhub.connection.ContentConnection
-import net.dungeonhub.connection.DungeonHubConnection
 import net.dungeonhub.i18n.Translations.Command.Cdn
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
@@ -64,19 +64,18 @@ class CdnCommand : Extension() {
                     respond {
                         val attachmentRequest = Request.Builder().url(arguments.attachment.url.toHttpUrl()).build()
 
-                        val attachmentData: ByteArray =
-                            DungeonHubConnection.executeRawRequest(attachmentRequest)?.result
-                                ?: throw CommandExecutionException("Couldn't read file data.")
+                        val attachmentData: ByteArray = DungeonHubClient().executeRawRequest(attachmentRequest)?.result
+                            ?: throw CommandExecutionException("Couldn't read file data.")
 
                         val fileUrl = if (arguments.name != null) {
-                            ContentConnection.uploadFile(attachmentData, arguments.name!!)
+                            ContentConnection.authenticated().uploadFile(attachmentData, arguments.name!!)
                         } else {
-                            ContentConnection.uploadFile(attachmentData)
+                            ContentConnection.authenticated().uploadFile(attachmentData)
                         }
 
                         val embedBuilder: EmbedBuilder
                         if (fileUrl != null) {
-                            val url = ContentConnection.getCdnUrl(fileUrl).toString()
+                            val url = ContentConnection.authenticated().getCdnUrl(fileUrl).toString()
 
                             embedBuilder = ApplicationService.embed
                             embedBuilder.title = Cdn.Add.Response.title.translateLocale(event.getLocale())
@@ -110,7 +109,7 @@ class CdnCommand : Extension() {
 
                 action {
                     respond {
-                        val url = ContentConnection.getStaticUrl(arguments.resource.path).toString()
+                        val url = ContentConnection.authenticated().getStaticUrl(arguments.resource.path).toString()
 
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.Positive.color
@@ -143,7 +142,7 @@ class CdnCommand : Extension() {
         }
     }
 
-    inner class AddArguments : Arguments() {
+    class AddArguments : Arguments() {
         val attachment by attachment {
             name = Cdn.Add.Arguments.File.name
             description = Cdn.Add.Arguments.File.description
@@ -155,7 +154,7 @@ class CdnCommand : Extension() {
         }
     }
 
-    inner class StaticArguments : Arguments() {
+    class StaticArguments : Arguments() {
         val resource by enum<KnownStaticResource> {
             name = Cdn.Static.Arguments.File.name
             description = Cdn.Static.Arguments.File.description

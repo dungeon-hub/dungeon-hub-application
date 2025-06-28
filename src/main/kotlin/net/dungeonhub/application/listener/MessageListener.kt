@@ -43,7 +43,11 @@ import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.LeaderboardService
 import net.dungeonhub.application.service.color
-import net.dungeonhub.connection.*
+import net.dungeonhub.client.DungeonHubClient
+import net.dungeonhub.connection.ContentConnection
+import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.connection.QueueConnection
+import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.QueueStep
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.model.carry_queue.CarryQueueModel
@@ -130,7 +134,7 @@ class MessageListener : Extension() {
 
             val attachmentRequest = Request.Builder().url(attachment.url.toHttpUrl()).build()
 
-            val attachmentData: ByteArray = DungeonHubConnection.executeRawRequest(attachmentRequest)?.result
+            val attachmentData: ByteArray = DungeonHubClient().executeRawRequest(attachmentRequest)?.result
                 ?: throw CommandExecutionException("Couldn't read file data.")
 
             val content = String(attachmentData, StandardCharsets.UTF_8)
@@ -159,13 +163,13 @@ class MessageListener : Extension() {
                     runBlocking { DiscordConnection.bot?.kordRef?.getChannelOf<TextChannel>(Snowflake(s)) }
                 }
 
-            for (queueModel in (QueueConnection.getCarryQueuesByQueueStep(QueueStep.Transcript) ?: HashSet())
+            for (queueModel in (QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Transcript) ?: HashSet())
                 .filter { carryQueueModel: CarryQueueModel ->
                     channelId.map { aLong: Long -> aLong == carryQueueModel.relationId }
                         .orElse(false)
                 }) {
                 if (attachmentLink == null) {
-                    val attachmentUrl = ContentConnection.uploadFile(attachmentData, "{uuid}.html")
+                    val attachmentUrl = ContentConnection.authenticated().uploadFile(attachmentData, "{uuid}.html")
 
                     if (attachmentUrl == null) {
                         logger.error(
@@ -175,7 +179,7 @@ class MessageListener : Extension() {
                         return
                     }
 
-                    attachmentLink = ContentConnection.getCdnUrl(attachmentUrl).toString()
+                    attachmentLink = ContentConnection.authenticated().getCdnUrl(attachmentUrl).toString()
 
                     thread(start = true) {
                         runBlocking {
@@ -189,7 +193,7 @@ class MessageListener : Extension() {
                 val firstUpdateModel = queueModel.getUpdateModel()
                 firstUpdateModel.attachmentLink = attachmentLink
 
-                val updatedModel = QueueConnection.updateQueue(queueModel.id, firstUpdateModel) ?: queueModel
+                val updatedModel = QueueConnection.authenticated().updateQueue(queueModel.id, firstUpdateModel) ?: queueModel
 
                 if ((updatedModel.amount >= APPROVE_AMOUNT_THRESHOLD
                             || updatedModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
@@ -237,14 +241,14 @@ class MessageListener : Extension() {
                         secondUpdateModel.queueStep = QueueStep.Approving
                         secondUpdateModel.relationId = createdMessage.id.value.toLong()
 
-                        QueueConnection.updateQueue(updatedModel.id, secondUpdateModel)
+                        QueueConnection.authenticated().updateQueue(updatedModel.id, secondUpdateModel)
                     }
                 } else {
-                    val updatedScore = QueueConnection.logQueue(updatedModel.id, firstUpdateModel)
+                    val updatedScore = QueueConnection.authenticated().logQueue(updatedModel.id, firstUpdateModel)
                         ?.scoreModels
                         ?.firstOrNull { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
                         ?.scoreAmount
-                        ?: (ScoreConnection[updatedModel.carryType].getScore(updatedModel.carrier.id)?.scoreAmount ?: 0)
+                        ?: (ScoreConnection[updatedModel.carryType].authenticated().getScore(updatedModel.carrier.id)?.scoreAmount ?: 0)
 
                     runBlocking {
                         val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(updatedModel.carrier.id))
@@ -298,7 +302,7 @@ class MessageListener : Extension() {
                                 }
                             }
 
-                            QueueConnection.deleteQueue(updatedModel.id)
+                            QueueConnection.authenticated().deleteQueue(updatedModel.id)
                         }
                     }
                 }
@@ -402,7 +406,7 @@ class MessageListener : Extension() {
 
         val user = firstMessage.mentionedUsers.first()
 
-        val ign = DiscordUserConnection.getLinkedById(user.id.value.toLong())
+        val ign = DiscordUserConnection.authenticated().getLinkedById(user.id.value.toLong())
             ?.minecraftId
             ?.let { MojangConnection.getNameByUUID(it) }
             ?: return

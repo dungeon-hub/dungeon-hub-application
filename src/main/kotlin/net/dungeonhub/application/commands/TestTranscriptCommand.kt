@@ -47,7 +47,7 @@ class TestTranscriptCommand : Extension() {
                     try {
                         val transcript = transcriptChannel.createTranscript()
 
-                        val url = ContentConnection.uploadFile(transcript.toByteArray(StandardCharsets.UTF_8))
+                        val url = ContentConnection.authenticated().uploadFile(transcript.toByteArray(StandardCharsets.UTF_8))
 
                         if (!url.isNullOrBlank()) {
                             val embed = ApplicationService.embed

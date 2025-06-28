@@ -56,7 +56,8 @@ class CarryTierCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(arguments.carryType)
                                 ?: throw InvalidOptionException("carry-type", "Carry Type couldn't be found.")
 
                         val identifier: String = arguments.identifier
@@ -64,14 +65,15 @@ class CarryTierCommand : Extension() {
                             .lowercase(Locale.getDefault())
                             .replace(" ", "_")
 
-                        if (CarryTierConnection[carryType].getByIdentifier(identifier) != null) {
+                        if (CarryTierConnection[carryType].authenticated().getByIdentifier(identifier) != null) {
                             throw InvalidOptionException("identifier", "That carry tier already exists!")
                         }
 
-                        if (arguments.category != null && DiscordServerConnection.getCarryTierFromCategory(
-                                guild!!.id.value.toLong(),
-                                arguments.category!!.id.value.toLong()
-                            ) != null
+                        if (arguments.category != null && DiscordServerConnection.authenticated()
+                                .getCarryTierFromCategory(
+                                    guild!!.id.value.toLong(),
+                                    arguments.category!!.id.value.toLong()
+                                ) != null
                         ) {
                             throw InvalidOptionException(
                                 "category",
@@ -90,7 +92,7 @@ class CarryTierCommand : Extension() {
                             priceDescription = arguments.priceDescription
                         )
 
-                        val carryTier = CarryTierConnection[carryType].createCarryTier(creationModel)
+                        val carryTier = CarryTierConnection[carryType].authenticated().createCarryTier(creationModel)
                             ?: throw CommandExecutionWarning("Couldn't add that carry tier.")
 
                         val embed = ApplicationService.getCarryTierEmbed(carryTier)
@@ -107,18 +109,21 @@ class CarryTierCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
-                            ?: throw InvalidOptionException("carry-tier")
+                        val carryTier =
+                            CarryTierConnection[carryType].authenticated().getByIdentifier(arguments.carryTier)
+                                ?: throw InvalidOptionException("carry-tier")
 
                         if (carryTier.carryType != carryType) {
                             throw CommandExecutionWarning("Well this is weird.. Something doesn't really add up!")
                         }
 
-                        val deletedCarryTier = CarryTierConnection[carryType].deleteCarryTier(carryTier.id)
-                            ?: throw CommandExecutionWarning("Couldn't delete the carry tier.")
+                        val deletedCarryTier =
+                            CarryTierConnection[carryType].authenticated().deleteCarryTier(carryTier.id)
+                                ?: throw CommandExecutionWarning("Couldn't delete the carry tier.")
 
                         val embed = ApplicationService.getCarryTierEmbed(deletedCarryTier)
                         embed.title = CarryTier.Delete.Response.title.translateLocale(event.getLocale())
@@ -134,11 +139,13 @@ class CarryTierCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("Carry type not found.")
 
-                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
-                            ?: throw InvalidOptionException("carry-tier", "That carry tier doesn't exist!")
+                        val carryTier =
+                            CarryTierConnection[carryType].authenticated().getByIdentifier(arguments.carryTier)
+                                ?: throw InvalidOptionException("carry-tier", "That carry tier doesn't exist!")
 
                         val embed = ApplicationService.getCarryTierEmbed(carryTier)
                         embeds = mutableListOf(embed)
@@ -153,18 +160,20 @@ class CarryTierCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
-                            ?: throw InvalidOptionException("carry-tier", "That carry tier doesn't exist")
+                        val carryTier =
+                            CarryTierConnection[carryType].authenticated().getByIdentifier(arguments.carryTier)
+                                ?: throw InvalidOptionException("carry-tier", "That carry tier doesn't exist")
 
                         if (arguments.displayName == null && arguments.category == null && arguments.priceChannel == null && arguments.descriptiveName == null && arguments.thumbnailUrl == null && arguments.priceTitle == null) {
                             throw CommandExecutionWarning("Please provide something you want to edit.")
                         }
 
                         if (arguments.category != null) {
-                            val categoryCarryTier = DiscordServerConnection.getCarryTierFromCategory(
+                            val categoryCarryTier = DiscordServerConnection.authenticated().getCarryTierFromCategory(
                                 guild!!.id.value.toLong(),
                                 arguments.category!!.id.value.toLong()
                             )
@@ -205,8 +214,9 @@ class CarryTierCommand : Extension() {
                             updateModel.priceTitle = arguments.priceTitle
                         }
 
-                        val updatedCarryTier = CarryTierConnection[carryType].updateCarryTier(carryTier.id, updateModel)
-                            ?: throw CommandExecutionWarning("Couldn't update carry tier.")
+                        val updatedCarryTier =
+                            CarryTierConnection[carryType].authenticated().updateCarryTier(carryTier.id, updateModel)
+                                ?: throw CommandExecutionWarning("Couldn't update carry tier.")
 
                         val embed = ApplicationService.getCarryTierEmbed(updatedCarryTier)
                         embed.title = CarryTier.Edit.Response.title.translateLocale(event.getLocale())
@@ -222,11 +232,13 @@ class CarryTierCommand : Extension() {
                 action {
                     respond {
                         val carryType =
-                            CarryTypeConnection[guild!!.id.value.toLong()].getByIdentifier(arguments.carryType)
+                            CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                                .getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        val carryTier = CarryTierConnection[carryType].getByIdentifier(arguments.carryTier)
-                            ?: throw InvalidOptionException("carry-tier", "Carry tier doesn't exist")
+                        val carryTier =
+                            CarryTierConnection[carryType].authenticated().getByIdentifier(arguments.carryTier)
+                                ?: throw InvalidOptionException("carry-tier", "Carry tier doesn't exist")
 
                         if (!arguments.category && !arguments.priceChannel && !arguments.descriptiveName && !arguments.thumbnailUrl && !arguments.priceTitle) {
                             throw CommandExecutionWarning("Please provide something you want to reset.")
@@ -255,7 +267,7 @@ class CarryTierCommand : Extension() {
                         }
 
                         val updatedCarryTier =
-                            CarryTierConnection[carryType].updateCarryTier(carryTier.id, updateModel)
+                            CarryTierConnection[carryType].authenticated().updateCarryTier(carryTier.id, updateModel)
                                 ?: throw CommandExecutionWarning("Couldn't update carry tier.")
 
                         val embed = ApplicationService.getCarryTierEmbed(updatedCarryTier)
@@ -267,7 +279,7 @@ class CarryTierCommand : Extension() {
         }
     }
 
-    inner class CarryTierCreateArguments : Arguments() {
+    class CarryTierCreateArguments : Arguments() {
         val carryType by string {
             name = CommonArguments.CarryType.name
             description = CommonArguments.CarryType.description
@@ -319,7 +331,7 @@ class CarryTierCommand : Extension() {
         }
     }
 
-    inner class CarryTierArguments : Arguments() {
+    class CarryTierArguments : Arguments() {
         val carryType by string {
             name = CommonArguments.CarryType.name
             description = CommonArguments.CarryType.description
@@ -335,7 +347,7 @@ class CarryTierCommand : Extension() {
         }
     }
 
-    inner class CarryTierEditArguments : Arguments() {
+    class CarryTierEditArguments : Arguments() {
         val carryType by string {
             name = CommonArguments.CarryType.name
             description = CommonArguments.CarryType.description
@@ -383,7 +395,7 @@ class CarryTierCommand : Extension() {
         }
     }
 
-    inner class CarryTierResetArguments : Arguments() {
+    class CarryTierResetArguments : Arguments() {
         val carryType by string {
             name = CommonArguments.CarryType.name
             description = CommonArguments.CarryType.description

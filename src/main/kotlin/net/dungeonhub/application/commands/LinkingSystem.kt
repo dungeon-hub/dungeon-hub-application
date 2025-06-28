@@ -64,7 +64,7 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val linkedTo = DiscordUserConnection.getById(user.id.value.toLong())?.minecraftId
+                    val linkedTo = DiscordUserConnection.authenticated().getById(user.id.value.toLong())?.minecraftId
 
                     if (linkedTo != null) {
                         val embed = ApplicationService.embed
@@ -231,9 +231,9 @@ class LinkingSystem : Extension() {
                         var count = 0
                         val unknownUsers = mutableSetOf<UUID>()
                         for (member in guild.members) {
-                            val discordUser = DiscordUserConnection.findUserByUuid(member.uuid)
+                            val discordUser = DiscordUserConnection.authenticated().findUserByUuid(member.uuid)
 
-                            if(discordUser == null) {
+                            if (discordUser == null) {
                                 unknownUsers.add(member.uuid)
                                 continue
                             }
@@ -244,11 +244,12 @@ class LinkingSystem : Extension() {
 
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.Positive.color
-                        embed.description = "Added $count users for the guild ${guild.displayName} to the mass-sync queue.${
-                            if(unknownUsers.isNotEmpty()) {
-                                "\nCouldn't link the following players: " + unknownUsers.joinToString(", ")
-                            } else ""
-                        }"
+                        embed.description =
+                            "Added $count users for the guild ${guild.displayName} to the mass-sync queue.${
+                                if (unknownUsers.isNotEmpty()) {
+                                    "\nCouldn't link the following players: " + unknownUsers.joinToString(", ")
+                                } else ""
+                            }"
 
                         embeds = mutableListOf(embed)
                     }
@@ -294,7 +295,7 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val userModel = DiscordUserConnection.getLinkedById(user.id.value.toLong())
+                    val userModel = DiscordUserConnection.authenticated().getLinkedById(user.id.value.toLong())
 
                     if (userModel == null) {
                         val embed = ApplicationService.embed
@@ -317,7 +318,7 @@ class LinkingSystem : Extension() {
                     var nicknameChanged = true
                     try {
                         NicknameService.updateNickname(member, userModel, roles)
-                    } catch (noNameSchemaWarning: NoNameSchemaWarning) {
+                    } catch (_: NoNameSchemaWarning) {
                         nicknameChanged = false
                     } catch (notLinkedException: NotLinkedException) {
                         embeds = mutableListOf(ApplicationService.getErrorEmbed(notLinkedException))
@@ -344,7 +345,7 @@ class LinkingSystem : Extension() {
 
                     embed.color = EmbedColor.Positive.color
                     embed.description = "Username and roles of ${target.mention} were synced!"
-                } catch (notLinkedException: NotLinkedException) {
+                } catch (_: NotLinkedException) {
                     embed.color = EmbedColor.Negative.color
                     embed.description = "${target.mention} is not linked, their roles were synced!"
                 }
@@ -389,13 +390,13 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val oldUserModel = DiscordUserConnection.getLinkedById(user.id.value.toLong())
+                    val oldUserModel = DiscordUserConnection.authenticated().getLinkedById(user.id.value.toLong())
                         ?: throw NotLinkedException()
 
                     val updateModel = oldUserModel.getUpdateModel()
                     updateModel.minecraftId = null
 
-                    DiscordUserConnection.updateUser(user.id.value.toLong(), updateModel)
+                    DiscordUserConnection.authenticated().updateUser(user.id.value.toLong(), updateModel)
                         ?: throw CommandExecutionException("Couldn't update your user data.")
 
                     val embed = ApplicationService.embed
@@ -429,7 +430,8 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val uuid = DiscordUserConnection.getById(arguments.user.id.value.toLong())?.minecraftId
+                    val uuid =
+                        DiscordUserConnection.authenticated().getById(arguments.user.id.value.toLong())?.minecraftId
 
                     if (uuid == null) {
                         val embed = ApplicationService.errorEmbed
@@ -460,7 +462,7 @@ class LinkingSystem : Extension() {
                 respond {
                     val uuid = MojangConnection.getUUIDByName(arguments.ign)
 
-                    val userModel = DiscordUserConnection.findUserByUuid(uuid)
+                    val userModel = DiscordUserConnection.authenticated().findUserByUuid(uuid)
                         ?: throw CommandExecutionWarning("Couldn't find who the given user is linked to.")
 
                     addEmbed {
@@ -483,7 +485,7 @@ class LinkingSystem : Extension() {
 
             action {
                 val linkedTo =
-                    DiscordUserConnection.getById(event.interaction.user.id.value.toLong())?.minecraftId
+                    DiscordUserConnection.authenticated().getById(event.interaction.user.id.value.toLong())?.minecraftId
 
                 if (linkedTo != null) {
                     event.interaction.respondEphemeral {
@@ -529,7 +531,9 @@ class LinkingSystem : Extension() {
                 val response: InteractionResponseCreateBuilder.() -> Unit = {
                     val embed = ApplicationService.embed
                     embed.title = "Linked successfully"
-                    embed.description = "${event.interaction.user.mention}, you're now linked to `${MojangConnection.getNameByUUID(linkedId)}`."
+                    embed.description = "${event.interaction.user.mention}, you're now linked to `${
+                        MojangConnection.getNameByUUID(linkedId)
+                    }`."
                     embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
@@ -550,7 +554,7 @@ class LinkingSystem : Extension() {
         event<MemberJoinEvent> {
             action {
                 //TODO Remove once Hypixel / Mojang API is cached
-                DiscordUserConnection.getLinkedById(event.member.id.value.toLong()) ?: return@action
+                DiscordUserConnection.authenticated().getLinkedById(event.member.id.value.toLong()) ?: return@action
 
                 thread(start = true) {
                     runBlocking {
@@ -563,7 +567,7 @@ class LinkingSystem : Extension() {
         }
     }
 
-    inner class SingleIgnArguments : Arguments() {
+    class SingleIgnArguments : Arguments() {
         val ign by string {
             name = "ign".toKey()
             description = "The users ingame-name".toKey()
@@ -571,28 +575,28 @@ class LinkingSystem : Extension() {
         }
     }
 
-    inner class ForceSyncArguments : Arguments() {
+    class ForceSyncArguments : Arguments() {
         val user by user {
             name = "user".toKey()
             description = "The user to sync.".toKey()
         }
     }
 
-    inner class IgnArguments : Arguments() {
+    class IgnArguments : Arguments() {
         val user by user {
             name = "user".toKey()
             description = "The user to show the IGN for.".toKey()
         }
     }
 
-    inner class MassSyncRoleArguments : Arguments() {
+    class MassSyncRoleArguments : Arguments() {
         val role by role {
             name = "role".toKey()
             description = "The role in which users should be synced.".toKey()
         }
     }
 
-    inner class MassSyncGuildArguments : Arguments() {
+    class MassSyncGuildArguments : Arguments() {
         val guild by string {
             name = "guild".toKey()
             description = "The guild in which users should be synced.".toKey()

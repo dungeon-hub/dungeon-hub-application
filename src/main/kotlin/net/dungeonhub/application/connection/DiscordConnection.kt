@@ -77,7 +77,7 @@ object DiscordConnection : StartupListener {
     private var currentAppearance = 0
     private val possibleAppearances: List<Pair<AppearanceType, suspend () -> String>> = listOf(
         AppearanceType.Custom to {
-            "Handling ${DiscordUserConnection.countLinkedUsers() ?: 0} linked users!"
+            "Handling ${DiscordUserConnection.authenticated().countLinkedUsers() ?: 0} linked users!"
         },
         AppearanceType.Watching to {
             "${bot?.kordRef?.totalUserCount() ?: 0} carriers on ${bot?.kordRef?.guilds?.count() ?: 0} servers"
@@ -116,7 +116,7 @@ object DiscordConnection : StartupListener {
         },
         AppearanceType.Custom to {
             val amount = try {
-                DiscordServerConnection.getTotalAmountOfMoneySpent(693263712626278553L)
+                DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(693263712626278553L)
                     ?: throw CommandExecutionException("Couldn't load the total amount of money spent.")
             } catch (_: CommandExecutionException) {
                 0
