@@ -53,9 +53,10 @@ class LookupCommand : Extension() {
                         addEmbed {
                             color(EmbedColor.Default)
                             title = "Account Review Request"
-                            description = "Please appeal at once of the following links:\n" + 
-                            "- SkyblockZ/Jerry: https://forms.gle/U6reUwtQSwSTvJB47\n" +
-                            "Please make sure your screenshots **are not cropped**!"
+                            description = "Please submit your appeal using one of the following links:\n" +
+                                    "- SkyblockZ/Jerry: https://forms.gle/U6reUwtQSwSTvJB47\n" +
+                                    "\n"+
+                                    "Please make sure your screenshots **are not cropped**!"
                         }
                     }
                 }
