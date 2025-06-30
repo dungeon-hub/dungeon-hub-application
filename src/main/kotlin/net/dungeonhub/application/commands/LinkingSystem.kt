@@ -3,7 +3,7 @@ package net.dungeonhub.application.commands
 import dev.kord.common.entity.*
 import dev.kord.core.behavior.interaction.modal
 import dev.kord.core.behavior.interaction.respondEphemeral
-import dev.kord.core.behavior.interaction.respondPublic
+import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.behavior.requestMembers
 import dev.kord.core.builder.components.emoji
 import dev.kord.core.entity.Member
@@ -18,7 +18,6 @@ import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
-import dev.kord.rest.builder.message.create.InteractionResponseCreateBuilder
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.role
@@ -517,6 +516,12 @@ class LinkingSystem : Extension() {
             }
 
             action {
+                val response = if (event.interaction.modalId == "link_ign") {
+                    event.interaction.deferPublicResponse()
+                } else {
+                    event.interaction.deferEphemeralResponse()
+                }
+
                 val ign = event.interaction.textInputs["ign"]?.value?.let { it.ifBlank { null } }
 
                 if (ign == null) {
@@ -528,7 +533,7 @@ class LinkingSystem : Extension() {
 
                 val linkedId = NicknameService.linkToIgn(ign, event.interaction.user)
 
-                val response: InteractionResponseCreateBuilder.() -> Unit = {
+                response.respond {
                     val embed = ApplicationService.embed
                     embed.title = "Linked successfully"
                     embed.description = "${event.interaction.user.mention}, you're now linked to `${
@@ -537,12 +542,6 @@ class LinkingSystem : Extension() {
                     embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
-                }
-
-                if (event.interaction.modalId == "link_ign") {
-                    event.interaction.respondPublic(response)
-                } else {
-                    event.interaction.respondEphemeral(response)
                 }
 
                 val roles = RolesService.updateRoles(event.interaction.user)
