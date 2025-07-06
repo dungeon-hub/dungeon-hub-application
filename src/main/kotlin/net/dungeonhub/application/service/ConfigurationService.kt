@@ -4,9 +4,9 @@ import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartPriority
 import net.dungeonhub.application.loader.StartupListener
-import net.dungeonhub.auth.AuthenticationConnection.authLoginUrl
-import net.dungeonhub.auth.AuthenticationConnection.clientId
-import net.dungeonhub.auth.AuthenticationConnection.clientSecret
+import net.dungeonhub.auth.AuthenticationCredentials.authLoginUrl
+import net.dungeonhub.auth.AuthenticationCredentials.clientId
+import net.dungeonhub.auth.AuthenticationCredentials.clientSecret
 import net.dungeonhub.client.DungeonHubClient.Companion.apiUrl
 import net.dungeonhub.client.DungeonHubClient.Companion.cdnUrl
 import net.dungeonhub.client.DungeonHubClient.Companion.staticUrl
