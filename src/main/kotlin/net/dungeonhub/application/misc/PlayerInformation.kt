@@ -15,7 +15,11 @@ import net.dungeonhub.mojang.connection.MojangConnection
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-class PlayerInformation(private val user: User, private val discordUserModel: DiscordUserModel, private val cacheExpiration: Int) {
+class PlayerInformation(
+    private val user: User,
+    private val discordUserModel: DiscordUserModel,
+    private val cacheExpiration: Int
+) {
     val replacements: Map<String, () -> String>
         get() {
             val apiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
@@ -25,7 +29,7 @@ class PlayerInformation(private val user: User, private val discordUserModel: Di
             replacements["discord.name"] = { user.username }
             replacements["discord.displayname"] = { user.effectiveName }
             replacements["minecraft.name"] = {
-                MojangConnection.getNameByUUID(discordUserModel.minecraftId ?: throw NotLinkedException() )
+                MojangConnection.getNameByUUID(discordUserModel.minecraftId ?: throw NotLinkedException())
             }
             replacements["skyblock.catacombs.level"] =
                 {

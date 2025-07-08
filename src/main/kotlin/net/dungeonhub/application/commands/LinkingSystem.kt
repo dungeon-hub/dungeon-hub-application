@@ -28,9 +28,12 @@ import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.extensions.publicUserCommand
 import dev.kordex.core.i18n.toKey
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.exceptions.*
@@ -54,6 +57,7 @@ import kotlin.concurrent.thread
 @LoadExtension
 class LinkingSystem : Extension() {
     override val name = "linking-system"
+    private val linkingScope = CoroutineScope(Dispatchers.Default)
 
     override suspend fun setup() {
         publicSlashCommand(::SingleIgnArguments) {
@@ -398,26 +402,23 @@ class LinkingSystem : Extension() {
                     DiscordUserConnection.authenticated().updateUser(user.id.value.toLong(), updateModel)
                         ?: throw CommandExecutionException("Couldn't update your user data.")
 
-                    val embed = ApplicationService.embed
-                    embed.description = "Unlinked successfully from account `${
-                        MojangConnection.getNameByUUID(oldUserModel.minecraftId!!)
-                    }`."
-                    embed.color = EmbedColor.Positive.color
-
-                    embeds = mutableListOf(embed)
+                    addEmbed {
+                        description = "Unlinked successfully from account `${
+                            MojangConnection.getNameByUUID(oldUserModel.minecraftId!!)
+                        }`."
+                        color(EmbedColor.Positive)
+                    }
                 }
 
-                thread(start = true) {
-                    runBlocking {
-                        val user = user.asUser()
+                linkingScope.launch {
+                    val user = user.asUser()
 
-                        val roles = RolesService.updateRoles(user)
+                    val roles = RolesService.updateRoles(user)
 
-                        try {
-                            NicknameService.updateNickname(user, roles)
-                        } catch (_: NotLinkedException) {
-                            // Do nothing
-                        }
+                    try {
+                        NicknameService.updateNickname(user, roles)
+                    } catch (_: NotLinkedException) {
+                        // Do nothing
                     }
                 }
             }
@@ -439,8 +440,7 @@ class LinkingSystem : Extension() {
                         return@respond
                     }
 
-                    val ign =
-                        MojangConnection.getNameByUUID(uuid)
+                    val ign = MojangConnection.getNameByUUID(uuid)
 
                     val embed = ApplicationService.embed
                     embed.color = EmbedColor.Positive.color
