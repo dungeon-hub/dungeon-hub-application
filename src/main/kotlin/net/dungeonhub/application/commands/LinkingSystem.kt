@@ -548,9 +548,6 @@ class LinkingSystem : Extension() {
 
         event<MemberJoinEvent> {
             action {
-                //TODO Remove once Hypixel / Mojang API is cached
-                DiscordUserConnection.authenticated().getLinkedById(event.member.id.value.toLong()) ?: return@action
-
                 linkingScope.launch {
                     val roles: List<Role> = RolesService.updateRoles(event.member)
 
