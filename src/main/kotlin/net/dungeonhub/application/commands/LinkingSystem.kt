@@ -34,7 +34,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.exceptions.*
 import net.dungeonhub.application.loader.LoadExtension
@@ -51,7 +50,6 @@ import net.dungeonhub.i18n.Translations.Command.Sync
 import net.dungeonhub.i18n.Translations.Command.Unlink
 import net.dungeonhub.mojang.connection.MojangConnection
 import java.util.*
-import kotlin.concurrent.thread
 
 @PrivilegedIntent
 @LoadExtension
@@ -116,21 +114,19 @@ class LinkingSystem : Extension() {
 
                     embeds = mutableListOf(embed)
 
-                    thread(start = true) {
-                        runBlocking {
-                            if (guild != null) {
-                                val member = user.asMember(guild!!.id)
+                    linkingScope.launch {
+                        if (guild != null) {
+                            val member = user.asMember(guild!!.id)
 
-                                val roles = RolesService.updateRoles(member)
+                            val roles = RolesService.updateRoles(member)
 
-                                NicknameService.updateNickname(member, roles)
-                            } else {
-                                val user = user.asUser()
+                            NicknameService.updateNickname(member, roles)
+                        } else {
+                            val user = user.asUser()
 
-                                val roles = RolesService.updateRoles(user)
+                            val roles = RolesService.updateRoles(user)
 
-                                NicknameService.updateNickname(user, roles)
-                            }
+                            NicknameService.updateNickname(user, roles)
                         }
                     }
                 }
@@ -555,12 +551,10 @@ class LinkingSystem : Extension() {
                 //TODO Remove once Hypixel / Mojang API is cached
                 DiscordUserConnection.authenticated().getLinkedById(event.member.id.value.toLong()) ?: return@action
 
-                thread(start = true) {
-                    runBlocking {
-                        val roles: List<Role> = RolesService.updateRoles(event.member)
+                linkingScope.launch {
+                    val roles: List<Role> = RolesService.updateRoles(event.member)
 
-                        NicknameService.updateNickname(event.member, roles)
-                    }
+                    NicknameService.updateNickname(event.member, roles)
                 }
             }
         }
