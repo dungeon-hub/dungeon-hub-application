@@ -11,6 +11,7 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.ContentConnection
+import net.dungeonhub.exception.PlayerNotFoundException
 import java.nio.charset.StandardCharsets
 import kotlin.concurrent.thread
 
@@ -22,7 +23,7 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
             return
         }
 
-        if (throwable?.throwable is CommandExecutionWarning) {
+        if (throwable?.throwable is CommandExecutionWarning || throwable?.throwable is PlayerNotFoundException) {
             return
         }
 
