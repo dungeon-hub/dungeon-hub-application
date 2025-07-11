@@ -323,6 +323,12 @@ object RolesService {
                 //TODO implement
                 return false
             }
+
+            RoleRequirementType.Reputation -> {
+                return roleRequirement.compare(
+                    ReputationConnection[member].authenticated().calculateReputation()?.toInt() ?: 0
+                )
+            }
         }
     }
 
