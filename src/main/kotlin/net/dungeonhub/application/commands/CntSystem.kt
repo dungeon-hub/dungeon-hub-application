@@ -338,9 +338,11 @@ class CntSystem : Extension() {
 
                         val reputation = ReputationConnection[userToRep].authenticated().addReputation(repCreationModel)
 
+                        val totalReputation = ReputationConnection[userToRep].authenticated().calculateReputation()
+
                         addEmbed {
                             title = "Rep added"
-                            description = "You gave <@${reputation!!.user.id}> ${reputation.amount} rep."
+                            description = "Your reputation for \"${reputation?.reason ?: "something"}\" gave <@${reputation!!.user.id}> their rep #${totalReputation}."
                             color(EmbedColor.Positive)
                         }
                     }
