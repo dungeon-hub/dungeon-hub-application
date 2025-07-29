@@ -18,9 +18,15 @@ import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.MessageBuilder
 import dev.kord.rest.builder.message.actionRow
+import dev.kordex.core.commands.Arguments
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.optionalString
+import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.components.components
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
+import dev.kordex.core.extensions.publicSlashCommand
+import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.hasPermission
 import kotlinx.datetime.Clock
 import net.dungeonhub.application.enums.CntRequestType
@@ -30,11 +36,15 @@ import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.CntRequestConnection
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.connection.ReputationConnection
+import net.dungeonhub.i18n.Translations
 import net.dungeonhub.model.cnt_request.CntRequestCreationModel
 import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
+import net.dungeonhub.model.reputation.ReputationCreationModel
 import java.time.Instant
 
 @LoadExtension
@@ -192,7 +202,8 @@ class CntSystem : Extension() {
 
                 event.interaction.respondEphemeral {
                     val embed = ApplicationService.embed
-                    embed.description = "Your CNT request is now marked as completed.\n__Thanks for using our services!__"
+                    embed.description =
+                        "Your CNT request is now marked as completed.\n__Thanks for using our services!__"
                     embeds = mutableListOf(embed)
                 }
 
@@ -296,6 +307,46 @@ class CntSystem : Extension() {
                 }
             }
         }
+
+        publicSlashCommand {
+            name = Translations.Command.Rep.name
+            description = Translations.Command.Rep.description
+            allowInDms = false
+
+            publicSubCommand(::RepAddArguments) {
+                name = Translations.Command.Rep.Add.name
+                description = Translations.Command.Rep.Add.description
+
+                action {
+                    respond {
+                        val userToRep = arguments.user.asMemberOrNull(guild!!.id)
+
+                        if (userToRep == null) {
+                            addEmbed {
+                                description = "That user is not on the server!"
+                                color(EmbedColor.Negative)
+                            }
+                            return@respond
+                        }
+
+                        val repCreationModel = ReputationCreationModel(
+                            userToRep.id.value.toLong(),
+                            user.id.value.toLong(),
+                            REPUTATION_VALUE,
+                            arguments.reason
+                        )
+
+                        val reputation = ReputationConnection[userToRep].authenticated().addReputation(repCreationModel)
+
+                        addEmbed {
+                            title = "Rep added"
+                            description = "You gave <@${reputation!!.user.id}> ${reputation.amount} rep."
+                            color(EmbedColor.Positive)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun MessageBuilder.addClaimedCntButtons() {
@@ -344,5 +395,22 @@ class CntSystem : Extension() {
                 label = "Done"
             }
         }
+    }
+
+    private class RepAddArguments : Arguments() {
+        val user by user {
+            name = "user".toKey()
+            description = "The discord user to rep.".toKey()
+        }
+
+        val reason by optionalString {
+            name = "reason".toKey()
+            description =
+                "You can provide an additional reason for the rep, e.g. a certain service they helped you with.".toKey()
+        }
+    }
+
+    companion object {
+        private const val REPUTATION_VALUE = 1
     }
 }
