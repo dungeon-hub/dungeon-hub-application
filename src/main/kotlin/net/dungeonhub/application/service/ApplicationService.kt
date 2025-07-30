@@ -833,6 +833,10 @@ object ApplicationService {
         return embed
     }
 
+    fun getSlashCommandDisplay(commandName: String): String {
+        return runBlocking { getGlobalCommandId(commandName)?.let { "</$commandName:$it>" } } ?: "`/$commandName`"
+    }
+
     suspend fun getGlobalCommandId(name: String): Snowflake? {
         return DiscordConnection.bot?.kordRef?.getGlobalApplicationCommands()?.firstOrNull { it.name == name }?.id
     }

@@ -40,7 +40,7 @@ object LeaderboardService : StartupListener {
     private const val REFRESH_COOLDOWN: Long = 15L
     private val LEADERBOARD_DESCRIPTION by lazy {
         "To see how score is calculated, use `/help topic:score`.\n" +
-                "To check your current score, use ${runBlocking { ApplicationService.getGlobalCommandId("score")?.let { "</score:$it>" } } ?: "`/score`"}."
+                "To check your current score, use ${ApplicationService.getSlashCommandDisplay("score")}."
     }
     private val logger: Logger = LoggerFactory.getLogger(LeaderboardService::class.java)
     private var timer: Timer? = null

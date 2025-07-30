@@ -30,7 +30,6 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.hasPermission
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import net.dungeonhub.application.connection.copy
@@ -576,7 +575,7 @@ class CntSystem : Extension() {
         private const val REPUTATION_VALUE = 1
         private val leaderboardDescription by lazy {
             "Check `/help topic:reputation` to see how you can gain reputation.\n" +
-                    "To check your current score, use ${runBlocking { ApplicationService.getGlobalCommandId("rep")?.let { "</rep:$it>" } } ?: "`/rep`"}." // TODO add actual command (which is yet to be implemented)
+                    "To check your current score, use ${ApplicationService.getSlashCommandDisplay("rep")}." // TODO add actual command (which is yet to be implemented)
         }
         private val reputationTimeout = Duration.parse("3d")
     }
