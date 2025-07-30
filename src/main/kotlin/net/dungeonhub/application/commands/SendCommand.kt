@@ -7,6 +7,8 @@ import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
+import dev.kord.core.builder.components.emoji
+import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.actionRow
 import dev.kordex.core.commands.Arguments
@@ -99,6 +101,13 @@ class SendCommand : Extension() {
                             """
 
                             embeds = mutableListOf(cntEmbed)
+
+                            actionRow {
+                                interactionButton(ButtonStyle.Primary, "help-rep") {
+                                    emoji(ReactionEmoji.Unicode("❔"))
+                                    label = "How reputation works"
+                                }
+                            }
 
                             Iterables.partition(CntRequestType.entries.asIterable(), 5).forEach { requestTypes ->
                                 actionRow {

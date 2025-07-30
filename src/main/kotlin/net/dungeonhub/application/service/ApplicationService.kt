@@ -749,11 +749,12 @@ object ApplicationService {
     ): EmbedBuilder {
         val embed = getEmbed(time)
         embed.color = EmbedColor.Default.color
-        embed.description = "### Craft and Transfers Request by <@${userId}>"
+        embed.description = "### Craft and Transfers"
 
         embed.field("Description", true) { description }
         embed.field("Value", true) { coinValue }
         embed.field("Requirement", true) { requirement }
+        embed.field("Requested by", true) { "<@$userId>" }
 
         return embed
     }

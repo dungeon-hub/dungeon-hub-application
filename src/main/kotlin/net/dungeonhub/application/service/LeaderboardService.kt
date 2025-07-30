@@ -19,14 +19,14 @@ import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartPriority
 import net.dungeonhub.application.loader.StartupListener
-import net.dungeonhub.application.misc.Leaderboard
+import net.dungeonhub.application.misc.ScoreLeaderboard
 import net.dungeonhub.application.service.ApplicationService.embed
 import net.dungeonhub.application.service.ApplicationService.footer
 import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.ScoreType
-import net.dungeonhub.model.score.LeaderboardModel
+import net.dungeonhub.model.score.ScoreLeaderboardModel
 import net.dungeonhub.model.score.ScoreModel
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -46,7 +46,7 @@ object LeaderboardService : StartupListener {
     private var timer: Timer? = null
     private var lastRefresh: Instant? = null
 
-    fun getLeaderboardEmbed(title: String?, leaderboardModel: LeaderboardModel?): EmbedBuilder {
+    fun getLeaderboardEmbed(title: String?, leaderboardModel: ScoreLeaderboardModel?): EmbedBuilder {
         if (leaderboardModel == null) {
             return getEmptyLeaderboardEmbed(title)
         }
@@ -113,24 +113,24 @@ object LeaderboardService : StartupListener {
         }, Time(System.currentTimeMillis() + 15000), 1000L * 60 * 5)
     }
 
-    private fun generateCompactLeaderboard(leaderboards: List<Leaderboard>): List<EmbedBuilder> {
+    private fun generateCompactLeaderboard(scoreLeaderboards: List<ScoreLeaderboard>): List<EmbedBuilder> {
         val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
-        embeds.addAll(leaderboards.windowed(4, 4, true).map { leaderboardWindow ->
+        embeds.addAll(scoreLeaderboards.windowed(4, 4, true).map { leaderboardWindow ->
             generateSingleCompactLeaderboard(leaderboardWindow)
         })
 
         return embeds
     }
 
-    private fun generateSingleCompactLeaderboard(leaderboards: List<Leaderboard>): EmbedBuilder {
+    private fun generateSingleCompactLeaderboard(scoreLeaderboards: List<ScoreLeaderboard>): EmbedBuilder {
         val result = embed
         result.title = "Leaderboard"
         result.color(EmbedColor.Default)
 
         var count = 0
 
-        for (leaderboard in leaderboards) {
+        for (leaderboard in scoreLeaderboards) {
             val embed = leaderboard.embed
             result.field(embed.title?.replace("Leaderboard | ", "") ?: "", true) {
                 if (embed.fields.isEmpty()) {
@@ -144,7 +144,7 @@ object LeaderboardService : StartupListener {
 
             // Add a dummy field as a 3rd entry to space out the entries
             count++
-            if (count == 2 && leaderboards.size > 3) {
+            if (count == 2 && scoreLeaderboards.size > 3) {
                 result.field(".", true) { "." }
             }
         }
@@ -152,10 +152,10 @@ object LeaderboardService : StartupListener {
         return result
     }
 
-    private fun generateLeaderboard(leaderboards: List<Leaderboard>): List<EmbedBuilder> {
+    private fun generateLeaderboard(scoreLeaderboards: List<ScoreLeaderboard>): List<EmbedBuilder> {
         val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
-        for (leaderboard in leaderboards) {
+        for (leaderboard in scoreLeaderboards) {
             val embed = leaderboard.embed
             embed.footer = null
             embed.timestamp = null
@@ -170,18 +170,18 @@ object LeaderboardService : StartupListener {
         return embeds
     }
 
-    private fun refreshLeaderboardInChannel(channel: GuildMessageChannel, leaderboards: List<Leaderboard>) {
+    private fun refreshLeaderboardInChannel(channel: GuildMessageChannel, scoreLeaderboards: List<ScoreLeaderboard>) {
         val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
         if (ServerProperty.COMPACT_LEADERBOARD.getValue(channel.guildId.value.toLong()).map { it == "true" }
                 .orElse(false)) {
-            embeds.addAll(generateCompactLeaderboard(leaderboards))
+            embeds.addAll(generateCompactLeaderboard(scoreLeaderboards))
         } else {
-            embeds.addAll(generateLeaderboard(leaderboards))
+            embeds.addAll(generateLeaderboard(scoreLeaderboards))
         }
 
         if (embeds.isNotEmpty()) {
-            if (!leaderboards[0].isEmpty) {
+            if (!scoreLeaderboards[0].isEmpty) {
                 embeds[0].description = LEADERBOARD_DESCRIPTION
             }
 
@@ -231,7 +231,7 @@ object LeaderboardService : StartupListener {
         this.lastRefresh = Instant.now()
         logger.debug("Leaderboard refresh started!")
 
-        val leaderboards: MutableMap<GuildMessageChannel, MutableList<Leaderboard>> = HashMap()
+        val leaderboards: MutableMap<GuildMessageChannel, MutableList<ScoreLeaderboard>> = HashMap()
 
         for (serverModel in DiscordServerConnection.authenticated().loadAllServers() ?: mutableListOf()) {
             for (carryType in CarryTypeConnection[serverModel.id].authenticated().allCarryTypes ?: listOf()) {
@@ -260,14 +260,14 @@ object LeaderboardService : StartupListener {
 
                     if (leaderboards.containsKey(leaderboardChannel)) {
                         leaderboards[leaderboardChannel]!!.add(
-                            Leaderboard(
+                            ScoreLeaderboard(
                                 scoreType.getLeaderboardTitle(carryType),
                                 ScoreConnection[carryType].authenticated().loadLeaderboard(scoreType, 0)
                             )
                         )
                     } else {
                         leaderboards[leaderboardChannel] = mutableListOf(
-                            Leaderboard(
+                            ScoreLeaderboard(
                                 scoreType.getLeaderboardTitle(carryType),
                                 ScoreConnection[carryType].authenticated().loadLeaderboard(scoreType, 0)
                             )
@@ -297,14 +297,14 @@ object LeaderboardService : StartupListener {
                     for (scoreType in ScoreType.entries) {
                         if (leaderboards.containsKey(leaderboardChannel)) {
                             leaderboards[leaderboardChannel]!!.add(
-                                Leaderboard(
+                                ScoreLeaderboard(
                                     scoreType.getLeaderboardTitle(null),
                                     DiscordServerConnection.authenticated().loadTotalLeaderboard(serverModel.id, scoreType, 0)
                                 )
                             )
                         } else {
                             leaderboards[leaderboardChannel] = mutableListOf(
-                                Leaderboard(
+                                ScoreLeaderboard(
                                     scoreType.getLeaderboardTitle(null),
                                     DiscordServerConnection.authenticated().loadTotalLeaderboard(serverModel.id, scoreType, 0)
                                 )

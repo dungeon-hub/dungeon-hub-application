@@ -6,7 +6,6 @@ import dev.kord.core.builder.components.emoji
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.rest.builder.component.ActionRowBuilder
-import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.annotations.AlwaysPublicResponse
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.converters.impl.optionalEnumChoice
@@ -100,24 +99,13 @@ class LeaderboardCommand : Extension() {
 
             action {
                 event.interaction.respondEphemeral {
-                    //TODO make this generation code a method somewhere
-
-                    val helpTopic = HelpTopic.SCORE
-
-                    val embedBuilder = EmbedBuilder()
-                    embedBuilder.title = "**" + helpTopic.title + "**"
-
-                    val helpDisplay = helpTopic.description.getDescription(
-                        event.interaction.user,
-                        event.interaction.getGuildOrNull()
+                    embeds = mutableListOf(
+                        HelpTopic.generateHelpEmbed(
+                            HelpTopic.SCORE,
+                            event.interaction.user,
+                            event.interaction.getGuildOrNull()
+                        )
                     )
-
-                    embedBuilder.color = helpDisplay.embedColor.color
-                    embedBuilder.description = helpDisplay.description
-
-                    helpDisplay.fields.forEach { embedBuilder.field(it.key, false) { it.value } }
-
-                    embeds = mutableListOf(embedBuilder)
                 }
             }
         }

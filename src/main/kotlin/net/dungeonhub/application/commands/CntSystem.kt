@@ -18,6 +18,7 @@ import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.MessageBuilder
 import dev.kord.rest.builder.message.actionRow
+import dev.kordex.core.annotations.AlwaysPublicResponse
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.optionalString
@@ -27,30 +28,42 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
+import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.hasPermission
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
+import kotlinx.datetime.toKotlinInstant
+import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.CntRequestType
 import net.dungeonhub.application.enums.EmbedColor
+import net.dungeonhub.application.enums.HelpTopic
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.application.service.ApplicationService.embed
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.CntRequestConnection
+import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.connection.ReputationConnection
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.model.cnt_request.CntRequestCreationModel
 import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
 import net.dungeonhub.model.reputation.ReputationCreationModel
+import net.dungeonhub.model.reputation.ReputationLeaderboardModel
+import net.dungeonhub.model.reputation.ReputationSumModel
 import java.time.Instant
+import kotlin.time.Duration
+import kotlin.time.toKotlinDuration
 
 @LoadExtension
 class CntSystem : Extension() {
     override val name = "cnt-system"
 
+    @OptIn(AlwaysPublicResponse::class)
     override suspend fun setup() {
         CntRequestType.entries.forEach { requestType ->
             event<GuildButtonInteractionCreateEvent> {
@@ -81,7 +94,8 @@ class CntSystem : Extension() {
 
             action {
                 val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
-                    .findCntRequest(event.interaction.message.id.value.toLong())
+                    .findCntRequests(event.interaction.message.id.value.toLong())
+                    ?.firstOrNull()
                     ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
 
                 if (cntRequest.claimer != null) {
@@ -92,6 +106,13 @@ class CntSystem : Extension() {
                 }
 
                 val claimerId = event.interaction.user.id.value.toLong()
+
+                if(claimerId == cntRequest.user.id) {
+                    event.interaction.respondEphemeral {
+                        content = "You cannot claim your own request!"
+                    }
+                    return@action
+                }
 
                 val claimer = DiscordUserConnection.authenticated().getById(claimerId)
                     ?: DiscordUserConnection.authenticated().updateUser(claimerId, DiscordUserUpdateModel(null))
@@ -134,7 +155,8 @@ class CntSystem : Extension() {
 
             action {
                 val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
-                    .findCntRequest(event.interaction.message.id.value.toLong())
+                    .findCntRequests(event.interaction.message.id.value.toLong())
+                    ?.firstOrNull()
                     ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
 
                 if (event.interaction.user.id.value.toLong() != cntRequest.claimer?.id
@@ -179,7 +201,8 @@ class CntSystem : Extension() {
 
             action {
                 val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
-                    .findCntRequest(event.interaction.message.id.value.toLong())
+                    .findCntRequests(event.interaction.message.id.value.toLong())
+                    ?.firstOrNull()
                     ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
 
                 if (event.interaction.user.id.value.toLong() != cntRequest.user.id
@@ -329,6 +352,54 @@ class CntSystem : Extension() {
                             return@respond
                         }
 
+                        if(userToRep.id == user.id) {
+                            addEmbed {
+                                description = "You can't give yourself reputation!"
+                                color(EmbedColor.Negative)
+                            }
+                            return@respond
+                        }
+
+                        val timeout = Instant.now().minusSeconds(reputationTimeout.inWholeSeconds)
+
+                        val reputationConnection = ReputationConnection[userToRep].authenticated()
+
+                        val lastRep = reputationConnection.getReputations()
+                            ?.filter { it.reputor.id == user.id.value.toLong() }
+                            ?.filter { it.time.isAfter(timeout) }
+                            ?.maxByOrNull { it.time }
+
+                        if(lastRep != null) {
+                            val ready = java.time.Duration.between(
+                                Instant.now(),
+                                lastRep.time.plusSeconds(reputationTimeout.inWholeSeconds)
+                            ).withNanos(0).toKotlinDuration()
+
+                            addEmbed {
+                                description = "You already added the rep #${lastRep.id} to <@${lastRep.user.id}>.\n" +
+                                        (if(lastRep.reason != null) "The last reputation had the reason: ${lastRep.reason}\n" else "") +
+                                        "The next rep will be available in: $ready"
+                                color(EmbedColor.Negative)
+                                timestamp = lastRep.time.toKotlinInstant()
+                            }
+                            return@respond
+                        }
+
+                        val relatedCntRequest = CntRequestConnection[guild!!.id.value.toLong()].authenticated()
+                            .findCntRequestsByUser(user.id.value.toLong())
+                            ?.filter { it.completed }
+                            ?.filter { it.claimer?.id == userToRep.id.value.toLong() }
+                            ?.filter { it.time.isAfter(timeout) }
+                            ?.maxByOrNull { it.time }
+
+                        if(relatedCntRequest == null) {
+                            addEmbed {
+                                description = "<@${userToRep.id.value}> has not completed a crafts and transfers request for you in the past $reputationTimeout!"
+                                color(EmbedColor.Negative)
+                            }
+                            return@respond
+                        }
+
                         val repCreationModel = ReputationCreationModel(
                             userToRep.id.value.toLong(),
                             user.id.value.toLong(),
@@ -336,28 +407,129 @@ class CntSystem : Extension() {
                             arguments.reason
                         )
 
-                        val reputation = ReputationConnection[userToRep].authenticated().addReputation(repCreationModel)
+                        val reputation = reputationConnection.addReputation(repCreationModel)
 
-                        val totalReputation = ReputationConnection[userToRep].authenticated().calculateReputation()
+                        val totalReputation = reputationConnection.calculateReputation()
 
                         addEmbed {
-                            title = "Rep added"
-                            description = "Your reputation for \"${reputation?.reason ?: "something"}\" gave <@${reputation!!.user.id}> their rep #${totalReputation}."
+                            title = "Rep #${reputation?.id ?: "unknown"} added"
+                            description = "Added ${reputation?.amount ?: 0} reputation to <@${reputation?.user?.id}>${if(reputation?.reason != null) " for: ${reputation.reason}" else ""}.\n" +
+                                    "They now have $totalReputation total reps."
                             color(EmbedColor.Positive)
                         }
                     }
                 }
             }
+
+            // TODO maybe move that somewhere else idk
+            publicSubCommand {
+                name = "leaderboard".toKey()
+                description = "Show the reputation leaderboard for this server.".toKey()
+
+                action {
+                    val leaderboardTitle = "Leaderboard | Reputation"
+
+                    val firstPage = DiscordServerConnection.authenticated()
+                            .loadReputationLeaderboard(guild?.id?.value!!.toLong(), 0, user.id.value.toLong())
+
+                    if (firstPage == null || firstPage.totalPages == 0) {
+                        respond {
+                            embeds = mutableListOf(getEmptyLeaderboardEmbed(leaderboardTitle))
+                        }
+                        return@action
+                    }
+
+                    respondingPaginator {
+                        owner = user
+
+                        for (i in 0..<firstPage.totalPages) {
+                            val leaderboardModel = DiscordServerConnection.authenticated().loadReputationLeaderboard(
+                                    guild?.id?.value!!.toLong(),
+                                    i,
+                                    user.id.value.toLong()
+                                )
+
+                            page(
+                                Page {
+                                    val embed = getReputationEmbed(leaderboardTitle, leaderboardModel)
+
+                                    copy(embed)
+                                }
+                            )
+                        }
+                    }.send()
+                }
+            }
         }
+
+        event<GuildButtonInteractionCreateEvent> {
+            check {
+                failIfNot("help-rep" == event.interaction.componentId)
+            }
+
+            action {
+                event.interaction.respondEphemeral {
+                    embeds = mutableListOf(
+                        HelpTopic.generateHelpEmbed(
+                            HelpTopic.REPUTATION,
+                            event.interaction.user,
+                            event.interaction.getGuildOrNull()
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    fun getEmptyLeaderboardEmbed(title: String?): EmbedBuilder {
+        val embed = embed
+        embed.title = title
+        embed.color = EmbedColor.Negative.color
+        embed.description = """
+             No reputation has been gained yet!
+             $leaderboardDescription
+             """.trimIndent()
+        return embed
+    }
+
+    fun getReputationEmbed(title: String?, leaderboardModel: ReputationLeaderboardModel?): EmbedBuilder {
+        if (leaderboardModel == null) {
+            return getEmptyLeaderboardEmbed(title)
+        }
+
+        val embed = embed
+        embed.title = title
+        embed.description = leaderboardDescription
+        embed.color = EmbedColor.Default.color
+
+        // 0 -> starts with 1; 1 -> starts with 11; 2 -> starts with 21; etc.
+        var counter = 10 * leaderboardModel.page
+
+        for (reputationSum in leaderboardModel.reputation) {
+            embed.field(
+                "#" + ++counter + " Carrier",
+                false
+            ) { getPlayerScore(reputationSum) }
+        }
+
+        leaderboardModel.playerReputation?.let { playerReputation: ReputationSumModel? ->
+            if (leaderboardModel.playerPosition?.let { it != -1 } == true) {
+                embed.field(
+                    "__**Your rank:**__ #" + (leaderboardModel.playerPosition!! + 1),
+                    false
+                ) { getPlayerScore(playerReputation!!) }
+            }
+        }
+
+        return embed
+    }
+
+    fun getPlayerScore(reputation: ReputationSumModel): String {
+        return "<@${reputation.user.id}> - ${reputation.amount} reputation"
     }
 
     private fun MessageBuilder.addClaimedCntButtons() {
         actionRow {
-            interactionButton(ButtonStyle.Primary, "cnt_claim") {
-                disabled = true
-                label = "Claimed"
-            }
-
             interactionButton(ButtonStyle.Secondary, "cnt_unclaim") {
                 label = "Unclaim"
             }
@@ -372,10 +544,6 @@ class CntSystem : Extension() {
             interactionButton(ButtonStyle.Primary, "cnt_claim") {
                 label = "Claim"
             }
-            interactionButton(ButtonStyle.Secondary, "cnt_unclaim") {
-                disabled = true
-                label = "Unclaim"
-            }
             interactionButton(ButtonStyle.Secondary, "cnt_done") {
                 label = "Done"
             }
@@ -384,14 +552,6 @@ class CntSystem : Extension() {
 
     private fun MessageBuilder.addDoneCntButtons() {
         actionRow {
-            interactionButton(ButtonStyle.Primary, "cnt_claim") {
-                disabled = true
-                label = "Claim"
-            }
-            interactionButton(ButtonStyle.Secondary, "cnt_unclaim") {
-                disabled = true
-                label = "Unclaim"
-            }
             interactionButton(ButtonStyle.Secondary, "cnt_done") {
                 disabled = true
                 label = "Done"
@@ -414,5 +574,10 @@ class CntSystem : Extension() {
 
     companion object {
         private const val REPUTATION_VALUE = 1
+        private val leaderboardDescription by lazy {
+            "Check `/help topic:reputation` to see how you can gain reputation.\n" +
+                    "To check your current score, use ${runBlocking { ApplicationService.getGlobalCommandId("rep")?.let { "</rep:$it>" } } ?: "`/rep`"}." // TODO add actual command (which is yet to be implemented)
+        }
+        private val reputationTimeout = Duration.parse("3d")
     }
 }
