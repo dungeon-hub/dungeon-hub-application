@@ -751,7 +751,7 @@ object ApplicationService {
         embed.color = EmbedColor.Default.color
         embed.description = "### Craft and Transfers"
 
-        embed.field("Description", true) { description }
+        embed.field("Request", true) { description }
         embed.field("Value", true) { coinValue }
         embed.field("Requirement", true) { requirement }
         embed.field("Requested by", true) { "<@$userId>" }

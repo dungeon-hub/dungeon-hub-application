@@ -73,7 +73,7 @@ class CntSystem : Extension() {
                 action {
                     event.interaction.modal("Crafts And Transfers", requestType.modalId) {
                         actionRow {
-                            textInput(TextInputStyle.Short, requestType.descriptionId, "Request Description")
+                            textInput(TextInputStyle.Short, requestType.descriptionId, "Request")
                         }
                         actionRow {
                             textInput(TextInputStyle.Short, requestType.valueId, "Value")
