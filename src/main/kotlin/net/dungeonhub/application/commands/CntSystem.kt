@@ -106,7 +106,7 @@ class CntSystem : Extension() {
 
                 val claimerId = event.interaction.user.id.value.toLong()
 
-                if(claimerId == cntRequest.user.id) {
+                if (claimerId == cntRequest.user.id) {
                     event.interaction.respondEphemeral {
                         content = "You cannot claim your own request!"
                     }
@@ -223,7 +223,7 @@ class CntSystem : Extension() {
                     ?: throw CommandExecutionException("Couldn't update CNT request!")
 
                 event.interaction.respondEphemeral {
-                    val embed = ApplicationService.embed
+                    val embed = embed
                     embed.description =
                         "Your CNT request is now marked as completed.\n__Thanks for using our services!__"
                     embeds = mutableListOf(embed)
@@ -266,7 +266,7 @@ class CntSystem : Extension() {
                     val channelId =
                         ServerProperty.CNT_MESSAGES_CHANNEL.getValue(channel.guildId.value.toLong()).orElse(null)
 
-                    val responseEmbed = ApplicationService.embed
+                    val responseEmbed = embed
                     responseEmbed.color(EmbedColor.Default)
                     responseEmbed.description =
                         "Thanks for trusting in our service! I'm now trying to send your CNT request into <#$channelId>"
@@ -351,7 +351,7 @@ class CntSystem : Extension() {
                             return@respond
                         }
 
-                        if(userToRep.id == user.id) {
+                        if (userToRep.id == user.id) {
                             addEmbed {
                                 description = "You can't give yourself reputation!"
                                 color(EmbedColor.Negative)
@@ -368,7 +368,7 @@ class CntSystem : Extension() {
                             ?.filter { it.time.isAfter(timeout) }
                             ?.maxByOrNull { it.time }
 
-                        if(lastRep != null) {
+                        if (lastRep != null) {
                             val ready = java.time.Duration.between(
                                 Instant.now(),
                                 lastRep.time.plusSeconds(reputationTimeout.inWholeSeconds)
@@ -376,7 +376,7 @@ class CntSystem : Extension() {
 
                             addEmbed {
                                 description = "You already added the rep #${lastRep.id} to <@${lastRep.user.id}>.\n" +
-                                        (if(lastRep.reason != null) "The last reputation had the reason: ${lastRep.reason}\n" else "") +
+                                        (if (lastRep.reason != null) "The last reputation had the reason: ${lastRep.reason}\n" else "") +
                                         "The next rep will be available in: $ready"
                                 color(EmbedColor.Negative)
                                 timestamp = lastRep.time.toKotlinInstant()
@@ -391,9 +391,10 @@ class CntSystem : Extension() {
                             ?.filter { it.time.isAfter(timeout) }
                             ?.maxByOrNull { it.time }
 
-                        if(relatedCntRequest == null) {
+                        if (relatedCntRequest == null) {
                             addEmbed {
-                                description = "<@${userToRep.id.value}> has not completed a crafts and transfers request for you in the past $reputationTimeout!"
+                                description =
+                                    "<@${userToRep.id.value}> has not completed a crafts and transfers request for you in the past $reputationTimeout!"
                                 color(EmbedColor.Negative)
                             }
                             return@respond
@@ -412,8 +413,9 @@ class CntSystem : Extension() {
 
                         addEmbed {
                             title = "Rep #${reputation?.id ?: "unknown"} added"
-                            description = "Added ${reputation?.amount ?: 0} reputation to <@${reputation?.user?.id}>${if(reputation?.reason != null) " for: ${reputation.reason}" else ""}.\n" +
-                                    "They now have $totalReputation total reps."
+                            description =
+                                "Added ${reputation?.amount ?: 0} reputation to <@${reputation?.user?.id}>${if (reputation?.reason != null) " for: ${reputation.reason}" else ""}.\n" +
+                                        "They now have $totalReputation total reps."
                             color(EmbedColor.Positive)
                         }
                     }
@@ -429,7 +431,7 @@ class CntSystem : Extension() {
                     val leaderboardTitle = "Leaderboard | Reputation"
 
                     val firstPage = DiscordServerConnection.authenticated()
-                            .loadReputationLeaderboard(guild?.id?.value!!.toLong(), 0, user.id.value.toLong())
+                        .loadReputationLeaderboard(guild?.id?.value!!.toLong(), 0, user.id.value.toLong())
 
                     if (firstPage == null || firstPage.totalPages == 0) {
                         respond {
@@ -443,10 +445,10 @@ class CntSystem : Extension() {
 
                         for (i in 0..<firstPage.totalPages) {
                             val leaderboardModel = DiscordServerConnection.authenticated().loadReputationLeaderboard(
-                                    guild?.id?.value!!.toLong(),
-                                    i,
-                                    user.id.value.toLong()
-                                )
+                                guild?.id?.value!!.toLong(),
+                                i,
+                                user.id.value.toLong()
+                            )
 
                             page(
                                 Page {
