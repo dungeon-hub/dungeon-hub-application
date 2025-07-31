@@ -34,7 +34,6 @@ enum class HelpTopic(
                 .allRoleRequirements
                 ?: emptyList())
                 .filter { it.requirementType == RoleRequirementType.Reputation }
-                .sortedBy { it.count }
                 .takeIf { it.isNotEmpty() }
 
             val roleMessage = reputationRequirements
@@ -50,7 +49,7 @@ enum class HelpTopic(
                             "${it.comparison.readableName.translate()} ${it.count} reps"
                         }
 
-                    "- <@&$roleId> - $conditionText"
+                    "- <@&$roleId> | $conditionText"
                 }
 
             return@DescriptionSupplier HelpDisplay.fromDescription(
