@@ -20,6 +20,7 @@ import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.MessageBuilder
 import dev.kord.rest.builder.message.actionRow
+import dev.kord.rest.request.RestRequestException
 import dev.kordex.core.annotations.AlwaysPublicResponse
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.publicSubCommand
@@ -33,6 +34,7 @@ import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
+import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasPermission
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
@@ -59,6 +61,7 @@ import net.dungeonhub.model.reputation.ReputationCreationModel
 import net.dungeonhub.model.reputation.ReputationLeaderboardModel
 import net.dungeonhub.model.reputation.ReputationModel
 import net.dungeonhub.model.reputation.ReputationSumModel
+import net.dungeonhub.mojang.connection.MojangConnection
 import java.time.Instant
 import kotlin.time.Duration
 import kotlin.time.toKotlinDuration
@@ -145,6 +148,14 @@ class CntSystem : Extension() {
                     ?: DiscordUserConnection.authenticated().updateUser(claimerId, DiscordUserUpdateModel(null))
                     ?: throw CommandExecutionException("Couldn't load CNT claimer!")
 
+                val claimedIgn = claimer.minecraftId?.let(MojangConnection::getNameByUUID)
+                if (claimedIgn == null) {
+                    event.interaction.respondEphemeral {
+                        content = "You need to be linked to be able to claim requests! Please check `/help` to see more information about linking."
+                    }
+                    return@action
+                }
+
                 val updateModel = cntRequest.getUpdateModel()
                 updateModel.claimer = claimer
 
@@ -156,12 +167,28 @@ class CntSystem : Extension() {
                 claimMessage.title = "Claimed!"
                 claimMessage.description = """ 
                     You have claimed a crafts and transfers request.
-                    Do NOT visit the requester. 
+                    Do NOT visit the requester. They will visit you shortly.
                     You are not allowed to give collateral.
                 """
 
                 event.interaction.respondEphemeral {
                     embeds = mutableListOf(claimMessage)
+                }
+
+                try {
+                    event.kord.getUser(Snowflake(updatedCntRequest.user.id))?.dm {
+                        val embed = embed
+                        embed.color(EmbedColor.Positive)
+                        embed.description = "## Your CNT request on `${
+                            event.interaction.guild.asGuildOrNull()?.name
+                        }` has been claimed by <@${claimer.id}> (IGN: ${
+                            claimedIgn
+                        })!\nPlease visit them ingame by using:\n```\n/visit $claimedIgn```"
+                        embed.timestamp = Instant.now().toKotlinInstant()
+                        embeds = mutableListOf(embed)
+                    }
+                } catch (_: RestRequestException) {
+                    // ignore, the user just won't be mentioned in DMs if they don't allow DMs'
                 }
 
                 val originalMessage = event.interaction.message
