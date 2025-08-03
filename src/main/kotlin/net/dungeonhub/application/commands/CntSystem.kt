@@ -4,6 +4,7 @@ import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.entity.TextInputStyle
+import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.channel.GuildMessageChannelBehavior
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
@@ -21,7 +22,9 @@ import dev.kord.rest.builder.message.actionRow
 import dev.kordex.core.annotations.AlwaysPublicResponse
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.long
 import dev.kordex.core.commands.converters.impl.optionalString
+import dev.kordex.core.commands.converters.impl.optionalUser
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.components.components
 import dev.kordex.core.extensions.Extension
@@ -53,6 +56,7 @@ import net.dungeonhub.model.cnt_request.CntRequestCreationModel
 import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
 import net.dungeonhub.model.reputation.ReputationCreationModel
 import net.dungeonhub.model.reputation.ReputationLeaderboardModel
+import net.dungeonhub.model.reputation.ReputationModel
 import net.dungeonhub.model.reputation.ReputationSumModel
 import java.time.Instant
 import kotlin.time.Duration
@@ -403,6 +407,7 @@ class CntSystem : Extension() {
                         val repCreationModel = ReputationCreationModel(
                             userToRep.id.value.toLong(),
                             user.id.value.toLong(),
+                            relatedCntRequest.id,
                             REPUTATION_VALUE,
                             arguments.reason
                         )
@@ -461,6 +466,81 @@ class CntSystem : Extension() {
                     }.send()
                 }
             }
+
+            publicSubCommand(::RepListArguments) {
+                name = "list".toKey()
+                description = "List all reputations by a certain user.".toKey()
+
+                action {
+                    val target: MemberBehavior = arguments.user?.asMemberOrNull(guild!!.id) ?: member!!
+
+                    val reputations = ReputationConnection[target].authenticated().getReputations() ?: emptyList()
+
+                    if (reputations.isEmpty()) {
+                        respond {
+                            addEmbed {
+                                description = "No reputations found for <@${target.id.value}>!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    respondingPaginator {
+                        owner = user
+
+                        for (reputation in reputations) {
+                            page(
+                                Page {
+                                    copy(getReputationEmbed(reputation))
+                                }
+                            )
+                        }
+                    }.send()
+                }
+            }
+
+            publicSubCommand(::RepDeactiveArguments) {
+                name = "deactivate".toKey()
+                description = "Deactivate a reputation.".toKey()
+
+                action {
+                    val reputationId = arguments.id
+
+                    val reputation = DiscordServerConnection.authenticated()
+                        .getReputation(guild!!.id.value.toLong(), reputationId)
+                    if(reputation == null) {
+                        respond {
+                            addEmbed {
+                                description = "Reputation with id $reputationId does not exist!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    val updateModel = reputation.getUpdateModel()
+                    updateModel.active = false
+
+                    val updatedReputation = ReputationConnection[member!!].authenticated()
+                        .updateReputation(reputationId, updateModel)
+                    if(updatedReputation == null) {
+                        respond {
+                            addEmbed {
+                                description = "Couldn't update reputation #$reputationId."
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    respond {
+                        addEmbed {
+                            copy(getReputationEmbed(updatedReputation))
+                        }
+                    }
+                }
+            }
         }
 
         event<GuildButtonInteractionCreateEvent> {
@@ -480,6 +560,22 @@ class CntSystem : Extension() {
                 }
             }
         }
+    }
+
+    fun getReputationEmbed(reputation: ReputationModel) : EmbedBuilder {
+        val embed = embed
+        embed.title = "Reputation #${reputation.id}"
+
+        embed.field("User", true) { "<@${reputation.user.id}>" }
+        embed.field("Reputor", true) { "<@${reputation.reputor.id}>" }
+        embed.field("Amount", true) { reputation.amount.toString() }
+        reputation.reason?.let { embed.field("Reason", true) { it } }
+        embed.field("Active", true) { reputation.active.toString() }
+
+        embed.color(EmbedColor.Default)
+        embed.timestamp = reputation.time.toKotlinInstant()
+
+        return embed
     }
 
     fun getEmptyLeaderboardEmbed(title: String?): EmbedBuilder {
@@ -570,6 +666,20 @@ class CntSystem : Extension() {
             name = "reason".toKey()
             description =
                 "You can provide an additional reason for the rep, e.g. a certain service they helped you with.".toKey()
+        }
+    }
+
+    private class RepListArguments : Arguments() {
+        val user by optionalUser {
+            name = "user".toKey()
+            description = "The discord user to list reputations for.".toKey()
+        }
+    }
+
+    private class RepDeactiveArguments : Arguments() {
+        val id by long {
+            name = "id".toKey()
+            description = "The id of the reputation to deactivate.".toKey()
         }
     }
 
