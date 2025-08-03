@@ -1,5 +1,6 @@
 package net.dungeonhub.application.commands
 
+import com.google.common.collect.Iterables
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Snowflake
@@ -498,7 +499,9 @@ class CntSystem : Extension() {
                 action {
                     val target: MemberBehavior = arguments.user?.asMemberOrNull(guild!!.id) ?: member!!
 
-                    val reputations = ReputationConnection[target].authenticated().getReputations() ?: emptyList()
+                    val reputationConnection = ReputationConnection[target].authenticated()
+
+                    val reputations = reputationConnection.getReputations() ?: emptyList()
 
                     if (reputations.isEmpty()) {
                         respond {
@@ -510,13 +513,22 @@ class CntSystem : Extension() {
                         return@action
                     }
 
+                    val totalReputation = reputationConnection.calculateReputation()
+
                     respondingPaginator {
                         owner = user
 
-                        for (reputation in reputations) {
+                        Iterables.partition(reputations, 10).forEach { reputation ->
                             page(
                                 Page {
-                                    copy(getReputationEmbed(reputation))
+                                    copy(embed)
+                                    color(EmbedColor.Default)
+                                    title = "Reputation #${reputation.first().id} to #${reputation.last().id}"
+                                    description = reputation.joinToString("\n") {
+                                        "${
+                                            if (it.active) ":white_check_mark:" else ":x:"
+                                        } **Reputation #${it.id}**: ${it.amount} ${if (it.amount == 1) "rep" else "reps"} by <@${it.reputor.id}>${if (it.reason != null) " for **reason**: `${it.reason}`" else ""}"
+                                    } + "\n\nTotal amount of reps: ${reputations.size} (${reputations.filter { !it.active }.size} deactivated)\nReputation sum: $totalReputation"
                                 }
                             )
                         }
