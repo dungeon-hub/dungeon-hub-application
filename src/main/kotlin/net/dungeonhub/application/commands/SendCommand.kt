@@ -18,13 +18,13 @@ import dev.kordex.core.commands.converters.impl.optionalBoolean
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
-import net.dungeonhub.application.enums.CntRequestType
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.color
+import net.dungeonhub.enums.CntRequestType
 import net.dungeonhub.i18n.Translations.Command.Send
 
 @LoadExtension

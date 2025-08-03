@@ -8,6 +8,7 @@ import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kord.core.event.interaction.AutoCompleteInteractionCreateEvent
 import dev.kordex.core.commands.converters.AutoCompleteCallback
 import net.dungeonhub.application.enums.KnownStaticResource
+import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.connection.*
 
 object AutoCompletionService {
@@ -173,6 +174,22 @@ object AutoCompletionService {
                 Choice.StringChoice(
                     name = staticResource.loadDisplayName(),
                     value = staticResource.name,
+                    nameLocalizations = Optional()
+                )
+            }.take(25)
+        )
+    }
+
+    val allConfigs: AutoCompleteCallback = { _ ->
+        suggest(
+            ServerProperty.entries.filter {
+                focusedOption.value.isEmpty()
+                        || (it.readableName.translate().contains(focusedOption.value, true)
+                        || it.name.contains(focusedOption.value, true))
+            }.map { property ->
+                Choice.StringChoice(
+                    name = property.readableName.translate(),
+                    value = property.name,
                     nameLocalizations = Optional()
                 )
             }.take(25)

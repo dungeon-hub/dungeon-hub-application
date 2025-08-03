@@ -36,7 +36,6 @@ import dev.kordex.core.utils.hasPermission
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import net.dungeonhub.application.connection.copy
-import net.dungeonhub.application.enums.CntRequestType
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.HelpTopic
 import net.dungeonhub.application.enums.ServerProperty
@@ -51,6 +50,7 @@ import net.dungeonhub.connection.CntRequestConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.connection.ReputationConnection
+import net.dungeonhub.enums.CntRequestType
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.model.cnt_request.CntRequestCreationModel
 import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
@@ -104,6 +104,29 @@ class CntSystem : Extension() {
                 if (cntRequest.claimer != null) {
                     event.interaction.respondEphemeral {
                         content = "This request has already been claimed!"
+                    }
+                    return@action
+                }
+
+                val requestType = cntRequest.requestType
+
+                val serverProperty = ServerProperty.entries.firstOrNull {
+                    it.readableName.translate() == "id_cnt_role_requirement_${requestType.valueRange}"
+                }
+
+                val requiredRole =
+                    serverProperty?.getValue(event.interaction.guildId.value.toLong())?.orElse(null)?.toLongOrNull()
+
+                if (
+                    requiredRole != null
+                    && !event.interaction.user.asMemberOrNull(event.interaction.guildId).roleIds.contains(
+                        Snowflake(
+                            requiredRole
+                        )
+                    )
+                ) {
+                    event.interaction.respondEphemeral {
+                        content = "You don't have the required role <@&$requiredRole> to claim requests of that value!"
                     }
                     return@action
                 }
@@ -311,6 +334,7 @@ class CntSystem : Extension() {
 
                     val creationModel = CntRequestCreationModel(
                         messageId.value.toLong(),
+                        requestType,
                         requesterUser.id.value.toLong(),
                         null,
                         Instant.now(),
