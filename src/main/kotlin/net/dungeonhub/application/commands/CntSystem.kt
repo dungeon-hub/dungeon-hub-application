@@ -509,7 +509,7 @@ class CntSystem : Extension() {
 
                     val reputation = DiscordServerConnection.authenticated()
                         .getReputation(guild!!.id.value.toLong(), reputationId)
-                    if(reputation == null) {
+                    if (reputation == null) {
                         respond {
                             addEmbed {
                                 description = "Reputation with id $reputationId does not exist!"
@@ -524,7 +524,7 @@ class CntSystem : Extension() {
 
                     val updatedReputation = ReputationConnection[member!!].authenticated()
                         .updateReputation(reputationId, updateModel)
-                    if(updatedReputation == null) {
+                    if (updatedReputation == null) {
                         respond {
                             addEmbed {
                                 description = "Couldn't update reputation #$reputationId."
@@ -562,7 +562,7 @@ class CntSystem : Extension() {
         }
     }
 
-    fun getReputationEmbed(reputation: ReputationModel) : EmbedBuilder {
+    fun getReputationEmbed(reputation: ReputationModel): EmbedBuilder {
         val embed = embed
         embed.title = "Reputation #${reputation.id}"
 
