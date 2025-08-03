@@ -109,6 +109,15 @@ class CntSystem : Extension() {
                     return@action
                 }
 
+                val claimerId = event.interaction.user.id.value.toLong()
+
+                if (claimerId == cntRequest.user.id) {
+                    event.interaction.respondEphemeral {
+                        content = "You cannot claim your own request!"
+                    }
+                    return@action
+                }
+
                 val requestType = cntRequest.requestType
 
                 val serverProperty = ServerProperty.entries.firstOrNull {
@@ -128,15 +137,6 @@ class CntSystem : Extension() {
                 ) {
                     event.interaction.respondEphemeral {
                         content = "You don't have the required role <@&$requiredRole> to claim requests of that value!"
-                    }
-                    return@action
-                }
-
-                val claimerId = event.interaction.user.id.value.toLong()
-
-                if (claimerId == cntRequest.user.id) {
-                    event.interaction.respondEphemeral {
-                        content = "You cannot claim your own request!"
                     }
                     return@action
                 }
