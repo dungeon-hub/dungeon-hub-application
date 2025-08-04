@@ -37,6 +37,7 @@ import net.dungeonhub.model.warning.WarningEvidenceCreationModel
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import org.slf4j.LoggerFactory
+import java.time.temporal.ChronoUnit
 
 @OptIn(AlwaysPublicResponse::class)
 @LoadExtension
@@ -182,8 +183,9 @@ class WarningSystem : Extension() {
                                     ""
                                 }
                             }${
-                                if (addedWarning.warningModel.warningType == WarningType.Strike) {
-                                    "\n\n_Please note that a ${addedWarning.warningModel.warningType.name} warning expires after 3 months._"
+                                if (addedWarning.warningModel.warningType.expiration != null) {
+                                    val expiresAfter = addedWarning.warningModel.warningType.expiration?.get(ChronoUnit.MONTHS)
+                                    "\n\n_Please note that a ${addedWarning.warningModel.warningType.name} expires after **$expiresAfter month${if (expiresAfter == 1L) "" else "s"}**._"
                                 } else {
                                     ""
                                 }
@@ -221,8 +223,9 @@ class WarningSystem : Extension() {
                                 dmEmbed.description = "You currently have ${activeWarnings.count()} active warnings."
                             }
 
-                            if (addedWarning.warningModel.warningType == WarningType.Strike) {
-                                dmEmbed.description += "\n\n_Please note that a ${addedWarning.warningModel.warningType.name} warning expires after 3 months._\n_If you want a related punishment removed **after the strikes have expired**, please contact server staff through the support._"
+                            if (addedWarning.warningModel.warningType.expiration != null) {
+                                val expiresAfter = addedWarning.warningModel.warningType.expiration?.get(ChronoUnit.MONTHS)
+                                dmEmbed.description += "\n\n_Please note that a ${addedWarning.warningModel.warningType.name} expires after **$expiresAfter month${if (expiresAfter == 1L) "" else "s"}**._\n_If you want a related punishment removed **after the strikes have expired**, please contact server staff through the support._"
                             }
 
                             this@dm.embeds = mutableListOf(dmEmbed)
