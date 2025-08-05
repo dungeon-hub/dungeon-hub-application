@@ -1,10 +1,7 @@
 package net.dungeonhub.application.commands
 
 import com.google.common.collect.Iterables
-import dev.kord.common.entity.ButtonStyle
-import dev.kord.common.entity.Permission
-import dev.kord.common.entity.Snowflake
-import dev.kord.common.entity.TextInputStyle
+import dev.kord.common.entity.*
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.channel.GuildMessageChannelBehavior
 import dev.kord.core.behavior.channel.asChannelOfOrNull
@@ -58,9 +55,7 @@ import net.dungeonhub.i18n.Translations
 import net.dungeonhub.model.cnt_request.CntRequestCreationModel
 import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
 import net.dungeonhub.model.reputation.ReputationCreationModel
-import net.dungeonhub.model.reputation.ReputationLeaderboardModel
 import net.dungeonhub.model.reputation.ReputationModel
-import net.dungeonhub.model.reputation.ReputationSumModel
 import net.dungeonhub.mojang.connection.MojangConnection
 import java.time.Instant
 import kotlin.time.Duration
@@ -386,142 +381,104 @@ class CntSystem : Extension() {
             }
         }
 
-        publicSlashCommand {
+        publicSlashCommand(::RepArguments) {
             name = Translations.Command.Rep.name
             description = Translations.Command.Rep.description
             allowInDms = false
 
-            publicSubCommand(::RepAddArguments) {
-                name = Translations.Command.Rep.Add.name
-                description = Translations.Command.Rep.Add.description
+            action {
+                respond {
+                    val userToRep = arguments.user.asMemberOrNull(guild!!.id)
 
-                action {
-                    respond {
-                        val userToRep = arguments.user.asMemberOrNull(guild!!.id)
-
-                        if (userToRep == null) {
-                            addEmbed {
-                                description = "That user is not on the server!"
-                                color(EmbedColor.Negative)
-                            }
-                            return@respond
+                    if (userToRep == null) {
+                        addEmbed {
+                            description = "That user is not on the server!"
+                            color(EmbedColor.Negative)
                         }
+                        return@respond
+                    }
 
-                        if (userToRep.id == user.id) {
-                            addEmbed {
-                                description = "You can't give yourself reputation!"
-                                color(EmbedColor.Negative)
-                            }
-                            return@respond
+                    if (userToRep.id == user.id) {
+                        addEmbed {
+                            description = "You can't give yourself reputation!"
+                            color(EmbedColor.Negative)
                         }
+                        return@respond
+                    }
 
-                        val timeout = Instant.now().minusSeconds(reputationTimeout.inWholeSeconds)
+                    val timeout = Instant.now().minusSeconds(reputationTimeout.inWholeSeconds)
 
-                        val reputationConnection = ReputationConnection[userToRep].authenticated()
+                    val reputationConnection = ReputationConnection[userToRep].authenticated()
 
-                        val lastRep = reputationConnection.getReputations()
-                            ?.filter { it.reputor.id == user.id.value.toLong() }
-                            ?.filter { it.time.isAfter(timeout) }
-                            ?.maxByOrNull { it.time }
+                    val lastRep = reputationConnection.getReputations()
+                        ?.filter { it.reputor.id == user.id.value.toLong() }
+                        ?.filter { it.time.isAfter(timeout) }
+                        ?.maxByOrNull { it.time }
 
-                        if (lastRep != null) {
-                            val ready = java.time.Duration.between(
-                                Instant.now(),
-                                lastRep.time.plusSeconds(reputationTimeout.inWholeSeconds)
-                            ).withNanos(0).toKotlinDuration()
-
-                            addEmbed {
-                                description = "You already added the rep #${lastRep.id} to <@${lastRep.user.id}>.\n" +
-                                        (if (lastRep.reason != null) "The last reputation had the reason: ${lastRep.reason}\n" else "") +
-                                        "The next rep will be available in: $ready"
-                                color(EmbedColor.Negative)
-                                timestamp = lastRep.time.toKotlinInstant()
-                            }
-                            return@respond
-                        }
-
-                        val relatedCntRequest = CntRequestConnection[guild!!.id.value.toLong()].authenticated()
-                            .findCntRequestsByUser(user.id.value.toLong())
-                            ?.filter { it.completed }
-                            ?.filter { it.claimer?.id == userToRep.id.value.toLong() }
-                            ?.filter { it.time.isAfter(timeout) }
-                            ?.maxByOrNull { it.time }
-
-                        if (relatedCntRequest == null) {
-                            addEmbed {
-                                description =
-                                    "<@${userToRep.id.value}> has not completed a crafts and transfers request for you in the past $reputationTimeout!"
-                                color(EmbedColor.Negative)
-                            }
-                            return@respond
-                        }
-
-                        val repCreationModel = ReputationCreationModel(
-                            userToRep.id.value.toLong(),
-                            user.id.value.toLong(),
-                            relatedCntRequest.id,
-                            REPUTATION_VALUE,
-                            arguments.reason
-                        )
-
-                        val reputation = reputationConnection.addReputation(repCreationModel)
-
-                        val totalReputation = reputationConnection.calculateReputation()
+                    if (lastRep != null) {
+                        val ready = java.time.Duration.between(
+                            Instant.now(),
+                            lastRep.time.plusSeconds(reputationTimeout.inWholeSeconds)
+                        ).withNanos(0).toKotlinDuration()
 
                         addEmbed {
-                            title = "Rep #${reputation?.id ?: "unknown"} added"
+                            description = "You already added the rep #${lastRep.id} to <@${lastRep.user.id}>.\n" +
+                                    (if (lastRep.reason != null) "The last reputation had the reason: ${lastRep.reason}\n" else "") +
+                                    "The next rep will be available in: $ready"
+                            color(EmbedColor.Negative)
+                            timestamp = lastRep.time.toKotlinInstant()
+                        }
+                        return@respond
+                    }
+
+                    val relatedCntRequest = CntRequestConnection[guild!!.id.value.toLong()].authenticated()
+                        .findCntRequestsByUser(user.id.value.toLong())
+                        ?.filter { it.completed }
+                        ?.filter { it.claimer?.id == userToRep.id.value.toLong() }
+                        ?.filter { it.time.isAfter(timeout) }
+                        ?.maxByOrNull { it.time }
+
+                    if (relatedCntRequest == null) {
+                        addEmbed {
                             description =
-                                "Added ${reputation?.amount ?: 0} reputation to <@${reputation?.user?.id}>${if (reputation?.reason != null) " for: ${reputation.reason}" else ""}.\n" +
-                                        "They now have $totalReputation total reps."
-                            color(EmbedColor.Positive)
+                                "<@${userToRep.id.value}> has not completed a crafts and transfers request for you in the past $reputationTimeout!"
+                            color(EmbedColor.Negative)
                         }
+                        return@respond
+                    }
+
+                    val repCreationModel = ReputationCreationModel(
+                        userToRep.id.value.toLong(),
+                        user.id.value.toLong(),
+                        relatedCntRequest.id,
+                        REPUTATION_VALUE,
+                        arguments.reason
+                    )
+
+                    val reputation = reputationConnection.addReputation(repCreationModel)
+
+                    val totalReputation = reputationConnection.calculateReputation()
+
+                    addEmbed {
+                        title = "Rep #${reputation?.id ?: "unknown"} added"
+                        description =
+                            "Added ${reputation?.amount ?: 0} reputation to <@${reputation?.user?.id}>${if (reputation?.reason != null) " for: ${reputation.reason}" else ""}.\n" +
+                                    "They now have $totalReputation total reps."
+                        color(EmbedColor.Positive)
                     }
                 }
             }
+        }
 
-            // TODO maybe move that somewhere else idk
-            publicSubCommand {
-                name = "leaderboard".toKey()
-                description = "Show the reputation leaderboard for this server.".toKey()
-
-                action {
-                    val leaderboardTitle = "Leaderboard | Reputation"
-
-                    val firstPage = DiscordServerConnection.authenticated()
-                        .loadReputationLeaderboard(guild?.id?.value!!.toLong(), 0, user.id.value.toLong())
-
-                    if (firstPage == null || firstPage.totalPages == 0) {
-                        respond {
-                            embeds = mutableListOf(getEmptyLeaderboardEmbed(leaderboardTitle))
-                        }
-                        return@action
-                    }
-
-                    respondingPaginator {
-                        owner = user
-
-                        for (i in 0..<firstPage.totalPages) {
-                            val leaderboardModel = DiscordServerConnection.authenticated().loadReputationLeaderboard(
-                                guild?.id?.value!!.toLong(),
-                                i,
-                                user.id.value.toLong()
-                            )
-
-                            page(
-                                Page {
-                                    val embed = getReputationEmbed(leaderboardTitle, leaderboardModel)
-
-                                    copy(embed)
-                                }
-                            )
-                        }
-                    }.send()
-                }
-            }
+        publicSlashCommand {
+            name = Translations.Command.ManageReps.name
+            description = Translations.Command.ManageReps.description
+            allowInDms = false
+            defaultMemberPermissions = Permissions(Permission.ManageMessages)
 
             publicSubCommand(::RepListArguments) {
-                name = "list".toKey()
-                description = "List all reputations by a certain user.".toKey()
+                name = Translations.Command.ManageReps.List.name
+                description = Translations.Command.ManageReps.List.description
 
                 action {
                     val target: MemberBehavior = arguments.user?.asMemberOrNull(guild!!.id) ?: member!!
@@ -563,9 +520,9 @@ class CntSystem : Extension() {
                 }
             }
 
-            publicSubCommand(::RepDeactiveArguments) {
-                name = "deactivate".toKey()
-                description = "Deactivate a reputation.".toKey()
+            publicSubCommand(::RepDeactivateArguments) {
+                name = Translations.Command.ManageReps.Deactivate.name
+                description = Translations.Command.ManageReps.Deactivate.description
 
                 action {
                     val reputationId = arguments.id
@@ -641,53 +598,6 @@ class CntSystem : Extension() {
         return embed
     }
 
-    fun getEmptyLeaderboardEmbed(title: String?): EmbedBuilder {
-        val embed = embed
-        embed.title = title
-        embed.color = EmbedColor.Negative.color
-        embed.description = """
-             No reputation has been gained yet!
-             $leaderboardDescription
-             """.trimIndent()
-        return embed
-    }
-
-    fun getReputationEmbed(title: String?, leaderboardModel: ReputationLeaderboardModel?): EmbedBuilder {
-        if (leaderboardModel == null) {
-            return getEmptyLeaderboardEmbed(title)
-        }
-
-        val embed = embed
-        embed.title = title
-        embed.description = leaderboardDescription
-        embed.color = EmbedColor.Default.color
-
-        // 0 -> starts with 1; 1 -> starts with 11; 2 -> starts with 21; etc.
-        var counter = 10 * leaderboardModel.page
-
-        for (reputationSum in leaderboardModel.reputation) {
-            embed.field(
-                "#" + ++counter + " Carrier",
-                false
-            ) { getPlayerScore(reputationSum) }
-        }
-
-        leaderboardModel.playerReputation?.let { playerReputation: ReputationSumModel? ->
-            if (leaderboardModel.playerPosition?.let { it != -1 } == true) {
-                embed.field(
-                    "__**Your rank:**__ #" + (leaderboardModel.playerPosition!! + 1),
-                    false
-                ) { getPlayerScore(playerReputation!!) }
-            }
-        }
-
-        return embed
-    }
-
-    fun getPlayerScore(reputation: ReputationSumModel): String {
-        return "<@${reputation.user.id}> - ${reputation.amount} reputation"
-    }
-
     private fun MessageBuilder.addClaimedCntButtons() {
         actionRow {
             interactionButton(ButtonStyle.Secondary, "cnt_unclaim") {
@@ -719,7 +629,7 @@ class CntSystem : Extension() {
         }
     }
 
-    private class RepAddArguments : Arguments() {
+    private class RepArguments : Arguments() {
         val user by user {
             name = "user".toKey()
             description = "The discord user to rep.".toKey()
@@ -739,7 +649,7 @@ class CntSystem : Extension() {
         }
     }
 
-    private class RepDeactiveArguments : Arguments() {
+    private class RepDeactivateArguments : Arguments() {
         val id by long {
             name = "id".toKey()
             description = "The id of the reputation to deactivate.".toKey()
@@ -748,10 +658,6 @@ class CntSystem : Extension() {
 
     companion object {
         private const val REPUTATION_VALUE = 1
-        private val leaderboardDescription by lazy {
-            "Check `/help topic:reputation` to see how you can gain reputation.\n" +
-                    "To check your current score, use ${ApplicationService.getSlashCommandDisplay("rep")}." // TODO add actual command (which is yet to be implemented)
-        }
         private val reputationTimeout = Duration.parse("3d")
     }
 }
