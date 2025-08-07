@@ -57,12 +57,14 @@ import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
 import net.dungeonhub.model.reputation.ReputationCreationModel
 import net.dungeonhub.model.reputation.ReputationModel
 import net.dungeonhub.mojang.connection.MojangConnection
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import kotlin.time.Duration
 import kotlin.time.toKotlinDuration
 
 @LoadExtension
 class CntSystem : Extension() {
+    private val logger = LoggerFactory.getLogger(CntSystem::class.java)
     override val name = "cnt-system"
 
     @OptIn(AlwaysPublicResponse::class)
@@ -182,8 +184,9 @@ class CntSystem : Extension() {
                         embed.timestamp = Instant.now().toKotlinInstant()
                         embeds = mutableListOf(embed)
                     }
-                } catch (_: RestRequestException) {
+                } catch (restRequestException: RestRequestException) {
                     // ignore, the user just won't be mentioned in DMs if they don't allow DMs'
+                    logger.error("Error when dming user ${updatedCntRequest.user.id} about their claimed CNT request.", restRequestException)
                 }
 
                 val originalMessage = event.interaction.message
