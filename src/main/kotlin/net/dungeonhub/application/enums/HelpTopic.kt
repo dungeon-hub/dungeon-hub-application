@@ -72,7 +72,7 @@ enum class HelpTopic(
                         } +
                         "\n" +
                         "\n" +
-                        "Remember that having higher rep is not a guarantee you won't be scammed, however it is makes it a lot more unlikely.\n" +
+                        "Remember that having higher rep is not a guarantee you won't be scammed, however it makes it a lot more unlikely.\n" +
                         "If you would like to report someone for scamming, contact the staff team, e.g. through a support ticket."
             )
         }
