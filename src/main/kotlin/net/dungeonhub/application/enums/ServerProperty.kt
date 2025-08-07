@@ -41,7 +41,7 @@ enum class ServerProperty(
     CNT_ROLE_REQUIREMENT_UNDER_THREE("id_cnt_role_requirement_<3", ServerPropertyType.ROLE),
     CNT_ROLE_REQUIREMENT_THREE_TO_FIVE("id_cnt_role_requirement_3-5", ServerPropertyType.ROLE),
     CNT_ROLE_REQUIREMENT_FIVE_TO_TEN("id_cnt_role_requirement_5-10", ServerPropertyType.ROLE),
-    CNT_ROLE_REQUIREMENT_TEN_TO_FIVETEEN("id_cnt_role_requirement_10-15", ServerPropertyType.ROLE),
+    CNT_ROLE_REQUIREMENT_TEN_TO_FIFTEEN("id_cnt_role_requirement_10-15", ServerPropertyType.ROLE),
     CNT_ROLE_REQUIREMENT_FIVETEEN_TO_TWENTY("id_cnt_role_requirement_15-20", ServerPropertyType.ROLE),
     CNT_ROLE_REQUIREMENT_TWENTY_TO_TWENTIFIVE("id_cnt_role_requirement_20-25", ServerPropertyType.ROLE),
     CNT_ROLE_REQUIREMENT_TWENTIFIVE_TO_FIFTY("id_cnt_role_requirement_25-50", ServerPropertyType.ROLE),
