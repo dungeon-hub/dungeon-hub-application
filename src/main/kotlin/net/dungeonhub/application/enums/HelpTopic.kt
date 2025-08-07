@@ -9,6 +9,7 @@ import dev.kordex.core.i18n.types.Key
 import lombok.Getter
 import net.dungeonhub.application.exceptions.MustBeServerException
 import net.dungeonhub.application.misc.HelpDisplay
+import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.RoleRequirementConnection
@@ -56,7 +57,9 @@ enum class HelpTopic(
                 "Reps (reputation points) are a way to easily distinguish which players have helped others the most, and subsequently, are more **trustworthy** to handle your requests.\n" +
                         "\n" +
                         "## **Available commands:**\n" +
-                        "TBD\n" + // TODO
+                        "- ${ApplicationService.getSlashCommandDisplay("rep")} - Give someone reputation for handling your CNT request.\n" +
+                        "- ${ApplicationService.getSlashCommandDisplay("leaderboard reputation")} - Check your current reputation and leaderboard spot.\n" +
+                        "- `/help topic:reputation` - Shows this informative message.\n" +
                         "\n" +
                         "## **Reputations milestones:**\n" +
                         if (roleMessage != null) {
