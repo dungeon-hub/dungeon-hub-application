@@ -129,7 +129,7 @@ class CntSystem : Extension() {
 
                 if (
                     requiredRole != null
-                    && !event.interaction.user.asMemberOrNull(event.interaction.guildId).roleIds.contains(
+                    && !event.interaction.user.roleIds.contains(
                         Snowflake(
                             requiredRole
                         )
