@@ -29,6 +29,7 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.extensions.publicUserCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -54,9 +55,11 @@ import java.util.*
 @LoadExtension
 class LinkingSystem : Extension() {
     override val name = "linking-system"
-    private val scheduler = Scheduler()
+    private lateinit var scheduler: Scheduler
 
     override suspend fun setup() {
+        scheduler = Scheduler()
+
         publicSlashCommand(::SingleIgnArguments) {
             name = Link.name
             description = Link.description
@@ -554,6 +557,10 @@ class LinkingSystem : Extension() {
                 }
             }
         }
+    }
+
+    override suspend fun unload() {
+        scheduler.cancel("Extension shutting down.")
     }
 
     class SingleIgnArguments : Arguments() {
