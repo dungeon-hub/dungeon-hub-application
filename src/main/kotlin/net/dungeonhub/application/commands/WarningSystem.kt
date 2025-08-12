@@ -199,7 +199,7 @@ class WarningSystem : Extension() {
                                     DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
                                 }
                             }
-                            .orElse(null)
+                            ?.orElse(null)
                             ?.let { channel ->
                                 channel.createMessage {
                                     val logEmbed = ApplicationService.formatWarnLog(addedWarning.warningModel)
@@ -452,8 +452,8 @@ class WarningSystem : Extension() {
 
     private fun getChannelProperty(warningType: WarningType): ServerProperty {
         return when (warningType) {
-            WarningType.Serious, WarningType.Major, WarningType.Minor -> ServerProperty.MODERATION_LOGS_CHANNEL
-            WarningType.Strike, WarningType.Warning -> ServerProperty.STRIKES_LOGS_CHANNEL
+            WarningType.Serious, WarningType.Major, WarningType.Minor, WarningType.Warning -> ServerProperty.MODERATION_LOGS_CHANNEL
+            WarningType.Strike -> ServerProperty.STRIKES_LOGS_CHANNEL
         }
     }
 }
