@@ -225,7 +225,7 @@ class WarningSystem : Extension() {
 
                             if (addedWarning.warningModel.warningType.expiration != null) {
                                 val expiresAfter = addedWarning.warningModel.warningType.expiration?.get(ChronoUnit.MONTHS)
-                                dmEmbed.description += "\n\n_Please note that a ${addedWarning.warningModel.warningType.name} expires after **$expiresAfter month${if (expiresAfter == 1L) "" else "s"}**._\n_If you want a related punishment removed **after the strikes have expired**, please contact server staff through the support._"
+                                dmEmbed.description += "\n\n_Please note that a ${addedWarning.warningModel.warningType.name} expires after **$expiresAfter month${if (expiresAfter == 1L) "" else "s"}**._\n_If you want a related punishment removed **after the ${addedWarning.warningModel.warningType.name} expired**, please contact server staff through the support._"
                             }
 
                             this@dm.embeds = mutableListOf(dmEmbed)
