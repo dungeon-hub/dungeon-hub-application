@@ -2,6 +2,7 @@ package net.dungeonhub.application.enums
 
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.User
+import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.i18n.types.Key
@@ -10,6 +11,8 @@ import net.dungeonhub.application.exceptions.MustBeServerException
 import net.dungeonhub.application.misc.HelpDisplay
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.connection.RoleRequirementConnection
+import net.dungeonhub.enums.RoleRequirementType
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
 
@@ -19,7 +22,63 @@ enum class HelpTopic(
     val title: String,
     val description: DescriptionSupplier
 ) : ChoiceEnum {
-    SCORE("score", "Carry Score",
+    REPUTATION(
+        "reputation", "Reputation points",
+        DescriptionSupplier { _: User, guild: Guild? ->
+            if (guild == null) {
+                return@DescriptionSupplier HelpDisplay.fromException(MustBeServerException())
+            }
+
+            val reputationRequirements = (RoleRequirementConnection[guild.id.value.toLong()]
+                .authenticated()
+                .allRoleRequirements
+                ?: emptyList())
+                .filter { it.requirementType == RoleRequirementType.Reputation }
+                .takeIf { it.isNotEmpty() }
+
+            val roleMessage = reputationRequirements
+                ?.groupBy { it.discordRole.id }
+                ?.toList()
+                ?.sortedBy { (_, requirements) ->
+                    requirements.minOf { it.count }
+                }
+                ?.map { (roleId, roleRequirements) ->
+                    val conditionText = roleRequirements
+                        .sortedBy { it.count }
+                        .joinToString(" and ") {
+                            "${it.comparison.readableName.translate()} ${it.count} reps"
+                        }
+
+                    "- <@&$roleId> | $conditionText"
+                }
+
+            return@DescriptionSupplier HelpDisplay.fromDescription(
+                "Reps (reputation points) are a way to easily distinguish which players have helped others the most, and subsequently, are more **trustworthy** to handle your requests.\n" +
+                        "\n" +
+                        "## **Available commands:**\n" +
+                        "- `/rep` - Give someone reputation for handling your CNT request.\n" +
+                        "- `/leaderboard reputation` - Check your current reputation and leaderboard spot.\n" +
+                        "- `/help topic:reputation` - Shows this informative message.\n" +
+                        "\n" +
+                        "## **Reputations milestones:**\n" +
+                        if (roleMessage != null) {
+                            "As you climb up in rep points, you will obtain new roles showcasing your dedication to helping other players.\n" +
+                                    "\n" +
+                                    "The roles and their requirements are as follows:\n" +
+                                    roleMessage.joinToString("\n")
+                        } else {
+                            "On this server, unfortunately no roles can be gained from reputation points.\n" +
+                                    "Tell the admins to set up some [role requirements](https://docs.dungeon-hub.net/role-management.html#role-requirements)!"
+                        } +
+                        "\n" +
+                        "\n" +
+                        "Remember that having higher rep is not a guarantee you won't be scammed, however it makes it a lot more unlikely.\n" +
+                        "If you would like to report someone for scamming, contact the staff team, e.g. through a support ticket."
+            )
+        }
+    ),
+    SCORE(
+        "score", "Carry Score",
         DescriptionSupplier { _: User, server: Guild? ->
             if (server == null) {
                 return@DescriptionSupplier HelpDisplay.fromException(MustBeServerException())
@@ -148,7 +207,8 @@ enum class HelpTopic(
 
             HelpDisplay(description, EmbedColor.Default, embedFields)
         }),
-    VERIFICATION("verification", "How to verify",
+    VERIFICATION(
+        "verification", "How to verify",
         DescriptionSupplier { user: User, _: Guild? ->
             HelpDisplay.fromDescription(
                 "To link your Minecraft account to your Discord account:\n" +
@@ -165,14 +225,38 @@ enum class HelpTopic(
                         "\n" +
                         "> If you think you're linked to the wrong Minecraft account, use the `/unlink` command.\n" +
                         "You can find a video example [here]("
-                        + ContentConnection.authenticated().getStaticUrl(KnownStaticResource.VerificationExample.path).build().toUrl()
+                        + ContentConnection.authenticated().getStaticUrl(KnownStaticResource.VerificationExample.path)
+                    .build().toUrl()
                         + ")."
             )
         });
 
-    constructor(readableName: String, title: String, description: DescriptionSupplier) : this(readableName.toKey(), title, description)
+    constructor(readableName: String, title: String, description: DescriptionSupplier) : this(
+        readableName.toKey(),
+        title,
+        description
+    )
 
     fun interface DescriptionSupplier {
         fun getDescription(user: User, server: Guild?): HelpDisplay
+    }
+
+    companion object {
+        fun generateHelpEmbed(helpTopic: HelpTopic, user: User, guild: Guild?): EmbedBuilder {
+            val embed = EmbedBuilder()
+            embed.title = "**" + helpTopic.title + "**"
+
+            val helpDisplay = helpTopic.description.getDescription(
+                user,
+                guild
+            )
+
+            embed.color = helpDisplay.embedColor.color
+            embed.description = helpDisplay.description
+
+            helpDisplay.fields.forEach { embed.field(it.key, false) { it.value } }
+
+            return embed
+        }
     }
 }

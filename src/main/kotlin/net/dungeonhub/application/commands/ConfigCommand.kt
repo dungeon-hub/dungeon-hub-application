@@ -19,6 +19,7 @@ import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.InvalidOptionException
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.application.service.ServerService
 import net.dungeonhub.i18n.Translations.Command.Config
 import java.util.stream.Collectors
@@ -283,10 +284,10 @@ class ConfigCommand : Extension() {
     }
 
     inner class GetArguments : Arguments() {
-        val property by stringChoice {
+        val property by string {
             name = "property".toKey()
             description = "The property to choose.".toKey()
-            choices = ServerProperty.entries.associate { it.name.toKey() to it.name }.toMutableMap()
+            autoCompleteCallback = AutoCompletionService.allConfigs
         }
 
         fun getProperty(serverId: Long): ServerProperty {

@@ -28,8 +28,8 @@ import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.extensions.publicUserCommand
 import dev.kordex.core.i18n.toKey
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -55,9 +55,11 @@ import java.util.*
 @LoadExtension
 class LinkingSystem : Extension() {
     override val name = "linking-system"
-    private val linkingScope = CoroutineScope(Dispatchers.Default)
+    private lateinit var scheduler: Scheduler
 
     override suspend fun setup() {
+        scheduler = Scheduler()
+
         publicSlashCommand(::SingleIgnArguments) {
             name = Link.name
             description = Link.description
@@ -113,21 +115,21 @@ class LinkingSystem : Extension() {
                     embed.color = EmbedColor.Positive.color
 
                     embeds = mutableListOf(embed)
+                }
 
-                    linkingScope.launch {
-                        if (guild != null) {
-                            val member = user.asMember(guild!!.id)
+                scheduler.launch {
+                    if (guild != null) {
+                        val member = user.asMember(guild!!.id)
 
-                            val roles = RolesService.updateRoles(member)
+                        val roles = RolesService.updateRoles(member)
 
-                            NicknameService.updateNickname(member, roles)
-                        } else {
-                            val user = user.asUser()
+                        NicknameService.updateNickname(member, roles)
+                    } else {
+                        val user = user.asUser()
 
-                            val roles = RolesService.updateRoles(user)
+                        val roles = RolesService.updateRoles(user)
 
-                            NicknameService.updateNickname(user, roles)
-                        }
+                        NicknameService.updateNickname(user, roles)
                     }
                 }
             }
@@ -406,7 +408,7 @@ class LinkingSystem : Extension() {
                     }
                 }
 
-                linkingScope.launch {
+                scheduler.launch {
                     val user = user.asUser()
 
                     val roles = RolesService.updateRoles(user)
@@ -548,13 +550,17 @@ class LinkingSystem : Extension() {
 
         event<MemberJoinEvent> {
             action {
-                linkingScope.launch {
+                scheduler.launch {
                     val roles: List<Role> = RolesService.updateRoles(event.member)
 
                     NicknameService.updateNickname(event.member, roles)
                 }
             }
         }
+    }
+
+    override suspend fun unload() {
+        scheduler.cancel("Extension shutting down.")
     }
 
     class SingleIgnArguments : Arguments() {

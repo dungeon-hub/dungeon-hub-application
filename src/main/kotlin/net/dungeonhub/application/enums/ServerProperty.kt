@@ -37,7 +37,18 @@ enum class ServerProperty(
     CNT_MESSAGES_CHANNEL("cnt_messages_channel", ServerPropertyType.CHANNEL),
     CNT_INFORMATION_CHANNEL("cnt_information_channel", ServerPropertyType.CHANNEL),
 
-    SCORE_MANAGEMENT_ROLE("id_score_management_score", ServerPropertyType.ROLE);
+    SCORE_MANAGEMENT_ROLE("id_score_management_score", ServerPropertyType.ROLE),
+    CNT_ROLE_REQUIREMENT_UNDER_THREE("id_cnt_role_requirement_<3", ServerPropertyType.ROLE),
+    CNT_ROLE_REQUIREMENT_THREE_TO_FIVE("id_cnt_role_requirement_3-5", ServerPropertyType.ROLE),
+    CNT_ROLE_REQUIREMENT_FIVE_TO_TEN("id_cnt_role_requirement_5-10", ServerPropertyType.ROLE),
+    CNT_ROLE_REQUIREMENT_TEN_TO_FIFTEEN("id_cnt_role_requirement_10-15", ServerPropertyType.ROLE),
+    CNT_ROLE_REQUIREMENT_FIFTEEN_TO_TWENTY("id_cnt_role_requirement_15-20", ServerPropertyType.ROLE),
+    CNT_ROLE_REQUIREMENT_TWENTY_TO_TWENTYFIVE("id_cnt_role_requirement_20-25", ServerPropertyType.ROLE),
+    CNT_ROLE_REQUIREMENT_TWENTYFIVE_TO_FIFTY("id_cnt_role_requirement_25-50", ServerPropertyType.ROLE),
+    CNT_ROLE_REQUIREMENT_FIFTY_TO_HUNDRED("id_cnt_role_requirement_50-100", ServerPropertyType.ROLE),
+    CNT_ROLE_REQUIREMENT_HUNDRED_TO_TWOHUNDRED("id_cnt_role_requirement_100-200", ServerPropertyType.ROLE),
+    CNT_ROLE_REQUIREMENT_TWOHUNDRED_TO_FOURHUNDRED("id_cnt_role_requirement_200-400", ServerPropertyType.ROLE),
+    CNT_ROLE_REQUIREMENT_OVER_FOURHUNDRED("id_cnt_role_requirement_400+", ServerPropertyType.ROLE);
 
     constructor(
         readableName: String,
