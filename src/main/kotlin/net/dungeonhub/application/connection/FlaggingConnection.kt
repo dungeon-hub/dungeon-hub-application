@@ -3,8 +3,8 @@ package net.dungeonhub.application.connection
 import com.squareup.moshi.adapter
 import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.enums.FlaggingApi
-import net.dungeonhub.application.enums.FlaggingApi.HypixelSafetyDataContainer
-import net.dungeonhub.application.enums.FlaggingApi.HypixelSafetyDataContainer.HypixelSafetyData.HypixelSafetyDetail
+import net.dungeonhub.application.enums.FlaggingApi.HypixelSafetyData
+import net.dungeonhub.application.enums.FlaggingApi.HypixelSafetyData.HypixelSafetyDetail
 import net.dungeonhub.application.misc.FlagDetail
 import net.dungeonhub.application.misc.FlagDetail.FlagDetailBuilder.builder
 import net.dungeonhub.application.misc.FlagResponse
@@ -101,21 +101,20 @@ object FlaggingConnection : ExternalConnection {
     }
 
     fun isSafetyFlagged(uuid: UUID): FlagDetail? {
-        val httpUrl = (ConfigProperty.SAFETY_API_URL.toString() + "v1/user").toHttpUrl()
+        val httpUrl = (ConfigProperty.SAFETY_API_URL.toString() + "check/" + uuid).toHttpUrl()
             .newBuilder()
-            .addQueryParameter("user", uuid.toString())
             .addQueryParameter("type", "uuid")
             .build()
 
         val request = Request.Builder()
             .url(httpUrl)
-            .addHeader("Authorization", ConfigProperty.SAFETY_API_KEY.value!!)
+            .addHeader("Authorization", "Key " + ConfigProperty.SAFETY_API_KEY.value!!)
             .get()
             .build()
 
         return executeRequest(request, FlagDetail.Builder().flagged(false).build()) {
             fromSafetyResponse(
-                moshi.adapter<HypixelSafetyDataContainer>().fromJson(
+                moshi.adapter<HypixelSafetyData>().fromJson(
                     it
                 )!!
             )
@@ -123,59 +122,40 @@ object FlaggingConnection : ExternalConnection {
     }
 
     fun isSafetyFlagged(id: Long): FlagDetail? {
-        val httpUrl: HttpUrl = (ConfigProperty.SAFETY_API_URL.toString() + "v1/user").toHttpUrl()
+        val httpUrl: HttpUrl = (ConfigProperty.SAFETY_API_URL.toString() + "check/" + id).toHttpUrl()
             .newBuilder()
-            .addQueryParameter("user", id.toString())
             .addQueryParameter("type", "discord")
             .build()
 
         val request = Request.Builder()
             .url(httpUrl)
-            .addHeader("Authorization", ConfigProperty.SAFETY_API_KEY.value!!)
+            .addHeader("Authorization", "Key " + ConfigProperty.SAFETY_API_KEY.value!!)
             .get()
             .build()
 
         return executeRequest(request, FlagDetail.Builder().flagged(false).build()) {
             fromSafetyResponse(
-                moshi.adapter<HypixelSafetyDataContainer>().fromJson(
+                moshi.adapter<HypixelSafetyData>().fromJson(
                     it
                 )!!
             )
         }
     }
 
-    fun fromSafetyResponse(hypixelSafetyDataContainer: HypixelSafetyDataContainer): FlagDetail {
-        val data = hypixelSafetyDataContainer.data
-
-        val flagged = data.ratter != null || data.scammer != null
+    fun fromSafetyResponse(data: HypixelSafetyData): FlagDetail {
+        val flagged = data.ratter || data.scammer
 
         val builder = builder().flagged(flagged)
 
         var detail: HypixelSafetyDetail? = null
-        if (data.ratter != null) {
-            detail = data.ratter
-        } else if (data.scammer != null) {
-            detail = data.scammer
+        if (data.ratter && data.ratterData != null) {
+            detail = data.ratterData
+        } else if (data.scammer && data.scammerData != null) {
+            detail = data.scammerData
         }
 
         if (detail != null) {
             builder.reason(detail.reason)
-            if (detail.evidence != null) {
-                val evidences: MutableList<String> = ArrayList()
-                detail.evidence.forEach {
-                    evidences.add(it)
-                }
-
-                builder.evidence(java.lang.String.join(", ", evidences))
-            }
-
-            if (detail.moderator != null) {
-                try {
-                    builder.staff(detail.moderator.toLong())
-                } catch (_: NumberFormatException) {
-                    // ignored since this basically only applies if the id isn't a number, meaning this shouldn't be set
-                }
-            }
         }
 
         return builder.build()

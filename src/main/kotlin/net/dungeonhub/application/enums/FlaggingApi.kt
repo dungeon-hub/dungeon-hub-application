@@ -1,5 +1,6 @@
 package net.dungeonhub.application.enums
 
+import com.squareup.moshi.Json
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.connection.FlaggingConnection
@@ -51,14 +52,21 @@ enum class FlaggingApi(
         )
     }
 
-    class HypixelSafetyDataContainer(val data: HypixelSafetyData) {
-        class HypixelSafetyData(val ratter: HypixelSafetyDetail?, val scammer: HypixelSafetyDetail?) {
-            class HypixelSafetyDetail(
-                val reason: String,
-                val evidence: List<String>?,
-                val moderator: String?
-            )
-        }
+    class HypixelSafetyData(
+        @Json(name = "discord_id")
+        val discordId: Long?,
+        val uuid: String?, // isn't in dot notation, smh
+        val username: String?,
+        val scammer: Boolean,
+        @Json(name = "scammer_data")
+        val scammerData: HypixelSafetyDetail?,
+        val ratter: Boolean,
+        @Json(name = "ratter_data")
+        val ratterData: HypixelSafetyDetail?
+    ) {
+        class HypixelSafetyDetail(
+            val reason: String
+        )
     }
 
     class BlockGameData(val id: Long, val scammed: String?, val method: String?)
