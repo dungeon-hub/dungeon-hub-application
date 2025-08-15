@@ -542,9 +542,11 @@ class LinkingSystem : Extension() {
                     embeds = mutableListOf(embed)
                 }
 
-                val roles = RolesService.updateRoles(event.interaction.user)
+                scheduler.launch {
+                    val roles = RolesService.updateRoles(event.interaction.user)
 
-                NicknameService.updateNickname(event.interaction.user, roles)
+                    NicknameService.updateNickname(event.interaction.user, roles)
+                }
             }
         }
 

@@ -6,10 +6,10 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
+import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import net.dungeonhub.application.connection.getMutualServers
@@ -28,14 +28,14 @@ import kotlin.math.roundToInt
 import kotlin.time.Duration
 
 object RolesService {
-    fun updateRoles(user: User, cacheExpiration: Int = 60 * 3): Map<Long, List<Role>> {
-        return runBlocking {
-            async {
-                user.getMutualServers().map { member ->
-                    member.guildId.value.toLong() to updateRoles(member, cacheExpiration)
-                }.toList().toMap()
-            }.await()
-        }
+    val scheduler = Scheduler()
+
+    suspend fun updateRoles(user: User, cacheExpiration: Int = 60 * 3): Map<Long, List<Role>> {
+        return scheduler.async {
+            user.getMutualServers().map { member ->
+                member.guildId.value.toLong() to updateRoles(member, cacheExpiration)
+            }.toList().toMap()
+        }.await()
     }
 
     suspend fun updateRoles(member: Member, cacheExpiration: Int = 60 * 3): List<Role> {
@@ -65,12 +65,10 @@ object RolesService {
             .filter { roleModel -> roleModel.shouldBeAdded(isVerified) }
             .map { obj: DiscordRoleModel -> obj.id }
             .map { id: Long? ->
-                runBlocking {
-                    async {
-                        member.guild.getRoleOrNull(
-                            Snowflake(id!!)
-                        )
-                    }
+                scheduler.async {
+                    member.guild.getRoleOrNull(
+                        Snowflake(id!!)
+                    )
                 }
             }
             .toList()
@@ -79,12 +77,10 @@ object RolesService {
             .filter { roleModel -> roleModel.shouldBeRemoved(isVerified) }
             .map { obj: DiscordRoleModel -> obj.id }
             .map { id: Long? ->
-                runBlocking {
-                    async {
-                        member.guild.getRoleOrNull(
-                            Snowflake(id!!)
-                        )
-                    }
+                scheduler.async {
+                    member.guild.getRoleOrNull(
+                        Snowflake(id!!)
+                    )
                 }
             }
             .toList()
