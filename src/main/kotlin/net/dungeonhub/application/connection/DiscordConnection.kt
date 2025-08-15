@@ -80,7 +80,7 @@ object DiscordConnection : StartupListener {
             "Handling ${DiscordUserConnection.authenticated().countLinkedUsers() ?: 0} linked users!"
         },
         AppearanceType.Watching to {
-            "${bot?.kordRef?.totalUserCount() ?: 0} carriers on ${bot?.kordRef?.guilds?.count() ?: 0} servers"
+            "carriers on ${bot?.kordRef?.guilds?.count() ?: 0} servers"
         },
         AppearanceType.Competing to {
             "score leaderboards for first place"
@@ -396,20 +396,6 @@ suspend fun Kord.loadMessageByLink(messageLink: String): Message? {
     return getChannel(Snowflake(matcher.group("channel")))
         ?.asChannelOfOrNull<MessageChannel>()
         ?.getMessage(Snowflake(matcher.group("message")))
-}
-
-suspend fun Kord.totalUserCount(): Int? {
-    return guilds.map { it.memberCount }.reduce { first, second ->
-        if (first == null && second == null) {
-            return@reduce null
-        }
-
-        if (first == null) {
-            return@reduce second
-        }
-
-        return@reduce first + (second ?: 0)
-    }
 }
 
 fun EmbedBuilder.setFields(value: JsonElement) {
