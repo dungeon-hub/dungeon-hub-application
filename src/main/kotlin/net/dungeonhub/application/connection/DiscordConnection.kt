@@ -385,19 +385,18 @@ fun EmbedBuilder.copy(other: EmbedBuilder) {
     this.thumbnail = other.thumbnail
 }
 
-private val messageLinkPattern =
-    Pattern.compile(
-        "(?x)                               # enable comment mode \n" +
-                "(?i)                             # ignore case \n" +
-                "(?:https?+://)?+                 # 'https://' or 'http://' or '' \n" +
-                "(?:(?:canary|ptb)\\.)?+          # 'canary.' or 'ptb.'\n" +
-                "discord(?:app)?+\\.com/channels/ # 'discord(app).com/channels/' \n" +
-                "(?:(?<server>[0-9]++)|@me)       # '@me' or the server id as named group \n" +
-                "/                                # '/' \n" +
-                "(?<channel>[0-9]++)              # the textchannel id as named group \n" +
-                "/                                # '/' \n" +
-                "(?<message>[0-9]++)              # the message id as named group \n"
-    )
+private val messageLinkPattern = Pattern.compile(
+    "(?x)                               # enable comment mode \n" +
+            "(?i)                             # ignore case \n" +
+            "(?:https?+://)?+                 # 'https://' or 'http://' or '' \n" +
+            "(?:(?:canary|ptb)\\.)?+          # 'canary.' or 'ptb.'\n" +
+            "discord(?:app)?+\\.com/channels/ # 'discord(app).com/channels/' \n" +
+            "(?:(?<server>[0-9]++)|@me)       # '@me' or the server id as named group \n" +
+            "/                                # '/' \n" +
+            "(?<channel>[0-9]++)              # the textchannel id as named group \n" +
+            "/                                # '/' \n" +
+            "(?<message>[0-9]++)              # the message id as named group \n"
+)
 
 suspend fun Kord.loadMessageByLink(messageLink: String): Message? {
     val matcher = messageLinkPattern.matcher(messageLink)
