@@ -16,9 +16,11 @@ import dev.kordex.core.commands.converters.impl.*
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.exceptions.CommandExecutionException
@@ -37,13 +39,15 @@ import net.dungeonhub.i18n.Translations.Command.Role
 import net.dungeonhub.model.discord_role.DiscordRoleCreationModel
 import net.dungeonhub.model.discord_role.DiscordRoleUpdateModel
 import net.dungeonhub.model.role_requirement.RoleRequirementCreationModel
-import kotlin.concurrent.thread
 
 @LoadExtension
 class RoleCommand : Extension() {
     override val name = "role-command"
+    private lateinit var scheduler: Scheduler
 
     override suspend fun setup() {
+        scheduler = Scheduler()
+
         publicSlashCommand {
             name = Role.name
             description = Role.description
@@ -338,6 +342,10 @@ class RoleCommand : Extension() {
         }
     }
 
+    override suspend fun unload() {
+        scheduler.cancel("Extension shutting down.")
+    }
+
     suspend fun addRemove(add: Boolean, issuer: Member, arguments: RoleArguments): EmbedBuilder {
         if ((arguments.role.guild.asGuild().ownerId != issuer.id)
             && (arguments.role.getPosition() >= (issuer.roles.map { it.getPosition() }.toList().maxOrNull() ?: 0))
@@ -374,17 +382,15 @@ class RoleCommand : Extension() {
             }
         }
 
-        thread(start = true) {
-            runBlocking {
-                val member = arguments.user.fetchMember(issuer.guildId)
+        scheduler.launch {
+            val member = arguments.user.fetchMember(issuer.guildId)
 
-                val updatedRoles = RolesService.updateRoles(member)
+            val updatedRoles = RolesService.updateRoles(member)
 
-                try {
-                    NicknameService.updateNickname(member, updatedRoles)
-                } catch (_: NoNameSchemaWarning) {
-                    //ignore this, in that case you just don't apply a nickname
-                }
+            try {
+                NicknameService.updateNickname(member, updatedRoles)
+            } catch (_: NoNameSchemaWarning) {
+                //ignore this, in that case you just don't apply a nickname
             }
         }
 
@@ -420,17 +426,15 @@ class RoleCommand : Extension() {
         embed.description =
             "Successfully removed the user ${arguments.target.mention} from the role-group ${arguments.role.mention}."
 
-        thread(start = true) {
-            runBlocking {
-                val member = arguments.target.fetchMember(issuer.guildId)
+        scheduler.launch {
+            val member = arguments.target.fetchMember(issuer.guildId)
 
-                val updatedRoles = RolesService.updateRoles(member)
+            val updatedRoles = RolesService.updateRoles(member)
 
-                try {
-                    NicknameService.updateNickname(member, updatedRoles)
-                } catch (_: NoNameSchemaWarning) {
-                    //ignore this, in that case you just don't apply a nickname
-                }
+            try {
+                NicknameService.updateNickname(member, updatedRoles)
+            } catch (_: NoNameSchemaWarning) {
+                //ignore this, in that case you just don't apply a nickname
             }
         }
 
