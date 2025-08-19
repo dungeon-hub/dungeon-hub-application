@@ -6,6 +6,7 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
+import dev.kord.core.entity.effectiveName
 import dev.kord.rest.request.KtorRequestException
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -168,7 +169,11 @@ object NicknameService {
 
         try {
             member.edit {
-                this@edit.nickname = nickname
+                if(nickname == member.asUser().effectiveName) {
+                    this@edit.nickname = null
+                } else {
+                    this@edit.nickname = nickname
+                }
             }
         } catch (ktor: KtorRequestException) {
             if (ktor.status.code == 403) {
