@@ -11,9 +11,12 @@ import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.InvalidOptionException
@@ -47,12 +50,14 @@ import java.nio.charset.StandardCharsets
  */
 @LoadExtension
 class PurgeCommand : Extension() {
-    private val logger: Logger =
-        LoggerFactory.getLogger(PurgeCommand::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(PurgeCommand::class.java)
+    private lateinit var scheduler: Scheduler
 
     override val name = "purge-command"
 
     override suspend fun setup() {
+        scheduler = Scheduler()
+
         publicSlashCommand {
             name = Purge.name
             description = Purge.description
@@ -77,29 +82,29 @@ class PurgeCommand : Extension() {
                             PurgeTypeConnection[carryType].authenticated().getByIdentifier(arguments.purgeType)
                                 ?: throw InvalidOptionException("purge-type", "Purge Type couldn't be found.")
 
-                        val rolesToRemove = purgeType.purgeTypeRoleModels.stream()
+                        val rolesToRemove = purgeType.purgeTypeRoleModels
                             .map { obj: PurgeTypeRoleModel -> obj.discordRoleModel }
-                            .toList()
 
                         val scores = (ScoreConnection[carryType].authenticated().scores ?: listOf())
                             .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
 
-                        val safeCarriers = scores.stream()
+                        val safeCarriers = scores
                             .filter { scoreModel: ScoreModel -> scoreModel.scoreAmount != null }
                             .filter { scoreModel: ScoreModel -> scoreModel.scoreAmount!! >= arguments.threshold }
                             .map { obj: ScoreModel -> obj.carrier }
                             .map { obj: DiscordUserModel -> obj.id }
-                            .toList()
 
-                        val purgeCarriers = rolesToRemove.stream()
+                        val purgeCarriers = rolesToRemove
                             .map { obj: DiscordRoleModel -> obj.id }
                             .distinct()
-                            .flatMap { roleId ->
-                                runBlocking {
+                            .map { roleId ->
+                                scheduler.async {
                                     guild!!.withStrategy(EntitySupplyStrategy.cachingRest)
                                         .members.filter { it.roleIds.contains(Snowflake(roleId)) }.toList().stream()
                                 }
                             }
+                            .awaitAll()
+                            .flatMap { it }
                             .distinct()
                             .filter { user -> !safeCarriers.contains(user.id.value.toLong()) }
                             .toList()
@@ -177,29 +182,30 @@ class PurgeCommand : Extension() {
                             PurgeTypeConnection[carryType].authenticated().getByIdentifier(arguments.purgeType)
                                 ?: throw InvalidOptionException("purge-type", "Purge Type couldn't be found.")
 
-                        val rolesToRemove = purgeType.purgeTypeRoleModels.stream()
+                        val rolesToRemove = purgeType.purgeTypeRoleModels
                             .map { it.discordRoleModel }
-                            .toList()
 
                         val scores = (ScoreConnection[carryType].authenticated().scores ?: listOf())
                             .filter { it.scoreType == ScoreType.Default }
 
-                        val safeCarriers = scores.stream()
+                        val safeCarriers = scores
                             .filter { it.scoreAmount != null }
                             .filter { it.scoreAmount!! >= arguments.threshold }
                             .map { it.carrier }
-                            .map { um -> um.id }
+                            .map { it.id }
                             .toList()
 
-                        val purgeCarriers = rolesToRemove.stream()
+                        val purgeCarriers = rolesToRemove
                             .map { it.id }
                             .distinct()
-                            .flatMap { roleId ->
-                                runBlocking {
+                            .map { roleId ->
+                                scheduler.async {
                                     guild!!.withStrategy(EntitySupplyStrategy.cachingRest)
                                         .members.filter { it.roleIds.contains(Snowflake(roleId)) }.toList().stream()
                                 }
                             }
+                            .awaitAll()
+                            .flatMap { it }
                             .distinct()
                             .filter { !safeCarriers.contains(it.id.value.toLong()) }
                             .toList()
@@ -325,6 +331,10 @@ class PurgeCommand : Extension() {
                 }
             }
         }
+    }
+
+    override suspend fun unload() {
+        scheduler.cancel("Extension shutting down.")
     }
 
     class PurgeArguments : Arguments() {

@@ -4,7 +4,10 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
-import kotlinx.coroutines.runBlocking
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.datetime.*
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
@@ -18,9 +21,6 @@ import okhttp3.Request
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.io.InputStream
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
 
 @OnStart
 object BirthdayService : StartupListener {
@@ -31,22 +31,30 @@ object BirthdayService : StartupListener {
     private const val BIRTHDAY_CONGRATS_CHANNEL = 1082583379226148874
     private const val EXECUTION_HOUR = 9
     private val logger = LoggerFactory.getLogger(BirthdayService::class.java)
-    private var timerTask: ScheduledFuture<*>? = null
+    private lateinit var scheduler: Scheduler
     var birthdays: List<Birthday> = listOf()
 
     override suspend fun postStart() {
-        val timeUntilExecutionTime =
-            calculateExecutionTime(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time)
-
-        if (timerTask != null) {
-            timerTask!!.cancel(false)
+        if(::scheduler.isInitialized) {
+            scheduler.cancel("Application was restarted.")
         }
 
-        timerTask = Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate({
+        scheduler = Scheduler()
+
+        val task = scheduler.schedule(60 * 60 * 24, startNow = false, name = "Birthdays-Schedule", repeat = true) {
             updateBirthdayData()
 
             sendBirthdays()
-        }, timeUntilExecutionTime, 60 * 60 * 24, TimeUnit.SECONDS)
+        }
+
+        val timeUntilExecutionTime =
+            calculateExecutionTime(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time)
+
+        scheduler.launch {
+            delay(timeUntilExecutionTime)
+            task.start()
+            task.callNow()
+        }
     }
 
     fun calculateExecutionTime(localTime: LocalTime): Long {
@@ -67,7 +75,7 @@ object BirthdayService : StartupListener {
         }
     }
 
-    private fun sendBirthdays() {
+    private suspend fun sendBirthdays() {
         val todayBirthdays = getTodayBirthdays(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()))
         val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
@@ -91,13 +99,11 @@ object BirthdayService : StartupListener {
         }
 
         if (embeds.isNotEmpty()) {
-            runBlocking {
-                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(BIRTHDAYS_CHANNEL))
-                    ?.createMessage {
-                        this.content = "<@&$BIRTHDAY_PING_ROLE>"
-                        this.embeds = embeds
-                    }
-            }
+            DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(BIRTHDAYS_CHANNEL))
+                ?.createMessage {
+                    this.content = "<@&$BIRTHDAY_PING_ROLE>"
+                    this.embeds = embeds
+                }
         }
     }
 

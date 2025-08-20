@@ -18,6 +18,7 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.getLocale
+import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.HelpTopic
@@ -244,7 +245,7 @@ class LeaderboardCommand : Extension() {
     companion object {
         private val leaderboardDescription by lazy {
             "Check `/help topic:reputation` to see how you can gain reputation.\n" +
-                    "To check your current score, use ${ApplicationService.getSlashCommandDisplay("leaderboard reputation")}."
+                    "To check your current score, use ${runBlocking { ApplicationService.getSlashCommandDisplay("leaderboard reputation") }}."
         }
     }
 }

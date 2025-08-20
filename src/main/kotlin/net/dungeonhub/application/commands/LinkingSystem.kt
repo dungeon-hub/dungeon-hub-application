@@ -55,7 +55,6 @@ import java.util.*
 @LoadExtension
 class LinkingSystem : Extension() {
     override val name = "linking-system"
-    private lateinit var scheduler: Scheduler
 
     override suspend fun setup() {
         scheduler = Scheduler()
@@ -599,6 +598,10 @@ class LinkingSystem : Extension() {
             name = "guild".toKey()
             description = "The guild in which users should be synced.".toKey()
         }
+    }
+
+    companion object {
+        lateinit var scheduler: Scheduler
     }
 }
 

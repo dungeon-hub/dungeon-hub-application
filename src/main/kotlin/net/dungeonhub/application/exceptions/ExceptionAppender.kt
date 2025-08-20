@@ -6,14 +6,14 @@ import ch.qos.logback.core.AppenderBase
 import dev.kord.core.Kord
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.utils.dm
-import kotlinx.coroutines.runBlocking
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.exception.PlayerNotFoundException
 import java.nio.charset.StandardCharsets
-import kotlin.concurrent.thread
 
 class ExceptionAppender : AppenderBase<ILoggingEvent>() {
     override fun append(logEvent: ILoggingEvent) {
@@ -56,15 +56,12 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
             embed.description = description
         }
 
-        thread(start=true) {
-            runBlocking {
-                val kord: Kord? = DiscordConnection.bot?.kordRef
+        scheduler.launch {
+            val kord: Kord? = DiscordConnection.bot?.kordRef
 
-                if (kord != null) {
-                    ApplicationService.getBotOwner(kord)
-                        ?.dm {
-                            embeds = mutableListOf(embed)
-                        }
+            if (kord != null) {
+                ApplicationService.getBotOwner(kord)?.dm {
+                    embeds = mutableListOf(embed)
                 }
             }
         }
@@ -79,5 +76,9 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
             throwable.fillInStackTrace()
         }
         return throwable.stackTraceToString()
+    }
+
+    companion object {
+        private val scheduler = Scheduler()
     }
 }

@@ -2,7 +2,7 @@ package net.dungeonhub.application.enums
 
 import com.squareup.moshi.Json
 import kotlinx.coroutines.async
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.coroutineScope
 import net.dungeonhub.application.connection.FlaggingConnection
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.misc.FlagDetail
@@ -73,33 +73,27 @@ enum class FlaggingApi(
 
     private val logger: Logger = LoggerFactory.getLogger(FlaggingApi::class.java)
 
-    fun execute(uuid: UUID?, id: Long?): FlagResponse {
+    suspend fun execute(uuid: UUID?, id: Long?): FlagResponse = coroutineScope {
         try {
-            return runBlocking {
-                val uuidFlagged = if (uuidFunction != null && uuid != null) {
-                    async {
-                        uuidFunction.apply(uuid)
-                    }
-                } else {
-                    null
-                }
-
-                val discordIdFlagged = if (discordIdFunction != null && id != null && id != 0L) {
-                    async {
-                        discordIdFunction.apply(id)
-                    }
-                } else {
-                    null
-                }
-
-                return@runBlocking FlagResponse(
-                    displayName,
-                    uuid != null && uuidFlagged != null,
-                    uuidFlagged?.await(),
-                    id != null && discordIdFlagged != null,
-                    discordIdFlagged?.await(),
-                )
+            val uuidFlagged = if (uuidFunction != null && uuid != null) {
+                async { uuidFunction.apply(uuid) }
+            } else {
+                null
             }
+
+            val discordIdFlagged = if (discordIdFunction != null && id != null && id != 0L) {
+                async { discordIdFunction.apply(id) }
+            } else {
+                null
+            }
+
+            FlagResponse(
+                displayName,
+                uuid != null && uuidFlagged != null,
+                uuidFlagged?.await(),
+                id != null && discordIdFlagged != null,
+                discordIdFlagged?.await(),
+            )
         } catch (completionException: CompletionException) {
             logger.error(null, completionException)
 

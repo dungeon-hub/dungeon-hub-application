@@ -4,8 +4,6 @@ import com.google.common.reflect.ClassPath
 import com.google.errorprone.annotations.DoNotCall
 import dev.kordex.core.ExtensibleBot
 import dev.kordex.core.extensions.Extension
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -20,18 +18,16 @@ object ClassLoader {
 
     init {
         try {
-            runBlocking {
-                launch {
-                    for (extensionEntry: Map.Entry<Class<Extension>, LoadExtension> in getClassesInPackage(
-                        readPackage(ClassLoader::class.java),
-                        Extension::class.java,
-                        LoadExtension::class.java
-                    ).entries) {
-                        val extension: Extension = extensionEntry.key.getDeclaredConstructor().newInstance()
+            val extensions = getClassesInPackage(
+                readPackage(ClassLoader::class.java),
+                Extension::class.java,
+                LoadExtension::class.java
+            )
 
-                        extensions.add(extension)
-                    }
-                }
+            for(extensionEntry in extensions) {
+                val extension: Extension = extensionEntry.key.getDeclaredConstructor().newInstance()
+
+                this.extensions.add(extension)
             }
         } catch (exception: InstantiationException) {
             logger.error(null, exception)

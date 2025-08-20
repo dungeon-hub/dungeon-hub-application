@@ -6,8 +6,10 @@ import dev.kord.core.entity.Member
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasRole
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.OnStart
@@ -17,24 +19,24 @@ import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.purge_type.PurgeTypeModel
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.sql.Time
-import java.util.*
-import kotlin.concurrent.thread
 
 @OnStart
 object PurgingService : StartupListener {
     private val logger: Logger = LoggerFactory.getLogger(PurgingService::class.java)
     private val purgeDataList: MutableList<PurgeData> = ArrayList()
     private val purgeEnabled: MutableList<Long> = ArrayList()
+    private lateinit var scheduler: Scheduler
 
     override suspend fun postStart() {
-        Timer().scheduleAtFixedRate(object : TimerTask() {
-            override fun run() {
-                runBlocking {
-                    purgeWave()
-                }
-            }
-        }, Time(System.currentTimeMillis() + 500L), 3000L)
+        if(::scheduler.isInitialized) {
+            scheduler.cancel("Application was restarted.")
+        }
+
+        scheduler = Scheduler()
+
+        scheduler.schedule(3, startNow = true, name = "Purging-Schedule", repeat = true) {
+            purgeWave()
+        }
     }
 
     fun clearServer(serverId: Long) {
@@ -105,14 +107,12 @@ object PurgingService : StartupListener {
                 purgeData.purgeThreshold
             )
 
-            thread(start = true) {
-                runBlocking {
-                    delay(5000)
+            scheduler.launch {
+                delay(5000)
 
-                    val reloadedMember = member.withStrategy(EntitySupplyStrategy.cachingRest).fetchMember()
+                val reloadedMember = member.withStrategy(EntitySupplyStrategy.cachingRest).fetchMember()
 
-                    RolesService.updateRoles(reloadedMember)
-                }
+                RolesService.updateRoles(reloadedMember)
             }
 
             if (rolesRemoved.isNotEmpty()) {

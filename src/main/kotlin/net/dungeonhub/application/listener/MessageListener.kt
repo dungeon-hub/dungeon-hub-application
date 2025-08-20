@@ -17,8 +17,6 @@ import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.rest.builder.message.actionRow
 import dev.kordex.core.components.components
-import dev.kordex.core.components.disabledButton
-import dev.kordex.core.components.ephemeralButton
 import dev.kordex.core.components.linkButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
@@ -26,10 +24,14 @@ import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.addReaction
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.respond
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.reduce
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import net.dungeonhub.application.config.ConfigProperty
@@ -62,14 +64,15 @@ import java.time.Duration
 import java.util.*
 import java.util.regex.Matcher
 import java.util.regex.Pattern
-import kotlin.concurrent.thread
 import kotlin.time.toKotlinDuration
 
 @LoadExtension
 class MessageListener : Extension() {
+    private lateinit var scheduler: Scheduler
     companion object {
         private const val APPROVE_AMOUNT_THRESHOLD: Long = 11
         private const val APPROVE_SCORE_THRESHOLD: Long = 34
+        private val mutex = Mutex()
 
         private val CHANNEL_FROM_TRANSCRIPT: Pattern = Pattern.compile("^\\s*Channel: [^(]*\\((?<channel>\\d*)\\)")
 
@@ -79,29 +82,31 @@ class MessageListener : Extension() {
     override val name = "message-listener"
 
     override suspend fun setup() {
+        scheduler = Scheduler()
+
         event<MessageCreateEvent> {
             action {
-                thread {
-                    runBlocking {
-                        addReactionToPets(event)
+                scheduler.launch {
+                    addReactionToPets(event)
 
-                        logTicket(event)
+                    logTicket(event)
 
-                        loadSkycryptFromTicket(event)
-                    }
+                    loadSkycryptFromTicket(event)
                 }
             }
         }
 
         event<MessageUpdateEvent> {
             action {
-                thread {
-                    runBlocking {
-                        logTicket(event)
-                    }
+                scheduler.launch {
+                    logTicket(event)
                 }
             }
         }
+    }
+
+    override suspend fun unload() {
+        scheduler.cancel("Extension shutting down.")
     }
 
     private suspend fun logTicket(event: MessageCreateEvent) {
@@ -115,8 +120,7 @@ class MessageListener : Extension() {
         )
     }
 
-    @Synchronized
-    private fun logTicket(message: Message, server: Guild?) {
+    private suspend fun logTicket(message: Message, server: Guild?) {
         if (server == null) {
             return
         }
@@ -159,81 +163,75 @@ class MessageListener : Extension() {
             var attachmentLink: String? = null
 
             val approvingChannel = ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.id.value.toLong())
-                .map { s: String ->
-                    runBlocking { DiscordConnection.bot?.kordRef?.getChannelOf<TextChannel>(Snowflake(s)) }
-                }
+                .orElse(null)
+                ?.let { DiscordConnection.bot?.kordRef?.getChannelOf<TextChannel>(Snowflake(it)) }
 
-            for (queueModel in (QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Transcript) ?: HashSet())
-                .filter { carryQueueModel: CarryQueueModel ->
-                    channelId.map { aLong: Long -> aLong == carryQueueModel.relationId }
-                        .orElse(false)
-                }) {
-                if (attachmentLink == null) {
-                    val attachmentUrl = ContentConnection.authenticated().uploadFile(attachmentData, "{uuid}.html")
+            mutex.withLock {
+                for (queueModel in (QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Transcript) ?: HashSet())
+                    .filter { carryQueueModel: CarryQueueModel ->
+                        channelId.map { aLong: Long -> aLong == carryQueueModel.relationId }
+                            .orElse(false)
+                    }) {
+                    if (attachmentLink == null) {
+                        val attachmentUrl = ContentConnection.authenticated().uploadFile(attachmentData, "{uuid}.html")
 
-                    if (attachmentUrl == null) {
-                        logger.error(
-                            "Couldn't upload content of attachment on message {}.",
-                            message.id
-                        )
-                        return
-                    }
+                        if (attachmentUrl == null) {
+                            logger.error(
+                                "Couldn't upload content of attachment on message {}.",
+                                message.id
+                            )
+                            return
+                        }
 
-                    attachmentLink = ContentConnection.authenticated().getCdnUrl(attachmentUrl).toString()
+                        attachmentLink = ContentConnection.authenticated().getCdnUrl(attachmentUrl).toString()
 
-                    thread(start = true) {
-                        runBlocking {
+                        scheduler.launch {
                             message.respond {
                                 this.content = attachmentLink
                             }
                         }
                     }
-                }
 
-                val firstUpdateModel = queueModel.getUpdateModel()
-                firstUpdateModel.attachmentLink = attachmentLink
+                    val firstUpdateModel = queueModel.getUpdateModel()
+                    firstUpdateModel.attachmentLink = attachmentLink
 
-                val updatedModel = QueueConnection.authenticated().updateQueue(queueModel.id, firstUpdateModel) ?: queueModel
+                    val updatedModel = QueueConnection.authenticated().updateQueue(queueModel.id, firstUpdateModel) ?: queueModel
 
-                if ((updatedModel.amount >= APPROVE_AMOUNT_THRESHOLD
-                            || updatedModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
-                    && approvingChannel.isPresent
-                ) {
-                    runBlocking {
-                        val createdMessage = approvingChannel.get()
-                            .createMessage {
-                                val embed = ApplicationService.loadEmbedFromCarryQueue(updatedModel)
-                                embed.title = "Accept carry-log?"
-                                embed.color = EmbedColor.Default.color
+                    if ((updatedModel.amount >= APPROVE_AMOUNT_THRESHOLD
+                                || updatedModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
+                        && approvingChannel != null
+                    ) {
+                        val createdMessage = approvingChannel.createMessage {
+                            val embed = ApplicationService.loadEmbedFromCarryQueue(updatedModel)
+                            embed.title = "Accept carry-log?"
+                            embed.color = EmbedColor.Default.color
 
-                                embeds = mutableListOf(embed)
+                            embeds = mutableListOf(embed)
 
-                                actionRow {
-                                    interactionButton(ButtonStyle.Success, "accept_log") {
-                                        label = "Accept"
-                                    }
+                            actionRow {
+                                interactionButton(ButtonStyle.Success, "accept_log") {
+                                    label = "Accept"
+                                }
 
-                                    interactionButton(ButtonStyle.Danger, "deny") {
-                                        label = "Deny"
-                                    }
+                                interactionButton(ButtonStyle.Danger, "deny") {
+                                    label = "Deny"
                                 }
                             }
+                        }
 
-                        thread(start = true) {
-                            runBlocking {
-                                DiscordConnection.bot?.kordRef
-                                    ?.getUser(Snowflake(updatedModel.carrier.id))
-                                    ?.dm {
-                                        val embed = ApplicationService.embed
-                                        embed.color(EmbedColor.Information)
-                                        embed.title = "Approval needed"
-                                        embed.description =
-                                            "Due to the high number of score (${updatedModel.calculateScore()}) or carries (${updatedModel.amount}), your ${updatedModel.carryTier.displayName} - ${updatedModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
-                                                    "You will be notified here once it was approved or denied."
+                        scheduler.launch {
+                            DiscordConnection.bot?.kordRef
+                                ?.getUser(Snowflake(updatedModel.carrier.id))
+                                ?.dm {
+                                    val embed = ApplicationService.embed
+                                    embed.color(EmbedColor.Information)
+                                    embed.title = "Approval needed"
+                                    embed.description =
+                                        "Due to the high number of score (${updatedModel.calculateScore()}) or carries (${updatedModel.amount}), your ${updatedModel.carryTier.displayName} - ${updatedModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
+                                                "You will be notified here once it was approved or denied."
 
-                                        embeds = mutableListOf(embed)
-                                    }
-                            }
+                                    embeds = mutableListOf(embed)
+                                }
                         }
 
                         val secondUpdateModel = updatedModel.getUpdateModel()
@@ -242,15 +240,13 @@ class MessageListener : Extension() {
                         secondUpdateModel.relationId = createdMessage.id.value.toLong()
 
                         QueueConnection.authenticated().updateQueue(updatedModel.id, secondUpdateModel)
-                    }
-                } else {
-                    val updatedScore = QueueConnection.authenticated().logQueue(updatedModel.id, firstUpdateModel)
-                        ?.scoreModels
-                        ?.firstOrNull { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
-                        ?.scoreAmount
-                        ?: (ScoreConnection[updatedModel.carryType].authenticated().getScore(updatedModel.carrier.id)?.scoreAmount ?: 0)
+                    } else {
+                        val updatedScore = QueueConnection.authenticated().logQueue(updatedModel.id, firstUpdateModel)
+                            ?.scoreModels
+                            ?.firstOrNull { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
+                            ?.scoreAmount
+                            ?: (ScoreConnection[updatedModel.carryType].authenticated().getScore(updatedModel.carrier.id)?.scoreAmount ?: 0)
 
-                    runBlocking {
                         val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(updatedModel.carrier.id))
 
                         if (carrier != null) {
@@ -269,7 +265,7 @@ class MessageListener : Extension() {
                                 .carryType
                                 .logChannel
                                 ?.let { id: Long ->
-                                    runBlocking { server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id)) }
+                                    server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
                                 }
 
                             if (logChannel != null) {
@@ -305,9 +301,11 @@ class MessageListener : Extension() {
                             QueueConnection.authenticated().deleteQueue(updatedModel.id)
                         }
                     }
-                }
 
-                LeaderboardService.refreshLeaderboard()
+                    scheduler.launch {
+                        LeaderboardService.refreshLeaderboard()
+                    }
+                }
             }
         }
     }
@@ -414,7 +412,7 @@ class MessageListener : Extension() {
         sendPlayerDataEmbed(ign, event.message.channel, user.id.value.toLong())
     }
 
-    //TODO threads threads threads
+    //TODO threads threads threads (now its rather coroutines coroutines coroutines)
     private suspend fun sendPlayerDataEmbed(ign: String, channel: MessageChannelBehavior, discordId: Long? = null) {
         try {
             channel.createMessage {
@@ -439,48 +437,6 @@ class MessageListener : Extension() {
                     linkButton {
                         label = "SkyCrypt".toKey()
                         url = ConfigProperty.SKYCRYPT_API_URL.value + "stats/" + ign
-                    }
-
-                    ephemeralButton {
-                        style = ButtonStyle.Secondary
-                        label = "Reload".toKey()
-                        id = "reload_playerdata"
-
-                        action {
-                            edit {
-                                components {
-                                    linkButton {
-                                        label = "SkyCrypt".toKey()
-                                        url = ConfigProperty.SKYCRYPT_API_URL.value + "stats/" + ign
-                                    }
-
-                                    disabledButton {
-                                        style = ButtonStyle.Secondary
-                                        label = "Reload".toKey()
-                                        id = "reload_playerdata"
-                                    }
-                                }
-
-                                val embed = ApplicationService.embed
-                                embed.description = "Loading..."
-
-                                embeds = mutableListOf(embed)
-
-                                thread {
-                                    runBlocking {
-                                        components {
-                                            embeds = mutableListOf(
-                                                try {
-                                                    ApplicationService.getPlayerDataEmbed(ign, null)
-                                                } catch (failedToLoadAgain: FailedToLoadEmbedException) {
-                                                    failedToLoadAgain.embed
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }

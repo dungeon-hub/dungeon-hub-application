@@ -8,8 +8,9 @@ import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
 import dev.kord.core.entity.effectiveName
 import dev.kord.rest.request.KtorRequestException
+import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.getMutualServers
 import net.dungeonhub.application.exceptions.*
 import net.dungeonhub.application.misc.PlayerInformation
@@ -28,7 +29,6 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 import java.util.stream.Collector
 import java.util.stream.Collectors
-import kotlin.concurrent.thread
 
 /**
  * Service class for managing nicknames.
@@ -46,6 +46,8 @@ import kotlin.concurrent.thread
 </pre> *
  */
 object NicknameService {
+    val scheduler = Scheduler()
+
     @Throws(CommandExecutionWarning::class)
     fun linkToIgn(ign: String, user: User): UUID {
         val uuid = MojangConnection.getUUIDByName(ign)
@@ -76,11 +78,9 @@ object NicknameService {
             updateModel.minecraftId = null
             DiscordUserConnection.authenticated().updateUser(it.id, updateModel)
 
-            thread(true) {
-                runBlocking {
-                    user.getMutualServers().collect { member ->
-                        MassSyncService.syncUser(member.guildId, Snowflake(it.id))
-                    }
+            scheduler.launch {
+                user.getMutualServers().collect { member ->
+                    MassSyncService.syncUser(member.guildId, Snowflake(it.id))
                 }
             }
         }

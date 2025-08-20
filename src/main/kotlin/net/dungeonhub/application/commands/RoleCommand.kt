@@ -18,6 +18,7 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -39,6 +40,7 @@ import net.dungeonhub.i18n.Translations.Command.Role
 import net.dungeonhub.model.discord_role.DiscordRoleCreationModel
 import net.dungeonhub.model.discord_role.DiscordRoleUpdateModel
 import net.dungeonhub.model.role_requirement.RoleRequirementCreationModel
+import kotlin.time.Duration
 
 @LoadExtension
 class RoleCommand : Extension() {
@@ -383,6 +385,8 @@ class RoleCommand : Extension() {
         }
 
         scheduler.launch {
+            delay(Duration.parse("2s"))
+
             val member = arguments.user.fetchMember(issuer.guildId)
 
             val updatedRoles = RolesService.updateRoles(member)
@@ -427,6 +431,8 @@ class RoleCommand : Extension() {
             "Successfully removed the user ${arguments.target.mention} from the role-group ${arguments.role.mention}."
 
         scheduler.launch {
+            delay(Duration.parse("2s"))
+
             val member = arguments.target.fetchMember(issuer.guildId)
 
             val updatedRoles = RolesService.updateRoles(member)

@@ -5,8 +5,14 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kord.rest.json.JsonErrorCode
+import dev.kord.rest.request.KtorRequestException
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.isSelf
 import net.dungeonhub.application.enums.EmbedColor
@@ -17,15 +23,16 @@ import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_tier.CarryTierModel
-import java.sql.Time
-import java.util.*
+import org.slf4j.LoggerFactory
 import java.util.stream.Collectors
 import java.util.stream.Stream
+import kotlin.time.Duration
 
 @OnStart
 object MessagesService : StartupListener {
-    private const val REFRESH_PERIOD = 1000L * 60 * 15
-    private var timer: Timer? = null
+    private val logger = LoggerFactory.getLogger(MessagesService::class.java)
+    private const val REFRESH_SECONDS = 60L * 15
+    private lateinit var scheduler: Scheduler
 
     fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder? {
         val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().allCarryDifficulties ?: listOf()
@@ -150,18 +157,20 @@ object MessagesService : StartupListener {
     }
 
     override suspend fun postStart() {
-        if (timer != null) {
-            timer!!.cancel()
+        if(::scheduler.isInitialized) {
+            scheduler.cancel("Application was restarted.")
         }
 
-        timer = Timer()
+        scheduler = Scheduler()
 
-        timer!!.scheduleAtFixedRate(object : TimerTask() {
-            override fun run() {
-                runBlocking {
-                    refreshPriceMessages()
-                }
-            }
-        }, Time(System.currentTimeMillis() + 15000), REFRESH_PERIOD)
+        val task = scheduler.schedule(REFRESH_SECONDS, startNow = false, name = "Price-Messages-Schedule", repeat = true) {
+            refreshPriceMessages()
+        }
+
+        scheduler.launch {
+            delay(Duration.parse("15s"))
+            task.start()
+            task.callNow()
+        }
     }
 }

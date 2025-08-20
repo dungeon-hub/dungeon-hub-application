@@ -1,6 +1,9 @@
 package net.dungeonhub.application.connection
 
 import com.squareup.moshi.adapter
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.enums.FlaggingApi
 import net.dungeonhub.application.enums.FlaggingApi.HypixelSafetyData
@@ -28,19 +31,18 @@ object FlaggingConnection : ExternalConnection {
     private var lastBlockGameRefresh: Instant? = null
     private var blockGameData: List<FlaggingApi.BlockGameData>? = null
 
-    fun isFlagged(id: Long?): List<FlagResponse> {
+    suspend fun isFlagged(id: Long?): List<FlagResponse> {
         return isFlagged(null, id)
     }
 
-    fun isFlagged(uuid: UUID?): List<FlagResponse> {
+    suspend fun isFlagged(uuid: UUID?): List<FlagResponse> {
         return isFlagged(uuid, null)
     }
 
-    fun isFlagged(uuid: UUID?, id: Long?): List<FlagResponse> {
-        return FlaggingApi.entries.stream()
-            .parallel()
-            .map { flaggingApi: FlaggingApi -> flaggingApi.execute(uuid, id) }
-            .toList()
+    suspend fun isFlagged(uuid: UUID?, id: Long?): List<FlagResponse> = coroutineScope {
+        return@coroutineScope FlaggingApi.entries.map { flaggingApi ->
+            async { flaggingApi.execute(uuid, id) }
+        }.awaitAll()
     }
 
     fun isBlockGameFlagged(id: Long): FlagDetail {

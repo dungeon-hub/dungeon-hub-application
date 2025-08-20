@@ -163,13 +163,9 @@ object DiscordConnection : StartupListener {
     private const val LINE = "----------------------------------------"
 
     @JvmStatic
-    fun main(args: Array<String>) {
-        runBlocking {
-            launch {
-                ClassLoader.loadStartupListeners()
-                ClassLoader.executePreStart()
-            }
-        }
+    fun main(args: Array<String>) = runBlocking {
+        ClassLoader.loadStartupListeners()
+        ClassLoader.executePreStart()
     }
 
     /**

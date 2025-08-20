@@ -1,7 +1,7 @@
 package net.dungeonhub.application.service
 
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.loader.OnStart
@@ -14,7 +14,6 @@ import java.io.IOException
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
-import java.sql.Time
 import java.util.*
 import java.util.function.Predicate
 
@@ -24,12 +23,13 @@ object ServerService : StartupListener {
     private val serverData: MutableSet<ServerData> = HashSet()
         @Synchronized
         get
-    private var timer: Timer? = null
+
+    private lateinit var scheduler: Scheduler
 
     init {
         try {
             Files.createDirectory(Path.of(serverFolder))
-        } catch (ignored: FileAlreadyExistsException) {
+        } catch (_: FileAlreadyExistsException) {
             //Ignored since I just want to be sure that the folder always exists.
         } catch (ioException: IOException) {
 
@@ -48,23 +48,11 @@ object ServerService : StartupListener {
             }
     }
 
-    private fun resetTimer() {
-        if (timer != null) {
-            timer!!.cancel()
+    private suspend fun resetTimer() {
+        scheduler.schedule(60 * 15, startNow = true, name = "Server-Config-Schedule", repeat = true) {
+            logger.debug("Server configs reloaded!")
+            loadServers()
         }
-
-        timer = Timer()
-
-        timer!!.scheduleAtFixedRate(object : TimerTask() {
-            override fun run() {
-                logger.debug("Server configs reloaded!")
-                runBlocking {
-                    launch {
-                        loadServers()
-                    }
-                }
-            }
-        }, Time(System.currentTimeMillis() + 1000 * 60 * 15), 1000L * 60 * 15)
     }
 
     val serverFolder: String
@@ -120,6 +108,12 @@ object ServerService : StartupListener {
     }
 
     override suspend fun postStart() {
+        if(::scheduler.isInitialized) {
+            scheduler.cancel("Application was restarted.")
+        }
+
+        scheduler = Scheduler()
+
         loadServers()
 
         resetTimer()

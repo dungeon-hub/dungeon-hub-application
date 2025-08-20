@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
 @OnStart
 object MassSyncService : StartupListener {
     private const val WAVE_SIZE = 1
+    private const val WAVE_SECONDS = 15L
 
     private lateinit var scheduler: Scheduler
     private val logger = LoggerFactory.getLogger(MassSyncService::class.java)
@@ -79,7 +80,7 @@ object MassSyncService : StartupListener {
 
         scheduler = Scheduler()
 
-        scheduler.schedule(15, startNow = true, name = "Mass-Sync-Schedule", repeat = true) {
+        scheduler.schedule(WAVE_SECONDS, startNow = true, name = "Mass-Sync-Schedule", repeat = true) {
             syncWave()
         }
     }
