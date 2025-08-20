@@ -18,6 +18,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.toList
 import net.dungeonhub.application.enums.EmbedColor
+import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.InvalidOptionException
 import net.dungeonhub.application.loader.LoadExtension
@@ -70,6 +71,11 @@ class PurgeCommand : Extension() {
 
                 action {
                     respond {
+                        val purgeImmunityRole = ServerProperty.PURGE_IMMUNITY_ROLE
+                            .getValue(guild!!.id.value.toLong())
+                            .orElse(null)
+                            ?.let { Snowflake(it) }
+
                         val carryType =
                             CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
                                 .getByIdentifier(arguments.carryType)
@@ -100,7 +106,12 @@ class PurgeCommand : Extension() {
                             .map { roleId ->
                                 scheduler.async {
                                     guild!!.withStrategy(EntitySupplyStrategy.cachingRest)
-                                        .members.filter { it.roleIds.contains(Snowflake(roleId)) }.toList().stream()
+                                        .members.filter {
+                                            it.roleIds.contains(Snowflake(roleId))
+                                                    && (purgeImmunityRole == null || !it.roleIds.contains(
+                                                purgeImmunityRole
+                                            ))
+                                        }.toList()
                                 }
                             }
                             .awaitAll()
@@ -159,6 +170,11 @@ class PurgeCommand : Extension() {
 
                 action {
                     respond {
+                        val purgeImmunityRole = ServerProperty.PURGE_IMMUNITY_ROLE
+                            .getValue(guild!!.id.value.toLong())
+                            .orElse(null)
+                            ?.let { Snowflake(it) }
+
                         val carryType = CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
                             .getByIdentifier(arguments.carryType)
 
@@ -201,7 +217,12 @@ class PurgeCommand : Extension() {
                             .map { roleId ->
                                 scheduler.async {
                                     guild!!.withStrategy(EntitySupplyStrategy.cachingRest)
-                                        .members.filter { it.roleIds.contains(Snowflake(roleId)) }.toList().stream()
+                                        .members.filter {
+                                            it.roleIds.contains(Snowflake(roleId))
+                                                    && (purgeImmunityRole == null || !it.roleIds.contains(
+                                                purgeImmunityRole
+                                            ))
+                                        }.toList()
                                 }
                             }
                             .awaitAll()

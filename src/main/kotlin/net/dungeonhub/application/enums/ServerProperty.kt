@@ -38,6 +38,7 @@ enum class ServerProperty(
     CNT_INFORMATION_CHANNEL("cnt_information_channel", ServerPropertyType.CHANNEL),
 
     SCORE_MANAGEMENT_ROLE("id_score_management_score", ServerPropertyType.ROLE),
+    PURGE_IMMUNITY_ROLE("id_purge_immunity_role", ServerPropertyType.ROLE),
     CNT_ROLE_REQUIREMENT_UNDER_THREE("id_cnt_role_requirement_<3", ServerPropertyType.ROLE),
     CNT_ROLE_REQUIREMENT_THREE_TO_FIVE("id_cnt_role_requirement_3-5", ServerPropertyType.ROLE),
     CNT_ROLE_REQUIREMENT_FIVE_TO_TEN("id_cnt_role_requirement_5-10", ServerPropertyType.ROLE),
