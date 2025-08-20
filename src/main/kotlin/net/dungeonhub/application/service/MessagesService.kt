@@ -18,8 +18,8 @@ import net.dungeonhub.application.connection.isSelf
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
-import net.dungeonhub.application.service.ServerService.allServers
 import net.dungeonhub.connection.CarryDifficultyConnection
+import net.dungeonhub.connection.CarryTierConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_tier.CarryTierModel
@@ -88,8 +88,10 @@ object MessagesService : StartupListener {
     }
 
     private suspend fun refreshPriceMessages() {
-        for (serverData in allServers) {
-            refreshPriceMessages(serverData.id)
+        val guilds = DiscordConnection.bot?.kordRef?.guilds?.toList() ?: return
+
+        for (serverData in guilds) {
+            refreshPriceMessages(serverData.id.value.toLong())
         }
     }
 
@@ -112,19 +114,33 @@ object MessagesService : StartupListener {
                     }
                 ))
 
-        carryTiersPerChannel
-            .forEach { (key: Long?, value: MutableList<CarryTierModel>) ->
-                DiscordConnection.bot?.kordRef
-                    ?.getChannelOf<GuildMessageChannel>(Snowflake(key!!))
-                    ?.let {
-                        refreshPriceMessageInChannel(
-                            it,
-                            addPriceFooterToLast(
-                                value.mapNotNull { carryTier -> getPriceEmbed(carryTier) }
-                            )
+        carryTiersPerChannel.forEach { (key: Long?, value: MutableList<CarryTierModel>) ->
+            try {
+                DiscordConnection.bot?.kordRef?.getChannelOf<GuildMessageChannel>(Snowflake(key!!))?.let {
+                    refreshPriceMessageInChannel(
+                        it,
+                        addPriceFooterToLast(
+                            value.mapNotNull { carryTier -> getPriceEmbed(carryTier) }
+                        )
+                    )
+                }
+            } catch (requestException: KtorRequestException) {
+                // In case we don't have access to the channel anymore, we need to remove it from the carry tier.
+                if(requestException.error?.code == JsonErrorCode.MissingAccess) {
+                    for (carryTier in value) {
+                        logger.error("I can't access the channel <#${carryTier.priceChannel}> anymore. Removing it from the carry tier.")
+
+                        val updateModel = carryTier.getUpdateModel()
+                        updateModel.priceChannel = null
+
+                        CarryTierConnection[carryTier.carryType].authenticated().updateCarryTier(
+                            carryTier.id,
+                            updateModel
                         )
                     }
+                }
             }
+        }
     }
 
     private fun addPriceFooterToLast(embeds: List<EmbedBuilder>): List<EmbedBuilder> {
