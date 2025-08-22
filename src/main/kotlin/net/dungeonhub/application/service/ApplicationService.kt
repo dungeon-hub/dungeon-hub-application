@@ -420,8 +420,22 @@ object ApplicationService {
             embed.color = EmbedColor.Positive.color
         }
 
+        embed.thumbnail {
+            url = "https://visage.surgeplay.com/face/$uuid"
+        }
+        embed.url = ConfigProperty.SKYCRYPT_API_URL.toString() + "stats/" + ign
+        embed.title = try {
+            MojangConnection.getNameByUUID(uuid)
+        } catch (_: PlayerNotFoundException) {
+            ign
+        }
+
         val statsOverview = HypixelApiConnection().getStatsOverview(uuid)
-            ?: throw FailedToLoadEmbedException(embed)
+
+        if(statsOverview == null) {
+            embed.description = "No profiles found."
+            throw FailedToLoadEmbedException(embed)
+        }
 
         embed.description = statsOverview.description
         embed.title = "${
@@ -431,11 +445,6 @@ object ApplicationService {
                 ign
             }
         } (${statsOverview.profileName})"
-        embed.url = ConfigProperty.SKYCRYPT_API_URL.toString() + "stats/" + ign
-
-        embed.thumbnail {
-            url = "https://visage.surgeplay.com/face/$uuid"
-        }
 
         return embed
     }
