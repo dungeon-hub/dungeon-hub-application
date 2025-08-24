@@ -6,31 +6,32 @@ import kotlinx.datetime.LocalTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.time.Duration
 
 class BirthdayServiceTest {
     @Test
     fun testExecutionTimeCalculation() {
         assertEquals(
-            0,
+            Duration.parse("0s"),
             BirthdayService.calculateExecutionTime(LocalTime(9, 0, 0))
         )
 
         assertEquals(
-            60 * 60,
+            Duration.parse("1h"),
             BirthdayService.calculateExecutionTime(LocalTime(8, 0, 0))
         )
         assertEquals(
-            60 * 22 + 38,
+                    Duration.parse("22m 38s"),
             BirthdayService.calculateExecutionTime(LocalTime(8, 37, 22))
         )
 
         assertEquals(
-            60 * 60 * 23,
+                            Duration.parse("23h"),
             BirthdayService.calculateExecutionTime(LocalTime(10, 0, 0))
         )
 
         assertEquals(
-            60 * 60 * 22 + 60 * 46 + 59,
+                                    Duration.parse("22h 46m 59s"),
             BirthdayService.calculateExecutionTime(LocalTime(10, 13, 1))
         )
     }
