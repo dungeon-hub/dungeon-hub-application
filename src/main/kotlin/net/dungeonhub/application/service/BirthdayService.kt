@@ -21,6 +21,8 @@ import okhttp3.Request
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.io.InputStream
+import kotlin.time.Duration
+import kotlin.time.toKotlinDuration
 
 @OnStart
 object BirthdayService : StartupListener {
@@ -57,13 +59,13 @@ object BirthdayService : StartupListener {
         }
     }
 
-    fun calculateExecutionTime(localTime: LocalTime): Long {
+    fun calculateExecutionTime(localTime: LocalTime): Duration {
         return if (localTime.hour <= EXECUTION_HOUR) {
             val hDifference = EXECUTION_HOUR - localTime.hour
             val mDifference = 0 - localTime.minute
             val sDifference = 0 - localTime.second
 
-            hDifference * 60L * 60 + mDifference * 60 + sDifference
+            java.time.Duration.ofSeconds(hDifference * 60L * 60 + mDifference * 60 + sDifference).toKotlinDuration()
         } else {
             val hDifference = localTime.hour - EXECUTION_HOUR
             val mDifference = localTime.minute
@@ -71,7 +73,7 @@ object BirthdayService : StartupListener {
 
             val totalDifference = hDifference * 60 * 60 + mDifference * 60 + sDifference
 
-            24L * 60 * 60 - totalDifference
+            java.time.Duration.ofSeconds(24L * 60 * 60 - totalDifference).toKotlinDuration()
         }
     }
 
