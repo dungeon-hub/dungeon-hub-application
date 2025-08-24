@@ -185,8 +185,8 @@ object MessagesService : StartupListener {
 
         scheduler.launch {
             delay(Duration.parse("15s"))
-            task.start()
             task.callNow()
+            task.start()
         }
     }
 }

@@ -89,8 +89,8 @@ object AppearanceService : StartupListener {
 
         scheduler.launch {
             delay(kotlin.time.Duration.parse("10s"))
-            task.start()
             task.callNow()
+            task.start()
         }
     }
 

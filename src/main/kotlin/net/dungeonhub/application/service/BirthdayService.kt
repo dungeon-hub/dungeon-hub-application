@@ -52,8 +52,8 @@ object BirthdayService : StartupListener {
 
         scheduler.launch {
             delay(timeUntilExecutionTime)
-            task.start()
             task.callNow()
+            task.start()
         }
     }
 

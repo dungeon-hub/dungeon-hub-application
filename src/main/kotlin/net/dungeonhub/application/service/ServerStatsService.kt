@@ -61,8 +61,8 @@ object ServerStatsService : StartupListener {
 
         scheduler.launch {
             delay(Duration.parse("60s"))
-            task.start()
             task.callNow()
+            task.start()
         }
     }
 

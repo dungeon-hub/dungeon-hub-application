@@ -110,8 +110,8 @@ object LeaderboardService : StartupListener {
 
         scheduler.launch {
             delay(Duration.parse("30s"))
-            task.start()
             task.callNow()
+            task.start()
         }
     }
 
