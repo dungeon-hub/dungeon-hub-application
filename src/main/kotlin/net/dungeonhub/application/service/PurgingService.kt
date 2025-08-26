@@ -34,7 +34,7 @@ object PurgingService : StartupListener {
 
         scheduler = Scheduler()
 
-        scheduler.schedule(3, startNow = true, name = "Purging-Schedule", repeat = true) {
+        scheduler.schedule(6, startNow = true, name = "Purging-Schedule", repeat = true) {
             purgeWave()
         }
     }
@@ -69,15 +69,10 @@ object PurgingService : StartupListener {
         return purgeEnabled.contains(serverId)
     }
 
-    /**
-     * This method is private to prevent it from being run from outside this service.
-     * That is done so that the amount of threads created is limited, to prevent the server this is currently hosted
-     * on from reaching the vm's thread limit.
-     */
     private suspend fun purgeWave() {
         val currentWave = purgeDataList.stream()
             .filter { purgeData: PurgeData -> purgeEnabled.contains(purgeData.purgeType.carryType.server.id) }
-            .limit(5)
+            .limit(3)
             .toList()
 
         purgeEnabled.removeIf { aLong: Long ->
