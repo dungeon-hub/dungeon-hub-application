@@ -47,7 +47,7 @@ object ServerStatsService : StartupListener {
     )
 
     override suspend fun postStart() {
-        if(::scheduler.isInitialized) {
+        if (::scheduler.isInitialized) {
             scheduler.cancel("Application was restarted.")
         }
 

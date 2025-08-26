@@ -432,7 +432,7 @@ object ApplicationService {
 
         val statsOverview = HypixelApiConnection().getStatsOverview(uuid)
 
-        if(statsOverview == null) {
+        if (statsOverview == null) {
             embed.description = "No profiles found."
             throw FailedToLoadEmbedException(embed)
         }

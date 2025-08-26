@@ -169,7 +169,7 @@ object NicknameService {
 
         try {
             member.edit {
-                if(nickname == member.asUser().effectiveName) {
+                if (nickname == member.asUser().effectiveName) {
                     this@edit.nickname = null
                 } else {
                     this@edit.nickname = nickname

@@ -126,7 +126,7 @@ object MessagesService : StartupListener {
                 }
             } catch (requestException: KtorRequestException) {
                 // In case we don't have access to the channel anymore, we need to remove it from the carry tier.
-                if(requestException.error?.code == JsonErrorCode.MissingAccess) {
+                if (requestException.error?.code == JsonErrorCode.MissingAccess) {
                     for (carryTier in value) {
                         logger.error("I can't access the channel <#${carryTier.priceChannel}> anymore. Removing it from the carry tier.")
 
@@ -173,15 +173,16 @@ object MessagesService : StartupListener {
     }
 
     override suspend fun postStart() {
-        if(::scheduler.isInitialized) {
+        if (::scheduler.isInitialized) {
             scheduler.cancel("Application was restarted.")
         }
 
         scheduler = Scheduler()
 
-        val task = scheduler.schedule(REFRESH_SECONDS, startNow = false, name = "Price-Messages-Schedule", repeat = true) {
-            refreshPriceMessages()
-        }
+        val task =
+            scheduler.schedule(REFRESH_SECONDS, startNow = false, name = "Price-Messages-Schedule", repeat = true) {
+                refreshPriceMessages()
+            }
 
         scheduler.launch {
             delay(Duration.parse("15s"))
