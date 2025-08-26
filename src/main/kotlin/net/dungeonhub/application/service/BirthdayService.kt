@@ -22,7 +22,9 @@ import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.io.InputStream
 import kotlin.time.Duration
-import kotlin.time.toKotlinDuration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 @OnStart
 object BirthdayService : StartupListener {
@@ -65,7 +67,7 @@ object BirthdayService : StartupListener {
             val mDifference = 0 - localTime.minute
             val sDifference = 0 - localTime.second
 
-            java.time.Duration.ofSeconds(hDifference * 60L * 60 + mDifference * 60 + sDifference).toKotlinDuration()
+            hDifference.hours + mDifference.minutes + sDifference.seconds
         } else {
             val hDifference = localTime.hour - EXECUTION_HOUR
             val mDifference = localTime.minute
@@ -73,7 +75,7 @@ object BirthdayService : StartupListener {
 
             val totalDifference = hDifference * 60 * 60 + mDifference * 60 + sDifference
 
-            java.time.Duration.ofSeconds(24L * 60 * 60 - totalDifference).toKotlinDuration()
+            24.hours.minus(totalDifference.seconds)
         }
     }
 
