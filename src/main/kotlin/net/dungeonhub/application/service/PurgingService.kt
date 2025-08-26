@@ -80,51 +80,56 @@ object PurgingService : StartupListener {
                 .noneMatch { purgeData: PurgeData -> purgeData.purgeType.carryType.server.id == aLong }
         }
 
-        currentWave.forEach { purgeData: PurgeData ->
-            val server = DiscordConnection.bot?.kordRef?.getGuild(Snowflake(purgeData.purgeType.carryType.server.id))
+        try {
+            currentWave.forEach { purgeData: PurgeData ->
+                val server = DiscordConnection.bot?.kordRef?.getGuild(Snowflake(purgeData.purgeType.carryType.server.id))
 
-            if (server == null) {
-                logger.error("Server isn't a valid server for purging anymore!")
-                return@forEach
-            }
+                if (server == null) {
+                    logger.error("Server isn't a valid server for purging anymore!")
+                    return@forEach
+                }
 
-            val member = DiscordConnection.bot?.kordRef?.getUser(Snowflake(purgeData.userId))?.asMember(server.id)
+                val member = DiscordConnection.bot?.kordRef?.getUser(Snowflake(purgeData.userId))?.asMember(server.id)
 
-            if (member == null) {
-                logger.error("Member wasn't found anymore! I guess they escaped the purge.")
-                return@forEach
-            }
+                if (member == null) {
+                    logger.error("Member wasn't found anymore! I guess they escaped the purge.")
+                    return@forEach
+                }
 
-            val rolesRemoved = removeRoles(
-                purgeData.rolesToRemove,
-                member,
-                purgeData.purgeType,
-                purgeData.purgeThreshold
-            )
+                val rolesRemoved = removeRoles(
+                    purgeData.rolesToRemove,
+                    member,
+                    purgeData.purgeType,
+                    purgeData.purgeThreshold
+                )
 
-            scheduler.launch {
-                delay(5000)
+                scheduler.launch {
+                    delay(5000)
 
-                val reloadedMember = member.withStrategy(EntitySupplyStrategy.cachingRest).fetchMember()
+                    val reloadedMember =
+                        member.withStrategy(EntitySupplyStrategy.cacheWithCachingRestFallback).fetchMember()
 
-                RolesService.updateRoles(reloadedMember)
-            }
+                    RolesService.updateRoles(reloadedMember)
+                }
 
-            if (rolesRemoved.isNotEmpty()) {
-                try {
-                    member.dm {
-                        val embed = ApplicationService.embed
-                        embed.color = EmbedColor.Negative.color
-                        embed.title = "Inactivity Purge"
-                        embed.description =
-                            "Your ${purgeData.purgeType.displayName}-carry roles on `${server.name}` were removed since you only reached ${purgeData.score}/${purgeData.purgeThreshold} score."
-                        embed.field("Roles removed", false) { rolesRemoved.joinToString(System.lineSeparator()) }
-                        embeds = mutableListOf(embed)
+                if (rolesRemoved.isNotEmpty()) {
+                    try {
+                        member.dm {
+                            val embed = ApplicationService.embed
+                            embed.color = EmbedColor.Negative.color
+                            embed.title = "Inactivity Purge"
+                            embed.description =
+                                "Your ${purgeData.purgeType.displayName}-carry roles on `${server.name}` were removed since you only reached ${purgeData.score}/${purgeData.purgeThreshold} score."
+                            embed.field("Roles removed", false) { rolesRemoved.joinToString(System.lineSeparator()) }
+                            embeds = mutableListOf(embed)
+                        }
+                    } catch (_: RequestException) {
+                        // ignore since member doesn't need to know
                     }
-                } catch (_: RequestException) {
-                    // ignore since member doesn't need to know
                 }
             }
+        } catch (exception: Exception) {
+            logger.error("An error occurred while performing a purge wave!", exception)
         }
 
         purgeDataList.removeAll(currentWave)
