@@ -35,7 +35,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.CompletionException
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @OnStart(priority = StartPriority.POST_BOT)
 object LeaderboardService : StartupListener {
@@ -109,7 +109,7 @@ object LeaderboardService : StartupListener {
         }
 
         scheduler.launch {
-            delay(Duration.parse("30s"))
+            delay(30.seconds)
             task.callNow()
             task.start()
         }

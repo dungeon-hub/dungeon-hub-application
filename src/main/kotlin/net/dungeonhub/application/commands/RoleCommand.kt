@@ -40,7 +40,7 @@ import net.dungeonhub.i18n.Translations.Command.Role
 import net.dungeonhub.model.discord_role.DiscordRoleCreationModel
 import net.dungeonhub.model.discord_role.DiscordRoleUpdateModel
 import net.dungeonhub.model.role_requirement.RoleRequirementCreationModel
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @LoadExtension
 class RoleCommand : Extension() {
@@ -385,7 +385,7 @@ class RoleCommand : Extension() {
         }
 
         scheduler.launch {
-            delay(Duration.parse("2s"))
+            delay(2.seconds)
 
             val member = arguments.user.fetchMember(issuer.guildId)
 
@@ -431,7 +431,7 @@ class RoleCommand : Extension() {
             "Successfully removed the user ${arguments.target.mention} from the role-group ${arguments.role.mention}."
 
         scheduler.launch {
-            delay(Duration.parse("2s"))
+            delay(2.seconds)
 
             val member = arguments.target.fetchMember(issuer.guildId)
 

@@ -59,7 +59,7 @@ import net.dungeonhub.model.reputation.ReputationModel
 import net.dungeonhub.mojang.connection.MojangConnection
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 import kotlin.time.toKotlinDuration
 
 @LoadExtension
@@ -148,7 +148,8 @@ class CntSystem : Extension() {
                 val claimedIgn = claimer.minecraftId?.let(MojangConnection::getNameByUUID)
                 if (claimedIgn == null) {
                     event.interaction.respondEphemeral {
-                        content = "You need to be linked to be able to claim requests! Please check `/help` to see more information about linking."
+                        content =
+                            "You need to be linked to be able to claim requests! Please check `/help` to see more information about linking."
                     }
                     return@action
                 }
@@ -186,7 +187,10 @@ class CntSystem : Extension() {
                     }
                 } catch (restRequestException: RestRequestException) {
                     // ignore, the user just won't be mentioned in DMs if they don't allow DMs'
-                    logger.error("Error when dming user ${updatedCntRequest.user.id} about their claimed CNT request.", restRequestException)
+                    logger.error(
+                        "Error when dming user ${updatedCntRequest.user.id} about their claimed CNT request.",
+                        restRequestException
+                    )
                 }
 
                 val originalMessage = event.interaction.message
@@ -661,6 +665,6 @@ class CntSystem : Extension() {
 
     companion object {
         private const val REPUTATION_VALUE = 1
-        private val reputationTimeout = Duration.parse("3d")
+        private val reputationTimeout = 3.days
     }
 }

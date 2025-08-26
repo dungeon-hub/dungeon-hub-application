@@ -26,7 +26,7 @@ import net.dungeonhub.model.carry_tier.CarryTierModel
 import org.slf4j.LoggerFactory
 import java.util.stream.Collectors
 import java.util.stream.Stream
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @OnStart
 object MessagesService : StartupListener {
@@ -185,7 +185,7 @@ object MessagesService : StartupListener {
             }
 
         scheduler.launch {
-            delay(Duration.parse("15s"))
+            delay(15.seconds)
             task.callNow()
             task.start()
         }

@@ -17,6 +17,7 @@ import net.dungeonhub.connection.DiscordUserConnection
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toKotlinDuration
 
 @OnStart
@@ -88,7 +89,7 @@ object AppearanceService : StartupListener {
         }
 
         scheduler.launch {
-            delay(kotlin.time.Duration.parse("10s"))
+            delay(10.seconds)
             task.callNow()
             task.start()
         }

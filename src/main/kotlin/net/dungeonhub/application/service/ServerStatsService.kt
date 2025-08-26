@@ -23,7 +23,8 @@ import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import org.slf4j.LoggerFactory
 import java.time.ZonedDateTime
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
 
 @OnStart
 object ServerStatsService : StartupListener {
@@ -53,14 +54,14 @@ object ServerStatsService : StartupListener {
 
         scheduler = Scheduler()
 
-        val task = scheduler.schedule(60 * 60, startNow = false, name = "Server-Stats-Schedule", repeat = true) {
+        val task = scheduler.schedule(2.hours, startNow = false, name = "Server-Stats-Schedule", repeat = true) {
             logger.debug("Server stat channels reloading...")
             loadServerStatChannels()
             logger.debug("Server stat channels reloaded!")
         }
 
         scheduler.launch {
-            delay(Duration.parse("60s"))
+            delay(60.seconds)
             task.callNow()
             task.start()
         }

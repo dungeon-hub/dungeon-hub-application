@@ -7,17 +7,19 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
 
 class BirthdayServiceTest {
     @Test
     fun testExecutionTimeCalculation() {
         assertEquals(
-            Duration.parse("0s"),
+            0.seconds,
             BirthdayService.calculateExecutionTime(LocalTime(9, 0, 0))
         )
 
         assertEquals(
-            Duration.parse("1h"),
+            1.hours,
             BirthdayService.calculateExecutionTime(LocalTime(8, 0, 0))
         )
         assertEquals(
@@ -26,7 +28,7 @@ class BirthdayServiceTest {
         )
 
         assertEquals(
-                            Duration.parse("23h"),
+                            23.hours,
             BirthdayService.calculateExecutionTime(LocalTime(10, 0, 0))
         )
 
