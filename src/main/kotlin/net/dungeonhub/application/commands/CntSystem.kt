@@ -2,13 +2,10 @@ package net.dungeonhub.application.commands
 
 import com.google.common.collect.Iterables
 import dev.kord.common.entity.*
-import dev.kord.core.behavior.GuildBehavior
-import dev.kord.core.behavior.MemberBehavior
-import dev.kord.core.behavior.UserBehavior
+import dev.kord.core.behavior.*
 import dev.kord.core.behavior.channel.GuildMessageChannelBehavior
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
-import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.modal
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.response.respond
@@ -297,7 +294,19 @@ class CntSystem : Extension() {
 
                     embeds = mutableListOf(embed)
                     components {
-                        addDoneCntButtons()
+                        val claimerId = updatedCntRequest.claimer?.id
+                        if (claimerId != null && event.interaction.guild
+                                .getMemberOrNull(Snowflake(claimerId))?.let {
+                                    isAllowedToGiveReputation(
+                                        event.interaction.user,
+                                        it
+                                    )
+                                }?.allowedToGive == true
+                        ) {
+                            addDoneCntButtons()
+                        } else {
+                            addReputationGivenCntButtons()
+                        }
                     }
                 }
             }
@@ -372,6 +381,10 @@ class CntSystem : Extension() {
                         addReputation(cntRequest, channel.guild, event.interaction.user, reason)
                     )
                 }
+
+                event.interaction.message?.edit {
+                    addReputationGivenCntButtons()
+                }
             }
         }
 
@@ -401,6 +414,10 @@ class CntSystem : Extension() {
                     embeds = mutableListOf(
                         addReputation(cntRequest, event.interaction.guild, event.interaction.user)
                     )
+                }
+
+                event.interaction.message.edit {
+                    addReputationGivenCntButtons()
                 }
             }
         }
@@ -463,7 +480,6 @@ class CntSystem : Extension() {
 
                             addUnclaimedCntButtons()
                         }.message
-
                     }
 
                     val messageId = response.id
@@ -519,46 +535,19 @@ class CntSystem : Extension() {
                         return@respond
                     }
 
-                    val timeout = Instant.now().minusSeconds(reputationTimeout.inWholeSeconds)
+                    val allowedToRep = isAllowedToGiveReputation(user, userToRep)
+
+                    if(!allowedToRep.allowedToGive) {
+                        addEmbed {
+                            copy(allowedToRep.response!!)
+                        }
+                        return@respond
+                    }
 
                     val reputationConnection = ReputationConnection[userToRep].authenticated()
 
-                    val lastRep = reputationConnection.getReputations()
-                        ?.filter { it.reputor.id == user.id.value.toLong() }
-                        ?.filter { it.time.isAfter(timeout) }
-                        ?.maxByOrNull { it.time }
-
-                    if (lastRep != null) {
-                        val ready = java.time.Duration.between(
-                            Instant.now(),
-                            lastRep.time.plusSeconds(reputationTimeout.inWholeSeconds)
-                        ).withNanos(0).toKotlinDuration()
-
-                        addEmbed {
-                            description = "You already added the rep #${lastRep.id} to <@${lastRep.user.id}>.\n" +
-                                    (if (lastRep.reason != null) "The last reputation had the reason: ${lastRep.reason}\n" else "") +
-                                    "The next rep will be available in: $ready"
-                            color(EmbedColor.Negative)
-                            timestamp = lastRep.time.toKotlinInstant()
-                        }
-                        return@respond
-                    }
-
-                    val relatedCntRequest = CntRequestConnection[guild!!.id.value.toLong()].authenticated()
-                        .findCntRequestsByUser(user.id.value.toLong())
-                        ?.filter { it.completed }
-                        ?.filter { it.claimer?.id == userToRep.id.value.toLong() }
-                        ?.filter { it.time.isAfter(timeout) }
-                        ?.maxByOrNull { it.time }
-
-                    if (relatedCntRequest == null) {
-                        addEmbed {
-                            description =
-                                "<@${userToRep.id.value}> has not completed a crafts and transfers request for you in the past $reputationTimeout!"
-                            color(EmbedColor.Negative)
-                        }
-                        return@respond
-                    }
+                    val relatedCntRequest = allowedToRep.cntRequest
+                        ?: throw CommandExecutionWarning("Couldn't find the related CNT request.")
 
                     val repCreationModel = ReputationCreationModel(
                         userToRep.id.value.toLong(),
@@ -578,6 +567,12 @@ class CntSystem : Extension() {
                             "Added ${reputation?.amount ?: 0} reputation to <@${reputation?.user?.id}>${if (reputation?.reason != null) " for: ${reputation.reason}" else ""}.\n" +
                                     "They now have $totalReputation total reps."
                         color(EmbedColor.Positive)
+                    }
+
+                    val message = guild?.let { getCntRequestMessage(it, relatedCntRequest) }
+
+                    message?.edit {
+                        addReputationGivenCntButtons()
                     }
                 }
             }
@@ -706,29 +701,13 @@ class CntSystem : Extension() {
             }
         }
 
-        val timeout = Instant.now().minusSeconds(reputationTimeout.inWholeSeconds)
+        val allowedToRep = isAllowedToGiveReputation(executor, userToRep)
+
+        if(!allowedToRep.allowedToGive) {
+            return allowedToRep.response!!
+        }
 
         val reputationConnection = ReputationConnection[userToRep].authenticated()
-
-        val lastRep = reputationConnection.getReputations()
-            ?.filter { it.reputor.id == executor.id.value.toLong() }
-            ?.filter { it.time.isAfter(timeout) }
-            ?.maxByOrNull { it.time }
-
-        if (lastRep != null) {
-            val ready = java.time.Duration.between(
-                Instant.now(),
-                lastRep.time.plusSeconds(reputationTimeout.inWholeSeconds)
-            ).withNanos(0).toKotlinDuration()
-
-            return buildEmbed {
-                description = "You already added the rep #${lastRep.id} to <@${lastRep.user.id}>.\n" +
-                        (if (lastRep.reason != null) "The last reputation had the reason: ${lastRep.reason}\n" else "") +
-                        "The next rep will be available in: $ready"
-                color(EmbedColor.Negative)
-                timestamp = lastRep.time.toKotlinInstant()
-            }
-        }
 
         val repCreationModel = ReputationCreationModel(
             userToRep.id.value.toLong(),
@@ -765,6 +744,66 @@ class CntSystem : Extension() {
         embed.timestamp = reputation.time.toKotlinInstant()
 
         return embed
+    }
+
+    suspend fun getCntRequestMessage(guild: GuildBehavior, cntRequest: CntRequestModel): MessageBehavior? {
+        return ServerProperty.CNT_MESSAGES_CHANNEL.getValue(guild.id.value.toLong()).orElse(null)
+            ?.let {
+                guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(it))
+            }?.getMessageOrNull(Snowflake(cntRequest.messageId))
+    }
+
+    class ReputationValidityResult(
+        val allowedToGive: Boolean,
+        val response: EmbedBuilder? = null,
+        val cntRequest: CntRequestModel? = null
+    )
+
+    fun isAllowedToGiveReputation(user: UserBehavior, target: MemberBehavior): ReputationValidityResult {
+        val timeout = Instant.now().minusSeconds(reputationTimeout.inWholeSeconds)
+
+        val reputationConnection = ReputationConnection[target].authenticated()
+
+        val lastRep = reputationConnection.getReputations()
+            ?.filter { it.reputor.id == user.id.value.toLong() }
+            ?.filter { it.time.isAfter(timeout) }
+            ?.maxByOrNull { it.time }
+
+        if (lastRep != null) {
+            val ready = java.time.Duration.between(
+                Instant.now(),
+                lastRep.time.plusSeconds(reputationTimeout.inWholeSeconds)
+            ).withNanos(0).toKotlinDuration()
+
+            return ReputationValidityResult(
+                false, buildEmbed {
+                    description = "You already added the rep #${lastRep.id} to <@${lastRep.user.id}>.\n" +
+                            (if (lastRep.reason != null) "The last reputation had the reason: ${lastRep.reason}\n" else "") +
+                            "The next rep will be available in: $ready"
+                    color(EmbedColor.Negative)
+                    timestamp = lastRep.time.toKotlinInstant()
+                }
+            )
+        }
+
+        val relatedCntRequest = CntRequestConnection[target.guild.id.value.toLong()].authenticated()
+            .findCntRequestsByUser(user.id.value.toLong())
+            ?.filter { it.completed }
+            ?.filter { it.claimer?.id == target.id.value.toLong() }
+            ?.filter { it.time.isAfter(timeout) }
+            ?.maxByOrNull { it.time }
+
+        if (relatedCntRequest == null) {
+            return ReputationValidityResult(
+                false, buildEmbed {
+                    description =
+                        "<@${target.id.value}> has not completed a crafts and transfers request for you in the past $reputationTimeout!"
+                    color(EmbedColor.Negative)
+                }
+            )
+        }
+
+        return ReputationValidityResult(true, cntRequest = relatedCntRequest)
     }
 
     private fun MessageBuilder.addClaimedCntButtons() {
