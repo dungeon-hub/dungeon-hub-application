@@ -298,7 +298,7 @@ class CntSystem : Extension() {
                         if (claimerId != null && event.interaction.guild
                                 .getMemberOrNull(Snowflake(claimerId))?.let {
                                     isAllowedToGiveReputation(
-                                        event.interaction.user,
+                                        updatedCntRequest.user.id,
                                         it
                                     )
                                 }?.allowedToGive == true
@@ -535,7 +535,7 @@ class CntSystem : Extension() {
                         return@respond
                     }
 
-                    val allowedToRep = isAllowedToGiveReputation(user, userToRep)
+                    val allowedToRep = isAllowedToGiveReputation(user.id.value.toLong(), userToRep)
 
                     if(!allowedToRep.allowedToGive) {
                         addEmbed {
@@ -701,7 +701,7 @@ class CntSystem : Extension() {
             }
         }
 
-        val allowedToRep = isAllowedToGiveReputation(executor, userToRep)
+        val allowedToRep = isAllowedToGiveReputation(executor.id.value.toLong(), userToRep)
 
         if(!allowedToRep.allowedToGive) {
             return allowedToRep.response!!
@@ -759,13 +759,13 @@ class CntSystem : Extension() {
         val cntRequest: CntRequestModel? = null
     )
 
-    fun isAllowedToGiveReputation(user: UserBehavior, target: MemberBehavior): ReputationValidityResult {
+    fun isAllowedToGiveReputation(userId: Long, target: MemberBehavior): ReputationValidityResult {
         val timeout = Instant.now().minusSeconds(reputationTimeout.inWholeSeconds)
 
         val reputationConnection = ReputationConnection[target].authenticated()
 
         val lastRep = reputationConnection.getReputations()
-            ?.filter { it.reputor.id == user.id.value.toLong() }
+            ?.filter { it.reputor.id == userId }
             ?.filter { it.time.isAfter(timeout) }
             ?.maxByOrNull { it.time }
 
@@ -787,7 +787,7 @@ class CntSystem : Extension() {
         }
 
         val relatedCntRequest = CntRequestConnection[target.guild.id.value.toLong()].authenticated()
-            .findCntRequestsByUser(user.id.value.toLong())
+            .findCntRequestsByUser(userId)
             ?.filter { it.completed }
             ?.filter { it.claimer?.id == target.id.value.toLong() }
             ?.filter { it.time.isAfter(timeout) }
