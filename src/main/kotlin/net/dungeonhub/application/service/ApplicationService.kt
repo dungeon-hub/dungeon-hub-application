@@ -867,6 +867,16 @@ fun AbstractMessageCreateBuilder.addEmbed(time: Instant?, function: EmbedBuilder
     embeds = ((embeds ?: mutableListOf()) + embed).toMutableList()
 }
 
+fun buildEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {
+    return buildEmbed(Clock.System.now(), function)
+}
+
+fun buildEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): EmbedBuilder {
+    val embed = ApplicationService.getEmbed(time)
+    function(embed)
+    return embed
+}
+
 fun Extension.createEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {
     return this.createEmbed(Clock.System.now(), function)
 }

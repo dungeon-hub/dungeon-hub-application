@@ -2,7 +2,9 @@ package net.dungeonhub.application.commands
 
 import com.google.common.collect.Iterables
 import dev.kord.common.entity.*
+import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.MemberBehavior
+import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.GuildMessageChannelBehavior
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
@@ -45,6 +47,7 @@ import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.ApplicationService.embed
 import net.dungeonhub.application.service.addEmbed
+import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.CntRequestConnection
 import net.dungeonhub.connection.DiscordServerConnection
@@ -53,6 +56,7 @@ import net.dungeonhub.connection.ReputationConnection
 import net.dungeonhub.enums.CntRequestType
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.model.cnt_request.CntRequestCreationModel
+import net.dungeonhub.model.cnt_request.CntRequestModel
 import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
 import net.dungeonhub.model.reputation.ReputationCreationModel
 import net.dungeonhub.model.reputation.ReputationModel
@@ -295,6 +299,108 @@ class CntSystem : Extension() {
                     components {
                         addDoneCntButtons()
                     }
+                }
+            }
+        }
+
+        event<GuildButtonInteractionCreateEvent> {
+            check {
+                failIfNot("cnt_reputation_reason" == event.interaction.componentId)
+            }
+
+
+            action {
+                val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
+                    .findCntRequests(event.interaction.message.id.value.toLong())
+                    ?.firstOrNull()
+                    ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
+
+                if (event.interaction.user.id.value.toLong() != cntRequest.user.id) {
+                    val embed = ApplicationService
+                        .getErrorEmbed(CommandExecutionWarning("The CNT request is not yours!"))
+
+                    event.interaction.respondEphemeral { embeds = mutableListOf(embed) }
+
+                    return@action
+                }
+
+                event.interaction.modal("Enter a reason", "cnt_enter_reason") {
+                    actionRow {
+                        textInput(TextInputStyle.Short, "reputation_reason", "Reason")
+                    }
+                }
+            }
+        }
+
+        event<ModalSubmitInteractionCreateEvent> {
+            check {
+                failIfNot("cnt_enter_reason" == event.interaction.modalId)
+            }
+
+            action {
+                val channel = event.interaction.channel
+                if (channel !is GuildMessageChannelBehavior) {
+                    event.interaction.respondEphemeral {
+                        content = "Please use this on a server, DMs are not supported."
+                    }
+                    return@action
+                }
+
+                val messageId = event.interaction.message?.id
+                    ?: throw CommandExecutionException("The modal wasn't correctly linked to a message!")
+
+                val cntRequest = CntRequestConnection[channel.guild.id.value.toLong()].authenticated()
+                    .findCntRequests(messageId.value.toLong())
+                    ?.firstOrNull()
+                    ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
+
+                if (event.interaction.user.id.value.toLong() != cntRequest.user.id) {
+                    val embed = ApplicationService
+                        .getErrorEmbed(CommandExecutionWarning("The CNT request is not yours!"))
+
+                    event.interaction.respondEphemeral { embeds = mutableListOf(embed) }
+
+                    return@action
+                }
+
+                val reason = event.interaction.textInputs["reputation_reason"]?.value
+
+                val response = event.interaction.deferEphemeralResponse()
+
+                response.respond {
+                    embeds = mutableListOf(
+                        addReputation(cntRequest, channel.guild, event.interaction.user, reason)
+                    )
+                }
+            }
+        }
+
+        event<GuildButtonInteractionCreateEvent> {
+            check {
+                failIfNot("cnt_reputation" == event.interaction.componentId)
+            }
+
+            action {
+                val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
+                    .findCntRequests(event.interaction.message.id.value.toLong())
+                    ?.firstOrNull()
+                    ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
+
+                if (event.interaction.user.id.value.toLong() != cntRequest.user.id) {
+                    val embed = ApplicationService
+                        .getErrorEmbed(CommandExecutionWarning("The CNT request is not yours!"))
+
+                    event.interaction.respondEphemeral { embeds = mutableListOf(embed) }
+
+                    return@action
+                }
+
+                val response = event.interaction.deferEphemeralResponse()
+
+                response.respond {
+                    embeds = mutableListOf(
+                        addReputation(cntRequest, event.interaction.guild, event.interaction.user)
+                    )
                 }
             }
         }
@@ -589,6 +695,62 @@ class CntSystem : Extension() {
         }
     }
 
+    // TODO merge this with the response of the /rep slash command --> if possible
+    suspend fun addReputation(cntRequest: CntRequestModel, guild: GuildBehavior, executor: UserBehavior, reason: String? = null): EmbedBuilder {
+        val userToRep = cntRequest.claimer?.id?.let { guild.getMemberOrNull(Snowflake(it)) }
+
+        if (userToRep == null) {
+            return buildEmbed {
+                description = "That user is not on the server!"
+                color(EmbedColor.Negative)
+            }
+        }
+
+        val timeout = Instant.now().minusSeconds(reputationTimeout.inWholeSeconds)
+
+        val reputationConnection = ReputationConnection[userToRep].authenticated()
+
+        val lastRep = reputationConnection.getReputations()
+            ?.filter { it.reputor.id == executor.id.value.toLong() }
+            ?.filter { it.time.isAfter(timeout) }
+            ?.maxByOrNull { it.time }
+
+        if (lastRep != null) {
+            val ready = java.time.Duration.between(
+                Instant.now(),
+                lastRep.time.plusSeconds(reputationTimeout.inWholeSeconds)
+            ).withNanos(0).toKotlinDuration()
+
+            return buildEmbed {
+                description = "You already added the rep #${lastRep.id} to <@${lastRep.user.id}>.\n" +
+                        (if (lastRep.reason != null) "The last reputation had the reason: ${lastRep.reason}\n" else "") +
+                        "The next rep will be available in: $ready"
+                color(EmbedColor.Negative)
+                timestamp = lastRep.time.toKotlinInstant()
+            }
+        }
+
+        val repCreationModel = ReputationCreationModel(
+            userToRep.id.value.toLong(),
+            executor.id.value.toLong(),
+            cntRequest.id,
+            REPUTATION_VALUE,
+            reason
+        )
+
+        val reputation = reputationConnection.addReputation(repCreationModel)
+
+        val totalReputation = reputationConnection.calculateReputation()
+
+        return buildEmbed {
+            title = "Rep #${reputation?.id ?: "unknown"} added"
+            description =
+                "Added ${reputation?.amount ?: 0} reputation to <@${reputation?.user?.id}>${if (reputation?.reason != null) " for: ${reputation.reason}" else ""}.\n" +
+                        "They now have $totalReputation total reps."
+            color(EmbedColor.Positive)
+        }
+    }
+
     fun getReputationEmbed(reputation: ReputationModel): EmbedBuilder {
         val embed = embed
         embed.title = "Reputation #${reputation.id}"
@@ -629,11 +791,17 @@ class CntSystem : Extension() {
 
     private fun MessageBuilder.addDoneCntButtons() {
         actionRow {
-            interactionButton(ButtonStyle.Secondary, "cnt_done") {
-                disabled = true
-                label = "Done"
+            interactionButton(ButtonStyle.Primary, "cnt_reputation_reason") {
+                label = "Give reputation with reason"
+            }
+            interactionButton(ButtonStyle.Secondary, "cnt_reputation") {
+                label = "Give reputation"
             }
         }
+    }
+
+    private fun MessageBuilder.addReputationGivenCntButtons() {
+        components = mutableListOf()
     }
 
     private class RepArguments : Arguments() {
