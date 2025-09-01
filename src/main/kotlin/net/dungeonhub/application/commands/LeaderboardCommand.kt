@@ -210,7 +210,7 @@ class LeaderboardCommand : Extension() {
 
         for (reputationSum in leaderboardModel.reputation) {
             embed.field(
-                "#" + ++counter + " Carrier",
+                "#" + ++counter + " Crafter",
                 false
             ) { getPlayerScore(reputationSum) }
         }
