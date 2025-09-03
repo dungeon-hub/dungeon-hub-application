@@ -14,22 +14,40 @@ import net.dungeonhub.application.misc.FlagResponse
 import net.dungeonhub.client.DungeonHubClient
 import net.dungeonhub.service.MoshiService.moshi
 import net.dungeonhub.structure.ExternalConnection
+import okhttp3.Dns
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.Instant
-import java.time.temporal.ChronoUnit
+import java.net.Inet4Address
+import java.net.InetAddress
+import java.net.UnknownHostException
 import java.util.*
+
 
 @OptIn(ExperimentalStdlibApi::class)
 object FlaggingConnection : ExternalConnection {
     override val logger: Logger = LoggerFactory.getLogger(FlaggingConnection::class.java)
     override val client = DungeonHubClient()
 
-    private var lastBlockGameRefresh: Instant? = null
-    private var blockGameData: List<FlaggingApi.BlockGameData>? = null
+    class Ipv4Dns : Dns {
+        override fun lookup(hostname: String): List<InetAddress> {
+            val all = Dns.SYSTEM.lookup(hostname)
+            val ipv4Only = all.filterIsInstance<Inet4Address>()
+            if (ipv4Only.isEmpty()) {
+                throw UnknownHostException("No IPv4 address found for $hostname")
+            }
+            return ipv4Only
+        }
+    }
+
+    val ipv4Client = OkHttpClient.Builder()
+        .dns(Ipv4Dns())
+        .build()
 
     suspend fun isFlagged(id: Long?): List<FlagResponse> {
         return isFlagged(null, id)
@@ -45,61 +63,55 @@ object FlaggingConnection : ExternalConnection {
         }.awaitAll()
     }
 
-    fun isBlockGameFlagged(id: Long): FlagDetail {
-        if (lastBlockGameRefresh == null || blockGameData == null || lastBlockGameRefresh!!.isBefore(
-                Instant.now().minus(5, ChronoUnit.MINUTES)
-            )
-        ) {
-            refreshBlockGameData()
-        }
+    fun isBlockGameFlagged(id: Long): FlagDetail? {
+        val httpUrl = (ConfigProperty.BLOCK_GAME_API_URL.toString()).toHttpUrl()
+            .newBuilder()
+            .build()
 
-        return blockGameData!!.firstOrNull { data ->
-            data.id == id
-        }?.let { blockGameData ->
-            this.loadFlagDetailFromBlockGameData(
-                blockGameData
+        val jsonBody = mapOf("ids" to listOf(id.toString()))
+
+        val requestBody = moshi.adapter<Map<String, List<String>>>().toJson(jsonBody).toRequestBody("application/json; charset=utf-8".toMediaType()) // TODO use Connection.jsonMediaType here
+
+        val request = Request.Builder()
+            .url(httpUrl)
+            .addHeader("authorization", ConfigProperty.BLOCK_GAME_API_KEY.value!!)
+            .post(requestBody)
+            .build()
+
+        return ipv4Client.newCall(request).execute().use { response ->
+            val fallback = FlagDetail.Builder().flagged(false).build()
+
+            if(!response.isSuccessful) return fallback
+
+            val body = response.body?.string()
+                ?: return fallback
+
+            fromBlockGameResponse(
+                moshi.adapter<FlaggingApi.BlockGameResponse>().fromJson(
+                    body
+                )!!, id
             )
-        } ?: FlagDetail.Builder().flagged(false).build()
+        }
     }
 
-    private fun loadFlagDetailFromBlockGameData(blockGameData: FlaggingApi.BlockGameData): FlagDetail {
+    fun fromBlockGameResponse(data: FlaggingApi.BlockGameResponse, userId: Long): FlagDetail? {
+        if(!data.success || data.data.results.isEmpty()) {
+            return null
+        }
+
         val reason = StringBuilder()
 
-        if (blockGameData.scammed != null) {
-            reason.append("(").append(blockGameData.scammed).append(")")
+        val userData = data.data.results[userId.toString()]
+            ?: return builder().flagged(false).build()
 
-            if (blockGameData.method != null) {
-                reason.append(" -> ").append(blockGameData.method)
-            }
-        }
+        reason.append("(").append(userData.scammed).append(")")
 
-        if (blockGameData.method != null) {
-            reason.append(blockGameData.method)
-        }
+        reason.append(" -> ").append(userData.method)
 
         return builder()
             .flagged(true)
             .reason(reason.toString())
             .build()
-    }
-
-    fun refreshBlockGameData() {
-        lastBlockGameRefresh = Instant.now()
-
-        val httpUrl: HttpUrl = "https://block.lenny.ie/scammers".toHttpUrl()
-
-        val request = Request.Builder()
-            .url(httpUrl)
-            .get()
-            .build()
-
-        val jsonArray = executeRequest(request) { s -> moshi.adapter<List<FlaggingApi.BlockGameData>>().fromJson(s) }
-
-        if (jsonArray == null) {
-            return
-        }
-
-        blockGameData = jsonArray
     }
 
     fun isSafetyFlagged(uuid: UUID): FlagDetail? {

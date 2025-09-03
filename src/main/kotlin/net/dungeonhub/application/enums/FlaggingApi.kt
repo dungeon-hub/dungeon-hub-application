@@ -37,7 +37,7 @@ enum class FlaggingApi(
         }
     ),
     BLOCK_GAME(
-        "Block Game Bot",
+        "Scammer List (BlockHelper)",
         null,
         { discordId: Long ->
             FlaggingConnection.isBlockGameFlagged(discordId)
@@ -69,7 +69,11 @@ enum class FlaggingApi(
         )
     }
 
-    class BlockGameData(val id: Long, val scammed: String?, val method: String?)
+    class BlockGameResponse(val success: Boolean, val data: BlockGameData)
+
+    class BlockGameData(val results: Map<String, BlockGameResult?>)
+
+    class BlockGameResult(val tag: String, val id: String, val method: String, val scammed: String)
 
     private val logger: Logger = LoggerFactory.getLogger(FlaggingApi::class.java)
 

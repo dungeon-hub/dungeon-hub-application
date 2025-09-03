@@ -150,6 +150,7 @@ object DiscordConnection : StartupListener {
                                     "- [Mojang API](https://minecraft.wiki/w/Mojang_API)\n" +
                                     "- [Hypixel API](https://api.hypixel.net/)\n" +
                                     "- [Hypixel Safety API (by SBM)](https://hs.sbm.gg/)\n" +
+                                    "- [Scammer List (BlockHelper)](https://list.lenny.ie/)\n" +
                                     "-# We are not affiliated with any of the above services/companies"
                         }
                     }
