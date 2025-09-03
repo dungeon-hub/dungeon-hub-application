@@ -752,7 +752,7 @@ object ApplicationService {
         coinValue: String,
         requirement: String,
         time: Instant,
-        userId: Long
+        userId: Long?
     ): EmbedBuilder {
         val embed = getEmbed(time)
         embed.color = EmbedColor.Default.color
@@ -772,7 +772,7 @@ object ApplicationService {
             cntRequest.coinValue,
             cntRequest.requirement,
             cntRequest.time.toKotlinInstant(),
-            cntRequest.user.id
+            if (cntRequest.completed) cntRequest.user.id else null
         )
 
         cntRequest.claimer?.let { embed.field("Claimed by", true) { "<@${it.id}>" } }
