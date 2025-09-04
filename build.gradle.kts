@@ -1,8 +1,8 @@
 import dev.kordex.gradle.plugins.kordex.DataCollection
 
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "2.1.0"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0"
+    id("org.jetbrains.kotlin.jvm") version "2.1.21"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.21"
 
     id("com.github.johnrengelman.shadow") version "8.1.1"
     //TODO fix errors
@@ -25,7 +25,7 @@ repositories {
 }
 
 kordEx {
-    kordExVersion = "2.3.1-SNAPSHOT"
+    kordExVersion = "2.3.5-SNAPSHOT"
     jvmTarget = 17
 
     bot {

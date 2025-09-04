@@ -325,6 +325,11 @@ object RolesService {
                     ReputationConnection[member].authenticated().calculateReputation()?.toInt() ?: 0
                 )
             }
+
+            RoleRequirementType.LeaderboardRank -> {
+                //TODO implement
+                return false
+            }
         }
     }
 
