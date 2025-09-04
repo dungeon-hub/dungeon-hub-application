@@ -8,7 +8,7 @@ plugins {
     //TODO fix errors
     //id("io.gitlab.arturbosch.detekt") version "1.23.6"
 
-    id("dev.kordex.gradle.kordex") version "1.7.1"
+    id("dev.kordex.gradle.kordex") version "1.7.2"
 }
 
 group = "net.dungeon-hub"
