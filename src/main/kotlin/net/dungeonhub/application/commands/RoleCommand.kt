@@ -316,6 +316,50 @@ class RoleCommand : Extension() {
                     }
                 }
 
+                publicSubCommand(::RoleRequirementsEditArguments) {
+                    name = Role.Requirements.Edit.name
+                    description = Role.Requirements.Edit.description
+
+                    check {
+                        hasPermission(Permission.Administrator)
+                    }
+
+                    action {
+                        val roleRequirementConnection = RoleRequirementConnection[guild!!.id.value.toLong()].authenticated()
+
+                        val roleRequirement = roleRequirementConnection.getById(arguments.roleRequirement)
+                            ?: throw CommandExecutionException("Couldn't find the role requirement with id ${arguments.roleRequirement}.")
+
+                        val updateModel = roleRequirement.getUpdateModel()
+
+                        if(arguments.comparison != null) {
+                            updateModel.comparison = arguments.comparison
+                        }
+
+                        if(arguments.count != null) {
+                            updateModel.count = arguments.count
+                        }
+
+                        if(arguments.extraData != null) {
+                            updateModel.extraData = arguments.extraData
+                        }
+
+                        if(arguments.resetExtraData == true) {
+                            updateModel.extraData = null
+                        }
+
+                        val updatedRoleRequirement =
+                            roleRequirementConnection.updateRoleRequirement(roleRequirement.id, updateModel)
+                                ?: throw CommandExecutionException("Couldn't update the role requirement.")
+
+                        respond {
+                            val embed = updatedRoleRequirement.toEmbed(getLocale())
+                            embed.title = "Updated role requirement #${updatedRoleRequirement.id}"
+                            embeds = mutableListOf(embed)
+                        }
+                    }
+                }
+
                 publicSubCommand(::RoleRequirementsDeleteArguments) {
                     name = Role.Requirements.Delete.name
                     description = Role.Requirements.Delete.description
@@ -534,6 +578,34 @@ class RoleCommand : Extension() {
         val extraData by optionalString {
             name = "extra-data".toKey()
             description = "Enter some extra data, if applicable.".toKey()
+        }
+    }
+
+    class RoleRequirementsEditArguments : Arguments() {
+        val roleRequirement by long {
+            name = "role-requirement".toKey()
+            description = "Select which role requirement you want to edit.".toKey()
+        }
+
+        val comparison by optionalEnumChoice<RoleRequirementComparison> {
+            name = "comparison".toKey()
+            description = "Select which comparison you want to use for the requirement.".toKey()
+            typeName = "RoleRequirementComparison".toKey()
+        }
+
+        val count by optionalInt {
+            name = "count".toKey()
+            description = "Select the required amount.".toKey()
+        }
+
+        val extraData by optionalString {
+            name = "extra-data".toKey()
+            description = "Enter some extra data, if applicable.".toKey()
+        }
+
+        val resetExtraData by optionalBoolean {
+            name = "reset-extra-data".toKey()
+            description = "Reset the extra data for this role requirement.".toKey()
         }
     }
 
