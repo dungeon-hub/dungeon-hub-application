@@ -32,8 +32,6 @@ import kotlinx.coroutines.flow.reduce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.datetime.Clock
-import kotlinx.datetime.toKotlinInstant
 import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
@@ -64,11 +62,16 @@ import java.time.Duration
 import java.util.*
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import kotlin.time.toKotlinDuration
+import kotlin.time.toKotlinInstant
 
+@OptIn(ExperimentalTime::class)
 @LoadExtension
 class MessageListener : Extension() {
     private lateinit var scheduler: Scheduler
+
     companion object {
         private const val APPROVE_AMOUNT_THRESHOLD: Long = 11
         private const val APPROVE_SCORE_THRESHOLD: Long = 34
@@ -167,7 +170,8 @@ class MessageListener : Extension() {
                 ?.let { DiscordConnection.bot?.kordRef?.getChannelOf<TextChannel>(Snowflake(it)) }
 
             mutex.withLock {
-                for (queueModel in (QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Transcript) ?: HashSet())
+                for (queueModel in (QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Transcript)
+                    ?: HashSet())
                     .filter { carryQueueModel: CarryQueueModel ->
                         channelId.map { aLong: Long -> aLong == carryQueueModel.relationId }
                             .orElse(false)
@@ -195,7 +199,8 @@ class MessageListener : Extension() {
                     val firstUpdateModel = queueModel.getUpdateModel()
                     firstUpdateModel.attachmentLink = attachmentLink
 
-                    val updatedModel = QueueConnection.authenticated().updateQueue(queueModel.id, firstUpdateModel) ?: queueModel
+                    val updatedModel =
+                        QueueConnection.authenticated().updateQueue(queueModel.id, firstUpdateModel) ?: queueModel
 
                     if ((updatedModel.amount >= APPROVE_AMOUNT_THRESHOLD
                                 || updatedModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
@@ -245,7 +250,8 @@ class MessageListener : Extension() {
                             ?.scoreModels
                             ?.firstOrNull { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
                             ?.scoreAmount
-                            ?: (ScoreConnection[updatedModel.carryType].authenticated().getScore(updatedModel.carrier.id)?.scoreAmount ?: 0)
+                            ?: (ScoreConnection[updatedModel.carryType].authenticated()
+                                .getScore(updatedModel.carrier.id)?.scoreAmount ?: 0)
 
                         val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(updatedModel.carrier.id))
 
