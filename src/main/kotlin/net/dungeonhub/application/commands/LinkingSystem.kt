@@ -49,12 +49,14 @@ import net.dungeonhub.i18n.Translations.Command.Link
 import net.dungeonhub.i18n.Translations.Command.Sync
 import net.dungeonhub.i18n.Translations.Command.Unlink
 import net.dungeonhub.mojang.connection.MojangConnection
+import org.slf4j.LoggerFactory
 import java.util.*
 
 @PrivilegedIntent
 @LoadExtension
 class LinkingSystem : Extension() {
     override val name = "linking-system"
+    private val logger = LoggerFactory.getLogger(LinkingSystem::class.java)
 
     override suspend fun setup() {
         scheduler = Scheduler()
@@ -519,26 +521,39 @@ class LinkingSystem : Extension() {
                     event.interaction.deferEphemeralResponse()
                 }
 
-                val ign = event.interaction.textInputs["ign"]?.value?.let { it.ifBlank { null } }
+                try {
+                    val ign = event.interaction.textInputs["ign"]?.value?.let { it.ifBlank { null } }
 
-                if (ign == null) {
-                    throw InvalidOptionWarning(
-                        "ign",
-                        "Please enter a valid Ingame-Name."
-                    )
-                }
+                    if (ign == null) {
+                        throw InvalidOptionWarning(
+                            "ign",
+                            "Please enter a valid Ingame-Name."
+                        )
+                    }
 
-                val linkedId = NicknameService.linkToIgn(ign, event.interaction.user)
+                    val linkedId = NicknameService.linkToIgn(ign, event.interaction.user)
 
-                response.respond {
-                    val embed = ApplicationService.embed
-                    embed.title = "Linked successfully"
-                    embed.description = "${event.interaction.user.mention}, you're now linked to `${
-                        MojangConnection.getNameByUUID(linkedId)
-                    }`."
-                    embed.color = EmbedColor.Positive.color
+                    response.respond {
+                        val embed = ApplicationService.embed
+                        embed.title = "Linked successfully"
+                        embed.description = "${event.interaction.user.mention}, you're now linked to `${
+                            MojangConnection.getNameByUUID(linkedId)
+                        }`."
+                        embed.color = EmbedColor.Positive.color
 
-                    embeds = mutableListOf(embed)
+                        embeds = mutableListOf(embed)
+                    }
+                } catch (commandExecutionWarning: CommandExecutionWarning) {
+                    response.respond {
+                        embeds = mutableListOf(ApplicationService.getErrorEmbed(commandExecutionWarning))
+                    }
+                    return@action
+                } catch (commandExecutionException: CommandExecutionException) {
+                    logger.error(null, commandExecutionException)
+                    response.respond {
+                        embeds = mutableListOf(ApplicationService.getErrorEmbed(commandExecutionException))
+                    }
+                    return@action
                 }
 
                 scheduler.launch {
