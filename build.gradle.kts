@@ -25,8 +25,7 @@ repositories {
 }
 
 kordEx {
-    kordVersion = "0.17.0-SNAPSHOT"
-    kordExVersion = "2.3.5-SNAPSHOT"
+    kordExVersion = "2.3.6-SNAPSHOT"
     jvmTarget = 17
 
     bot {
