@@ -19,6 +19,7 @@ import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.purge_type.PurgeTypeModel
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import kotlin.time.Duration.Companion.seconds
 
 @OnStart
 object PurgingService : StartupListener {
@@ -34,7 +35,7 @@ object PurgingService : StartupListener {
 
         scheduler = Scheduler()
 
-        scheduler.schedule(6, startNow = true, name = "Purging-Schedule", repeat = true) {
+        scheduler.schedule(6.seconds, startNow = true, name = "Purging-Schedule", repeat = true) {
             purgeWave()
         }
     }

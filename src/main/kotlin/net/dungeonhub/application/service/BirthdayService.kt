@@ -48,7 +48,7 @@ object BirthdayService : StartupListener {
 
         scheduler = Scheduler()
 
-        val task = scheduler.schedule(60 * 60 * 24, startNow = false, name = "Birthdays-Schedule", repeat = true) {
+        val task = scheduler.schedule(24.hours, startNow = false, name = "Birthdays-Schedule", repeat = true) {
             updateBirthdayData()
 
             sendBirthdays()

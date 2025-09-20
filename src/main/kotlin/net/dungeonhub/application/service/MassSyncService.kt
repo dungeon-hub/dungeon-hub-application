@@ -11,11 +11,12 @@ import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.seconds
 
 @OnStart
 object MassSyncService : StartupListener {
     private const val WAVE_SIZE = 1
-    private const val WAVE_SECONDS = 15L
+    private val waveDuration = 15.seconds
 
     private lateinit var scheduler: Scheduler
     private val logger = LoggerFactory.getLogger(MassSyncService::class.java)
@@ -80,7 +81,7 @@ object MassSyncService : StartupListener {
 
         scheduler = Scheduler()
 
-        scheduler.schedule(WAVE_SECONDS, startNow = true, name = "Mass-Sync-Schedule", repeat = true) {
+        scheduler.schedule(waveDuration, startNow = true, name = "Mass-Sync-Schedule", repeat = true) {
             syncWave()
         }
     }

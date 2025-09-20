@@ -16,6 +16,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
 import java.util.function.Predicate
+import kotlin.time.Duration.Companion.minutes
 
 @OnStart
 object ServerService : StartupListener {
@@ -49,7 +50,7 @@ object ServerService : StartupListener {
     }
 
     private suspend fun resetTimer() {
-        scheduler.schedule(60 * 15, startNow = true, name = "Server-Config-Schedule", repeat = true) {
+        scheduler.schedule(15.minutes, startNow = true, name = "Server-Config-Schedule", repeat = true) {
             logger.debug("Server configs reloaded!")
             loadServers()
         }
