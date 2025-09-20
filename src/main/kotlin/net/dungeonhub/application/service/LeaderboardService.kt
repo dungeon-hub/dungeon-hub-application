@@ -14,7 +14,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Instant.Companion.fromEpochMilliseconds
 import net.dungeonhub.application.commands.addLeaderboardButtons
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
@@ -37,8 +36,11 @@ import java.time.Instant
 import java.util.concurrent.CompletionException
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
 @OnStart(priority = StartPriority.POST_BOT)
+@OptIn(ExperimentalTime::class)
 object LeaderboardService : StartupListener {
     private const val REFRESH_COOLDOWN: Long = 15L
     private val LEADERBOARD_DESCRIPTION by lazy {

@@ -35,8 +35,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.toJavaInstant
-import kotlinx.datetime.toKotlinInstant
 import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.listener.ServerJoinListener
@@ -55,6 +53,9 @@ import java.awt.Color
 import java.time.Instant
 import java.util.*
 import java.util.regex.Pattern
+import kotlin.time.ExperimentalTime
+import kotlin.time.toJavaInstant
+import kotlin.time.toKotlinInstant
 
 /**
  * This is the main-class for the application.
@@ -191,7 +192,7 @@ object DiscordConnection : StartupListener {
         ClassLoader.loadExtensions(bot!!)
 
         bot?.on<ReadyEvent> {
-            if(!started) {
+            if (!started) {
                 ClassLoader.executePostStart()
 
                 started = true
@@ -259,6 +260,7 @@ fun Snowflake.isDungeonHub(): Boolean {
     return listOf(693263712626278553, 1023684107877761196).contains(value.toLong())
 }
 
+@OptIn(ExperimentalTime::class)
 fun EmbedBuilder.copy(other: EmbedBuilder) {
     this.description = other.description
     this.title = other.title
@@ -339,6 +341,7 @@ fun EmbedBuilder.setAuthor(value: JsonElement) {
     }
 }
 
+@OptIn(ExperimentalTime::class)
 fun EmbedBuilder.applyJson(key: String, value: JsonElement) {
     when (key) {
         "title" -> title = value.asString
@@ -361,6 +364,7 @@ fun EmbedBuilder.applyJson(key: String, value: JsonElement) {
     }
 }
 
+@OptIn(ExperimentalTime::class)
 fun Embed.toBuilder(): EmbedBuilder {
     val embed = EmbedBuilder()
 
@@ -398,6 +402,7 @@ fun Field.toBuilder(): EmbedBuilder.Field {
     return field
 }
 
+@OptIn(ExperimentalTime::class)
 fun Embed.toModel(): EmbedModel {
     val embed = EmbedModel(
         title,

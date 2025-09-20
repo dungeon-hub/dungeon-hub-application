@@ -22,6 +22,7 @@ import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.i18n.Translations.Command.Cdn
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
+import kotlin.time.ExperimentalTime
 
 /**
  * A command to access the CDN using the slash command /cdn.
@@ -31,6 +32,7 @@ import okhttp3.Request
  * - `static`: Get a static file from the CDN.
  */
 @LoadExtension
+@OptIn(ExperimentalTime::class)
 class CdnCommand : Extension() {
     override val name = "cdn-command"
     private val allowedUsers = listOf(

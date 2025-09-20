@@ -28,7 +28,6 @@ import java.net.InetAddress
 import java.net.UnknownHostException
 import java.util.*
 
-
 @OptIn(ExperimentalStdlibApi::class)
 object FlaggingConnection : ExternalConnection {
     override val logger: Logger = LoggerFactory.getLogger(FlaggingConnection::class.java)

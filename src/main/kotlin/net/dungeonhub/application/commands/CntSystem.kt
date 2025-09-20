@@ -32,8 +32,6 @@ import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasPermission
-import kotlinx.datetime.Clock
-import kotlinx.datetime.toKotlinInstant
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.HelpTopic
@@ -60,10 +58,14 @@ import net.dungeonhub.model.reputation.ReputationModel
 import net.dungeonhub.mojang.connection.MojangConnection
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
+import kotlin.time.ExperimentalTime
 import kotlin.time.toKotlinDuration
+import kotlin.time.toKotlinInstant
 
 @LoadExtension
+@OptIn(ExperimentalTime::class)
 class CntSystem : Extension() {
     private val logger = LoggerFactory.getLogger(CntSystem::class.java)
     override val name = "cnt-system"
@@ -534,7 +536,7 @@ class CntSystem : Extension() {
 
                     val allowedToRep = isAllowedToGiveReputation(user.id.value.toLong(), userToRep)
 
-                    if(!allowedToRep.allowedToGive) {
+                    if (!allowedToRep.allowedToGive) {
                         addEmbed {
                             copy(allowedToRep.response!!)
                         }
@@ -688,7 +690,12 @@ class CntSystem : Extension() {
     }
 
     // TODO merge this with the response of the /rep slash command --> if possible
-    suspend fun addReputation(cntRequest: CntRequestModel, guild: GuildBehavior, executor: UserBehavior, reason: String? = null): EmbedBuilder {
+    suspend fun addReputation(
+        cntRequest: CntRequestModel,
+        guild: GuildBehavior,
+        executor: UserBehavior,
+        reason: String? = null
+    ): EmbedBuilder {
         val userToRep = cntRequest.claimer?.id?.let { guild.getMemberOrNull(Snowflake(it)) }
 
         if (userToRep == null) {
@@ -700,7 +707,7 @@ class CntSystem : Extension() {
 
         val allowedToRep = isAllowedToGiveReputation(executor.id.value.toLong(), userToRep)
 
-        if(!allowedToRep.allowedToGive) {
+        if (!allowedToRep.allowedToGive) {
             return allowedToRep.response!!
         }
 

@@ -10,8 +10,6 @@ import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import kotlinx.datetime.Clock
-import kotlinx.datetime.toJavaInstant
 import net.dungeonhub.application.connection.getMutualServers
 import net.dungeonhub.connection.*
 import net.dungeonhub.enums.RoleRequirementType
@@ -25,8 +23,12 @@ import net.dungeonhub.model.discord_role_group.DiscordRoleGroupModel
 import net.dungeonhub.model.role_requirement.RoleRequirementModel
 import java.util.stream.Collectors
 import kotlin.math.roundToInt
+import kotlin.time.Clock
 import kotlin.time.Duration
+import kotlin.time.ExperimentalTime
+import kotlin.time.toJavaInstant
 
+@OptIn(ExperimentalTime::class)
 object RolesService {
     val scheduler = Scheduler()
 

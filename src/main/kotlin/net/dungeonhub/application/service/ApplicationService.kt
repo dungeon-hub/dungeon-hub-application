@@ -22,12 +22,8 @@ import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.builder.message.create.AbstractMessageCreateBuilder
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.utils.dm
-import dev.kordex.core.utils.timeoutUntil
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toKotlinInstant
 import net.dungeonhub.application.commands.LinkingSystem
 import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.connection.DiscordConnection
@@ -65,8 +61,9 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
 import javax.imageio.ImageIO
-import kotlin.time.Duration
+import kotlin.time.*
 
+@OptIn(ExperimentalTime::class)
 object ApplicationService {
     const val MAX_MINECRAFT_USERNAME_LENGTH = 16
     private val logger: Logger = LoggerFactory.getLogger(DiscordConnection::class.java)
@@ -674,10 +671,10 @@ object ApplicationService {
             .reduceOrNull { acc, duration -> acc.plus(duration) }
 
         if (timeout != null && timeout.isPositive()) {
-            val currentTimeout = member.timeoutUntil
+            val currentTimeout = member.communicationDisabledUntil
 
             if (currentTimeout != null) {
-                val currentTimeoutDuration = member.timeoutUntil!! - Clock.System.now()
+                val currentTimeoutDuration = member.communicationDisabledUntil!! - Clock.System.now()
 
                 if (currentTimeoutDuration.isPositive()) {
                     timeout += currentTimeoutDuration
@@ -685,7 +682,7 @@ object ApplicationService {
             }
 
             member.edit {
-                timeoutUntil = Clock.System.now().plus(timeout)
+                communicationDisabledUntil = Clock.System.now().plus(timeout)
                 this.reason = "Too many warnings."
             }
 
@@ -851,38 +848,46 @@ object ApplicationService {
     }
 }
 
+@OptIn(ExperimentalTime::class)
 fun Extension.getEmbed(): EmbedBuilder {
     return ApplicationService.getEmbed(Clock.System.now())
 }
 
+@OptIn(ExperimentalTime::class)
 fun Extension.getEmbed(time: Instant?): EmbedBuilder {
     return ApplicationService.getEmbed(time)
 }
 
+@OptIn(ExperimentalTime::class)
 fun AbstractMessageCreateBuilder.addEmbed(function: EmbedBuilder.() -> Unit) {
     this.addEmbed(Clock.System.now(), function)
 }
 
+@OptIn(ExperimentalTime::class)
 fun AbstractMessageCreateBuilder.addEmbed(time: Instant?, function: EmbedBuilder.() -> Unit) {
     val embed = ApplicationService.getEmbed(time)
     function(embed)
     embeds = ((embeds ?: mutableListOf()) + embed).toMutableList()
 }
 
+@OptIn(ExperimentalTime::class)
 fun buildEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {
     return buildEmbed(Clock.System.now(), function)
 }
 
+@OptIn(ExperimentalTime::class)
 fun buildEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): EmbedBuilder {
     val embed = ApplicationService.getEmbed(time)
     function(embed)
     return embed
 }
 
+@OptIn(ExperimentalTime::class)
 fun Extension.createEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {
     return this.createEmbed(Clock.System.now(), function)
 }
 
+@OptIn(ExperimentalTime::class)
 fun Extension.createEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): EmbedBuilder {
     val embed = getEmbed(time)
     function(embed)

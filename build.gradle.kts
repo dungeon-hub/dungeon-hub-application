@@ -1,8 +1,8 @@
 import dev.kordex.gradle.plugins.kordex.DataCollection
 
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "2.1.21"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.21"
+    id("org.jetbrains.kotlin.jvm") version "2.2.20"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.2.20"
 
     id("com.github.johnrengelman.shadow") version "8.1.1"
     //TODO fix errors
@@ -25,7 +25,7 @@ repositories {
 }
 
 kordEx {
-    kordExVersion = "2.3.5-SNAPSHOT"
+    kordExVersion = "2.3.6-SNAPSHOT"
     jvmTarget = 17
 
     bot {
@@ -62,7 +62,7 @@ dependencies {
     implementation(libs.hypixel.wrapper)
 
     //Functionality
-    implementation("net.dungeon-hub:transcripts-kord:0.1.2")
+    implementation("net.dungeon-hub:transcripts-kord:0.2.0")
     implementation("net.codebox:homoglyph:1.2.1")
     implementation("com.google.zxing:javase:3.5.2")
     implementation("com.google.guava:guava:33.0.0-jre")

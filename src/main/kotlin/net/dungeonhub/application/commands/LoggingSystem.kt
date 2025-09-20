@@ -49,8 +49,10 @@ import net.dungeonhub.model.carry_queue.CarryQueueModel
 import net.dungeonhub.model.score.ScoreModel
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import kotlin.time.ExperimentalTime
 
 @LoadExtension
+@OptIn(ExperimentalTime::class)
 class LoggingSystem : Extension() {
     override val name = "logging-system"
     private val logger = LoggerFactory.getLogger(LoggingSystem::class.java)

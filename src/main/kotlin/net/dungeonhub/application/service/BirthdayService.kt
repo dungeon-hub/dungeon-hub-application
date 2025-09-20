@@ -21,12 +21,15 @@ import okhttp3.Request
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.io.InputStream
+import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 
 @OnStart
+@OptIn(ExperimentalTime::class)
 object BirthdayService : StartupListener {
     private const val BIRTHDAY_CALENDAR_URL =
         "https://cloud.dungeon-hub.net/remote.php/dav/public-calendars/g2tZRB2YpacJtAtt?export"
@@ -39,7 +42,7 @@ object BirthdayService : StartupListener {
     var birthdays: List<Birthday> = listOf()
 
     override suspend fun postStart() {
-        if(::scheduler.isInitialized) {
+        if (::scheduler.isInitialized) {
             scheduler.cancel("Application was restarted.")
         }
 
@@ -174,7 +177,7 @@ object BirthdayService : StartupListener {
 
         fun isToday(today: LocalDateTime): Boolean {
             if (recurrenceSet.isEmpty()) {
-                return date.dayOfMonth == today.dayOfMonth && date.month == today.month
+                return date.day == today.day && date.month == today.month
             }
 
             return recurrenceSet.any { it.includes(today.toJavaLocalDateTime()) }
