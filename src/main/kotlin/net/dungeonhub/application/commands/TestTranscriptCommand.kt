@@ -18,7 +18,8 @@ import java.nio.charset.StandardCharsets
 class TestTranscriptCommand : Extension() {
     override val name = "test-transcript-command"
     private val allowedUsers = listOf(
-        356134481452597250L
+        356134481452597250,
+        574048571364605992
     )
     private val logger = LoggerFactory.getLogger(TestTranscriptCommand::class.java)
 
