@@ -63,11 +63,10 @@ object RolesService {
 
         val rolesToAdd = serverRoles.values.stream()
             .filter { roleModel -> roleModel.shouldBeAdded(isVerified) }
-            .map { obj: DiscordRoleModel -> obj.id }
-            .map { id: Long? ->
+            .map {
                 scheduler.async {
                     member.guild.getRoleOrNull(
-                        Snowflake(id!!)
+                        Snowflake(it.id)
                     )
                 }
             }

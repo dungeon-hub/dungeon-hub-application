@@ -35,6 +35,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.CompletionException
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 @OnStart(priority = StartPriority.POST_BOT)
@@ -104,7 +105,7 @@ object LeaderboardService : StartupListener {
 
         this.lastRefresh = Instant.now().minusSeconds(REFRESH_COOLDOWN + 10L)
 
-        val task = scheduler.schedule(60 * 15, startNow = false, name = "Leaderboard-Schedule", repeat = true) {
+        val task = scheduler.schedule(15.minutes, startNow = false, name = "Leaderboard-Schedule", repeat = true) {
             refreshLeaderboard()
         }
 
