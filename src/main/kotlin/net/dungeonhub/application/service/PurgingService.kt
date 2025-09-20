@@ -6,8 +6,10 @@ import dev.kord.core.entity.Member
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasRole
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.OnStart
@@ -17,24 +19,25 @@ import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.purge_type.PurgeTypeModel
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.sql.Time
-import java.util.*
-import kotlin.concurrent.thread
+import kotlin.time.Duration.Companion.seconds
 
 @OnStart
 object PurgingService : StartupListener {
     private val logger: Logger = LoggerFactory.getLogger(PurgingService::class.java)
     private val purgeDataList: MutableList<PurgeData> = ArrayList()
     private val purgeEnabled: MutableList<Long> = ArrayList()
+    private lateinit var scheduler: Scheduler
 
     override suspend fun postStart() {
-        Timer().scheduleAtFixedRate(object : TimerTask() {
-            override fun run() {
-                runBlocking {
-                    purgeWave()
-                }
-            }
-        }, Time(System.currentTimeMillis() + 500L), 3000L)
+        if(::scheduler.isInitialized) {
+            scheduler.cancel("Application was restarted.")
+        }
+
+        scheduler = Scheduler()
+
+        scheduler.schedule(6.seconds, startNow = true, name = "Purging-Schedule", repeat = true) {
+            purgeWave()
+        }
     }
 
     fun clearServer(serverId: Long) {
@@ -67,15 +70,10 @@ object PurgingService : StartupListener {
         return purgeEnabled.contains(serverId)
     }
 
-    /**
-     * This method is private to prevent it from being run from outside this service.
-     * That is done so that the amount of threads created is limited, to prevent the server this is currently hosted
-     * on from reaching the vm's thread limit.
-     */
     private suspend fun purgeWave() {
         val currentWave = purgeDataList.stream()
             .filter { purgeData: PurgeData -> purgeEnabled.contains(purgeData.purgeType.carryType.server.id) }
-            .limit(5)
+            .limit(3)
             .toList()
 
         purgeEnabled.removeIf { aLong: Long ->
@@ -83,53 +81,56 @@ object PurgingService : StartupListener {
                 .noneMatch { purgeData: PurgeData -> purgeData.purgeType.carryType.server.id == aLong }
         }
 
-        currentWave.forEach { purgeData: PurgeData ->
-            val server = DiscordConnection.bot?.kordRef?.getGuild(Snowflake(purgeData.purgeType.carryType.server.id))
+        try {
+            currentWave.forEach { purgeData: PurgeData ->
+                val server = DiscordConnection.bot?.kordRef?.getGuild(Snowflake(purgeData.purgeType.carryType.server.id))
 
-            if (server == null) {
-                logger.error("Server isn't a valid server for purging anymore!")
-                return@forEach
-            }
+                if (server == null) {
+                    logger.error("Server isn't a valid server for purging anymore!")
+                    return@forEach
+                }
 
-            val member = DiscordConnection.bot?.kordRef?.getUser(Snowflake(purgeData.userId))?.asMember(server.id)
+                val member = DiscordConnection.bot?.kordRef?.getUser(Snowflake(purgeData.userId))?.asMember(server.id)
 
-            if (member == null) {
-                logger.error("Member wasn't found anymore! I guess they escaped the purge.")
-                return@forEach
-            }
+                if (member == null) {
+                    logger.error("Member wasn't found anymore! I guess they escaped the purge.")
+                    return@forEach
+                }
 
-            val rolesRemoved = removeRoles(
-                purgeData.rolesToRemove,
-                member,
-                purgeData.purgeType,
-                purgeData.purgeThreshold
-            )
+                val rolesRemoved = removeRoles(
+                    purgeData.rolesToRemove,
+                    member,
+                    purgeData.purgeType,
+                    purgeData.purgeThreshold
+                )
 
-            thread(start = true) {
-                runBlocking {
+                scheduler.launch {
                     delay(5000)
 
-                    val reloadedMember = member.withStrategy(EntitySupplyStrategy.cachingRest).fetchMember()
+                    val reloadedMember =
+                        member.withStrategy(EntitySupplyStrategy.cacheWithCachingRestFallback).fetchMember()
 
                     RolesService.updateRoles(reloadedMember)
                 }
-            }
 
-            if (rolesRemoved.isNotEmpty()) {
-                try {
-                    member.dm {
-                        val embed = ApplicationService.embed
-                        embed.color = EmbedColor.Negative.color
-                        embed.title = "Inactivity Purge"
-                        embed.description =
-                            "Your ${purgeData.purgeType.displayName}-carry roles on `${server.name}` were removed since you only reached ${purgeData.score}/${purgeData.purgeThreshold} score."
-                        embed.field("Roles removed", false) { rolesRemoved.joinToString(System.lineSeparator()) }
-                        embeds = mutableListOf(embed)
+                if (rolesRemoved.isNotEmpty()) {
+                    try {
+                        member.dm {
+                            val embed = ApplicationService.embed
+                            embed.color = EmbedColor.Negative.color
+                            embed.title = "Inactivity Purge"
+                            embed.description =
+                                "Your ${purgeData.purgeType.displayName}-carry roles on `${server.name}` were removed since you only reached ${purgeData.score}/${purgeData.purgeThreshold} score."
+                            embed.field("Roles removed", false) { rolesRemoved.joinToString(System.lineSeparator()) }
+                            embeds = mutableListOf(embed)
+                        }
+                    } catch (_: RequestException) {
+                        // ignore since member doesn't need to know
                     }
-                } catch (_: RequestException) {
-                    // ignore since member doesn't need to know
                 }
             }
+        } catch (exception: Exception) {
+            logger.error("An error occurred while performing a purge wave!", exception)
         }
 
         purgeDataList.removeAll(currentWave)

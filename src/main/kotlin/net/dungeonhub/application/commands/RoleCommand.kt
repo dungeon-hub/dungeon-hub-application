@@ -16,9 +16,12 @@ import dev.kordex.core.commands.converters.impl.*
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.exceptions.CommandExecutionException
@@ -37,13 +40,16 @@ import net.dungeonhub.i18n.Translations.Command.Role
 import net.dungeonhub.model.discord_role.DiscordRoleCreationModel
 import net.dungeonhub.model.discord_role.DiscordRoleUpdateModel
 import net.dungeonhub.model.role_requirement.RoleRequirementCreationModel
-import kotlin.concurrent.thread
+import kotlin.time.Duration.Companion.seconds
 
 @LoadExtension
 class RoleCommand : Extension() {
     override val name = "role-command"
+    private lateinit var scheduler: Scheduler
 
     override suspend fun setup() {
+        scheduler = Scheduler()
+
         publicSlashCommand {
             name = Role.name
             description = Role.description
@@ -310,6 +316,50 @@ class RoleCommand : Extension() {
                     }
                 }
 
+                publicSubCommand(::RoleRequirementsEditArguments) {
+                    name = Role.Requirements.Edit.name
+                    description = Role.Requirements.Edit.description
+
+                    check {
+                        hasPermission(Permission.Administrator)
+                    }
+
+                    action {
+                        val roleRequirementConnection = RoleRequirementConnection[guild!!.id.value.toLong()].authenticated()
+
+                        val roleRequirement = roleRequirementConnection.getById(arguments.roleRequirement)
+                            ?: throw CommandExecutionException("Couldn't find the role requirement with id ${arguments.roleRequirement}.")
+
+                        val updateModel = roleRequirement.getUpdateModel()
+
+                        if(arguments.comparison != null) {
+                            updateModel.comparison = arguments.comparison
+                        }
+
+                        if(arguments.count != null) {
+                            updateModel.count = arguments.count
+                        }
+
+                        if(arguments.extraData != null) {
+                            updateModel.extraData = arguments.extraData
+                        }
+
+                        if(arguments.resetExtraData == true) {
+                            updateModel.extraData = null
+                        }
+
+                        val updatedRoleRequirement =
+                            roleRequirementConnection.updateRoleRequirement(roleRequirement.id, updateModel)
+                                ?: throw CommandExecutionException("Couldn't update the role requirement.")
+
+                        respond {
+                            val embed = updatedRoleRequirement.toEmbed(getLocale())
+                            embed.title = "Updated role requirement #${updatedRoleRequirement.id}"
+                            embeds = mutableListOf(embed)
+                        }
+                    }
+                }
+
                 publicSubCommand(::RoleRequirementsDeleteArguments) {
                     name = Role.Requirements.Delete.name
                     description = Role.Requirements.Delete.description
@@ -336,6 +386,10 @@ class RoleCommand : Extension() {
                 }
             }
         }
+    }
+
+    override suspend fun unload() {
+        scheduler.cancel("Extension shutting down.")
     }
 
     suspend fun addRemove(add: Boolean, issuer: Member, arguments: RoleArguments): EmbedBuilder {
@@ -374,17 +428,17 @@ class RoleCommand : Extension() {
             }
         }
 
-        thread(start = true) {
-            runBlocking {
-                val member = arguments.user.fetchMember(issuer.guildId)
+        scheduler.launch {
+            delay(2.seconds)
 
-                val updatedRoles = RolesService.updateRoles(member)
+            val member = arguments.user.fetchMember(issuer.guildId)
 
-                try {
-                    NicknameService.updateNickname(member, updatedRoles)
-                } catch (_: NoNameSchemaWarning) {
-                    //ignore this, in that case you just don't apply a nickname
-                }
+            val updatedRoles = RolesService.updateRoles(member)
+
+            try {
+                NicknameService.updateNickname(member, updatedRoles)
+            } catch (_: NoNameSchemaWarning) {
+                //ignore this, in that case you just don't apply a nickname
             }
         }
 
@@ -420,17 +474,17 @@ class RoleCommand : Extension() {
         embed.description =
             "Successfully removed the user ${arguments.target.mention} from the role-group ${arguments.role.mention}."
 
-        thread(start = true) {
-            runBlocking {
-                val member = arguments.target.fetchMember(issuer.guildId)
+        scheduler.launch {
+            delay(2.seconds)
 
-                val updatedRoles = RolesService.updateRoles(member)
+            val member = arguments.target.fetchMember(issuer.guildId)
 
-                try {
-                    NicknameService.updateNickname(member, updatedRoles)
-                } catch (_: NoNameSchemaWarning) {
-                    //ignore this, in that case you just don't apply a nickname
-                }
+            val updatedRoles = RolesService.updateRoles(member)
+
+            try {
+                NicknameService.updateNickname(member, updatedRoles)
+            } catch (_: NoNameSchemaWarning) {
+                //ignore this, in that case you just don't apply a nickname
             }
         }
 
@@ -524,6 +578,34 @@ class RoleCommand : Extension() {
         val extraData by optionalString {
             name = "extra-data".toKey()
             description = "Enter some extra data, if applicable.".toKey()
+        }
+    }
+
+    class RoleRequirementsEditArguments : Arguments() {
+        val roleRequirement by long {
+            name = "role-requirement".toKey()
+            description = "Select which role requirement you want to edit.".toKey()
+        }
+
+        val comparison by optionalEnumChoice<RoleRequirementComparison> {
+            name = "comparison".toKey()
+            description = "Select which comparison you want to use for the requirement.".toKey()
+            typeName = "RoleRequirementComparison".toKey()
+        }
+
+        val count by optionalInt {
+            name = "count".toKey()
+            description = "Select the required amount.".toKey()
+        }
+
+        val extraData by optionalString {
+            name = "extra-data".toKey()
+            description = "Enter some extra data, if applicable.".toKey()
+        }
+
+        val resetExtraData by optionalBoolean {
+            name = "reset-extra-data".toKey()
+            description = "Reset the extra data for this role requirement.".toKey()
         }
     }
 

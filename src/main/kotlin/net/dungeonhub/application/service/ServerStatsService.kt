@@ -10,8 +10,10 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.VoiceChannel
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.core.supplier.RestEntitySupplier
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.getGuildOrNull
 import net.dungeonhub.application.exceptions.CommandExecutionException
@@ -20,15 +22,14 @@ import net.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import org.slf4j.LoggerFactory
-import java.sql.Time
 import java.time.ZonedDateTime
-import java.util.*
-import kotlin.concurrent.thread
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
 
 @OnStart
 object ServerStatsService : StartupListener {
     private val logger = LoggerFactory.getLogger(ServerStatsService::class.java)
-    private var timer: Timer? = null
+    private lateinit var scheduler: Scheduler
     private val serverStatChannels = listOf(
         //DH Testing
         1023684107877761196L to listOf(
@@ -47,30 +48,23 @@ object ServerStatsService : StartupListener {
     )
 
     override suspend fun postStart() {
-        resetTimer()
-    }
-
-
-    private fun resetTimer() {
-        if (timer != null) {
-            timer!!.cancel()
+        if (::scheduler.isInitialized) {
+            scheduler.cancel("Application was restarted.")
         }
 
-        timer = Timer()
+        scheduler = Scheduler()
 
-        timer!!.scheduleAtFixedRate(object : TimerTask() {
-            override fun run() {
-                logger.debug("Server stat channels reloaded!")
+        val task = scheduler.schedule(2.hours, startNow = false, name = "Server-Stats-Schedule", repeat = true) {
+            logger.debug("Server stat channels reloading...")
+            loadServerStatChannels()
+            logger.debug("Server stat channels reloaded!")
+        }
 
-                thread {
-                    runBlocking {
-                        launch {
-                            loadServerStatChannels()
-                        }
-                    }
-                }
-            }
-        }, Time(System.currentTimeMillis() + 1000 * 60), 1000L * 60 * 60)
+        scheduler.launch {
+            delay(60.seconds)
+            task.callNow()
+            task.start()
+        }
     }
 
     private suspend fun loadServerStatChannels() {

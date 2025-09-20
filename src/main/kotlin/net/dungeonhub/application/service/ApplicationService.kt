@@ -15,6 +15,7 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.User
 import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.EmbedBuilder.Footer
 import dev.kord.rest.builder.message.actionRow
@@ -23,10 +24,11 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.timeoutUntil
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toKotlinInstant
+import net.dungeonhub.application.commands.LinkingSystem
 import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.FlaggingConnection
@@ -63,7 +65,6 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
 import javax.imageio.ImageIO
-import kotlin.concurrent.thread
 import kotlin.time.Duration
 
 object ApplicationService {
@@ -299,13 +300,11 @@ object ApplicationService {
         return embed
     }
 
-    fun formatWarnDm(warningModel: WarningModel): EmbedBuilder {
+    suspend fun formatWarnDm(warningModel: WarningModel): EmbedBuilder {
         val embedBuilder = getEmbed(warningModel.time.toKotlinInstant())
         embedBuilder.color = EmbedColor.Information.color
         embedBuilder.title = "You were warned on server `${
-            runBlocking {
-                DiscordConnection.bot!!.kordRef.getGuildOrNull(Snowflake(warningModel.server.id))?.name ?: "unknown"
-            }
+            DiscordConnection.bot!!.kordRef.getGuildOrNull(Snowflake(warningModel.server.id))?.name ?: "unknown"
         }`"
 
         embedBuilder.field("You") { "<@${warningModel.user.id}>" }
@@ -394,7 +393,7 @@ object ApplicationService {
     // as well as the skycrypt api takes long too
     //probably first load skycrypt, then the rest?
     @Throws(FailedToLoadEmbedException::class)
-    fun getPlayerDataEmbed(ign: String, discordId: Long?): EmbedBuilder {
+    suspend fun getPlayerDataEmbed(ign: String, discordId: Long?): EmbedBuilder {
         val embed = embed
 
         val uuid: UUID = MojangConnection.getUUIDByName(ign)
@@ -421,8 +420,22 @@ object ApplicationService {
             embed.color = EmbedColor.Positive.color
         }
 
+        embed.thumbnail {
+            url = "https://visage.surgeplay.com/face/$uuid"
+        }
+        embed.url = ConfigProperty.SKYCRYPT_API_URL.toString() + "stats/" + ign
+        embed.title = try {
+            MojangConnection.getNameByUUID(uuid)
+        } catch (_: PlayerNotFoundException) {
+            ign
+        }
+
         val statsOverview = HypixelApiConnection().getStatsOverview(uuid)
-            ?: throw FailedToLoadEmbedException(embed)
+
+        if (statsOverview == null) {
+            embed.description = "No profiles found."
+            throw FailedToLoadEmbedException(embed)
+        }
 
         embed.description = statsOverview.description
         embed.title = "${
@@ -432,11 +445,6 @@ object ApplicationService {
                 ign
             }
         } (${statsOverview.profileName})"
-        embed.url = ConfigProperty.SKYCRYPT_API_URL.toString() + "stats/" + ign
-
-        embed.thumbnail {
-            url = "https://visage.surgeplay.com/face/$uuid"
-        }
 
         return embed
     }
@@ -727,14 +735,13 @@ object ApplicationService {
             }
         }
 
-        thread {
-            runBlocking {
-                val reloadedMember = member.withStrategy(EntitySupplyStrategy.cachingRest).fetchMember()
+        @OptIn(PrivilegedIntent::class)
+        LinkingSystem.scheduler.launch {
+            val reloadedMember = member.withStrategy(EntitySupplyStrategy.cachingRest).fetchMember()
 
-                val roles = RolesService.updateRoles(reloadedMember)
+            val roles = RolesService.updateRoles(reloadedMember)
 
-                NicknameService.updateNickname(reloadedMember, roles)
-            }
+            NicknameService.updateNickname(reloadedMember, roles)
         }
 
         return reason.joinToString(System.lineSeparator())
@@ -745,7 +752,7 @@ object ApplicationService {
         coinValue: String,
         requirement: String,
         time: Instant,
-        userId: Long
+        userId: Long?
     ): EmbedBuilder {
         val embed = getEmbed(time)
         embed.color = EmbedColor.Default.color
@@ -754,7 +761,9 @@ object ApplicationService {
         embed.field("Request", true) { description }
         embed.field("Value", true) { coinValue }
         embed.field("Requirement", true) { requirement }
-        embed.field("Requested by", true) { "<@$userId>" }
+        if(userId != null) {
+            embed.field("Requested by", true) { "<@$userId>" }
+        }
 
         return embed
     }
@@ -765,7 +774,7 @@ object ApplicationService {
             cntRequest.coinValue,
             cntRequest.requirement,
             cntRequest.time.toKotlinInstant(),
-            cntRequest.user.id
+            if (cntRequest.completed) cntRequest.user.id else null
         )
 
         cntRequest.claimer?.let { embed.field("Claimed by", true) { "<@${it.id}>" } }
@@ -833,8 +842,8 @@ object ApplicationService {
         return embed
     }
 
-    fun getSlashCommandDisplay(commandName: String): String {
-        return runBlocking { getGlobalCommandId(commandName)?.let { "</$commandName:$it>" } } ?: "`/$commandName`"
+    suspend fun getSlashCommandDisplay(commandName: String): String {
+        return getGlobalCommandId(commandName)?.let { "</$commandName:$it>" } ?: "`/$commandName`"
     }
 
     suspend fun getGlobalCommandId(name: String): Snowflake? {
@@ -858,6 +867,16 @@ fun AbstractMessageCreateBuilder.addEmbed(time: Instant?, function: EmbedBuilder
     val embed = ApplicationService.getEmbed(time)
     function(embed)
     embeds = ((embeds ?: mutableListOf()) + embed).toMutableList()
+}
+
+fun buildEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {
+    return buildEmbed(Clock.System.now(), function)
+}
+
+fun buildEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): EmbedBuilder {
+    val embed = ApplicationService.getEmbed(time)
+    function(embed)
+    return embed
 }
 
 fun Extension.createEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {

@@ -2,23 +2,23 @@ package net.dungeonhub.application.service
 
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
+import dev.kordex.core.utils.scheduling.Scheduler
 import io.ktor.util.collections.*
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.cancel
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.exceptions.NotLinkedException
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
 
 @OnStart
 object MassSyncService : StartupListener {
     private const val WAVE_SIZE = 1
+    private val waveDuration = 15.seconds
 
-    private var timerTask: ScheduledFuture<*>? = null
+    private lateinit var scheduler: Scheduler
     private val logger = LoggerFactory.getLogger(MassSyncService::class.java)
 
     // Map structure to segregate users by guild (key: guild ID, value: set of user IDs).
@@ -75,14 +75,14 @@ object MassSyncService : StartupListener {
     }
 
     override suspend fun postStart() {
-        if (timerTask != null) {
-            timerTask!!.cancel(false)
+        if(::scheduler.isInitialized) {
+            scheduler.cancel("Application was restarted.")
         }
 
-        timerTask = Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate({
-            runBlocking {
-                syncWave()
-            }
-        }, 15, 15, TimeUnit.SECONDS)
+        scheduler = Scheduler()
+
+        scheduler.schedule(waveDuration, startNow = true, name = "Mass-Sync-Schedule", repeat = true) {
+            syncWave()
+        }
     }
 }

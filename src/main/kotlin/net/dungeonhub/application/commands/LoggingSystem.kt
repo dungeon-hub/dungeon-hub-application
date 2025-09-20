@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.reduce
 import kotlinx.coroutines.flow.takeWhile
-import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
@@ -255,19 +254,18 @@ class LoggingSystem : Extension() {
 
             ServerProperty.SCORE_LOGS_CHANNEL
                 .getValue(event.interaction.guild.id.value.toLong())
-                .map { id: String ->
-                    runBlocking { event.interaction.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id)) }
+                .orElse(null)
+                ?.let { id: String ->
+                    event.interaction.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
                 }
-                .ifPresent { serverTextChannel ->
-                    runBlocking {
-                        serverTextChannel.createMessage {
-                            val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
-                            embed.color = EmbedColor.Negative.color
-                            embed.title = "Carry denied"
-                            embed.field("Denied by", true) { event.interaction.user.mention }
+                ?.let { serverTextChannel ->
+                    serverTextChannel.createMessage {
+                        val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                        embed.color = EmbedColor.Negative.color
+                        embed.title = "Carry denied"
+                        embed.field("Denied by", true) { event.interaction.user.mention }
 
-                            embeds = mutableListOf(embed)
-                        }
+                        embeds = mutableListOf(embed)
                     }
                 }
 
@@ -316,17 +314,15 @@ class LoggingSystem : Extension() {
                     .carryType
                     .logChannel
                     ?.let { id: Long ->
-                        runBlocking { event.interaction.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id)) }
+                        event.interaction.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
                     }
                     ?.let { serverTextChannel ->
-                        runBlocking {
-                            serverTextChannel.createMessage {
-                                val embed = ApplicationService.loadEmbedFromCarry(loggedCarryModel.carryModel)
-                                embed.title = "Carry accepted."
-                                embed.color = EmbedColor.Positive.color
+                        serverTextChannel.createMessage {
+                            val embed = ApplicationService.loadEmbedFromCarry(loggedCarryModel.carryModel)
+                            embed.title = "Carry accepted."
+                            embed.color = EmbedColor.Positive.color
 
-                                embeds = mutableListOf(embed)
-                            }
+                            embeds = mutableListOf(embed)
                         }
                     }
             } catch (_: NullPointerException) {

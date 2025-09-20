@@ -5,27 +5,34 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kord.rest.json.JsonErrorCode
+import dev.kord.rest.request.KtorRequestException
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.isSelf
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
-import net.dungeonhub.application.service.ServerService.allServers
 import net.dungeonhub.connection.CarryDifficultyConnection
+import net.dungeonhub.connection.CarryTierConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_tier.CarryTierModel
-import java.sql.Time
-import java.util.*
+import org.slf4j.LoggerFactory
 import java.util.stream.Collectors
 import java.util.stream.Stream
+import kotlin.time.Duration.Companion.seconds
 
 @OnStart
 object MessagesService : StartupListener {
-    private const val REFRESH_PERIOD = 1000L * 60 * 15
-    private var timer: Timer? = null
+    private val logger = LoggerFactory.getLogger(MessagesService::class.java)
+    private const val REFRESH_SECONDS = 60L * 15
+    private lateinit var scheduler: Scheduler
 
     fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder? {
         val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().allCarryDifficulties ?: listOf()
@@ -81,8 +88,10 @@ object MessagesService : StartupListener {
     }
 
     private suspend fun refreshPriceMessages() {
-        for (serverData in allServers) {
-            refreshPriceMessages(serverData.id)
+        val guilds = DiscordConnection.bot?.kordRef?.guilds?.toList() ?: return
+
+        for (serverData in guilds) {
+            refreshPriceMessages(serverData.id.value.toLong())
         }
     }
 
@@ -105,19 +114,33 @@ object MessagesService : StartupListener {
                     }
                 ))
 
-        carryTiersPerChannel
-            .forEach { (key: Long?, value: MutableList<CarryTierModel>) ->
-                DiscordConnection.bot?.kordRef
-                    ?.getChannelOf<GuildMessageChannel>(Snowflake(key!!))
-                    ?.let {
-                        refreshPriceMessageInChannel(
-                            it,
-                            addPriceFooterToLast(
-                                value.mapNotNull { carryTier -> getPriceEmbed(carryTier) }
-                            )
+        carryTiersPerChannel.forEach { (key: Long?, value: MutableList<CarryTierModel>) ->
+            try {
+                DiscordConnection.bot?.kordRef?.getChannelOf<GuildMessageChannel>(Snowflake(key!!))?.let {
+                    refreshPriceMessageInChannel(
+                        it,
+                        addPriceFooterToLast(
+                            value.mapNotNull { carryTier -> getPriceEmbed(carryTier) }
+                        )
+                    )
+                }
+            } catch (requestException: KtorRequestException) {
+                // In case we don't have access to the channel anymore, we need to remove it from the carry tier.
+                if (requestException.error?.code == JsonErrorCode.MissingAccess) {
+                    for (carryTier in value) {
+                        logger.error("I can't access the channel <#${carryTier.priceChannel}> anymore. Removing it from the carry tier.")
+
+                        val updateModel = carryTier.getUpdateModel()
+                        updateModel.priceChannel = null
+
+                        CarryTierConnection[carryTier.carryType].authenticated().updateCarryTier(
+                            carryTier.id,
+                            updateModel
                         )
                     }
+                }
             }
+        }
     }
 
     private fun addPriceFooterToLast(embeds: List<EmbedBuilder>): List<EmbedBuilder> {
@@ -150,18 +173,21 @@ object MessagesService : StartupListener {
     }
 
     override suspend fun postStart() {
-        if (timer != null) {
-            timer!!.cancel()
+        if (::scheduler.isInitialized) {
+            scheduler.cancel("Application was restarted.")
         }
 
-        timer = Timer()
+        scheduler = Scheduler()
 
-        timer!!.scheduleAtFixedRate(object : TimerTask() {
-            override fun run() {
-                runBlocking {
-                    refreshPriceMessages()
-                }
+        val task =
+            scheduler.schedule(REFRESH_SECONDS, startNow = false, name = "Price-Messages-Schedule", repeat = true) {
+                refreshPriceMessages()
             }
-        }, Time(System.currentTimeMillis() + 15000), REFRESH_PERIOD)
+
+        scheduler.launch {
+            delay(15.seconds)
+            task.callNow()
+            task.start()
+        }
     }
 }

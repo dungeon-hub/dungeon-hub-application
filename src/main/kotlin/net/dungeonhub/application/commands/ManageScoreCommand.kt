@@ -19,7 +19,8 @@ import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
-import kotlinx.coroutines.runBlocking
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
@@ -40,9 +41,13 @@ import net.dungeonhub.model.score.ScoreUpdateModel
 
 @LoadExtension
 class ManageScoreCommand : Extension() {
+    private lateinit var scheduler: Scheduler
+
     override val name = "manage-score-command"
 
     override suspend fun setup() {
+        scheduler = Scheduler()
+
         publicSlashCommand {
             name = ManageScore.name
             description = ManageScore.description
@@ -111,6 +116,10 @@ class ManageScoreCommand : Extension() {
         }
     }
 
+    override suspend fun unload() {
+        scheduler.cancel("Extension shutting down.")
+    }
+
     private fun addRemove(
         event: ChatInputCommandInteractionCreateEvent,
         guild: GuildBehavior?,
@@ -130,28 +139,25 @@ class ManageScoreCommand : Extension() {
         val updatedScores = ScoreConnection[carryType].authenticated()
             .updateScores(ScoreUpdateModel(arguments.user.id.value.toLong(), score)) ?: listOf()
 
-        val updatedScore = updatedScores.stream()
+        val updatedScore = updatedScores
             .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
             .map { obj: ScoreModel -> obj.scoreAmount }
-            .findFirst()
-            .orElse(0L)
+            .firstOrNull() ?: 0L
 
-        val logs = ServerProperty.SCORE_LOGS_CHANNEL
-            .getValue(guild.id.value.toLong())
-            .map { id -> runBlocking { guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id)) } }
-
-        logs.ifPresent { serverTextChannel ->
-            runBlocking {
-                serverTextChannel.createMessage {
-                    val embed = ApplicationService.embed
-                    embed.color = EmbedColor.Information.color
-                    embed.title = "Score-Management"
-                    embed.description =
-                        "${event.interaction.user.mention} edited the ${carryType.displayName}-score of ${arguments.user.mention}.\nThey ${(if (remove) "removed" else "added")} ${arguments.amount} score, the user now has $updatedScore score."
-
-                    embeds = mutableListOf(embed)
-                }
+        val logChannel = ServerProperty.SCORE_LOGS_CHANNEL
+            .getValue(guild.id.value.toLong()).orElse(null)
+            ?.let { id ->
+                guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
             }
+
+        logChannel?.createMessage {
+            val embed = ApplicationService.embed
+            embed.color = EmbedColor.Information.color
+            embed.title = "Score-Management"
+            embed.description =
+                "${event.interaction.user.mention} edited the ${carryType.displayName}-score of ${arguments.user.mention}.\nThey ${(if (remove) "removed" else "added")} ${arguments.amount} score, the user now has $updatedScore score."
+
+            embeds = mutableListOf(embed)
         }
 
         LeaderboardService.refreshLeaderboard()

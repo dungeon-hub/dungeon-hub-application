@@ -17,7 +17,6 @@ import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasPermission
-import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.EmbedColor
@@ -194,12 +193,10 @@ class WarningSystem : Extension() {
 
                         getChannelProperty(addedWarning.warningModel.warningType)
                             .getValue(guild!!.id.value.toLong())
-                            .map {
-                                runBlocking {
-                                    DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
-                                }
+                            .orElse(null)
+                            ?.let {
+                                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
                             }
-                            ?.orElse(null)
                             ?.let { channel ->
                                 channel.createMessage {
                                     val logEmbed = ApplicationService.formatWarnLog(addedWarning.warningModel)
@@ -253,12 +250,10 @@ class WarningSystem : Extension() {
 
                         getChannelProperty(removedWarning.warningType)
                             .getValue(guild!!.id.value.toLong())
-                            .map {
-                                runBlocking {
-                                    DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
-                                }
-                            }
                             .orElse(null)
+                            ?.let {
+                                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
+                            }
                             ?.let { channel ->
                                 channel.createMessage {
                                     val logEmbed = ApplicationService.embed
@@ -368,12 +363,10 @@ class WarningSystem : Extension() {
 
                         getChannelProperty(warning.warningType)
                             .getValue(guild!!.id.value.toLong())
-                            .map {
-                                runBlocking {
-                                    DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
-                                }
-                            }
                             .orElse(null)
+                            ?.let {
+                                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
+                            }
                             ?.let { channel ->
                                 channel.createMessage {
                                     val logEmbed = ApplicationService.embed

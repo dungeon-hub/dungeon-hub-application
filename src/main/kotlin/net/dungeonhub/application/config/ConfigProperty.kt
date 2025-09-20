@@ -30,7 +30,10 @@ enum class ConfigProperty(override val readableName: Key) : ChoiceEnum {
     SAFETY_API_URL("safety-api.url"),
 
     JERRY_API_KEY("jerry.key"),
-    JERRY_API_URL("jerry.url");
+    JERRY_API_URL("jerry.url"),
+
+    BLOCK_GAME_API_URL("blockgame.url"),
+    BLOCK_GAME_API_KEY("blockgame.key");
 
     constructor(readableName: String) : this(readableName.toKey())
 

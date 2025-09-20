@@ -3,6 +3,7 @@ package net.dungeonhub.application.commands
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.behavior.interaction.followup.edit
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.publicSubCommand
@@ -11,10 +12,15 @@ import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import net.dungeonhub.application.enums.EmbedColor
+import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.InvalidOptionException
 import net.dungeonhub.application.loader.LoadExtension
@@ -47,12 +53,14 @@ import java.nio.charset.StandardCharsets
  */
 @LoadExtension
 class PurgeCommand : Extension() {
-    private val logger: Logger =
-        LoggerFactory.getLogger(PurgeCommand::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(PurgeCommand::class.java)
+    private lateinit var scheduler: Scheduler
 
     override val name = "purge-command"
 
     override suspend fun setup() {
+        scheduler = Scheduler()
+
         publicSlashCommand {
             name = Purge.name
             description = Purge.description
@@ -64,7 +72,19 @@ class PurgeCommand : Extension() {
                 description = "Shows which users would be affected by the purge.".toKey()
 
                 action {
-                    respond {
+                    val response = respond {
+                        val embed = ApplicationService.embed
+                        embed.color(EmbedColor.Default)
+                        embed.description = "Calculating the purge list. This might take a while."
+                        embeds = mutableListOf(embed)
+                    }
+
+                    scheduler.launch {
+                        val purgeImmunityRole = ServerProperty.PURGE_IMMUNITY_ROLE
+                            .getValue(guild!!.id.value.toLong())
+                            .orElse(null)
+                            ?.let { Snowflake(it) }
+
                         val carryType =
                             CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
                                 .getByIdentifier(arguments.carryType)
@@ -77,29 +97,34 @@ class PurgeCommand : Extension() {
                             PurgeTypeConnection[carryType].authenticated().getByIdentifier(arguments.purgeType)
                                 ?: throw InvalidOptionException("purge-type", "Purge Type couldn't be found.")
 
-                        val rolesToRemove = purgeType.purgeTypeRoleModels.stream()
+                        val rolesToRemove = purgeType.purgeTypeRoleModels
                             .map { obj: PurgeTypeRoleModel -> obj.discordRoleModel }
-                            .toList()
 
                         val scores = (ScoreConnection[carryType].authenticated().scores ?: listOf())
                             .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
 
-                        val safeCarriers = scores.stream()
+                        val safeCarriers = scores
                             .filter { scoreModel: ScoreModel -> scoreModel.scoreAmount != null }
                             .filter { scoreModel: ScoreModel -> scoreModel.scoreAmount!! >= arguments.threshold }
                             .map { obj: ScoreModel -> obj.carrier }
                             .map { obj: DiscordUserModel -> obj.id }
-                            .toList()
 
-                        val purgeCarriers = rolesToRemove.stream()
+                        val purgeCarriers = rolesToRemove
                             .map { obj: DiscordRoleModel -> obj.id }
                             .distinct()
-                            .flatMap { roleId ->
-                                runBlocking {
+                            .map { roleId ->
+                                scheduler.async {
                                     guild!!.withStrategy(EntitySupplyStrategy.cachingRest)
-                                        .members.filter { it.roleIds.contains(Snowflake(roleId)) }.toList().stream()
+                                        .members.filter {
+                                            it.roleIds.contains(Snowflake(roleId))
+                                                    && (purgeImmunityRole == null || !it.roleIds.contains(
+                                                purgeImmunityRole
+                                            ))
+                                        }.toList()
                                 }
                             }
+                            .awaitAll()
+                            .flatMap { it }
                             .distinct()
                             .filter { user -> !safeCarriers.contains(user.id.value.toLong()) }
                             .toList()
@@ -121,29 +146,32 @@ class PurgeCommand : Extension() {
 
                         val purgedList = java.lang.String.join(System.lineSeparator(), purgeDisplay)
 
-                        val description = (if (queue.any { queueModel -> queueModel.carryType.id == carryType.id }) {
-                            "There are still unapproved logs waiting in the queue.\nPlease make sure to clear them before starting a purge.\n\n"
-                        } else "") +
-                                if (purgedList.length >= 4000) {
-                                    (("The list of carriers purged would be too long.\n"
-                                            + ((ContentConnection.authenticated()
-                                        .uploadFile(purgedList.toByteArray(StandardCharsets.UTF_8))
-                                        ?.let { s: String -> "https://cdn.dungeon-hub.net/$s" })
-                                        ?: "The full list has been logged, contact administrators for more information.")))
-                                } else {
-                                    purgedList
-                                }
+                        response.edit {
+                            val description =
+                                (if (queue.any { queueModel -> queueModel.carryType.id == carryType.id }) {
+                                    "There are still unapproved logs waiting in the queue.\nPlease make sure to clear them before starting a purge.\n\n"
+                                } else "") +
+                                        if (purgedList.length >= 4000) {
+                                            (("The list of carriers purged would be too long.\n"
+                                                    + ((ContentConnection.authenticated()
+                                                .uploadFile(purgedList.toByteArray(StandardCharsets.UTF_8))
+                                                ?.let { s: String -> "https://cdn.dungeon-hub.net/$s" })
+                                                ?: "The full list has been logged, contact administrators for more information.")))
+                                        } else {
+                                            purgedList
+                                        }
 
-                        val embed = ApplicationService.embed
-                        if (queue.any { queueModel -> queueModel.carryType.id == carryType.id }) {
-                            embed.color(EmbedColor.Negative)
-                        } else {
-                            embed.color(EmbedColor.Default)
+                            val embed = ApplicationService.embed
+                            if (queue.any { queueModel -> queueModel.carryType.id == carryType.id }) {
+                                embed.color(EmbedColor.Negative)
+                            } else {
+                                embed.color(EmbedColor.Default)
+                            }
+                            embed.title = "The following $amount carriers would be purged."
+                            embed.description = description
+
+                            embeds = mutableListOf(embed)
                         }
-                        embed.title = "The following $amount carriers would be purged."
-                        embed.description = description
-
-                        embeds = mutableListOf(embed)
                     }
                 }
             }
@@ -153,53 +181,73 @@ class PurgeCommand : Extension() {
                 description = "Adds the users to the current purge wave.".toKey()
 
                 action {
-                    respond {
-                        val carryType = CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
-                            .getByIdentifier(arguments.carryType)
+                    val purgeImmunityRole = ServerProperty.PURGE_IMMUNITY_ROLE
+                        .getValue(guild!!.id.value.toLong())
+                        .orElse(null)
+                        ?.let { Snowflake(it) }
 
-                        if (carryType == null) {
-                            throw InvalidOptionException("carry-type", "Carry Type couldn't be found.")
-                        }
+                    val carryType = CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                        .getByIdentifier(arguments.carryType)
 
-                        val queue =
-                            QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Approving) ?: setOf()
+                    if (carryType == null) {
+                        throw InvalidOptionException("carry-type", "Carry Type couldn't be found.")
+                    }
 
-                        if (queue.any { queueModel -> queueModel.carryType.id == carryType.id }) {
+                    val queue =
+                        QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Approving) ?: setOf()
+
+                    if (queue.any { queueModel -> queueModel.carryType.id == carryType.id }) {
+                        respond {
                             val embed = ApplicationService.embed
                             embed.color(EmbedColor.Negative)
                             embed.description =
                                 "There are still unapproved logs waiting in the queue. Please make sure to clear them before starting a purge."
                             embeds = mutableListOf(embed)
-                            return@respond
                         }
+                        return@action
+                    }
 
+                    val response = respond {
+                        val embed = ApplicationService.embed
+                        embed.color(EmbedColor.Default)
+                        embed.description = "Calculating the purge list. This might take a while."
+                        embeds = mutableListOf(embed)
+                    }
+
+                    scheduler.launch {
                         val purgeType =
                             PurgeTypeConnection[carryType].authenticated().getByIdentifier(arguments.purgeType)
                                 ?: throw InvalidOptionException("purge-type", "Purge Type couldn't be found.")
 
-                        val rolesToRemove = purgeType.purgeTypeRoleModels.stream()
+                        val rolesToRemove = purgeType.purgeTypeRoleModels
                             .map { it.discordRoleModel }
-                            .toList()
 
                         val scores = (ScoreConnection[carryType].authenticated().scores ?: listOf())
                             .filter { it.scoreType == ScoreType.Default }
 
-                        val safeCarriers = scores.stream()
+                        val safeCarriers = scores
                             .filter { it.scoreAmount != null }
                             .filter { it.scoreAmount!! >= arguments.threshold }
                             .map { it.carrier }
-                            .map { um -> um.id }
+                            .map { it.id }
                             .toList()
 
-                        val purgeCarriers = rolesToRemove.stream()
+                        val purgeCarriers = rolesToRemove
                             .map { it.id }
                             .distinct()
-                            .flatMap { roleId ->
-                                runBlocking {
-                                    guild!!.withStrategy(EntitySupplyStrategy.cachingRest)
-                                        .members.filter { it.roleIds.contains(Snowflake(roleId)) }.toList().stream()
+                            .map { roleId ->
+                                scheduler.async {
+                                    guild!!.withStrategy(EntitySupplyStrategy.cacheWithCachingRestFallback)
+                                        .members.filter {
+                                            it.roleIds.contains(Snowflake(roleId))
+                                                    && (purgeImmunityRole == null || !it.roleIds.contains(
+                                                purgeImmunityRole
+                                            ))
+                                        }.toList()
                                 }
                             }
+                            .awaitAll()
+                            .flatMap { it }
                             .distinct()
                             .filter { !safeCarriers.contains(it.id.value.toLong()) }
                             .toList()
@@ -243,13 +291,14 @@ class PurgeCommand : Extension() {
 
                         logger.info("Purge data for type \"{}\":", purgeType.identifier)
                         logger.info(purgedList)
+                        response.edit {
+                            val embed = ApplicationService.embed
+                            embed.color = EmbedColor.Default.color
+                            embed.title = "Added the roles of $amount carriers to removal-list."
+                            embed.description = description
 
-                        val embed = ApplicationService.embed
-                        embed.color = EmbedColor.Default.color
-                        embed.title = "Added the roles of $amount carriers to removal-list."
-                        embed.description = description
-
-                        embeds = mutableListOf(embed)
+                            embeds = mutableListOf(embed)
+                        }
                     }
                 }
             }
@@ -325,6 +374,10 @@ class PurgeCommand : Extension() {
                 }
             }
         }
+    }
+
+    override suspend fun unload() {
+        scheduler.cancel("Extension shutting down.")
     }
 
     class PurgeArguments : Arguments() {

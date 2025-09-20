@@ -16,7 +16,6 @@ import dev.kord.core.supplier.RestEntitySupplier
 import dev.kord.gateway.DefaultGateway
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
-import dev.kord.gateway.builder.PresenceBuilder
 import dev.kord.gateway.ratelimit.IdentifyRateLimiter
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.embed
@@ -31,14 +30,15 @@ import dev.kordex.data.api.DataCollection
 import io.ktor.client.*
 import io.ktor.client.engine.java.*
 import io.ktor.client.plugins.websocket.*
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toKotlinInstant
 import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.enums.EmbedColor
-import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.listener.ServerJoinListener
 import net.dungeonhub.application.loader.ClassLoader
 import net.dungeonhub.application.loader.OnStart
@@ -47,19 +47,14 @@ import net.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.application.misc.EmbedModel
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.color
-import net.dungeonhub.connection.DiscordServerConnection
-import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.service.MoshiService
 import net.dungeonhub.wrapper.kord.toJavaColor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.Color
-import java.sql.Time
-import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.regex.Pattern
-import kotlin.time.toKotlinDuration
 
 /**
  * This is the main-class for the application.
@@ -73,85 +68,7 @@ import kotlin.time.toKotlinDuration
 object DiscordConnection : StartupListener {
     private val logger: Logger = LoggerFactory.getLogger(DiscordConnection::class.java)
     private var started: Boolean = false
-    private var uptime: Instant = Instant.now()
-    private var currentAppearance = 0
-    private val possibleAppearances: List<Pair<AppearanceType, suspend () -> String>> = listOf(
-        AppearanceType.Custom to {
-            "Handling ${DiscordUserConnection.authenticated().countLinkedUsers() ?: 0} linked users!"
-        },
-        AppearanceType.Watching to {
-            "carriers on ${bot?.kordRef?.guilds?.count() ?: 0} servers"
-        },
-        AppearanceType.Competing to {
-            "score leaderboards for first place"
-        },
-        //TODO uncomment once released
-        /*AppearanceType.Custom to {
-            "Customize me at dungeon-hub.net"
-        },*/
-        AppearanceType.Custom to {
-            "Running 100% in Kotlin!"
-        },
-        AppearanceType.Watching to {
-            "you clear dungeons"
-        },
-        AppearanceType.Custom to {
-            "Helping you level up!"
-        },
-        AppearanceType.Playing to {
-            "some Master Mode."
-        },
-        AppearanceType.Custom to {
-            "Check out /help for more!"
-        },
-        AppearanceType.Custom to {
-            "Remember to close and /log"
-        },
-        AppearanceType.Listening to {
-            val uptime = Duration.between(uptime, Instant.now()).withNanos(0)
-
-            val time = uptime.minusSeconds(uptime.seconds).toKotlinDuration().toString()
-
-            "discord events since $time"
-        },
-        AppearanceType.Custom to {
-            val amount = try {
-                DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(693263712626278553L)
-                    ?: throw CommandExecutionException("Couldn't load the total amount of money spent.")
-            } catch (_: CommandExecutionException) {
-                0
-            }
-
-            "${ApplicationService.makeNumberReadable(amount, 3)} coins spent on Dungeon Hub!"
-        }
-    )
-
-    enum class AppearanceType(val apply: (text: String) -> (PresenceBuilder.() -> Unit)) {
-        /**
-         * Playing {text}
-         */
-        Playing({ s -> { playing(s) } }),
-
-        /**
-         * Listening to {text}
-         */
-        Listening({ s -> { listening(s) } }),
-
-        /**
-         * Watching {text}
-         */
-        Watching({ s -> { watching(s) } }),
-
-        /**
-         * Competing in {text}
-         */
-        Competing({ s -> { competing(s) } }),
-
-        /**
-         * {text}
-         */
-        Custom({ s -> { state = s } });
-    }
+    var uptime: Instant = Instant.now()
 
     var bot: ExtensibleBot? = null
 
@@ -163,13 +80,9 @@ object DiscordConnection : StartupListener {
     private const val LINE = "----------------------------------------"
 
     @JvmStatic
-    fun main(args: Array<String>) {
-        runBlocking {
-            launch {
-                ClassLoader.loadStartupListeners()
-                ClassLoader.executePreStart()
-            }
-        }
+    fun main(args: Array<String>) = runBlocking {
+        ClassLoader.loadStartupListeners()
+        ClassLoader.executePreStart()
     }
 
     /**
@@ -237,6 +150,7 @@ object DiscordConnection : StartupListener {
                                     "- [Mojang API](https://minecraft.wiki/w/Mojang_API)\n" +
                                     "- [Hypixel API](https://api.hypixel.net/)\n" +
                                     "- [Hypixel Safety API (by SBM)](https://hs.sbm.gg/)\n" +
+                                    "- [Scammer List (BlockHelper)](https://list.lenny.ie/)\n" +
                                     "-# We are not affiliated with any of the above services/companies"
                         }
                     }
@@ -308,25 +222,6 @@ object DiscordConnection : StartupListener {
         return message
     }
 
-    /**
-     * This resets the bot's appearance.
-     */
-    private suspend fun resetBotAppearance() {
-        bot?.kordRef?.editPresence {
-            status = PresenceStatus.Online
-
-            currentAppearance = if (currentAppearance >= possibleAppearances.size - 1) 0 else currentAppearance + 1
-
-            val appearance = possibleAppearances[currentAppearance]
-
-            try {
-                appearance.first.apply(appearance.second())()
-            } catch (exception: Exception) {
-                logger.error("Error during reset of appearance.", exception)
-            }
-        }
-    }
-
     override suspend fun onStart() {
         ServerJoinListener.GUILD_ON_JOIN.addAll(
             bot?.kordRef?.guilds?.map { guild ->
@@ -339,14 +234,6 @@ object DiscordConnection : StartupListener {
         logger.info(LINE)
         getServerListMessage().forEach(logger::info)
         logger.info(LINE)
-
-        Timer().scheduleAtFixedRate(object : TimerTask() {
-            override fun run() {
-                runBlocking {
-                    resetBotAppearance()
-                }
-            }
-        }, Time(System.currentTimeMillis() + 5000), 1000 * 60 * 30)
 
         ApplicationService.getBotOwner(bot?.kordRef!!)?.dm {
             val embed = ApplicationService.embed
