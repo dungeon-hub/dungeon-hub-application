@@ -758,7 +758,9 @@ object ApplicationService {
         embed.field("Request", true) { description }
         embed.field("Value", true) { coinValue }
         embed.field("Requirement", true) { requirement }
-        embed.field("Requested by", true) { "<@$userId>" }
+        if(userId != null) {
+            embed.field("Requested by", true) { "<@$userId>" }
+        }
 
         return embed
     }

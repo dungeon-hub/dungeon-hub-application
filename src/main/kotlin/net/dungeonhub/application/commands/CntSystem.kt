@@ -121,25 +121,22 @@ class CntSystem : Extension() {
                     return@action
                 }
 
-                val requestType = cntRequest.requestType
+                val requestTypesHigher = CntRequestType.entries.filter { it.ordinal >= cntRequest.requestType.ordinal }
 
-                val serverProperty = ServerProperty.entries.firstOrNull {
-                    it.readableName.translate() == "id_cnt_role_requirement_${requestType.valueRange}"
+                val serverProperties = requestTypesHigher.mapNotNull { requestType ->
+                    ServerProperty.entries.firstOrNull {
+                        it.readableName.translate() == "id_cnt_role_requirement_${requestType.valueRange}"
+                    }
                 }
 
-                val requiredRole =
-                    serverProperty?.getValue(event.interaction.guildId.value.toLong())?.orElse(null)?.toLongOrNull()
+                val requiredRoles = serverProperties.mapNotNull { serverProperty ->
+                    serverProperty.getValue(event.interaction.guildId.value.toLong()).orElse(null)?.toLongOrNull()
+                }
 
-                if (
-                    requiredRole != null
-                    && !event.interaction.user.roleIds.contains(
-                        Snowflake(
-                            requiredRole
-                        )
-                    )
-                ) {
+                if(requiredRoles.isNotEmpty()
+                    && !event.interaction.user.roleIds.any { requiredRoles.contains(it.value.toLong()) }) {
                     event.interaction.respondEphemeral {
-                        content = "You don't have the required role <@&$requiredRole> to claim requests of that value!"
+                        content = "You don't have the required role <@&${requiredRoles.first()}> to claim requests of that value!"
                     }
                     return@action
                 }
