@@ -59,11 +59,9 @@ object AppearanceService : StartupListener {
             "Remember to close and /log"
         },
         AppearanceType.Listening to {
-            val uptime = Duration.between(uptime, Instant.now()).withNanos(0)
+            val uptime = Duration.between(uptime, Instant.now()).withNanos(0).toKotlinDuration().toString()
 
-            val time = uptime.minusSeconds(uptime.seconds).toKotlinDuration().toString()
-
-            "discord events since $time"
+            "discord events since $uptime"
         },
         AppearanceType.Custom to {
             val amount = try {
