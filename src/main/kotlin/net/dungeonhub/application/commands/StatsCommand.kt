@@ -5,6 +5,7 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.utils.getLocale
 import net.dungeonhub.application.connection.DiscordConnection
+import net.dungeonhub.application.connection.DiscordConnection.uptime
 import net.dungeonhub.application.connection.getGuildOrNull
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.LoadExtension
@@ -13,7 +14,10 @@ import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.i18n.Translations.Command.Stats
+import java.time.Duration
+import java.time.Instant
 import java.time.ZonedDateTime
+import kotlin.time.toKotlinDuration
 
 @LoadExtension
 class StatsCommand : Extension() {
@@ -57,6 +61,9 @@ class StatsCommand : Extension() {
                             "name" to guild.name
                         ).translateLocale(locale)
 
+                        field(
+                            Stats.Response.Fields.Uptime.name.translateLocale(locale), false
+                        ) { Duration.between(uptime, Instant.now()).withNanos(0).toKotlinDuration().toString() }
                         field(
                             Stats.Response.Fields.MemberCount.name.translateLocale(locale), true
                         ) { memberCount.toString() }
