@@ -390,7 +390,7 @@ object ApplicationService {
     // as well as the skycrypt api takes long too
     //probably first load skycrypt, then the rest?
     @Throws(FailedToLoadEmbedException::class)
-    suspend fun getPlayerDataEmbed(ign: String, discordId: Long?): EmbedBuilder {
+    suspend fun getPlayerDataEmbed(ign: String, discordId: Long?, cacheExpiration: Int = 60): EmbedBuilder {
         val embed = embed
 
         val uuid: UUID = MojangConnection.getUUIDByName(ign)
@@ -427,7 +427,7 @@ object ApplicationService {
             ign
         }
 
-        val statsOverview = HypixelApiConnection().getStatsOverview(uuid)
+        val statsOverview = HypixelApiConnection().withCacheExpiration(cacheExpiration).getStatsOverview(uuid)
 
         if (statsOverview == null) {
             embed.description = "No profiles found."

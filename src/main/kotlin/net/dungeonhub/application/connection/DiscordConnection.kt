@@ -170,6 +170,7 @@ object DiscordConnection : StartupListener {
 
             @OptIn(PrivilegedIntent::class)
             intents {
+                -Intent.GuildExpressions
                 +Intent.GuildMembers
                 +Intent.MessageContent
             }
