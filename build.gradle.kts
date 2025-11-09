@@ -26,7 +26,7 @@ repositories {
 
 kordEx {
     kordExVersion = "2.3.6-SNAPSHOT"
-    jvmTarget = 17
+    jvmTarget = 21
 
     bot {
         // See https://docs.kordex.dev/data-collection.html
@@ -85,7 +85,7 @@ dependencies {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
     compilerOptions {
         freeCompilerArgs.add("-Xjvm-default=all")
     }
