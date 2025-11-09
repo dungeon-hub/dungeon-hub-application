@@ -7,6 +7,7 @@ import net.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.auth.AuthenticationCredentials.authLoginUrl
 import net.dungeonhub.auth.AuthenticationCredentials.clientId
 import net.dungeonhub.auth.AuthenticationCredentials.clientSecret
+import net.dungeonhub.cache.database.MongoCacheProvider
 import net.dungeonhub.client.DungeonHubClient.Companion.apiUrl
 import net.dungeonhub.client.DungeonHubClient.Companion.cdnUrl
 import net.dungeonhub.client.DungeonHubClient.Companion.staticUrl
@@ -25,6 +26,10 @@ class ConfigurationService : StartupListener {
         ConfigProperty.AUTH_CLIENT_SECRET.value?.let { clientSecret = it }
 
         ConfigProperty.HYPIXEL_API_KEY.value?.let { HypixelConnection.apiKey = it }
-        CacheApiClientProvider.cacheTypeString = "Disk"
+        ConfigProperty.HYPIXEL_CACHE_TYPE.value?.let { CacheApiClientProvider.cacheTypeString = it }
+
+        ConfigProperty.MONGODB_CONNECTION_STRING.value?.let { MongoCacheProvider.connectionString = it }
+        ConfigProperty.MONGODB_DATABASE_NAME.value?.let { MongoCacheProvider.databaseName = it }
+        MongoCacheProvider.collectionPrefix = ""
     }
 }

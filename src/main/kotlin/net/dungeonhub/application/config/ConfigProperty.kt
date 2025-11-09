@@ -10,6 +10,11 @@ import java.util.stream.Collectors
 @Getter
 enum class ConfigProperty(override val readableName: Key) : ChoiceEnum {
     DISCORD_BOT_TOKEN("discord-bot.token"),
+    HYPIXEL_CACHE_TYPE("hypixel-wrapper.cache-type"),
+
+    //Database
+    MONGODB_CONNECTION_STRING("mongodb.connection-string"),
+    MONGODB_DATABASE_NAME("mongodb.database-name"),
 
     //Internal API
     API_URL("api.url"),
