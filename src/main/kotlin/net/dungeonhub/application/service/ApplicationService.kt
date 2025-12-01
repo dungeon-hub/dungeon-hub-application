@@ -504,10 +504,6 @@ object ApplicationService {
             embed.field("Log Channel", true) { "<#$logChannel>" }
         }
 
-        carryType.leaderboardChannel?.let { leaderboardChannel ->
-            embed.field("Leaderboard Channel", true) { "<#$leaderboardChannel>" }
-        }
-
         embed.field("Event active", true) { if (carryType.isEventActive == true) "yes" else "no" }
 
         return embed

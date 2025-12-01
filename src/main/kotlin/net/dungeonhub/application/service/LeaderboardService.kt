@@ -1,49 +1,32 @@
 package net.dungeonhub.application.service
 
-import dev.kord.common.entity.Snowflake
-import dev.kord.common.exception.RequestException
-import dev.kord.core.behavior.channel.createMessage
-import dev.kord.core.behavior.edit
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
-import dev.kord.rest.builder.message.actionRow
-import dev.kord.rest.request.KtorRequestException
 import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import net.dungeonhub.application.commands.addLeaderboardButtons
-import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
-import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartPriority
 import net.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.application.misc.ScoreLeaderboard
 import net.dungeonhub.application.service.ApplicationService.embed
-import net.dungeonhub.application.service.ApplicationService.footer
-import net.dungeonhub.connection.CarryTypeConnection
-import net.dungeonhub.connection.DiscordServerConnection
-import net.dungeonhub.connection.ScoreConnection
-import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.model.score.ScoreLeaderboardModel
 import net.dungeonhub.model.score.ScoreModel
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.concurrent.CompletionException
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
-import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
 @OnStart(priority = StartPriority.POST_BOT)
 @OptIn(ExperimentalTime::class)
 object LeaderboardService : StartupListener {
     private const val REFRESH_COOLDOWN: Long = 15L
-    private val LEADERBOARD_DESCRIPTION by lazy {
+    val LEADERBOARD_DESCRIPTION by lazy {
         "To see how score is calculated, use `/help topic:score`.\n" +
                 "To check your current score, use ${runBlocking { ApplicationService.getSlashCommandDisplay("score") }}."
     }
@@ -118,7 +101,7 @@ object LeaderboardService : StartupListener {
         }
     }
 
-    private fun generateCompactLeaderboard(scoreLeaderboards: List<ScoreLeaderboard>): List<EmbedBuilder> {
+    fun generateCompactLeaderboard(scoreLeaderboards: List<ScoreLeaderboard>): List<EmbedBuilder> {
         val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
         embeds.addAll(scoreLeaderboards.windowed(4, 4, true).map { leaderboardWindow ->
@@ -157,7 +140,7 @@ object LeaderboardService : StartupListener {
         return result
     }
 
-    private fun generateLeaderboard(scoreLeaderboards: List<ScoreLeaderboard>): List<EmbedBuilder> {
+    fun generateLeaderboard(scoreLeaderboards: List<ScoreLeaderboard>): List<EmbedBuilder> {
         val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
         for (leaderboard in scoreLeaderboards) {
@@ -176,7 +159,7 @@ object LeaderboardService : StartupListener {
     }
 
     private fun refreshLeaderboardInChannel(channel: GuildMessageChannel, scoreLeaderboards: List<ScoreLeaderboard>) {
-        val embeds: MutableList<EmbedBuilder> = mutableListOf()
+        /*val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
         if (ServerProperty.COMPACT_LEADERBOARD.getValue(channel.guildId.value.toLong()).map { it == "true" }
                 .orElse(false)) {
@@ -216,7 +199,7 @@ object LeaderboardService : StartupListener {
             } catch (_: KtorRequestException) {
                 // Ignore, this simply means that the leaderboard channel can't be accessed anymore - Should this be handled / logged somewhere?
             }
-        }
+        }*/
     }
 
     /**
@@ -224,7 +207,7 @@ object LeaderboardService : StartupListener {
      * Cooldown for a refresh is {@value REFRESH_COOLDOWN} seconds.
      */
     suspend fun refreshLeaderboard(): Boolean {
-        if (lastRefresh!!.plusSeconds(REFRESH_COOLDOWN - 1L).isAfter(
+        /*if (lastRefresh!!.plusSeconds(REFRESH_COOLDOWN - 1L).isAfter(
                 Instant.now()
             )
         ) {
@@ -311,6 +294,7 @@ object LeaderboardService : StartupListener {
 
         leaderboards.forEach(this::refreshLeaderboardInChannel)
 
-        return true
+        return true*/
+        return false
     }
 }
