@@ -2,19 +2,11 @@ package net.dungeonhub.application.misc
 
 import dev.kord.core.entity.User
 import dev.kord.core.entity.effectiveName
-import lombok.AllArgsConstructor
-import lombok.Getter
-import lombok.NoArgsConstructor
-import lombok.Setter
 import net.dungeonhub.application.exceptions.NotLinkedException
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.model.discord_user.DiscordUserModel
 import net.dungeonhub.mojang.connection.MojangConnection
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
 class PlayerInformation(
     private val user: User,
     private val discordUserModel: DiscordUserModel,

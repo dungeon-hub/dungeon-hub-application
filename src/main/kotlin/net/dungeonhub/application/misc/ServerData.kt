@@ -1,6 +1,5 @@
 package net.dungeonhub.application.misc
 
-import lombok.Getter
 import net.dungeonhub.application.config.ConfigFile
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.service.ApplicationService
@@ -18,7 +17,6 @@ import java.util.stream.Collectors
  *
  * @see ServerProperty
  */
-@Getter
 class ServerData(val id: Long) : ConfigFile<ServerProperty>() {
     init {
         reloadConfig()

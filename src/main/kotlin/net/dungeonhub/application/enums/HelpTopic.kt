@@ -6,7 +6,6 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.i18n.types.Key
-import lombok.Getter
 import net.dungeonhub.application.exceptions.MustBeServerException
 import net.dungeonhub.application.misc.HelpDisplay
 import net.dungeonhub.connection.ContentConnection
@@ -16,7 +15,6 @@ import net.dungeonhub.enums.RoleRequirementType
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
 
-@Getter
 enum class HelpTopic(
     override val readableName: Key,
     val title: String,
