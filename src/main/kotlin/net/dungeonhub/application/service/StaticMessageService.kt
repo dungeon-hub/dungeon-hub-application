@@ -124,7 +124,7 @@ object StaticMessageService : StartupListener {
         }
 
         val originalMessage = staticMessage.messageId?.let {
-            channel.getMessage(Snowflake(it))
+            channel.getMessageOrNull(Snowflake(it))
         }
 
         var updatedStaticMessage = staticMessage
