@@ -1,20 +1,33 @@
 package net.dungeonhub.application.service
 
 import dev.kord.common.entity.ButtonStyle
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.MessageBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
+import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.builder.components.emoji
 import dev.kord.core.entity.ReactionEmoji
+import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.MessageBuilder
 import dev.kord.rest.builder.message.actionRow
+import dev.kord.rest.builder.message.embed
+import dev.kord.rest.request.RestRequestException
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.commands.addLeaderboardButtons
+import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
+import net.dungeonhub.application.loader.OnStart
+import net.dungeonhub.application.loader.StartPriority
+import net.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.application.misc.ScoreLeaderboard
 import net.dungeonhub.application.service.ApplicationService.embed
 import net.dungeonhub.application.service.ApplicationService.footer
@@ -28,14 +41,124 @@ import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.reputation.ReputationLeaderboardModel
 import net.dungeonhub.model.reputation.ReputationSumModel
 import net.dungeonhub.model.static_message.StaticMessageModel
+import org.slf4j.LoggerFactory
 import java.time.Instant
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
-object StaticMessageService {
+@OnStart(priority = StartPriority.POST_BOT)
+object StaticMessageService : StartupListener {
+    private val logger = LoggerFactory.getLogger(StaticMessageService::class.java)
+    lateinit var scheduler: Scheduler
+
     val reputationLeaderboardDescription by lazy {
         "Check `/help topic:reputation` to see how you can gain reputation.\n" +
                 "To check your current score, use ${runBlocking { ApplicationService.getSlashCommandDisplay("leaderboard reputation") }}."
+    }
+
+    override suspend fun postStart() {
+        if(::scheduler.isInitialized) {
+            scheduler.cancel("Application was restarted.")
+        }
+
+        scheduler = Scheduler()
+
+        val task = scheduler.schedule(4.hours, startNow = false, name = "Static-Message-Schedule", repeat = true) {
+            refreshAllStaticMessages()
+        }
+
+        scheduler.launch {
+            delay(30.seconds)
+            task.callNow()
+            task.start()
+        }
+    }
+
+    // TODO rather use a list and a worker that handles those jobs
+    suspend fun refreshAllStaticMessages() {
+        val staticMessages = DiscordServerConnection.authenticated().findGlobalStaticMessages()
+            ?: return
+
+        for(staticMessage in staticMessages) {
+            updateStaticMessage(staticMessage)
+        }
+    }
+
+    suspend fun updateScoreLeaderboard(carryTypes: List<CarryTypeModel>) {
+        for(carryType in carryTypes) {
+            updateStaticMessages(carryType.server.id, StaticMessageType.ScoreLeaderboard, listOf(carryType.id))
+        }
+
+        val servers = carryTypes.map { it.server.id }.distinct()
+        for(server in servers) {
+            updateStaticMessages(server, StaticMessageType.TotalLeaderboard, null)
+        }
+    }
+
+    suspend fun updateStaticMessages(server: Long, staticMessageType: StaticMessageType, objectIds: List<Long>?) {
+        var staticMessages = StaticMessageConnection[server].authenticated().findStaticMessage(staticMessageType, null) ?: emptyList()
+
+        if(objectIds != null) {
+            staticMessages = staticMessages.filter { staticMessage -> staticMessage.objectIds.any { objectIds.contains(it) } }
+        }
+
+        for(staticMessage in staticMessages) {
+            updateStaticMessage(staticMessage)
+        }
+    }
+
+    suspend fun updateStaticMessage(staticMessage: StaticMessageModel) {
+        val channel = try {
+            DiscordConnection.bot?.kordRef
+                ?.getChannel(Snowflake(staticMessage.channelId))
+                ?.asChannelOfOrNull<MessageChannel>()
+        } catch (_: RestRequestException) {
+            null
+        }
+
+        if(channel == null) {
+            logger.warn("Couldn't find channel with id ${staticMessage.channelId}.")
+            return
+        }
+
+        val originalMessage = staticMessage.messageId?.let {
+            channel.getMessage(Snowflake(it))
+        }
+
+        var updatedStaticMessage = staticMessage
+
+        val message = if(originalMessage != null) {
+            originalMessage
+        } else {
+            val createdMessage = try {
+                channel.createMessage {
+                    embed {
+                        description = "Building static message..."
+                    }
+                }
+            } catch (_: RestRequestException) {
+                null
+            }
+
+            if(createdMessage != null) {
+                val updateModel = staticMessage.getUpdateModel()
+                updateModel.messageId = createdMessage.id.value.toLong()
+                updatedStaticMessage = StaticMessageConnection[staticMessage.server.id].authenticated().updateStaticMessage(staticMessage.id, updateModel) ?: staticMessage
+            }
+
+            createdMessage
+        } ?: return
+
+        updateStaticMessage(updatedStaticMessage, message)
+    }
+
+    suspend fun updateStaticMessage(staticMessage: StaticMessageModel, message: MessageBehavior) {
+        message.edit {
+            embeds = getStaticMessageEmbeds(staticMessage)
+            setAdditionalMessageProperties(staticMessage)()
+        }
     }
 
     suspend fun sendStaticMessage(connection: StaticMessageConnection, staticMessage: StaticMessageModel, channel: MessageChannelBehavior): StaticMessageModel {
@@ -49,13 +172,6 @@ object StaticMessageService {
 
         return connection.updateStaticMessage(staticMessage.id, updateModel)
             ?: throw CommandExecutionException("Couldn't update static message after being sent.")
-    }
-
-    suspend fun updateStaticMessage(staticMessage: StaticMessageModel, message: MessageBehavior) {
-        message.edit {
-            embeds = getStaticMessageEmbeds(staticMessage)
-            setAdditionalMessageProperties(staticMessage)()
-        }
     }
 
     fun setAdditionalMessageProperties(staticMessage: StaticMessageModel): MessageBuilder.() -> Unit {
@@ -93,6 +209,7 @@ object StaticMessageService {
                     if (carryType != null) {
                         carryTypes.add(carryType)
                     } else {
+                        logger.warn("Couldn't find carry type with id $carryTypeId. Removing it from the score leaderboard ${staticMessage.id}.")
                         val connection = StaticMessageConnection[staticMessage.server.id].authenticated()
                         val currentStaticMessage = connection.getById(staticMessage.id) ?: staticMessage
                         val updateModel = staticMessage.getUpdateModel()

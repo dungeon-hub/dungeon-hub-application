@@ -1,11 +1,6 @@
 package net.dungeonhub.application.service
 
-import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
-import dev.kordex.core.utils.scheduling.Scheduler
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.OnStart
@@ -15,24 +10,15 @@ import net.dungeonhub.application.misc.ScoreLeaderboard
 import net.dungeonhub.application.service.ApplicationService.embed
 import net.dungeonhub.model.score.ScoreLeaderboardModel
 import net.dungeonhub.model.score.ScoreModel
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import java.time.Instant
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
 @OnStart(priority = StartPriority.POST_BOT)
 @OptIn(ExperimentalTime::class)
 object LeaderboardService : StartupListener {
-    private const val REFRESH_COOLDOWN: Long = 15L
     val LEADERBOARD_DESCRIPTION by lazy {
         "To see how score is calculated, use `/help topic:score`.\n" +
                 "To check your current score, use ${runBlocking { ApplicationService.getSlashCommandDisplay("score") }}."
     }
-    private val logger: Logger = LoggerFactory.getLogger(LeaderboardService::class.java)
-    private lateinit var scheduler: Scheduler
-    private var lastRefresh: Instant? = null
 
     fun getLeaderboardEmbed(title: String?, leaderboardModel: ScoreLeaderboardModel?): EmbedBuilder {
         if (leaderboardModel == null) {
@@ -79,26 +65,6 @@ object LeaderboardService : StartupListener {
              $LEADERBOARD_DESCRIPTION
              """.trimIndent()
         return embed
-    }
-
-    override suspend fun postStart() {
-        if(::scheduler.isInitialized) {
-            scheduler.cancel("Application was restarted.")
-        }
-
-        scheduler = Scheduler()
-
-        this.lastRefresh = Instant.now().minusSeconds(REFRESH_COOLDOWN + 10L)
-
-        val task = scheduler.schedule(15.minutes, startNow = false, name = "Leaderboard-Schedule", repeat = true) {
-            refreshLeaderboard()
-        }
-
-        scheduler.launch {
-            delay(30.seconds)
-            task.callNow()
-            task.start()
-        }
     }
 
     fun generateCompactLeaderboard(scoreLeaderboards: List<ScoreLeaderboard>): List<EmbedBuilder> {
@@ -156,145 +122,5 @@ object LeaderboardService : StartupListener {
         }
 
         return embeds
-    }
-
-    private fun refreshLeaderboardInChannel(channel: GuildMessageChannel, scoreLeaderboards: List<ScoreLeaderboard>) {
-        /*val embeds: MutableList<EmbedBuilder> = mutableListOf()
-
-        if (ServerProperty.COMPACT_LEADERBOARD.getValue(channel.guildId.value.toLong()).map { it == "true" }
-                .orElse(false)) {
-            embeds.addAll(generateCompactLeaderboard(scoreLeaderboards))
-        } else {
-            embeds.addAll(generateLeaderboard(scoreLeaderboards))
-        }
-
-        if (embeds.isNotEmpty()) {
-            if (!scoreLeaderboards[0].isEmpty) {
-                embeds[0].description = LEADERBOARD_DESCRIPTION
-            }
-
-            embeds[embeds.size - 1].footer = footer
-            embeds[embeds.size - 1].timestamp = fromEpochMilliseconds(Instant.now().toEpochMilli())
-        }
-
-        scheduler.launch {
-            try {
-                val message = channel.messages.firstOrNull { message -> message.kord.selfId == message.author?.id }
-
-                if (message == null) {
-                    channel.createMessage {
-                        this.embeds = embeds
-                        actionRow {
-                            addLeaderboardButtons()
-                        }
-                    }
-                } else {
-                    message.edit {
-                        this.embeds = embeds
-                        actionRow {
-                            addLeaderboardButtons()
-                        }
-                    }
-                }
-            } catch (_: KtorRequestException) {
-                // Ignore, this simply means that the leaderboard channel can't be accessed anymore - Should this be handled / logged somewhere?
-            }
-        }*/
-    }
-
-    /**
-     * This doesn't refresh the leaderboard; it just suggests that the leaderboard should be refreshed.
-     * Cooldown for a refresh is {@value REFRESH_COOLDOWN} seconds.
-     */
-    suspend fun refreshLeaderboard(): Boolean {
-        /*if (lastRefresh!!.plusSeconds(REFRESH_COOLDOWN - 1L).isAfter(
-                Instant.now()
-            )
-        ) {
-            return false
-        }
-
-        this.lastRefresh = Instant.now()
-        logger.debug("Leaderboard refresh started!")
-
-        val leaderboards: MutableMap<GuildMessageChannel, MutableList<ScoreLeaderboard>> = HashMap()
-
-        for (serverModel in DiscordServerConnection.authenticated().loadAllServers() ?: mutableListOf()) {
-            for (carryType in CarryTypeConnection[serverModel.id].authenticated().allCarryTypes ?: listOf()) {
-                val leaderboardChannel = carryType.leaderboardChannel?.let { id: Long? ->
-                        try {
-                            DiscordConnection.bot
-                                ?.kordRef
-                                ?.getChannelOf<GuildMessageChannel>(Snowflake(id!!))
-                        } catch (_: RequestException) {
-                            null
-                        }
-                }
-
-                if (leaderboardChannel == null) {
-                    continue
-                }
-
-                for (scoreType in ScoreType.entries) {
-                    if (scoreType == ScoreType.Event && carryType.isEventActive == false) {
-                        continue
-                    }
-
-                    if (leaderboards.containsKey(leaderboardChannel)) {
-                        leaderboards[leaderboardChannel]!!.add(
-                            ScoreLeaderboard(
-                                scoreType.getLeaderboardTitle(carryType),
-                                ScoreConnection[carryType].authenticated().loadLeaderboard(scoreType, 0)
-                            )
-                        )
-                    } else {
-                        leaderboards[leaderboardChannel] = mutableListOf(
-                            ScoreLeaderboard(
-                                scoreType.getLeaderboardTitle(carryType),
-                                ScoreConnection[carryType].authenticated().loadLeaderboard(scoreType, 0)
-                            )
-                        )
-                    }
-                }
-            }
-
-            ServerProperty.TOTAL_SCORE_LEADERBOARD_CHANNEL.getValue(serverModel.id)
-                .orElse(null)
-                ?.let { id ->
-                    try {
-                        DiscordConnection.bot
-                            ?.kordRef
-                            ?.getChannelOf<GuildMessageChannel>(Snowflake(id))
-                    } catch (_: CompletionException) {
-                        null
-                    } catch (_: RequestException) {
-                        null
-                    }
-                }
-                ?.let { leaderboardChannel: GuildMessageChannel ->
-                    for (scoreType in ScoreType.entries) {
-                        if (leaderboards.containsKey(leaderboardChannel)) {
-                            leaderboards[leaderboardChannel]!!.add(
-                                ScoreLeaderboard(
-                                    scoreType.getLeaderboardTitle(null),
-                                    DiscordServerConnection.authenticated().loadTotalLeaderboard(serverModel.id, scoreType, 0)
-                                )
-                            )
-                        } else {
-                            leaderboards[leaderboardChannel] = mutableListOf(
-                                ScoreLeaderboard(
-                                    scoreType.getLeaderboardTitle(null),
-                                    DiscordServerConnection.authenticated().loadTotalLeaderboard(serverModel.id, scoreType, 0)
-                                )
-                            )
-                        }
-                    }
-                }
-        }
-
-        leaderboards.forEach(this::refreshLeaderboardInChannel)
-
-        return true*/
-        return false
     }
 }

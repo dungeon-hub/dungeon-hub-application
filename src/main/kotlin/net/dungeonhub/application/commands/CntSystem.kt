@@ -32,6 +32,7 @@ import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasPermission
+import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.HelpTopic
@@ -39,16 +40,14 @@ import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.loader.LoadExtension
-import net.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.application.service.*
 import net.dungeonhub.application.service.ApplicationService.embed
-import net.dungeonhub.application.service.addEmbed
-import net.dungeonhub.application.service.buildEmbed
-import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.CntRequestConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.connection.ReputationConnection
 import net.dungeonhub.enums.CntRequestType
+import net.dungeonhub.enums.StaticMessageType
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.model.cnt_request.CntRequestCreationModel
 import net.dungeonhub.model.cnt_request.CntRequestModel
@@ -558,6 +557,14 @@ class CntSystem : Extension() {
 
                     val reputation = reputationConnection.addReputation(repCreationModel)
 
+                    StaticMessageService.scheduler.launch {
+                        StaticMessageService.updateStaticMessages(
+                            guild!!.id.value.toLong(),
+                            StaticMessageType.ReputationLeaderboard,
+                            null
+                        )
+                    }
+
                     val totalReputation = reputationConnection.calculateReputation()
 
                     addEmbed {
@@ -722,6 +729,14 @@ class CntSystem : Extension() {
         )
 
         val reputation = reputationConnection.addReputation(repCreationModel)
+
+        StaticMessageService.scheduler.launch {
+            StaticMessageService.updateStaticMessages(
+                guild.id.value.toLong(),
+                StaticMessageType.ReputationLeaderboard,
+                null
+            )
+        }
 
         val totalReputation = reputationConnection.calculateReputation()
 

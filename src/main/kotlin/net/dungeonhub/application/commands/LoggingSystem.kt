@@ -34,8 +34,8 @@ import net.dungeonhub.application.exceptions.MissingPermissionException
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.AutoCompletionService
-import net.dungeonhub.application.service.LeaderboardService.refreshLeaderboard
 import net.dungeonhub.application.service.PermissionService
+import net.dungeonhub.application.service.StaticMessageService
 import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.QueueConnection
@@ -46,6 +46,7 @@ import net.dungeonhub.i18n.Translations.Command.Log
 import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.carry_queue.CarryQueueCreationModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
+import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.score.ScoreModel
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -284,6 +285,8 @@ class LoggingSystem : Extension() {
 
         val message = event.interaction.message
 
+        val carryTypes: MutableList<CarryTypeModel> = mutableListOf()
+
         for (queueModel: CarryQueueModel in QueueConnection.authenticated()
             .getCarryQueueByRelatedIdAndQueueStep(message.id.value.toLong(), QueueStep.Approving) ?: HashSet()) {
             val updateModel = queueModel.getUpdateModel()
@@ -291,6 +294,8 @@ class LoggingSystem : Extension() {
 
             val loggedCarryModel = QueueConnection.authenticated().logQueue(queueModel.id, updateModel)
                 ?: return
+
+            carryTypes.add(loggedCarryModel.carryModel.carryType)
 
             val updatedScore = loggedCarryModel.scoreModels
                 .firstOrNull { scoreModel: ScoreModel -> (scoreModel.scoreType == ScoreType.Default) }
@@ -333,7 +338,7 @@ class LoggingSystem : Extension() {
             logger.debug("Carry logged: {}", loggedCarryModel.carryModel)
         }
 
-        refreshLeaderboard()
+        StaticMessageService.updateScoreLeaderboard(carryTypes.distinctBy { it.id })
 
         message.delete()
     }
