@@ -98,7 +98,7 @@ object StaticMessageService : StartupListener {
     }
 
     suspend fun updateStaticMessages(server: Long, staticMessageType: StaticMessageType, objectIds: List<Long>?) {
-        var staticMessages = StaticMessageConnection[server].authenticated().findStaticMessage(staticMessageType, null) ?: emptyList()
+        var staticMessages = StaticMessageConnection[server].authenticated().findStaticMessages(staticMessageType, null) ?: emptyList()
 
         if(objectIds != null) {
             staticMessages = staticMessages.filter { staticMessage -> staticMessage.objectIds.any { objectIds.contains(it) } }

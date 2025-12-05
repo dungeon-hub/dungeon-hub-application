@@ -86,7 +86,7 @@ class StaticMessageCommand: Extension() {
                     }
                 }
 
-                val staticMessage = StaticMessageConnection[guild!!.id.value.toLong()].authenticated().findStaticMessage(
+                val staticMessage = StaticMessageConnection[guild!!.id.value.toLong()].authenticated().findStaticMessages(
                     null,
                     event.interaction.target.channelId.value.toLong()
                 )?.firstOrNull { it.messageId == event.interaction.target.id.value.toLong() }
