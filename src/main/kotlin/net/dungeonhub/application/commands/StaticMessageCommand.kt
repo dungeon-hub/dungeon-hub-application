@@ -12,7 +12,7 @@ import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
 import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.optionalChannel
 import dev.kordex.core.extensions.Extension
-import dev.kordex.core.extensions.publicMessageCommand
+import dev.kordex.core.extensions.ephemeralMessageCommand
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import net.dungeonhub.application.enums.EmbedColor
@@ -75,13 +75,13 @@ class StaticMessageCommand: Extension() {
             }
         }
 
-        publicMessageCommand {
+        ephemeralMessageCommand {
             name = "Update static message".toKey()
 
             action {
-                respond {
+                val response = respond {
                     embed {
-                        description = "Updating the static message."
+                        description = "Trying to update the static message..."
                         color(EmbedColor.Default)
                     }
                 }
@@ -96,6 +96,18 @@ class StaticMessageCommand: Extension() {
                         it,
                         event.interaction.target
                     )
+
+                    response.edit {
+                        embed {
+                            description = "Updated the static message (probably)."
+                            color(EmbedColor.Positive)
+                        }
+                    }
+                } ?: response.edit {
+                    embed {
+                        description = "Couldn't find static message."
+                        color(EmbedColor.Negative)
+                    }
                 }
             }
         }
