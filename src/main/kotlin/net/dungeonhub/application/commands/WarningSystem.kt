@@ -413,7 +413,7 @@ class WarningSystem : Extension() {
 
         val dmUser by optionalBoolean {
             name = "dm-user".toKey()
-            description = "Whether to send a DM to the user about the warning.".toKey()
+            description = "Whether to send a DM to the user about the warning (true by default).".toKey()
         }
     }
 
