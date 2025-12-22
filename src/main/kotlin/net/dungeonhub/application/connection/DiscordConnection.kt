@@ -362,6 +362,7 @@ fun EmbedBuilder.applyJson(key: String, value: JsonElement) {
             MoshiService.moshi.adapter(Instant::class.java).fromJson(value.asString)!!.toKotlinInstant()
 
         "thumbnail" -> setThumbnail(value)
+        "image" -> image = if(value.isJsonNull) null else value.asString
     }
 }
 
