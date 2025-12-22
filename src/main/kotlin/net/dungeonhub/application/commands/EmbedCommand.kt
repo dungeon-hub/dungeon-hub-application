@@ -102,7 +102,11 @@ class EmbedCommand : Extension() {
                                         false
                                     )
                                     {
-                                        entry.value.toString()
+                                        if(entry.value.isJsonPrimitive) {
+                                            entry.value.asString
+                                        } else {
+                                            entry.value.toString()
+                                        }
                                     }
                                 })
                         } else {
