@@ -23,7 +23,6 @@ enum class ServerProperty(
     BAN_MESSAGE("ban_message"),
     UNBAN_FORM("unban_form"),
 
-    PROFILE_MODERATION_BAN("profile_moderation_ban", ServerPropertyType.BOOLEAN),
     SCORE_ENABLED("score_enabled", ServerPropertyType.BOOLEAN, false),
     COMPACT_LEADERBOARD("compact_leaderboard", ServerPropertyType.BOOLEAN),
     TOTAL_SCORE_EVENT("total_score_event", ServerPropertyType.BOOLEAN),
@@ -33,7 +32,6 @@ enum class ServerProperty(
     STRIKES_LOGS_CHANNEL("id_strikes_logs_channel", ServerPropertyType.CHANNEL),
     LOG_APPROVING_CHANNEL("id_log_approving_channel", ServerPropertyType.CHANNEL),
     TRANSCRIPTS_CHANNEL("id_transcripts_channel", ServerPropertyType.CHANNEL),
-    TOTAL_SCORE_LEADERBOARD_CHANNEL("id_total_score_leaderboard_channel", ServerPropertyType.CHANNEL),
     SERVICE_TEAM_RULES_CHANNEL("id_service_team_rules_channel", ServerPropertyType.CHANNEL),
     CNT_MESSAGES_CHANNEL("cnt_messages_channel", ServerPropertyType.CHANNEL),
     CNT_INFORMATION_CHANNEL("cnt_information_channel", ServerPropertyType.CHANNEL),
