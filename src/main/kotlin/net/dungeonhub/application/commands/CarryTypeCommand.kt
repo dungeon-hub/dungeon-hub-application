@@ -69,10 +69,6 @@ class CarryTypeCommand : Extension() {
                             creationModel.logChannel = arguments.logChannel!!.id.value.toLong()
                         }
 
-                        if (arguments.leaderboardChannel != null) {
-                            creationModel.leaderboardChannel = arguments.leaderboardChannel!!.id.value.toLong()
-                        }
-
                         if (arguments.eventActive != null) {
                             creationModel.eventActive = arguments.eventActive
                         }
@@ -140,7 +136,7 @@ class CarryTypeCommand : Extension() {
                                 .getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        if (arguments.displayName == null && arguments.logChannel == null && arguments.leaderboardChannel == null && arguments.eventActive == null) {
+                        if (arguments.displayName == null && arguments.logChannel == null && arguments.eventActive == null) {
                             throw CommandExecutionWarning("Please provide something you want to edit.")
                         }
 
@@ -152,10 +148,6 @@ class CarryTypeCommand : Extension() {
 
                         if (arguments.logChannel != null) {
                             updateModel.logChannel = arguments.logChannel!!.id.value.toLong()
-                        }
-
-                        if (arguments.leaderboardChannel != null) {
-                            updateModel.leaderboardChannel = arguments.leaderboardChannel!!.id.value.toLong()
                         }
 
                         if (arguments.eventActive != null) {
@@ -185,7 +177,7 @@ class CarryTypeCommand : Extension() {
                                 .getByIdentifier(arguments.carryType)
                                 ?: throw CommandExecutionWarning("That carry type doesn't exists!")
 
-                        if (!arguments.logChannel && !arguments.leaderboardChannel) {
+                        if (!arguments.logChannel) {
                             throw CommandExecutionWarning("Please provide something you want to reset.")
                         }
 
@@ -193,10 +185,6 @@ class CarryTypeCommand : Extension() {
 
                         if (arguments.logChannel) {
                             updateModel.logChannel = -1L
-                        }
-
-                        if (arguments.leaderboardChannel) {
-                            updateModel.leaderboardChannel = -1L
                         }
 
                         val updatedCarryType =
@@ -229,12 +217,6 @@ class CarryTypeCommand : Extension() {
         val logChannel by optionalChannel {
             name = CarryType.Create.Arguments.LogChannel.name
             description = CarryType.Create.Arguments.LogChannel.description
-            requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
-        }
-
-        val leaderboardChannel by optionalChannel {
-            name = CarryType.Create.Arguments.LeaderboardChannel.name
-            description = CarryType.Create.Arguments.LeaderboardChannel.description
             requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
@@ -273,12 +255,6 @@ class CarryTypeCommand : Extension() {
             requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
-        val leaderboardChannel by optionalChannel {
-            name = CarryType.Edit.Arguments.LeaderboardChannel.name
-            description = CarryType.Edit.Arguments.LeaderboardChannel.description
-            requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
-        }
-
         val eventActive by optionalBoolean {
             name = CarryType.Edit.Arguments.EventActive.name
             description = CarryType.Edit.Arguments.EventActive.description
@@ -296,11 +272,6 @@ class CarryTypeCommand : Extension() {
         val logChannel by boolean {
             name = CarryType.Reset.Arguments.LogChannel.name
             description = CarryType.Reset.Arguments.LogChannel.description
-        }
-
-        val leaderboardChannel by boolean {
-            name = CarryType.Reset.Arguments.LeaderboardChannel.name
-            description = CarryType.Reset.Arguments.LeaderboardChannel.description
         }
     }
 }

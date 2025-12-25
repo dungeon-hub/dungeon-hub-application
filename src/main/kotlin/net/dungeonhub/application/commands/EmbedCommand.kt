@@ -93,7 +93,7 @@ class EmbedCommand : Extension() {
 
                         if (beautiful && embeds.size == 1) {
                             @Suppress("DEPRECATION")
-                            GsonService.gson.toJsonTree(embeds[0])
+                            GsonService.gson.toJsonTree(embeds[0].toModel())
                                 .asJsonObject
                                 .entrySet()
                                 .forEach(Consumer { entry: Map.Entry<String, JsonElement> ->
@@ -102,7 +102,11 @@ class EmbedCommand : Extension() {
                                         false
                                     )
                                     {
-                                        entry.value.toString()
+                                        if(entry.value.isJsonPrimitive) {
+                                            entry.value.asString
+                                        } else {
+                                            entry.value.toString()
+                                        }
                                     }
                                 })
                         } else {

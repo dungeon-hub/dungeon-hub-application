@@ -41,7 +41,7 @@ import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.exceptions.PlayerNotFoundWarning
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
-import net.dungeonhub.application.service.LeaderboardService
+import net.dungeonhub.application.service.StaticMessageService
 import net.dungeonhub.application.service.color
 import net.dungeonhub.client.DungeonHubClient
 import net.dungeonhub.connection.ContentConnection
@@ -51,6 +51,7 @@ import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.QueueStep
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.model.carry_queue.CarryQueueModel
+import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.score.ScoreModel
 import net.dungeonhub.mojang.connection.MojangConnection
 import net.dungeonhub.service.MoshiService
@@ -168,6 +169,8 @@ class MessageListener : Extension() {
             val approvingChannel = ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.id.value.toLong())
                 .orElse(null)
                 ?.let { DiscordConnection.bot?.kordRef?.getChannelOf<TextChannel>(Snowflake(it)) }
+
+            val carryTypes: MutableList<CarryTypeModel> = mutableListOf()
 
             mutex.withLock {
                 for (queueModel in (QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Transcript)
@@ -305,13 +308,15 @@ class MessageListener : Extension() {
                             }
 
                             QueueConnection.authenticated().deleteQueue(updatedModel.id)
+
+                            carryTypes.add(updatedModel.carryType)
                         }
                     }
-
-                    scheduler.launch {
-                        LeaderboardService.refreshLeaderboard()
-                    }
                 }
+            }
+
+            scheduler.launch {
+                StaticMessageService.updateScoreLeaderboard(carryTypes.distinctBy { it.id })
             }
         }
     }

@@ -3,11 +3,9 @@ package net.dungeonhub.application.config
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.i18n.types.Key
-import lombok.Getter
 import java.util.*
 import java.util.stream.Collectors
 
-@Getter
 enum class ConfigProperty(override val readableName: Key) : ChoiceEnum {
     DISCORD_BOT_TOKEN("discord-bot.token"),
     HYPIXEL_CACHE_TYPE("hypixel-wrapper.cache-type"),

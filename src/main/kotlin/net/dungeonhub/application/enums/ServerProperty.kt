@@ -26,6 +26,7 @@ enum class ServerProperty(
     PROFILE_MODERATION_BAN("profile_moderation_ban", ServerPropertyType.BOOLEAN),
     SCORE_ENABLED("score_enabled", ServerPropertyType.BOOLEAN, false),
     COMPACT_LEADERBOARD("compact_leaderboard", ServerPropertyType.BOOLEAN),
+    TOTAL_SCORE_EVENT("total_score_event", ServerPropertyType.BOOLEAN),
 
     MODERATION_LOGS_CHANNEL("id_moderation_logs_channel", ServerPropertyType.CHANNEL),
     SCORE_LOGS_CHANNEL("id_score_logs_channel", ServerPropertyType.CHANNEL),

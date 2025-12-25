@@ -211,21 +211,23 @@ class WarningSystem : Extension() {
                             }
 
                         //TODO request exception
-                        target.dm {
-                            val dmEmbed = ApplicationService.formatWarnDm(addedWarning.warningModel)
-                            if (actionDescription != null) {
-                                dmEmbed.description =
-                                    "You currently have ${activeWarnings.count()} active warnings, due to which you were punished with the following:\n$actionDescription"
-                            } else {
-                                dmEmbed.description = "You currently have ${activeWarnings.count()} active warnings."
-                            }
+                        if(arguments.dmUser != false) {
+                            target.dm {
+                                val dmEmbed = ApplicationService.formatWarnDm(addedWarning.warningModel)
+                                if (actionDescription != null) {
+                                    dmEmbed.description =
+                                        "You currently have ${activeWarnings.count()} active warnings, due to which you were punished with the following:\n$actionDescription"
+                                } else {
+                                    dmEmbed.description = "You currently have ${activeWarnings.count()} active warnings."
+                                }
 
-                            if (addedWarning.warningModel.warningType.expiration != null) {
-                                val expiresAfter = addedWarning.warningModel.warningType.expiration?.get(ChronoUnit.MONTHS)
-                                dmEmbed.description += "\n\n_Please note that a ${addedWarning.warningModel.warningType.name} expires after **$expiresAfter month${if (expiresAfter == 1L) "" else "s"}**._\n_If you want a related punishment removed **after the ${addedWarning.warningModel.warningType.name} expired**, please contact server staff through the support._"
-                            }
+                                if (addedWarning.warningModel.warningType.expiration != null) {
+                                    val expiresAfter = addedWarning.warningModel.warningType.expiration?.get(ChronoUnit.MONTHS)
+                                    dmEmbed.description += "\n\n_Please note that a ${addedWarning.warningModel.warningType.name} expires after **$expiresAfter month${if (expiresAfter == 1L) "" else "s"}**._\n_If you want a related punishment removed **after the ${addedWarning.warningModel.warningType.name} expired**, please contact server staff through the support._"
+                                }
 
-                            this@dm.embeds = mutableListOf(dmEmbed)
+                                this@dm.embeds = mutableListOf(dmEmbed)
+                            }
                         }
                     }
                 }
@@ -407,6 +409,11 @@ class WarningSystem : Extension() {
             name = "reason".toKey()
             description = "The reason for the warning.".toKey()
             maxLength = 200
+        }
+
+        val dmUser by optionalBoolean {
+            name = "dm-user".toKey()
+            description = "Whether to send a DM to the user about the warning (true by default).".toKey()
         }
     }
 

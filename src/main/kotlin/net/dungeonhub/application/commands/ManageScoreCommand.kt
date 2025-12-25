@@ -21,6 +21,7 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
@@ -29,8 +30,8 @@ import net.dungeonhub.application.exceptions.MissingPermissionException
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.AutoCompletionService
-import net.dungeonhub.application.service.LeaderboardService
 import net.dungeonhub.application.service.PermissionService
+import net.dungeonhub.application.service.StaticMessageService
 import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.ScoreResetType
@@ -160,7 +161,9 @@ class ManageScoreCommand : Extension() {
             embeds = mutableListOf(embed)
         }
 
-        LeaderboardService.refreshLeaderboard()
+        scheduler.launch {
+            StaticMessageService.updateScoreLeaderboard(listOf(carryType))
+        }
 
         val embed = ApplicationService.embed
         embed.color = EmbedColor.Information.color
