@@ -58,7 +58,7 @@ class RoleCommand : Extension() {
 
             publicSubCommand(::RoleArguments) {
                 name = "add".toKey()
-                description = "Add a role to a user".toKey()
+                description = "Give a role to a user.".toKey()
 
                 action {
                     respond {
@@ -69,7 +69,7 @@ class RoleCommand : Extension() {
 
             publicSubCommand(::RoleArguments) {
                 name = "remove".toKey()
-                description = "Remove a role from a user".toKey()
+                description = "Remove a role from a user.".toKey()
 
                 action {
                     respond {
@@ -80,7 +80,7 @@ class RoleCommand : Extension() {
 
             publicSubCommand(::RoleGroupRemoveArguments) {
                 name = "remove-group".toKey()
-                description = "Remove a role group from a user".toKey()
+                description = "Remove an entire role group from a user.".toKey()
 
                 action {
                     respond {

@@ -168,7 +168,7 @@ class LookupCommand : Extension() {
     class LookupPlayerArguments : Arguments() {
         val ign by string {
             name = "ign".toKey()
-            description = "The IGN of the player.".toKey()
+            description = "Minecraft Ingame-Name to check.".toKey()
             minLength = 2
         }
     }
