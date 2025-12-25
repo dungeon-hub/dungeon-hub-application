@@ -47,6 +47,7 @@ import net.dungeonhub.model.cnt_request.CntRequestModel
 import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.role_requirement.RoleRequirementModel
 import net.dungeonhub.model.score.ScoreModel
+import net.dungeonhub.model.static_message.StaticMessageModel
 import net.dungeonhub.model.warning.DetailedWarningModel
 import net.dungeonhub.model.warning.WarningActionModel
 import net.dungeonhub.model.warning.WarningModel
@@ -841,6 +842,26 @@ object ApplicationService {
 
     suspend fun getGlobalCommandId(name: String): Snowflake? {
         return DiscordConnection.bot?.kordRef?.getGlobalApplicationCommands()?.firstOrNull { it.name == name }?.id
+    }
+
+    fun StaticMessageModel.toEmbed(locale: Locale? = null): EmbedBuilder {
+        val embed = embed
+        embed.title = "Static Message #${id}"
+        embed.color(EmbedColor.Default)
+
+        embed.field("Link") { "https://discord.com/channels/${server.id}/${channelId}/${messageId}" }
+
+        embed.field("Type") { staticMessageType.name }
+
+        embed.field("Object IDs") {
+            if (objectIds.isEmpty()) {
+                "None"
+            } else {
+                objectIds.joinToString(", ")
+            }
+        }
+
+        return embed
     }
 }
 
