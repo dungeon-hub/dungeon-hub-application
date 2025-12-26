@@ -4,11 +4,11 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "2.2.20"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.2.20"
 
-    id("com.github.johnrengelman.shadow") version "8.1.1"
     //TODO fix errors
     //id("io.gitlab.arturbosch.detekt") version "1.23.6"
 
-    id("dev.kordex.gradle.kordex") version "1.7.4"
+    id("dev.kordex.gradle.kordex") version "1.9.0"
+    id("dev.kordex.gradle.i18n") version "1.1.1"
 }
 
 group = "net.dungeon-hub"
@@ -25,7 +25,7 @@ repositories {
 }
 
 kordEx {
-    kordExVersion = "2.3.6-SNAPSHOT"
+    kordExVersion = "2.4.1-SNAPSHOT"
     jvmTarget = 21
 
     bot {
@@ -34,11 +34,10 @@ kordEx {
 
         mainClass = "net.dungeonhub.application.connection.DiscordConnection"
     }
+}
 
-    i18n {
-        classPackage = "net.dungeonhub.i18n"
-        translationBundle = "dhub.strings"
-    }
+i18n {
+    bundle("dhub.strings", "net.dungeonhub.i18n")
 }
 
 //TODO fix errors

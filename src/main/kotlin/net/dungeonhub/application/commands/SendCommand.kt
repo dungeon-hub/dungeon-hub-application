@@ -39,7 +39,7 @@ class SendCommand : Extension() {
 
             publicSubCommand(::SendLinkMessageArguments) {
                 name = "link-message".toKey()
-                description = "Sends a message with components that are there to make linking easier.".toKey()
+                description = "Sends a message with buttons that help with linking.".toKey()
                 defaultMemberPermissions = Permissions(Permission.ManageMessages)
 
                 action {

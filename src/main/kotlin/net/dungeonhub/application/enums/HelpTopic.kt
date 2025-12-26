@@ -5,7 +5,7 @@ import dev.kord.core.entity.User
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.core.i18n.toKey
-import dev.kordex.core.i18n.types.Key
+import dev.kordex.i18n.Key
 import net.dungeonhub.application.exceptions.MustBeServerException
 import net.dungeonhub.application.misc.HelpDisplay
 import net.dungeonhub.connection.ContentConnection

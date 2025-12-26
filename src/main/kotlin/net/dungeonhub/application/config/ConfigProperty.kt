@@ -2,7 +2,7 @@ package net.dungeonhub.application.config
 
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.core.i18n.toKey
-import dev.kordex.core.i18n.types.Key
+import dev.kordex.i18n.Key
 import java.util.*
 import java.util.stream.Collectors
 
