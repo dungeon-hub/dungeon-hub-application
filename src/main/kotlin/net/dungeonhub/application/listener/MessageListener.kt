@@ -15,6 +15,7 @@ import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageUpdateEvent
+import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
 import dev.kordex.core.components.components
 import dev.kordex.core.components.linkButton
@@ -41,13 +42,11 @@ import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.exceptions.PlayerNotFoundWarning
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.application.service.MessagesService
 import net.dungeonhub.application.service.StaticMessageService
 import net.dungeonhub.application.service.color
 import net.dungeonhub.client.DungeonHubClient
-import net.dungeonhub.connection.ContentConnection
-import net.dungeonhub.connection.DiscordUserConnection
-import net.dungeonhub.connection.QueueConnection
-import net.dungeonhub.connection.ScoreConnection
+import net.dungeonhub.connection.*
 import net.dungeonhub.enums.QueueStep
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.model.carry_queue.CarryQueueModel
@@ -59,13 +58,11 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
-import java.time.Duration
 import java.util.*
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
-import kotlin.time.toKotlinDuration
 import kotlin.time.toKotlinInstant
 
 @OptIn(ExperimentalTime::class)
@@ -420,14 +417,22 @@ class MessageListener : Extension() {
             ?.let { MojangConnection.getNameByUUID(it) }
             ?: return
 
-        sendPlayerDataEmbed(ign, event.message.channel, user.id.value.toLong())
+        val carryTier = categoryId?.let { DiscordServerConnection.authenticated().getCarryTierFromCategory(event.guildId!!.value.toLong(), it) }
+
+        val priceEmbed = carryTier?.let { MessagesService.getPriceEmbed(it) }
+
+        sendPlayerDataEmbed(ign, event.message.channel, priceEmbed, user.id.value.toLong())
     }
 
     //TODO threads threads threads (now its rather coroutines coroutines coroutines)
-    private suspend fun sendPlayerDataEmbed(ign: String, channel: MessageChannelBehavior, discordId: Long? = null) {
+    private suspend fun sendPlayerDataEmbed(ign: String, channel: MessageChannelBehavior, priceEmbed: EmbedBuilder?, discordId: Long? = null) {
         try {
             channel.createMessage {
-                embeds = mutableListOf(ApplicationService.getPlayerDataEmbed(ign, discordId))
+                embeds = if(priceEmbed != null) {
+                    mutableListOf(priceEmbed, ApplicationService.getPlayerDataEmbed(ign, discordId))
+                } else {
+                    mutableListOf(ApplicationService.getPlayerDataEmbed(ign, discordId))
+                }
 
                 components {
                     linkButton {
@@ -442,9 +447,13 @@ class MessageListener : Extension() {
             channel.createEmbed { ApplicationService.getErrorEmbed(playerNotFoundWarning) }
         } catch (failedToLoadEmbedException: FailedToLoadEmbedException) {
             channel.createMessage {
-                embeds = mutableListOf(failedToLoadEmbedException.embed)
+                embeds = if(priceEmbed != null) {
+                    mutableListOf(priceEmbed, failedToLoadEmbedException.embed)
+                } else {
+                    mutableListOf(ApplicationService.getPlayerDataEmbed(ign, discordId))
+                }
 
-                components(Duration.ofMinutes(5).toKotlinDuration()) {
+                components {
                     linkButton {
                         label = "SkyCrypt".toKey()
                         url = ConfigProperty.SKYCRYPT_API_URL.value + "stats/" + ign
