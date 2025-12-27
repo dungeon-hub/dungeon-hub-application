@@ -26,10 +26,8 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 
 @OnStart
-@OptIn(ExperimentalTime::class)
 object BirthdayService : StartupListener {
     private const val BIRTHDAY_CALENDAR_URL =
         "https://cloud.dungeon-hub.net/remote.php/dav/public-calendars/g2tZRB2YpacJtAtt?export"

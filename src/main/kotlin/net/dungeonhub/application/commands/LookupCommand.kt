@@ -22,10 +22,8 @@ import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.i18n.Translations.Command.Lookup
 import net.dungeonhub.mojang.connection.MojangConnection
-import kotlin.time.ExperimentalTime
 
 @LoadExtension
-@OptIn(ExperimentalTime::class)
 class LookupCommand : Extension() {
     override val name = "lookup-command"
 

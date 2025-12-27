@@ -45,7 +45,6 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
 @OnStart(priority = StartPriority.POST_BOT)
@@ -280,7 +279,6 @@ object StaticMessageService : StartupListener {
         }
     }
 
-    @OptIn(ExperimentalTime::class)
     private fun handleScoreLeaderboards(guildId: Long, leaderboards: List<ScoreLeaderboard>): MutableList<EmbedBuilder> {
         val embeds = mutableListOf<EmbedBuilder>()
 

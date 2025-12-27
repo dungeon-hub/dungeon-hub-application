@@ -25,10 +25,8 @@ import java.util.stream.Collectors
 import kotlin.math.roundToInt
 import kotlin.time.Clock
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
 import kotlin.time.toJavaInstant
 
-@OptIn(ExperimentalTime::class)
 object RolesService {
     val scheduler = Scheduler()
 

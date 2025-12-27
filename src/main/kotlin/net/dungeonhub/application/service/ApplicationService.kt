@@ -62,9 +62,11 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
 import javax.imageio.ImageIO
-import kotlin.time.*
+import kotlin.time.Clock
+import kotlin.time.Duration
+import kotlin.time.Instant
+import kotlin.time.toKotlinInstant
 
-@OptIn(ExperimentalTime::class)
 object ApplicationService {
     const val MAX_MINECRAFT_USERNAME_LENGTH = 16
     private val logger: Logger = LoggerFactory.getLogger(DiscordConnection::class.java)
@@ -865,46 +867,38 @@ object ApplicationService {
     }
 }
 
-@OptIn(ExperimentalTime::class)
 fun Extension.getEmbed(): EmbedBuilder {
     return ApplicationService.getEmbed(Clock.System.now())
 }
 
-@OptIn(ExperimentalTime::class)
 fun Extension.getEmbed(time: Instant?): EmbedBuilder {
     return ApplicationService.getEmbed(time)
 }
 
-@OptIn(ExperimentalTime::class)
 fun AbstractMessageCreateBuilder.addEmbed(function: EmbedBuilder.() -> Unit) {
     this.addEmbed(Clock.System.now(), function)
 }
 
-@OptIn(ExperimentalTime::class)
 fun AbstractMessageCreateBuilder.addEmbed(time: Instant?, function: EmbedBuilder.() -> Unit) {
     val embed = ApplicationService.getEmbed(time)
     function(embed)
     embeds = ((embeds ?: mutableListOf()) + embed).toMutableList()
 }
 
-@OptIn(ExperimentalTime::class)
 fun buildEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {
     return buildEmbed(Clock.System.now(), function)
 }
 
-@OptIn(ExperimentalTime::class)
 fun buildEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): EmbedBuilder {
     val embed = ApplicationService.getEmbed(time)
     function(embed)
     return embed
 }
 
-@OptIn(ExperimentalTime::class)
 fun Extension.createEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {
     return this.createEmbed(Clock.System.now(), function)
 }
 
-@OptIn(ExperimentalTime::class)
 fun Extension.createEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): EmbedBuilder {
     val embed = getEmbed(time)
     function(embed)

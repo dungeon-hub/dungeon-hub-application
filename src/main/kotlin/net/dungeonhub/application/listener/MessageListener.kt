@@ -62,10 +62,8 @@ import java.util.*
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 import kotlin.time.toKotlinInstant
 
-@OptIn(ExperimentalTime::class)
 @LoadExtension
 class MessageListener : Extension() {
     private lateinit var scheduler: Scheduler

@@ -59,12 +59,10 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
-import kotlin.time.ExperimentalTime
 import kotlin.time.toKotlinDuration
 import kotlin.time.toKotlinInstant
 
 @LoadExtension
-@OptIn(ExperimentalTime::class)
 class CntSystem : Extension() {
     private val logger = LoggerFactory.getLogger(CntSystem::class.java)
     override val name = "cnt-system"
