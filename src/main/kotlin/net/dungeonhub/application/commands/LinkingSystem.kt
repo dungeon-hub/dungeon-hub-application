@@ -184,7 +184,7 @@ class LinkingSystem : Extension() {
 
         publicSlashCommand {
             name = "mass-sync".toKey()
-            description = "Sync a large amount of users.".toKey()
+            description = "Queue many users for role/nickname syncing.".toKey()
             allowInDms = false
             defaultMemberPermissions = Permissions(Permission.Administrator)
 
@@ -260,7 +260,7 @@ class LinkingSystem : Extension() {
 
             publicSubCommand {
                 name = "list".toKey()
-                description = "Show the number of users currently in the mass sync queue.".toKey()
+                description = "Show the number of users currently queued for mass syncing.".toKey()
 
                 action {
                     respond {
@@ -275,7 +275,7 @@ class LinkingSystem : Extension() {
 
             publicSubCommand {
                 name = "clear".toKey()
-                description = "Clear the users currently in the mass sync queue.".toKey()
+                description = "Clear all users currently queued for mass syncing.".toKey()
 
                 action {
                     respond {

@@ -76,7 +76,7 @@ class LoggingSystem : Extension() {
                         }
 
                     if (carryTier == null) {
-                        throw CommandExecutionException("Please use this in a carry-ticket. If this is one, tell the administrators to do `/setup`!")
+                        throw CommandExecutionException("Please use this in a carry-ticket. If this is one, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) to setup the bot correctly!")
                     }
 
                     if (QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(

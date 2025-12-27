@@ -138,10 +138,14 @@ object RolesService {
             roleRequirement.extraData?.let { HypixelApiConnection().withCacheExpiration(5).getGuild(it) }
         }
 
+        val bingoData by lazy {
+            hypixelApiConnection.getBingoData(uuid)
+        }
+
         //TODO add check for legendary griffin pet
         return when (roleRequirement.requirementType) {
             RoleRequirementType.SkyblockLevel -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     profileMembers.maxOf {
                         it.leveling.level
                     }
@@ -149,13 +153,13 @@ object RolesService {
             }
 
             RoleRequirementType.CatacombsLevel -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     profileMembers.maxOf { it.dungeons?.catacombsLevel ?: 0 }
                 )
             }
 
             RoleRequirementType.FarmingLevel -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     profileMembers.maxOf {
                         KnownSkill.Farming.calculateLevel(
                             it.playerData.nonCosmeticExperience?.get(
@@ -167,7 +171,7 @@ object RolesService {
             }
 
             RoleRequirementType.MiningLevel -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     profileMembers.maxOf {
                         KnownSkill.Mining.calculateLevel(
                             it.playerData.nonCosmeticExperience?.get(
@@ -179,7 +183,7 @@ object RolesService {
             }
 
             RoleRequirementType.CombatLevel -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     profileMembers.maxOf {
                         KnownSkill.Combat.calculateLevel(
                             it.playerData.nonCosmeticExperience?.get(
@@ -191,7 +195,7 @@ object RolesService {
             }
 
             RoleRequirementType.FishingLevel -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     profileMembers.maxOf {
                         KnownSkill.Fishing.calculateLevel(
                             it.playerData.nonCosmeticExperience?.get(
@@ -203,13 +207,13 @@ object RolesService {
             }
 
             RoleRequirementType.SkillAverage -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     profileMembers.maxOf { it.playerData.skillAverage }.toInt()
                 )
             }
 
             RoleRequirementType.HighestSkill -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     profileMembers.maxOf {
                         it.playerData.nonCosmeticExperience?.maxOf { skill ->
                             skill.key.calculateLevel(
@@ -222,7 +226,7 @@ object RolesService {
 
             //TODO check for carry type
             RoleRequirementType.CurrentScore -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     DiscordServerConnection.authenticated().getScores(discordServer, discordUser.id)?.filter {
                         it.scoreType == ScoreType.Default
                     }?.sumOf { it.scoreAmount ?: 0 }?.toInt() ?: 0
@@ -231,7 +235,7 @@ object RolesService {
 
             //TODO check for carry type
             RoleRequirementType.AlltimeScore -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     DiscordServerConnection.authenticated().getScores(discordServer, discordUser.id)?.filter {
                         it.scoreType == ScoreType.Alltime
                     }?.sumOf { it.scoreAmount ?: 0 }?.toInt() ?: 0
@@ -250,7 +254,7 @@ object RolesService {
 
             //TODO maybe also add money earned?
             RoleRequirementType.MoneySpent -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(
                         discordServer.id,
                         userId = discordUser.id
@@ -262,7 +266,7 @@ object RolesService {
                 val duration = roleRequirement.extraData?.let(Duration::parse)
                     ?: return false
 
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(
                         discordServer.id,
                         userId = discordUser.id,
@@ -276,29 +280,29 @@ object RolesService {
 
                 if (rank !is KnownRank) return false
 
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     rank.ordinal
                 )
             }
 
             RoleRequirementType.GuildMembership -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     if (guild?.members?.any { it.uuid == uuid } == true) 1 else 0
                 )
             }
 
             RoleRequirementType.GuildRank -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     guild?.members?.firstOrNull { it.uuid == uuid }?.rank?.priority ?: 0
                 )
             }
 
             RoleRequirementType.MagicalPower -> {
-                return roleRequirement.compare(profileMembers.maxOf { it.accessoryBag?.highestMagicalPower ?: 0 })
+                roleRequirement.compare(profileMembers.maxOf { it.accessoryBag?.highestMagicalPower ?: 0 })
             }
 
             RoleRequirementType.ClassAverage -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     profileMembers.maxOf {
                         it.dungeons?.classAverage ?: 0.0
                     }.toInt()
@@ -306,30 +310,75 @@ object RolesService {
             }
 
             RoleRequirementType.HighestCritDamage -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     profileMembers.maxOf { it.playerStats?.highestCritDamage ?: 0.0 }.roundToInt()
                 )
             }
 
             RoleRequirementType.BingoRank -> {
-                //TODO implement
-                return false
+                roleRequirement.compare(
+                    profiles.bingoRank?.ordinal ?: 0
+                )
             }
 
             RoleRequirementType.TotalBingoPoints -> {
-                //TODO implement
-                return false
+                roleRequirement.compare(
+                    bingoData?.totalPoints ?: 0
+                )
             }
 
             RoleRequirementType.Reputation -> {
-                return roleRequirement.compare(
+                roleRequirement.compare(
                     ReputationConnection[member].authenticated().calculateReputation()?.toInt() ?: 0
                 )
             }
 
-            RoleRequirementType.LeaderboardRank -> {
-                //TODO implement
-                return false
+            RoleRequirementType.ScoreLeaderboardRank -> {
+                val extraData = roleRequirement.extraData?.split(";") ?: return false
+
+                val scoreType = try {
+                    ScoreType.valueOf(extraData[0])
+                } catch (_: IllegalArgumentException) {
+                    return false
+                }
+
+                val carryTypeIdentifier = extraData.getOrNull(1)
+
+                val carryType = if (carryTypeIdentifier != null) {
+                    CarryTypeConnection[discordServer].authenticated().getByIdentifier(carryTypeIdentifier) ?: return false
+                } else null
+
+                val leaderboard = if(carryType != null) {
+                    ScoreConnection[carryType].authenticated().loadLeaderboard(
+                        scoreType = scoreType,
+                        userId = discordUser.id
+                    )
+                } else {
+                    DiscordServerConnection.authenticated().loadTotalLeaderboard(
+                        discordServer.id,
+                        scoreType = scoreType,
+                        userId = discordUser.id
+                    )
+                }
+
+                leaderboard?.playerPosition?.let {
+                    roleRequirement.compare(
+                        it
+                    )
+                } ?: false
+            }
+
+            RoleRequirementType.ReputationLeaderboardRank -> {
+                val leaderboard = DiscordServerConnection.authenticated().loadReputationLeaderboard(
+                    discordServer.id,
+                    userId = discordUser.id
+                )
+
+                leaderboard?.playerPosition?.let {
+                    roleRequirement.compare(
+                        it
+                    )
+                } ?: false
             }
         }
     }
