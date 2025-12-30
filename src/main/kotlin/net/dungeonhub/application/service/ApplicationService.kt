@@ -20,6 +20,7 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.EmbedBuilder.Footer
 import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.builder.message.create.AbstractMessageCreateBuilder
+import dev.kord.rest.builder.message.modify.InteractionResponseModifyBuilder
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.utils.dm
 import kotlinx.coroutines.flow.firstOrNull
@@ -882,6 +883,18 @@ fun AbstractMessageCreateBuilder.addEmbed(function: EmbedBuilder.() -> Unit) {
 
 @OptIn(ExperimentalTime::class)
 fun AbstractMessageCreateBuilder.addEmbed(time: Instant?, function: EmbedBuilder.() -> Unit) {
+    val embed = ApplicationService.getEmbed(time)
+    function(embed)
+    embeds = ((embeds ?: mutableListOf()) + embed).toMutableList()
+}
+
+@OptIn(ExperimentalTime::class)
+fun InteractionResponseModifyBuilder.addEmbed(function: EmbedBuilder.() -> Unit) {
+    this.addEmbed(Clock.System.now(), function)
+}
+
+@OptIn(ExperimentalTime::class)
+fun InteractionResponseModifyBuilder.addEmbed(time: Instant?, function: EmbedBuilder.() -> Unit) {
     val embed = ApplicationService.getEmbed(time)
     function(embed)
     embeds = ((embeds ?: mutableListOf()) + embed).toMutableList()

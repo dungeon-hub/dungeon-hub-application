@@ -99,13 +99,15 @@ class CntSystem : Extension() {
             }
 
             action {
+                val response = event.interaction.deferEphemeralResponse()
+
                 val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
                     .findCntRequests(event.interaction.message.id.value.toLong())
                     ?.firstOrNull()
                     ?: throw CommandExecutionWarning("CNT request didn't load properly, are you sure this is one?")
 
                 if (cntRequest.claimer != null) {
-                    event.interaction.respondEphemeral {
+                    response.respond {
                         content = "This request has already been claimed!"
                     }
                     return@action
@@ -114,7 +116,7 @@ class CntSystem : Extension() {
                 val claimerId = event.interaction.user.id.value.toLong()
 
                 if (claimerId == cntRequest.user.id) {
-                    event.interaction.respondEphemeral {
+                    response.respond {
                         content = "You cannot claim your own request!"
                     }
                     return@action
@@ -134,7 +136,7 @@ class CntSystem : Extension() {
 
                 if(requiredRoles.isNotEmpty()
                     && !event.interaction.user.roleIds.any { requiredRoles.contains(it.value.toLong()) }) {
-                    event.interaction.respondEphemeral {
+                    response.respond {
                         content = "You don't have the required role <@&${requiredRoles.first()}> to claim requests of that value!"
                     }
                     return@action
@@ -146,7 +148,7 @@ class CntSystem : Extension() {
 
                 val claimedIgn = claimer.minecraftId?.let(MojangConnection::getNameByUUID)
                 if (claimedIgn == null) {
-                    event.interaction.respondEphemeral {
+                    response.respond {
                         content =
                             "You need to be linked to be able to claim requests! Please check `/help` to see more information about linking."
                     }
@@ -168,7 +170,7 @@ class CntSystem : Extension() {
                     You are not allowed to give collateral.
                 """
 
-                event.interaction.respondEphemeral {
+                response.respond {
                     embeds = mutableListOf(claimMessage)
                 }
 
@@ -209,6 +211,8 @@ class CntSystem : Extension() {
             }
 
             action {
+                val response = event.interaction.deferEphemeralResponse()
+
                 val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
                     .findCntRequests(event.interaction.message.id.value.toLong())
                     ?.firstOrNull()
@@ -220,7 +224,7 @@ class CntSystem : Extension() {
                     val embed = ApplicationService
                         .getErrorEmbed(CommandExecutionWarning("The CNT request is claimed by someone else!"))
 
-                    event.interaction.respondEphemeral { embeds = mutableListOf(embed) }
+                    response.respond { embeds = mutableListOf(embed) }
 
                     return@action
                 }
@@ -236,7 +240,7 @@ class CntSystem : Extension() {
                     .updateCntRequest(cntRequest.id, updateModel)
                     ?: throw CommandExecutionException("Couldn't update CNT request!")
 
-                event.interaction.respondEphemeral {
+                response.respond {
                     embeds = mutableListOf(unclaimMessage)
                 }
 
@@ -255,6 +259,8 @@ class CntSystem : Extension() {
             }
 
             action {
+                val response = event.interaction.deferEphemeralResponse()
+
                 val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
                     .findCntRequests(event.interaction.message.id.value.toLong())
                     ?.firstOrNull()
@@ -266,7 +272,7 @@ class CntSystem : Extension() {
                     val embed = ApplicationService
                         .getErrorEmbed(CommandExecutionWarning("The CNT request is not yours!"))
 
-                    event.interaction.respondEphemeral { embeds = mutableListOf(embed) }
+                    response.respond { embeds = mutableListOf(embed) }
 
                     return@action
                 }
@@ -278,7 +284,7 @@ class CntSystem : Extension() {
                     .updateCntRequest(cntRequest.id, updateModel)
                     ?: throw CommandExecutionException("Couldn't update CNT request!")
 
-                event.interaction.respondEphemeral {
+                response.respond {
                     val embed = embed
                     embed.description =
                         "Your CNT request is now marked as completed.\n__Thanks for using our services!__"
@@ -345,9 +351,11 @@ class CntSystem : Extension() {
             }
 
             action {
+                val response = event.interaction.deferEphemeralResponse()
+
                 val channel = event.interaction.channel
                 if (channel !is GuildMessageChannelBehavior) {
-                    event.interaction.respondEphemeral {
+                    response.respond {
                         content = "Please use this on a server, DMs are not supported."
                     }
                     return@action
@@ -365,14 +373,12 @@ class CntSystem : Extension() {
                     val embed = ApplicationService
                         .getErrorEmbed(CommandExecutionWarning("The CNT request is not yours!"))
 
-                    event.interaction.respondEphemeral { embeds = mutableListOf(embed) }
+                    response.respond { embeds = mutableListOf(embed) }
 
                     return@action
                 }
 
                 val reason = event.interaction.textInputs["reputation_reason"]?.value
-
-                val response = event.interaction.deferEphemeralResponse()
 
                 response.respond {
                     embeds = mutableListOf(
@@ -392,6 +398,8 @@ class CntSystem : Extension() {
             }
 
             action {
+                val response = event.interaction.deferEphemeralResponse()
+
                 val cntRequest = CntRequestConnection[event.interaction.guild.id.value.toLong()].authenticated()
                     .findCntRequests(event.interaction.message.id.value.toLong())
                     ?.firstOrNull()
@@ -401,12 +409,10 @@ class CntSystem : Extension() {
                     val embed = ApplicationService
                         .getErrorEmbed(CommandExecutionWarning("The CNT request is not yours!"))
 
-                    event.interaction.respondEphemeral { embeds = mutableListOf(embed) }
+                    response.respond { embeds = mutableListOf(embed) }
 
                     return@action
                 }
-
-                val response = event.interaction.deferEphemeralResponse()
 
                 response.respond {
                     embeds = mutableListOf(
@@ -427,6 +433,8 @@ class CntSystem : Extension() {
                 }
 
                 action {
+                    val responder = event.interaction.deferEphemeralResponse()
+
                     val requesterUser = event.interaction.user
 
                     val requestDescription = event.interaction.textInputs[requestType.descriptionId]?.value!!
@@ -435,7 +443,7 @@ class CntSystem : Extension() {
 
                     val channel = event.interaction.channel
                     if (channel !is GuildMessageChannelBehavior) {
-                        event.interaction.respondEphemeral {
+                        responder.respond {
                             content = "Please use this on a server, DMs are not supported."
                         }
                         return@action
@@ -460,7 +468,7 @@ class CntSystem : Extension() {
                     val response: Message
 
                     if (channelId != null) {
-                        event.interaction.respondEphemeral {
+                        responder.respond {
                             embeds = mutableListOf(responseEmbed)
                         }
 
@@ -473,7 +481,7 @@ class CntSystem : Extension() {
                             addUnclaimedCntButtons()
                         }
                     } else {
-                        response = event.interaction.deferPublicResponse().respond {
+                        response = responder.respond {
                             embeds = mutableListOf(cntEmbed)
 
                             addUnclaimedCntButtons()
@@ -683,7 +691,9 @@ class CntSystem : Extension() {
             }
 
             action {
-                event.interaction.respondEphemeral {
+                val response = event.interaction.deferEphemeralResponse()
+
+                response.respond {
                     embeds = mutableListOf(
                         HelpTopic.generateHelpEmbed(
                             HelpTopic.REPUTATION,

@@ -1,6 +1,6 @@
 package net.dungeonhub.application.commands
 
-import dev.kord.core.behavior.interaction.respondEphemeral
+import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.User
 import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
@@ -43,6 +43,8 @@ class HelpCommand : Extension() {
             }
 
             action {
+                val response = event.interaction.deferEphemeralResponse()
+
                 val helpTopic = HelpTopic.VERIFICATION
                 val embedBuilder = EmbedBuilder()
                 embedBuilder.title = "**" + helpTopic.title + "**"
@@ -59,7 +61,7 @@ class HelpCommand : Extension() {
                     embedBuilder.field(name, false) { value }
                 }
 
-                event.interaction.respondEphemeral {
+                response.respond {
                     embeds = mutableListOf(embedBuilder)
                 }
             }

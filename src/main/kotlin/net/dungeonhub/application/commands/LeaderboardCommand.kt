@@ -1,7 +1,7 @@
 package net.dungeonhub.application.commands
 
 import dev.kord.common.entity.ButtonStyle
-import dev.kord.core.behavior.interaction.respondEphemeral
+import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.builder.components.emoji
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
@@ -144,7 +144,9 @@ class LeaderboardCommand : Extension() {
             }
 
             action {
-                event.interaction.respondEphemeral {
+                val response = event.interaction.deferEphemeralResponse()
+
+                response.respond {
                     embeds = mutableListOf(
                         HelpTopic.generateHelpEmbed(
                             HelpTopic.SCORE,
@@ -162,7 +164,9 @@ class LeaderboardCommand : Extension() {
             }
 
             action {
-                event.interaction.respondEphemeral {
+                val response = event.interaction.deferEphemeralResponse()
+
+                response.respond {
                     embeds = ScoreCommand.generateScoreEmbeds(
                         event.interaction.user,
                         event.interaction.user,

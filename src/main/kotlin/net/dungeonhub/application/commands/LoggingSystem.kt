@@ -5,7 +5,6 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.getChannelOfOrNull
-import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kord.core.entity.channel.GuildMessageChannel
@@ -344,6 +343,8 @@ class LoggingSystem : Extension() {
     }
 
     private suspend fun sendLog(event: GuildButtonInteractionCreateEvent) {
+        val response = event.interaction.deferEphemeralResponse()
+
         val channel = event.interaction.channel
 
         val carryQueue = QueueConnection.authenticated()
@@ -351,7 +352,7 @@ class LoggingSystem : Extension() {
             ?.firstOrNull()
 
         if (carryQueue == null) {
-            event.interaction.respondEphemeral {
+            response.respond {
                 embeds = mutableListOf(
                     ApplicationService.getErrorEmbed(CommandExecutionException("Carry isn't in queue anymore. Please discard and log this again!"))
                 )
@@ -360,7 +361,7 @@ class LoggingSystem : Extension() {
         }
 
         if (carryQueue.carrier.id != event.interaction.user.id.value.toLong()) {
-            event.interaction.respondEphemeral {
+            response.respond {
                 embeds = mutableListOf(
                     ApplicationService.getErrorEmbed(MissingPermissionException())
                 )
@@ -371,12 +372,10 @@ class LoggingSystem : Extension() {
         val updateModel = carryQueue.getUpdateModel()
         updateModel.queueStep = QueueStep.Transcript
 
-        val responder = event.interaction.deferEphemeralResponse()
-
         val carryQueueModel = QueueConnection.authenticated().updateQueue(carryQueue.id, updateModel)
 
         if (carryQueueModel == null) {
-            responder.respond {
+            response.respond {
                 content = "Couldn't log this ticket. Please contact an administrator."
             }
 
@@ -384,7 +383,7 @@ class LoggingSystem : Extension() {
             return
         }
 
-        responder.respond {
+        response.respond {
             content =
                 "**Thank you for your service. Your carry will be sent to the staff team for review once the ticket is closed.**\n" +
                         "**You will be notified once it has been reviewed.**"
@@ -403,6 +402,8 @@ class LoggingSystem : Extension() {
     }
 
     private suspend fun discard(event: GuildButtonInteractionCreateEvent) {
+        val response = event.interaction.deferEphemeralResponse()
+
         val channel = event.interaction.channel
 
         val carryQueue = QueueConnection.authenticated()
@@ -410,7 +411,7 @@ class LoggingSystem : Extension() {
             ?.firstOrNull()
 
         if (carryQueue == null) {
-            event.interaction.respondEphemeral {
+            response.respond {
                 content = "Carry isn't in queue anymore. Please log this again!"
             }
 
@@ -419,13 +420,13 @@ class LoggingSystem : Extension() {
         }
 
         if (!PermissionService.mayManageServices(event.interaction.user) && carryQueue.carrier.id != event.interaction.user.id.value.toLong()) {
-            event.interaction.respondEphemeral {
+            response.respond {
                 embeds = mutableListOf(ApplicationService.getErrorEmbed(MissingPermissionException()))
             }
             return
         }
 
-        event.interaction.respondEphemeral {
+        response.respond {
             content = "Log discarded!"
         }
 
