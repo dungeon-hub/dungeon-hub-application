@@ -92,7 +92,8 @@ class MessageListener : Extension() {
 
                     logTicket(event)
 
-                    loadSkycryptFromTicket(event)
+                    // temporarily disabled, will be included in our own tickets lol
+                    // loadSkycryptFromTicket(event)
                 }
             }
         }

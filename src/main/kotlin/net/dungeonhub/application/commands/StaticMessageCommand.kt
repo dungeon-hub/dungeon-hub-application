@@ -55,7 +55,8 @@ class StaticMessageCommand: Extension() {
                         (channel).id.value.toLong(),
                         null,
                         arguments.staticMessageType,
-                        emptyList()
+                        emptyList(),
+                        null
                     )
 
                     val connection = StaticMessageConnection[guild!!.id.value.toLong()].authenticated()

@@ -1,0 +1,436 @@
+package net.dungeonhub.application.commands
+
+import com.google.gson.*
+import dev.kord.common.entity.ButtonStyle
+import dev.kord.common.entity.Permissions
+import dev.kord.common.entity.Snowflake
+import dev.kord.core.behavior.MemberBehavior
+import dev.kord.core.behavior.channel.createMessage
+import dev.kord.core.behavior.createTextChannel
+import dev.kord.core.behavior.interaction.response.respond
+import dev.kord.core.entity.Member
+import dev.kord.core.entity.channel.TextChannel
+import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
+import dev.kord.rest.builder.channel.PermissionOverwriteBuilder
+import dev.kord.rest.builder.channel.addMemberOverwrite
+import dev.kord.rest.builder.channel.addRoleOverwrite
+import dev.kord.rest.builder.component.ActionRowBuilder
+import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kord.rest.builder.message.actionRow
+import dev.kordex.core.extensions.Extension
+import dev.kordex.core.extensions.event
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import net.dungeonhub.application.connection.applyJson
+import net.dungeonhub.application.enums.EmbedColor
+import net.dungeonhub.application.loader.LoadExtension
+import net.dungeonhub.application.misc.TicketPlaceholders
+import net.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.application.service.addEmbed
+import net.dungeonhub.application.service.color
+import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.enums.TicketPermissionCandidate
+import net.dungeonhub.enums.TicketPermissionType
+import net.dungeonhub.enums.TicketState
+import net.dungeonhub.model.discord_channel.DiscordChannelModel
+import net.dungeonhub.model.discord_server.DiscordServerModel
+import net.dungeonhub.model.discord_user.DiscordUserModel
+import net.dungeonhub.model.ticket.TicketCreationModel
+import net.dungeonhub.model.ticket.TicketModel
+import net.dungeonhub.model.ticket_panel.TicketPanelModel
+import net.dungeonhub.service.GsonService
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+
+@OptIn(ExperimentalTime::class)
+@LoadExtension
+class TicketSystem : Extension() {
+    override val name = "ticket-system"
+    private lateinit var scheduler: Scheduler
+
+    override suspend fun setup() {
+        scheduler = Scheduler()
+
+        event<GuildButtonInteractionCreateEvent> {
+            check {
+                failIfNot(event.interaction.componentId.startsWith("create-ticket-"))
+            }
+
+            action {
+                val response = event.interaction.deferEphemeralResponse()
+
+                response.respond {
+                    val panelId = event.interaction.componentId.removePrefix("create-ticket-")
+
+                    val ticketPanel = TicketPanelModel(
+                        1,
+                        "f4",
+                        "Floor 4: Thorn",
+                        "<:thorn:792055545204310046>",
+                        DiscordServerModel(1023684107877761196),
+                        true,
+                        true,
+                        true,
+                        "f4-{user}-{count}",
+                        null,
+                        null,
+                        null,
+                        "{\"content\":\"{user.mention} your ticket has been created, you will hear from one of our carriers soon. <@&1061116185132933240>\n\n- **Client IGN**: `{user.ign}`\",\"embeds\":\"stats-overview\",\"additional-buttons\":[\"skycrypt\"]}",
+                        true,
+                        listOf(),
+                        listOf(),
+                        listOf(),
+                        listOf(),
+                        emptyMap(),
+                    ) // TODO load from API
+
+                    if (ticketPanel == null) {
+                        addEmbed {
+                            description = "Couldn't load ticket panel #$panelId."
+                            color(EmbedColor.Negative)
+                        }
+                        return@respond
+                    }
+
+                    if (ticketPanel.requiresLinking && DiscordUserConnection.authenticated()
+                            .getLinkedById(event.interaction.user.id.value.toLong()) == null
+                    ) {
+                        addEmbed {
+                            description = "You're currently not linked, which this ticket panel requires.\nPlease link to your minecraft account using the buttons below.\nAfterwards, try opening a ticket again."
+                            color(EmbedColor.Negative)
+                        }
+                        actionRow {
+                            addSilentLinkButtons()
+                        }
+                        return@respond
+                    }
+
+                    // TODO check for ticket limit
+
+                    val ticket = createTicketModel(ticketPanel, event.interaction.user)
+                    val ticketChannel = createTicketChannel(ticketPanel, ticket, event.interaction.user)
+                    updateTicketChannel(ticket, ticketChannel)
+
+                    addEmbed {
+                        description = "Ticket created: ${ticketChannel.mention}."
+                        color(EmbedColor.Positive)
+                    }
+
+                    scheduler.launch {
+                        sendInitialTicketMessage(ticketPanel, ticket, ticketChannel)
+                    }
+                }
+            }
+        }
+
+        event<GuildButtonInteractionCreateEvent> {
+            check {
+                failIfNot(event.interaction.componentId.startsWith("close-ticket"))
+            }
+
+            action {
+                val response = event.interaction.deferEphemeralResponse()
+
+                // TODO implement
+                response.respond {
+                    addEmbed {
+                        description = "Imagine finishing implementing stuff"
+                    }
+                }
+            }
+        }
+
+        event<GuildButtonInteractionCreateEvent> {
+            check {
+                failIfNot(event.interaction.componentId.startsWith("claim-ticket"))
+            }
+
+            action {
+                val response = event.interaction.deferEphemeralResponse()
+
+                // TODO implement
+                response.respond {
+                    addEmbed {
+                        description = "Imagine finishing implementing stuff: Electric Boogaloo"
+                    }
+                }
+            }
+        }
+    }
+
+    override suspend fun unload() {
+        scheduler.cancel("Extension shutting down.")
+    }
+
+    // TODO API request
+    fun createTicketModel(panel: TicketPanelModel, user: MemberBehavior): TicketModel {
+        val creationModel = TicketCreationModel(
+            TicketState.Creating,
+            null,
+            panel.id,
+            user.id.value.toLong(),
+            null
+        )
+
+        return TicketModel(
+            1,
+            TicketState.Creating,
+            null,
+            panel,
+            DiscordUserModel(user.id.value.toLong(), null),
+            null,
+            Clock.System.now()
+        ) // TODO load from API
+    }
+
+    fun addOverwritePermissions(entries: Set<Map.Entry<TicketPermissionType, Permissions>>): PermissionOverwriteBuilder.() -> Unit = {
+        for(permissionEntry in entries) {
+            when(permissionEntry.key) {
+                TicketPermissionType.Allowed -> allowed = permissionEntry.value
+                TicketPermissionType.Denied -> denied = permissionEntry.value
+            }
+        }
+    }
+
+    suspend fun createTicketChannel(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member): TextChannel {
+        val name = buildTicketName(ticketPanel, ticket, member)
+
+        return member.guild.createTextChannel(name) {
+            for(entry in ticketPanel.permissions.entries) {
+                when(entry.key) {
+                    TicketPermissionCandidate.SupportTeam -> {
+                        for(supportRole in ticketPanel.supportRoles) {
+                            addRoleOverwrite(Snowflake(supportRole.id)) {
+                                addOverwritePermissions(entry.value.entries)()
+                            }
+                        }
+                    }
+                    TicketPermissionCandidate.AdditionalRoles -> {
+                        for(additionalRole in ticketPanel.additionalRoles) {
+                            addRoleOverwrite(Snowflake(additionalRole.id)) {
+                                addOverwritePermissions(entry.value.entries)()
+                            }
+                        }
+                    }
+                    TicketPermissionCandidate.TicketCreator -> {
+                        addMemberOverwrite(Snowflake(ticket.user.id)) {
+                            addOverwritePermissions(entry.value.entries)()
+                        }
+                    }
+                    TicketPermissionCandidate.TicketClaimer -> {
+                        if(ticket.claimer != null) {
+                            addMemberOverwrite(Snowflake(ticket.claimer!!.id)) {
+                                addOverwritePermissions(entry.value.entries)()
+                            }
+                        }
+                    }
+                    TicketPermissionCandidate.Everyone -> {
+                        addRoleOverwrite(Snowflake(ticketPanel.discordServer.id)) {
+                            addOverwritePermissions(entry.value.entries)()
+                        }
+                    }
+                }
+            }
+
+            val categories = if (ticket.state in listOf(TicketState.Creating, TicketState.Open)) {
+                ticketPanel.openCategories
+            } else {
+                ticketPanel.closedCategories
+            }
+            getCategory(categories)?.let { parentId = Snowflake(it.id) }
+        }
+    }
+
+    fun getCategory(categories: List<DiscordChannelModel>): DiscordChannelModel? {
+        // TODO implement lookup for a category with enough space
+        return categories.getOrNull(0)
+    }
+
+    fun buildTicketName(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member): String {
+        var result = (ticketPanel.openChannelName ?: ticketPanel.name)
+
+        result = result.replace("{count}", "${ticket.id}")
+        result = result.replace("{user}", member.effectiveName)
+
+        return result
+    }
+
+    fun updateTicketChannel(ticket: TicketModel, ticketChannel: TextChannel) {
+        val updateModel = ticket.getUpdateModel()
+        updateModel.channel = ticketChannel.id.value.toLong()
+        updateModel.state = TicketState.Open
+
+        // TODO update ticket channel in API
+        // TODO update ticket state to open
+    }
+
+    suspend fun sendInitialTicketMessage(ticketPanel: TicketPanelModel, ticket: TicketModel, ticketChannel: TextChannel) {
+        var content: String
+        var embeds = mutableListOf<EmbedBuilder>()
+        var additionalButtons: List<(ActionRowBuilder.() -> Unit)?>
+
+        @Suppress("DEPRECATION")
+        val messageJson = try {
+            ticketPanel.ticketMessage?.let {
+                GsonService.gson.fromJson(it, JsonObject::class.java)
+            }
+        } catch (_: JsonSyntaxException) {
+            null
+        }
+
+        val placeholders = TicketPlaceholders(ticketPanel, ticket)
+
+        content = replacePlaceholders(messageJson?.get("content")?.asString ?: DEFAULT_CONTENT, placeholders) // TODO maybe rethink this at some point - what if the user actually doesn't want any content being sent? --> maybe option in the ticket panel
+        messageJson?.get("embeds")?.let { embeds = parseEmbeds(it, placeholders) }
+        additionalButtons = messageJson?.get("additional-buttons")?.asJsonArray?.map { parseAdditionalButton(it.asString, placeholders) } ?: emptyList()
+
+        sendInitialTicketMessage(ticketPanel, ticketChannel, content, embeds, additionalButtons.filterNotNull())
+    }
+
+    fun parseAdditionalButton(additionalButton: String, placeholders: TicketPlaceholders): (ActionRowBuilder.() -> Unit)? {
+        return when(additionalButton) {
+            "skycrypt" -> {{
+                linkButton("https://sky.shiiyu.moe/stats/${placeholders.ticketUserIgn}") {
+                    label = "SkyCrypt"
+                }
+            }}
+            else -> null
+        }
+    }
+
+    suspend fun parseEmbeds(embedData: JsonElement, placeholders: TicketPlaceholders): MutableList<EmbedBuilder> {
+        val embedBuilders: MutableList<EmbedBuilder> = mutableListOf()
+
+        try {
+            if (embedData.isJsonObject) {
+                val embedBuilder = EmbedBuilder()
+
+                embedData.asJsonObject
+                    .entrySet()
+                    .forEach {
+                        embedBuilder.applyJson(
+                            it.key,
+                            replacePlaceholders(it.value, placeholders)
+                        )
+                    }
+
+                embedBuilders.add(embedBuilder)
+            } else if (embedData.isJsonArray) {
+                embedData.asJsonArray
+                    .forEach { jsonElement: JsonElement ->
+                        if (jsonElement.isJsonObject) {
+                            val embedBuilder = EmbedBuilder()
+
+                            jsonElement.asJsonObject
+                                .entrySet()
+                                .forEach { entry: Map.Entry<String, JsonElement> ->
+                                    embedBuilder.applyJson(
+                                        entry.key,
+                                        replacePlaceholders(entry.value, placeholders)
+                                    )
+                                }
+
+                            embedBuilders.add(embedBuilder)
+                        } else if(jsonElement.isJsonPrimitive) {
+                            buildCustomEmbed(jsonElement.asString, placeholders)?.let { embedBuilders.add(it) }
+                        }
+                    }
+            } else if(embedData.isJsonPrimitive) {
+                buildCustomEmbed(embedData.asString, placeholders)?.let { embedBuilders.add(it) }
+            }
+        } catch (_: JsonSyntaxException) {
+
+        }
+
+        return embedBuilders
+    }
+
+    suspend fun buildCustomEmbed(type: String, placeholders: TicketPlaceholders): EmbedBuilder? {
+        return when(type) {
+            "stats-overview" -> placeholders.ticketUserIgn?.let { ApplicationService.getPlayerDataEmbed(it, placeholders.ticketUserId) }
+            else -> null
+        }
+    }
+
+    fun replacePlaceholders(element: JsonElement, placeholders: TicketPlaceholders): JsonElement {
+        return when(element) {
+            is JsonObject -> {
+                val obj = JsonObject()
+                for ((key, value) in element.entrySet()) {
+                    obj.add(key, replacePlaceholders(value, placeholders))
+                }
+                obj
+            }
+            is JsonArray -> {
+                val array = JsonArray()
+                for (value in element) {
+                    array.add(replacePlaceholders(value, placeholders))
+                }
+                array
+            }
+            is JsonPrimitive -> {
+                if (element.isString) {
+                    JsonPrimitive(replacePlaceholders(element.asString, placeholders))
+                } else {
+                    element
+                }
+            }
+            else -> element
+        }
+    }
+
+    fun replacePlaceholders(string: String, placeholders: TicketPlaceholders): String {
+        val replacements = placeholders.replacements
+
+        val regex = "(\\{[^}]+})"
+        val usernameBuilder = StringBuilder()
+        val pattern = Pattern.compile(regex)
+        val matcher = pattern.matcher(string)
+
+        while (matcher.find()) {
+            val argument = matcher.group(1)
+
+            val repString = replacements[argument.substring(1, argument.length - 1)]?.invoke()
+            if (repString != null) {
+                matcher.appendReplacement(usernameBuilder, Matcher.quoteReplacement(repString))
+            }
+        }
+        matcher.appendTail(usernameBuilder)
+
+        return usernameBuilder.toString().trim()
+    }
+
+    fun getDefaultButtons(claimButton: Boolean): List<ActionRowBuilder.() -> Unit> {
+        return listOf<ActionRowBuilder.() -> Unit>({
+            interactionButton(ButtonStyle.Danger, "close-ticket") {
+                label = "Close"
+            }
+        }, {
+            interactionButton(ButtonStyle.Danger, "claim-ticket") {
+                label = "Claim"
+            }
+        }).take(if (claimButton) 2 else 1)
+    }
+
+    suspend fun sendInitialTicketMessage(ticketPanel: TicketPanelModel, ticketChannel: TextChannel, content: String, embeds: List<EmbedBuilder>, additionalButtons: List<ActionRowBuilder.() -> Unit>) {
+        val allButtons = getDefaultButtons(ticketPanel.claimable) + additionalButtons
+
+        ticketChannel.createMessage {
+            this.content = content
+            this.embeds = embeds.toMutableList()
+
+            allButtons.windowed(5, 5, true) { actionRowBuilders ->
+                actionRow {
+                    actionRowBuilders.forEach { actionRowBuilder -> actionRowBuilder() }
+                }
+            }
+        }
+    }
+
+    companion object {
+        const val DEFAULT_CONTENT = "Welcome, {user.mention}!\nPlease describe your {panel.name} request below further."
+    }
+}
