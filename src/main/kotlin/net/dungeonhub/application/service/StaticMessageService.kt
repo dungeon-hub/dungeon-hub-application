@@ -36,18 +36,13 @@ import net.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.application.misc.ScoreLeaderboard
 import net.dungeonhub.application.service.ApplicationService.embed
 import net.dungeonhub.application.service.ApplicationService.footer
-import net.dungeonhub.connection.CarryTypeConnection
-import net.dungeonhub.connection.DiscordServerConnection
-import net.dungeonhub.connection.ScoreConnection
-import net.dungeonhub.connection.StaticMessageConnection
+import net.dungeonhub.connection.*
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.StaticMessageType
 import net.dungeonhub.model.carry_type.CarryTypeModel
-import net.dungeonhub.model.discord_server.DiscordServerModel
 import net.dungeonhub.model.reputation.ReputationLeaderboardModel
 import net.dungeonhub.model.reputation.ReputationSumModel
 import net.dungeonhub.model.static_message.StaticMessageModel
-import net.dungeonhub.model.ticket_panel.TicketPanelModel
 import net.dungeonhub.service.GsonService
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -204,27 +199,9 @@ object StaticMessageService : StartupListener {
             }
 
             StaticMessageType.TicketPanel -> {
-                val ticketPanels = listOf(TicketPanelModel(
-                    1,
-                    "f4",
-                    "Floor 4: Thorn",
-                    "<:thorn:792055545204310046>",
-                    DiscordServerModel(1023684107877761196),
-                    true,
-                    true,
-                    true,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    false,
-                    listOf(),
-                    listOf(),
-                    listOf(),
-                    listOf(),
-                    emptyMap()
-                )) // TODO get from staticMessage.objectIds
+                val ticketPanels = staticMessage.objectIds.mapNotNull {
+                    TicketPanelConnection[staticMessage.server.id].authenticated().getById(it)
+                }
 
                 return {
                     for(panels in ticketPanels.windowed(5, 5, true)) {

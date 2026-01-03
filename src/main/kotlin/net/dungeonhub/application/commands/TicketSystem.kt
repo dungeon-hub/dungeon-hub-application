@@ -30,19 +30,17 @@ import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.connection.TicketConnection
+import net.dungeonhub.connection.TicketPanelConnection
 import net.dungeonhub.enums.TicketPermissionCandidate
 import net.dungeonhub.enums.TicketPermissionType
 import net.dungeonhub.enums.TicketState
-import net.dungeonhub.model.discord_channel.DiscordChannelModel
-import net.dungeonhub.model.discord_server.DiscordServerModel
-import net.dungeonhub.model.discord_user.DiscordUserModel
 import net.dungeonhub.model.ticket.TicketCreationModel
 import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.model.ticket_panel.TicketPanelModel
 import net.dungeonhub.service.GsonService
 import java.util.regex.Matcher
 import java.util.regex.Pattern
-import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class)
@@ -65,27 +63,9 @@ class TicketSystem : Extension() {
                 response.respond {
                     val panelId = event.interaction.componentId.removePrefix("create-ticket-")
 
-                    val ticketPanel = TicketPanelModel(
-                        1,
-                        "f4",
-                        "Floor 4: Thorn",
-                        "<:thorn:792055545204310046>",
-                        DiscordServerModel(1023684107877761196),
-                        true,
-                        true,
-                        true,
-                        "f4-{user}-{count}",
-                        null,
-                        null,
-                        null,
-                        "{\"content\":\"{user.mention} your ticket has been created, you will hear from one of our carriers soon. <@&1061116185132933240>\n\n- **Client IGN**: `{user.ign}`\",\"embeds\":\"stats-overview\",\"additional-buttons\":[\"skycrypt\"]}",
-                        true,
-                        listOf(),
-                        listOf(),
-                        listOf(),
-                        listOf(),
-                        emptyMap(),
-                    ) // TODO load from API
+                    val ticketPanel = panelId.toLongOrNull()?.let { TicketPanelConnection[event.interaction.guildId.value.toLong()].authenticated()
+                        .getById(it)
+                    }
 
                     if (ticketPanel == null) {
                         addEmbed {
@@ -111,6 +91,15 @@ class TicketSystem : Extension() {
                     // TODO check for ticket limit
 
                     val ticket = createTicketModel(ticketPanel, event.interaction.user)
+
+                    if(ticket == null) {
+                        addEmbed {
+                            description = "Couldn't create the ticket in the API."
+                            color(EmbedColor.Negative)
+                        }
+                        return@respond
+                    }
+
                     val ticketChannel = createTicketChannel(ticketPanel, ticket, event.interaction.user)
                     updateTicketChannel(ticket, ticketChannel)
 
@@ -165,25 +154,17 @@ class TicketSystem : Extension() {
         scheduler.cancel("Extension shutting down.")
     }
 
-    // TODO API request
-    fun createTicketModel(panel: TicketPanelModel, user: MemberBehavior): TicketModel {
+    fun createTicketModel(panel: TicketPanelModel, user: MemberBehavior): TicketModel? {
+        val connection = TicketConnection[user.guildId.value.toLong(), panel].authenticated()
+
         val creationModel = TicketCreationModel(
             TicketState.Creating,
             null,
-            panel.id,
             user.id.value.toLong(),
             null
         )
 
-        return TicketModel(
-            1,
-            TicketState.Creating,
-            null,
-            panel,
-            DiscordUserModel(user.id.value.toLong(), null),
-            null,
-            Clock.System.now()
-        ) // TODO load from API
+        return connection.addNewTicket(creationModel)
     }
 
     fun addOverwritePermissions(entries: Set<Map.Entry<TicketPermissionType, Permissions>>): PermissionOverwriteBuilder.() -> Unit = {
@@ -240,11 +221,11 @@ class TicketSystem : Extension() {
             } else {
                 ticketPanel.closedCategories
             }
-            getCategory(categories)?.let { parentId = Snowflake(it.id) }
+            getCategory(categories)?.let { parentId = Snowflake(it) }
         }
     }
 
-    fun getCategory(categories: List<DiscordChannelModel>): DiscordChannelModel? {
+    fun getCategory(categories: List<Long>): Long? {
         // TODO implement lookup for a category with enough space
         return categories.getOrNull(0)
     }
@@ -258,13 +239,14 @@ class TicketSystem : Extension() {
         return result
     }
 
-    fun updateTicketChannel(ticket: TicketModel, ticketChannel: TextChannel) {
+    fun updateTicketChannel(ticket: TicketModel, ticketChannel: TextChannel): TicketModel? {
+        val connection = TicketConnection[ticketChannel.guildId.value.toLong(), ticket.ticketPanel].authenticated()
+
         val updateModel = ticket.getUpdateModel()
         updateModel.channel = ticketChannel.id.value.toLong()
         updateModel.state = TicketState.Open
 
-        // TODO update ticket channel in API
-        // TODO update ticket state to open
+        return connection.updateTicket(ticket.id, updateModel)
     }
 
     suspend fun sendInitialTicketMessage(ticketPanel: TicketPanelModel, ticket: TicketModel, ticketChannel: TextChannel) {
@@ -293,8 +275,10 @@ class TicketSystem : Extension() {
     fun parseAdditionalButton(additionalButton: String, placeholders: TicketPlaceholders): (ActionRowBuilder.() -> Unit)? {
         return when(additionalButton) {
             "skycrypt" -> {{
-                linkButton("https://sky.shiiyu.moe/stats/${placeholders.ticketUserIgn}") {
-                    label = "SkyCrypt"
+                placeholders.ticketUserIgn?.let {
+                    linkButton("https://sky.shiiyu.moe/stats/$it") {
+                        label = "SkyCrypt"
+                    }
                 }
             }}
             else -> null
@@ -409,7 +393,7 @@ class TicketSystem : Extension() {
                 label = "Close"
             }
         }, {
-            interactionButton(ButtonStyle.Danger, "claim-ticket") {
+            interactionButton(ButtonStyle.Success, "claim-ticket") {
                 label = "Claim"
             }
         }).take(if (claimButton) 2 else 1)
