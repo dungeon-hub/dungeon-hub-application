@@ -61,7 +61,7 @@ dependencies {
     implementation(libs.hypixel.wrapper)
 
     //Functionality
-    implementation("net.dungeon-hub:transcripts-kord:0.2.1")
+    implementation("net.dungeon-hub:transcripts-kord:0.2.2")
     implementation("net.codebox:homoglyph:1.2.1")
     implementation("com.google.zxing:javase:3.5.2")
     implementation("com.google.guava:guava:33.0.0-jre")
