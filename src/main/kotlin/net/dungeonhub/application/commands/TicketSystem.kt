@@ -12,6 +12,7 @@ import dev.kord.core.entity.Member
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.rest.builder.channel.PermissionOverwriteBuilder
+import dev.kord.rest.builder.channel.PermissionOverwritesBuilder
 import dev.kord.rest.builder.channel.addMemberOverwrite
 import dev.kord.rest.builder.channel.addRoleOverwrite
 import dev.kord.rest.builder.component.ActionRowBuilder
@@ -47,7 +48,6 @@ import kotlin.time.ExperimentalTime
 @LoadExtension
 class TicketSystem : Extension() {
     override val name = "ticket-system"
-    private lateinit var scheduler: Scheduler
 
     override suspend fun setup() {
         scheduler = Scheduler()
@@ -63,8 +63,9 @@ class TicketSystem : Extension() {
                 response.respond {
                     val panelId = event.interaction.componentId.removePrefix("create-ticket-")
 
-                    val ticketPanel = panelId.toLongOrNull()?.let { TicketPanelConnection[event.interaction.guildId.value.toLong()].authenticated()
-                        .getById(it)
+                    val ticketPanel = panelId.toLongOrNull()?.let {
+                        TicketPanelConnection[event.interaction.guildId.value.toLong()].authenticated()
+                            .getById(it)
                     }
 
                     if (ticketPanel == null) {
@@ -79,7 +80,8 @@ class TicketSystem : Extension() {
                             .getLinkedById(event.interaction.user.id.value.toLong()) == null
                     ) {
                         addEmbed {
-                            description = "You're currently not linked, which this ticket panel requires.\nPlease link to your minecraft account using the buttons below.\nAfterwards, try opening a ticket again."
+                            description =
+                                "You're currently not linked, which this ticket panel requires.\nPlease link to your minecraft account using the buttons below.\nAfterwards, try opening a ticket again."
                             color(EmbedColor.Negative)
                         }
                         actionRow {
@@ -92,7 +94,7 @@ class TicketSystem : Extension() {
 
                     val ticket = createTicketModel(ticketPanel, event.interaction.user)
 
-                    if(ticket == null) {
+                    if (ticket == null) {
                         addEmbed {
                             description = "Couldn't create the ticket in the API."
                             color(EmbedColor.Negative)
@@ -110,23 +112,6 @@ class TicketSystem : Extension() {
 
                     scheduler.launch {
                         sendInitialTicketMessage(ticketPanel, ticket, ticketChannel)
-                    }
-                }
-            }
-        }
-
-        event<GuildButtonInteractionCreateEvent> {
-            check {
-                failIfNot(event.interaction.componentId.startsWith("close-ticket"))
-            }
-
-            action {
-                val response = event.interaction.deferEphemeralResponse()
-
-                // TODO implement
-                response.respond {
-                    addEmbed {
-                        description = "Imagine finishing implementing stuff"
                     }
                 }
             }
@@ -167,54 +152,12 @@ class TicketSystem : Extension() {
         return connection.addNewTicket(creationModel)
     }
 
-    fun addOverwritePermissions(entries: Set<Map.Entry<TicketPermissionType, Permissions>>): PermissionOverwriteBuilder.() -> Unit = {
-        for(permissionEntry in entries) {
-            when(permissionEntry.key) {
-                TicketPermissionType.Allowed -> allowed = permissionEntry.value
-                TicketPermissionType.Denied -> denied = permissionEntry.value
-            }
-        }
-    }
-
     suspend fun createTicketChannel(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member): TextChannel {
         val name = buildTicketName(ticketPanel, ticket, member)
 
-        return member.guild.createTextChannel(name) {
-            for(entry in ticketPanel.permissions.entries) {
-                when(entry.key) {
-                    TicketPermissionCandidate.SupportTeam -> {
-                        for(supportRole in ticketPanel.supportRoles) {
-                            addRoleOverwrite(Snowflake(supportRole.id)) {
-                                addOverwritePermissions(entry.value.entries)()
-                            }
-                        }
-                    }
-                    TicketPermissionCandidate.AdditionalRoles -> {
-                        for(additionalRole in ticketPanel.additionalRoles) {
-                            addRoleOverwrite(Snowflake(additionalRole.id)) {
-                                addOverwritePermissions(entry.value.entries)()
-                            }
-                        }
-                    }
-                    TicketPermissionCandidate.TicketCreator -> {
-                        addMemberOverwrite(Snowflake(ticket.user.id)) {
-                            addOverwritePermissions(entry.value.entries)()
-                        }
-                    }
-                    TicketPermissionCandidate.TicketClaimer -> {
-                        if(ticket.claimer != null) {
-                            addMemberOverwrite(Snowflake(ticket.claimer!!.id)) {
-                                addOverwritePermissions(entry.value.entries)()
-                            }
-                        }
-                    }
-                    TicketPermissionCandidate.Everyone -> {
-                        addRoleOverwrite(Snowflake(ticketPanel.discordServer.id)) {
-                            addOverwritePermissions(entry.value.entries)()
-                        }
-                    }
-                }
-            }
+        return member.guild.createTextChannel(name ?: ticketPanel.name) {
+            permissionOverwrites.clear()
+            updateTicketPermissions(ticketPanel, ticket)
 
             val categories = if (ticket.state in listOf(TicketState.Creating, TicketState.Open)) {
                 ticketPanel.openCategories
@@ -223,20 +166,6 @@ class TicketSystem : Extension() {
             }
             getCategory(categories)?.let { parentId = Snowflake(it) }
         }
-    }
-
-    fun getCategory(categories: List<Long>): Long? {
-        // TODO implement lookup for a category with enough space
-        return categories.getOrNull(0)
-    }
-
-    fun buildTicketName(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member): String {
-        var result = (ticketPanel.openChannelName ?: ticketPanel.name)
-
-        result = result.replace("{count}", "${ticket.id}")
-        result = result.replace("{user}", member.effectiveName)
-
-        return result
     }
 
     fun updateTicketChannel(ticket: TicketModel, ticketChannel: TextChannel): TicketModel? {
@@ -249,7 +178,11 @@ class TicketSystem : Extension() {
         return connection.updateTicket(ticket.id, updateModel)
     }
 
-    suspend fun sendInitialTicketMessage(ticketPanel: TicketPanelModel, ticket: TicketModel, ticketChannel: TextChannel) {
+    suspend fun sendInitialTicketMessage(
+        ticketPanel: TicketPanelModel,
+        ticket: TicketModel,
+        ticketChannel: TextChannel
+    ) {
         var content: String
         var embeds = mutableListOf<EmbedBuilder>()
         var additionalButtons: List<(ActionRowBuilder.() -> Unit)?>
@@ -265,22 +198,36 @@ class TicketSystem : Extension() {
 
         val placeholders = TicketPlaceholders(ticketPanel, ticket)
 
-        content = replacePlaceholders(messageJson?.get("content")?.asString ?: DEFAULT_CONTENT, placeholders) // TODO maybe rethink this at some point - what if the user actually doesn't want any content being sent? --> maybe option in the ticket panel
+        content = replacePlaceholders(
+            messageJson?.get("content")?.asString ?: DEFAULT_CONTENT,
+            placeholders
+        ) // TODO maybe rethink this at some point - what if the user actually doesn't want any content being sent? --> maybe option in the ticket panel
         messageJson?.get("embeds")?.let { embeds = parseEmbeds(it, placeholders) }
-        additionalButtons = messageJson?.get("additional-buttons")?.asJsonArray?.map { parseAdditionalButton(it.asString, placeholders) } ?: emptyList()
+        additionalButtons = messageJson?.get("additional-buttons")?.asJsonArray?.map {
+            parseAdditionalButton(
+                it.asString,
+                placeholders
+            )
+        } ?: emptyList()
 
         sendInitialTicketMessage(ticketPanel, ticketChannel, content, embeds, additionalButtons.filterNotNull())
     }
 
-    fun parseAdditionalButton(additionalButton: String, placeholders: TicketPlaceholders): (ActionRowBuilder.() -> Unit)? {
-        return when(additionalButton) {
-            "skycrypt" -> {{
-                placeholders.ticketUserIgn?.let {
-                    linkButton("https://sky.shiiyu.moe/stats/$it") {
-                        label = "SkyCrypt"
+    fun parseAdditionalButton(
+        additionalButton: String,
+        placeholders: TicketPlaceholders
+    ): (ActionRowBuilder.() -> Unit)? {
+        return when (additionalButton) {
+            "skycrypt" -> {
+                {
+                    placeholders.ticketUserIgn?.let {
+                        linkButton("https://sky.shiiyu.moe/stats/$it") {
+                            label = "SkyCrypt"
+                        }
                     }
                 }
-            }}
+            }
+
             else -> null
         }
     }
@@ -318,11 +265,11 @@ class TicketSystem : Extension() {
                                 }
 
                             embedBuilders.add(embedBuilder)
-                        } else if(jsonElement.isJsonPrimitive) {
+                        } else if (jsonElement.isJsonPrimitive) {
                             buildCustomEmbed(jsonElement.asString, placeholders)?.let { embedBuilders.add(it) }
                         }
                     }
-            } else if(embedData.isJsonPrimitive) {
+            } else if (embedData.isJsonPrimitive) {
                 buildCustomEmbed(embedData.asString, placeholders)?.let { embedBuilders.add(it) }
             }
         } catch (_: JsonSyntaxException) {
@@ -333,14 +280,20 @@ class TicketSystem : Extension() {
     }
 
     suspend fun buildCustomEmbed(type: String, placeholders: TicketPlaceholders): EmbedBuilder? {
-        return when(type) {
-            "stats-overview" -> placeholders.ticketUserIgn?.let { ApplicationService.getPlayerDataEmbed(it, placeholders.ticketUserId) }
+        return when (type) {
+            "stats-overview" -> placeholders.ticketUserIgn?.let {
+                ApplicationService.getPlayerDataEmbed(
+                    it,
+                    placeholders.ticketUserId
+                )
+            }
+
             else -> null
         }
     }
 
     fun replacePlaceholders(element: JsonElement, placeholders: TicketPlaceholders): JsonElement {
-        return when(element) {
+        return when (element) {
             is JsonObject -> {
                 val obj = JsonObject()
                 for ((key, value) in element.entrySet()) {
@@ -348,6 +301,7 @@ class TicketSystem : Extension() {
                 }
                 obj
             }
+
             is JsonArray -> {
                 val array = JsonArray()
                 for (value in element) {
@@ -355,6 +309,7 @@ class TicketSystem : Extension() {
                 }
                 array
             }
+
             is JsonPrimitive -> {
                 if (element.isString) {
                     JsonPrimitive(replacePlaceholders(element.asString, placeholders))
@@ -362,6 +317,7 @@ class TicketSystem : Extension() {
                     element
                 }
             }
+
             else -> element
         }
     }
@@ -399,7 +355,13 @@ class TicketSystem : Extension() {
         }).take(if (claimButton) 2 else 1)
     }
 
-    suspend fun sendInitialTicketMessage(ticketPanel: TicketPanelModel, ticketChannel: TextChannel, content: String, embeds: List<EmbedBuilder>, additionalButtons: List<ActionRowBuilder.() -> Unit>) {
+    suspend fun sendInitialTicketMessage(
+        ticketPanel: TicketPanelModel,
+        ticketChannel: TextChannel,
+        content: String,
+        embeds: List<EmbedBuilder>,
+        additionalButtons: List<ActionRowBuilder.() -> Unit>
+    ) {
         val allButtons = getDefaultButtons(ticketPanel.claimable) + additionalButtons
 
         ticketChannel.createMessage {
@@ -415,6 +377,104 @@ class TicketSystem : Extension() {
     }
 
     companion object {
+        lateinit var scheduler: Scheduler
         const val DEFAULT_CONTENT = "Welcome, {user.mention}!\nPlease describe your {panel.name} request below further."
+
+        fun getControlButtons(): List<ActionRowBuilder.() -> Unit> {
+            return listOf({
+                interactionButton(ButtonStyle.Secondary, "transcript-ticket") {
+                    label = "Transcript"
+                }
+            }, {
+                interactionButton(ButtonStyle.Success, "open-ticket") {
+                    label = "Open"
+                }
+            }, {
+                interactionButton(ButtonStyle.Danger, "delete-ticket") {
+                    label = "Delete"
+                }
+            })
+        }
+
+        // TODO support full placeholders?
+        fun buildTicketName(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member): String? {
+            var result = if (ticket.state == TicketState.Open && ticket.claimer != null) {
+                ticketPanel.claimedChannelName
+            } else {
+                when (ticket.state) {
+                    TicketState.Creating, TicketState.Open -> ticketPanel.openChannelName
+                    TicketState.Closed, TicketState.Deleted -> ticketPanel.closedChannelName
+                }
+            }
+
+            result = result?.replace("{count}", "${ticket.id}")
+            result = result?.replace(
+                "{user}",
+                member.effectiveName
+            ) // TODO currently, member is just the user that interacted with the ticket. this can be someone else in case of claiming/unclaiming tho
+
+            return result
+        }
+
+        // TODO is this method correct so far?
+        fun PermissionOverwritesBuilder.updateTicketPermissions(ticketPanel: TicketPanelModel, ticket: TicketModel) {
+            for (entry in ticketPanel.permissions.entries) {
+                when (entry.key) {
+                    TicketPermissionCandidate.SupportTeam -> {
+                        for (supportRole in ticketPanel.supportRoles) {
+                            if (ticket.claimer == null) {
+                                addRoleOverwrite(Snowflake(supportRole.id)) {
+                                    addOverwritePermissions(entry.value.entries)
+                                }
+                            }
+                        }
+                    }
+
+                    TicketPermissionCandidate.AdditionalRoles -> {
+                        for (additionalRole in ticketPanel.additionalRoles) {
+                            addRoleOverwrite(Snowflake(additionalRole.id)) {
+                                addOverwritePermissions(entry.value.entries)
+                            }
+                        }
+                    }
+
+                    TicketPermissionCandidate.TicketCreator -> {
+                        if (ticket.state != TicketState.Closed) { // TODO add a config for this
+                            addMemberOverwrite(Snowflake(ticket.user.id)) {
+                                addOverwritePermissions(entry.value.entries)
+                            }
+                        }
+                    }
+
+                    TicketPermissionCandidate.TicketClaimer -> {
+                        if (ticket.claimer != null) {
+                            addMemberOverwrite(Snowflake(ticket.claimer!!.id)) {
+                                addOverwritePermissions(entry.value.entries)
+                            }
+                        }
+                    }
+
+                    TicketPermissionCandidate.Everyone -> {
+                        addRoleOverwrite(Snowflake(ticketPanel.discordServer.id)) {
+                            addOverwritePermissions(entry.value.entries)
+                        }
+                    }
+                }
+            }
+        }
+
+        fun PermissionOverwriteBuilder.addOverwritePermissions(entries: Set<Map.Entry<TicketPermissionType, Permissions>>) {
+            for (permissionEntry in entries) {
+                when (permissionEntry.key) {
+                    TicketPermissionType.Allowed -> allowed = permissionEntry.value
+                    TicketPermissionType.Denied -> denied = permissionEntry.value
+                }
+            }
+        }
+
+        fun getCategory(categories: List<Long>): Long? {
+            // TODO implement lookup for a category with enough space
+            return categories.getOrNull(0)
+        }
     }
 }
