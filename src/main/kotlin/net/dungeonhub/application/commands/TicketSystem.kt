@@ -118,23 +118,6 @@ class TicketSystem : Extension() {
                 }
             }
         }
-
-        event<GuildButtonInteractionCreateEvent> {
-            check {
-                failIfNot(event.interaction.componentId == "claim-ticket")
-            }
-
-            action {
-                val response = event.interaction.deferEphemeralResponse()
-
-                // TODO implement
-                response.respond {
-                    addEmbed {
-                        description = "Imagine finishing implementing stuff: Electric Boogaloo"
-                    }
-                }
-            }
-        }
     }
 
     override suspend fun unload() {
@@ -398,6 +381,14 @@ class TicketSystem : Extension() {
             })
         }
 
+        fun getClaimedButtons(): List<ActionRowBuilder.() -> Unit> {
+            return listOf({
+                interactionButton(ButtonStyle.Secondary, "claim-ticket") {
+                    label = "Unclaim"
+                }
+            })
+        }
+
         // TODO support full placeholders?
         fun buildTicketName(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member): String? {
             var result = if (ticket.state == TicketState.Open && ticket.claimer != null) {
@@ -491,6 +482,25 @@ class TicketSystem : Extension() {
 
             // TODO here, we assume that the ticket creator is allowed to close the ticket - that should be a setting
             return ticket.user.id == id.value.toLong()
+        }
+
+        // TODO check
+        suspend fun Member.isAllowedToClaim(ticket: TicketModel): Boolean {
+            if (hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)) return true
+
+            if (ticket.ticketPanel.supportRoles.any { roleIds.contains(Snowflake(it.id)) }
+                || ticket.ticketPanel.additionalRoles.any { roleIds.contains(Snowflake(it.id)) }) {
+                return true
+            }
+
+            return false
+        }
+
+        // TODO check
+        suspend fun Member.isAllowedToUnclaim(ticket: TicketModel): Boolean {
+            if (hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)) return true
+
+            return ticket.claimer?.id == id.value.toLong()
         }
     }
 }
