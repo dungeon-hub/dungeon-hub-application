@@ -2,6 +2,7 @@ package net.dungeonhub.application.commands
 
 import com.google.gson.*
 import dev.kord.common.entity.ButtonStyle
+import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.MemberBehavior
@@ -20,6 +21,7 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
+import dev.kordex.core.utils.hasPermission
 import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -119,7 +121,7 @@ class TicketSystem : Extension() {
 
         event<GuildButtonInteractionCreateEvent> {
             check {
-                failIfNot(event.interaction.componentId.startsWith("claim-ticket"))
+                failIfNot(event.interaction.componentId == "claim-ticket")
             }
 
             action {
@@ -475,6 +477,20 @@ class TicketSystem : Extension() {
         fun getCategory(categories: List<Long>): Long? {
             // TODO implement lookup for a category with enough space
             return categories.getOrNull(0)
+        }
+
+        // TODO this was initially just for closing the ticket - does that also count for reopening the ticket etc?
+        // TODO is there any other situation in which some user might be allowed / disallowed to close a ticket?
+        suspend fun Member.isAllowedToChangeState(ticket: TicketModel): Boolean {
+            if (hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)) return true
+
+            if (ticket.ticketPanel.supportRoles.any { roleIds.contains(Snowflake(it.id)) }
+                || ticket.ticketPanel.additionalRoles.any { roleIds.contains(Snowflake(it.id)) }) {
+                return true
+            }
+
+            // TODO here, we assume that the ticket creator is allowed to close the ticket - that should be a setting
+            return ticket.user.id == id.value.toLong()
         }
     }
 }

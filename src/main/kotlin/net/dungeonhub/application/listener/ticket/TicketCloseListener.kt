@@ -1,7 +1,6 @@
 package net.dungeonhub.application.listener.ticket
 
 import dev.kord.common.entity.ButtonStyle
-import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.channel.asChannelOf
@@ -9,7 +8,6 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.edit
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.response.respond
-import dev.kord.core.entity.Member
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -19,10 +17,10 @@ import dev.kordex.core.components.ephemeralButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.utils.dm
-import dev.kordex.core.utils.hasPermission
 import dev.kordex.i18n.toKey
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.commands.TicketSystem
+import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedToChangeState
 import net.dungeonhub.application.commands.TicketSystem.Companion.updateTicketPermissions
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.LoadExtension
@@ -72,7 +70,7 @@ class TicketCloseListener : Extension() {
                     return@action
                 }
 
-                if(!isAllowedToClose(event.interaction.user, ticket)) {
+                if(!event.interaction.user.isAllowedToChangeState(ticket)) {
                     response.respond {
                         addEmbed {
                             description = "You're not allowed to close this ticket!"
@@ -150,19 +148,6 @@ class TicketCloseListener : Extension() {
         }
     }
 
-    // TODO is there any other situation in which some user might be allowed / disallowed to close a ticket?
-    suspend fun isAllowedToClose(user: Member, ticket: TicketModel): Boolean {
-        if (user.hasPermission(Permission.Administrator) || user.hasPermission(Permission.ManageChannels)) return true
-
-        if (ticket.ticketPanel.supportRoles.any { user.roleIds.contains(Snowflake(it.id)) }
-            || ticket.ticketPanel.additionalRoles.any { user.roleIds.contains(Snowflake(it.id)) }) {
-            return true
-        }
-
-        // TODO here, we assume that the ticket creator is allowed to close the ticket - that should be a setting
-        return ticket.user.id == user.id.value.toLong()
-    }
-
     fun closeTicket(member: MemberBehavior, textChannel: TextChannel, ticket: TicketModel): EmbedBuilder {
         TicketSystem.scheduler.launch {
             val updateModel = ticket.getUpdateModel()
@@ -222,6 +207,7 @@ class TicketCloseListener : Extension() {
                 if(url != null) {
                     kord.getUser(Snowflake(updatedTicket.user.id))?.let { user ->
                         user.dm {
+                            // TODO improve embed
                             embeds = mutableListOf(buildEmbed {
                                 field("Panel", true) { updatedTicket.ticketPanel.displayName ?: updatedTicket.ticketPanel.name }
                                 field("Ticket Name", true) { textChannel.name }
