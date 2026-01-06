@@ -92,8 +92,7 @@ class MessageListener : Extension() {
 
                     logTicket(event)
 
-                    // temporarily disabled, will be included in our own tickets lol
-                    // loadSkycryptFromTicket(event)
+                    loadSkycryptFromTicket(event)
                 }
             }
         }
@@ -378,7 +377,7 @@ class MessageListener : Extension() {
 
         val categoryId = event.message.channel.asChannelOfOrNull<CategorizableChannel>()?.categoryId?.value?.toLong()
 
-        if (categoryId != null && !listOf(
+        if (categoryId == null || !listOf(
                 796769131880906782,
                 1172688079262330900,
                 1168970186666283148,
@@ -418,7 +417,7 @@ class MessageListener : Extension() {
             ?.let { MojangConnection.getNameByUUID(it) }
             ?: return
 
-        val carryTier = categoryId?.let { DiscordServerConnection.authenticated().getCarryTierFromCategory(event.guildId!!.value.toLong(), it) }
+        val carryTier = DiscordServerConnection.authenticated().getCarryTierFromCategory(event.guildId!!.value.toLong(), categoryId)
 
         val priceEmbed = carryTier?.let { MessagesService.getPriceEmbed(it) }
 
