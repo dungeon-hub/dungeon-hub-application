@@ -450,10 +450,6 @@ fun Field.toModel(): EmbedModel.Field {
     return EmbedModel.Field(name, inline, value)
 }
 
-fun User.isSelf(): Boolean {
-    return id == kord.selfId
-}
-
 suspend fun RestEntitySupplier.getGuildOrNull(id: Snowflake, withCounts: Boolean = false): Guild? {
     return try {
         Guild(kord.rest.guild.getGuild(id, withCounts).toData(), kord)

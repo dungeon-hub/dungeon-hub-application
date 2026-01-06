@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.DiscordConnection
-import net.dungeonhub.application.connection.isSelf
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
@@ -163,7 +162,7 @@ object MessagesService : StartupListener {
             return
         }
 
-        val message = textChannel.messages.firstOrNull { it.author?.isSelf() == true }
+        val message = textChannel.messages.firstOrNull { it.author?.isSelf == true }
 
         if (message == null) {
             textChannel.createMessage { this@createMessage.embeds = embeds.toMutableList() }
