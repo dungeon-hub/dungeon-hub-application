@@ -131,7 +131,7 @@ class MessageListener : Extension() {
             }.orElse(false)) {
             val attachments = message.attachments
 
-            if (attachments.size != 1) {
+            if (message.author?.isSelf == true || attachments.size != 1) {
                 return
             }
 
