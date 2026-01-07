@@ -84,6 +84,7 @@ class CarryTierCommand : Extension() {
                         val creationModel = CarryTierCreationModel(
                             identifier = identifier,
                             displayName = arguments.displayName,
+                            relatedTicketPanel = null, // TODO set
                             category = arguments.category!!.id.value.toLong(),
                             priceChannel = arguments.priceChannel!!.id.value.toLong(),
                             descriptiveName = arguments.descriptiveName,
