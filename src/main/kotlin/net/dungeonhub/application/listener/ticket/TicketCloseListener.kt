@@ -118,7 +118,7 @@ class TicketCloseListener : Extension() {
                                     }
 
                                     if(updatedTicket.state == TicketState.Closed || updatedTicket.state == TicketState.Deleted) {
-                                        response.respond {
+                                        respond {
                                             addEmbed {
                                                 description = "This ticket is already closed!"
                                                 color(EmbedColor.Negative)

@@ -1,7 +1,6 @@
 package net.dungeonhub.application.listener.ticket
 
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
@@ -17,6 +16,7 @@ import kotlinx.coroutines.launch
 import net.dungeonhub.application.commands.TicketSystem
 import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedToChangeState
 import net.dungeonhub.application.enums.EmbedColor
+import net.dungeonhub.application.event.TicketTranscriptCreatedEvent
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.buildEmbed
@@ -77,7 +77,7 @@ class TicketDeleteListener : Extension() {
                     return@action
                 }
 
-                val updatedTicket = updateTicketState(ticket, member)
+                val updatedTicket = updateTicketState(ticket)
 
                 if(updatedTicket == null) {
                     response.respond {
@@ -115,6 +115,10 @@ class TicketDeleteListener : Extension() {
                         }
 
                         if(url != null) {
+                            TicketSystem.scheduler.launch {
+                                bot.send(TicketTranscriptCreatedEvent(updatedTicket, url))
+                            }
+
                             ticket.ticketPanel.transcriptChannel?.let { transcriptChannel ->
                                 event.interaction.guild.getChannelOf<GuildMessageChannel>(Snowflake(transcriptChannel.id))
                             }?.let { transcriptChannel ->
@@ -167,7 +171,7 @@ class TicketDeleteListener : Extension() {
         }
     }
 
-    fun updateTicketState(ticket: TicketModel, member: MemberBehavior?): TicketModel? {
+    fun updateTicketState(ticket: TicketModel): TicketModel? {
         val updateModel = ticket.getUpdateModel()
         updateModel.state = TicketState.Deleted
         return TicketConnection[ticket.ticketPanel.discordServer, ticket.ticketPanel].authenticated().updateTicket(ticket.id, updateModel)

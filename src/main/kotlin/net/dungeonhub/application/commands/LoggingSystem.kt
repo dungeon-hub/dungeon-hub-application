@@ -45,8 +45,10 @@ import net.dungeonhub.i18n.Translations.Command.Log
 import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.carry_queue.CarryQueueCreationModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
+import net.dungeonhub.model.carry_tier.CarryTierModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.score.ScoreModel
+import net.dungeonhub.model.ticket.TicketModel
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import kotlin.time.ExperimentalTime
@@ -65,14 +67,17 @@ class LoggingSystem : Extension() {
 
             action {
                 respond {
-                    val carryTier = channel.asChannelOfOrNull<CategorizableChannel>()
-                        ?.categoryId
-                        ?.let { categoryId ->
-                            DiscordServerConnection.authenticated().getCarryTierFromCategory(
-                                guild!!.id.value.toLong(),
-                                categoryId.value.toLong()
-                            )
-                        }
+                    val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = channel.id.value.toLong())?.firstOrNull()
+
+                    val carryTier = ticket?.let { getCarryTierFromTicket(guild!!.id.value.toLong(), it) }
+                        ?: channel.asChannelOfOrNull<CategorizableChannel>()
+                            ?.categoryId
+                            ?.let { categoryId ->
+                                DiscordServerConnection.authenticated().getCarryTierFromCategory(
+                                    guild!!.id.value.toLong(),
+                                    categoryId.value.toLong()
+                                )
+                            }
 
                     if (carryTier == null) {
                         throw CommandExecutionException("Please use this in a carry-ticket. If this is one, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) to setup the bot correctly!")
@@ -157,38 +162,43 @@ class LoggingSystem : Extension() {
                         return@respond
                     }
 
-                    val interactionId = event.interaction.id
-                    val messageCount = channel.getMessagesBefore(interactionId, null).count()
+                    val carried = if(ticket != null) {
+                        ticket.user.id
+                    } else {
+                        val interactionId = event.interaction.id
+                        val messageCount = channel.getMessagesBefore(interactionId, null).count()
 
-                    val firstMessage = try {
-                        channel.withStrategy(EntitySupplyStrategy.cachingRest)
-                            .getMessagesBefore(event.interaction.id, null)
-                            .takeWhile { true }
-                            .reduce { message1, message2 -> if (message1.timestamp < message2.timestamp) message1 else message2 }
-                    } catch (_: ArrayIndexOutOfBoundsException) {
-                        null
-                    } catch (_: NoSuchElementException) {
-                        null
-                    }
-
-                    if (firstMessage == null || try {
-                            firstMessage.mentionedUsers.count() != 1
+                        val firstMessage = try {
+                            channel.withStrategy(EntitySupplyStrategy.cachingRest)
+                                .getMessagesBefore(event.interaction.id, null)
+                                .takeWhile { true }
+                                .reduce { message1, message2 -> if (message1.timestamp < message2.timestamp) message1 else message2 }
                         } catch (_: ArrayIndexOutOfBoundsException) {
-                            false
+                            null
+                        } catch (_: NoSuchElementException) {
+                            null
                         }
-                    ) {
-                        logger.error("Couldn't load bot message, I only found the message '${firstMessage?.content}' by ${firstMessage?.author?.id} when searching through $messageCount messages that were sent before $interactionId.")
-                        throw CommandExecutionException("Couldn't retrieve bot message, so this ticket can't be logged - please retry this.\nIf you still have issues, please report this.")
+
+                        if (firstMessage == null || try {
+                                firstMessage.mentionedUsers.count() != 1
+                            } catch (_: ArrayIndexOutOfBoundsException) {
+                                false
+                            }
+                        ) {
+                            logger.error("Couldn't load bot message, I only found the message '${firstMessage?.content}' by ${firstMessage?.author?.id} when searching through $messageCount messages that were sent before $interactionId.")
+                            throw CommandExecutionException("Couldn't retrieve bot message, so this ticket can't be logged - please retry this.\nIf you still have issues, please report this.")
+                        }
+
+                        firstMessage.mentionedUsers.first().id.value.toLong()
                     }
 
                     val time = Instant.now()
-                    val carried = firstMessage.mentionedUsers.first()
 
                     val creationModel = CarryQueueCreationModel(
                         queueStep = QueueStep.Confirmation,
                         time = time,
                         amount = arguments.carryAmount,
-                        player = carried.id.value.toLong(),
+                        player = carried,
                         carrier = user.id.value.toLong(),
                         relationId = channel.id.value.toLong()
                     )
@@ -229,6 +239,13 @@ class LoggingSystem : Extension() {
                     "deny" -> deny(event)
                 }
             }
+        }
+    }
+
+    fun getCarryTierFromTicket(guildId: Long, ticket: TicketModel): CarryTierModel? {
+        // TODO dedicated endpoint
+        return DiscordServerConnection.authenticated().getAllCarryTiers(guildId)?.firstOrNull { carryTier ->
+            carryTier.relatedTicketPanel == ticket.ticketPanel
         }
     }
 

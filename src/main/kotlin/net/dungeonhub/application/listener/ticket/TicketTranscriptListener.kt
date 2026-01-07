@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import net.dungeonhub.application.commands.TicketSystem
 import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedToChangeState
 import net.dungeonhub.application.enums.EmbedColor
+import net.dungeonhub.application.event.TicketTranscriptCreatedEvent
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.buildEmbed
@@ -76,6 +77,10 @@ class TicketTranscriptListener : Extension() {
                     }
 
                     if(url != null) {
+                        TicketSystem.scheduler.launch {
+                            bot.send(TicketTranscriptCreatedEvent(ticket, url))
+                        }
+
                         ticket.ticketPanel.transcriptChannel?.let { transcriptChannel ->
                             event.interaction.guild.getChannelOf<GuildMessageChannel>(Snowflake(transcriptChannel.id))
                         }?.let { transcriptChannel ->

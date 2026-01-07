@@ -37,6 +37,7 @@ import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
+import net.dungeonhub.application.event.TicketTranscriptCreatedEvent
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.exceptions.PlayerNotFoundWarning
@@ -52,6 +53,7 @@ import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.model.carry_queue.CarryQueueModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.score.ScoreModel
+import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.mojang.connection.MojangConnection
 import net.dungeonhub.service.MoshiService
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -103,6 +105,150 @@ class MessageListener : Extension() {
                     logTicket(event)
                 }
             }
+        }
+
+        event<TicketTranscriptCreatedEvent> {
+            action {
+                scheduler.launch {
+                    logDungeonHubTicket(event.ticket, event.transcriptUrl)
+                }
+            }
+        }
+    }
+
+    suspend fun logDungeonHubTicket(ticket: TicketModel, transcriptUrl: String) {
+        val server = kord.getGuildOrNull(Snowflake(ticket.ticketPanel.discordServer.id)) ?: return
+
+        val approvingChannel = ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.id.value.toLong())
+            .orElse(null)
+            ?.let { DiscordConnection.bot?.kordRef?.getChannelOf<TextChannel>(Snowflake(it)) }
+
+        val carryTypes: MutableList<CarryTypeModel> = mutableListOf()
+
+        mutex.withLock {
+            for (queueModel in (QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Transcript)
+                ?: HashSet())
+                .filter { carryQueueModel ->
+                    ticket.channel?.id == carryQueueModel.relationId
+                }) {
+                val firstUpdateModel = queueModel.getUpdateModel()
+                firstUpdateModel.attachmentLink = transcriptUrl
+
+                val updatedModel =
+                    QueueConnection.authenticated().updateQueue(queueModel.id, firstUpdateModel) ?: queueModel
+
+                if ((updatedModel.amount >= APPROVE_AMOUNT_THRESHOLD
+                            || updatedModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
+                    && approvingChannel != null
+                ) {
+                    val createdMessage = approvingChannel.createMessage {
+                        val embed = ApplicationService.loadEmbedFromCarryQueue(updatedModel)
+                        embed.title = "Accept carry-log?"
+                        embed.color = EmbedColor.Default.color
+
+                        embeds = mutableListOf(embed)
+
+                        actionRow {
+                            interactionButton(ButtonStyle.Success, "accept_log") {
+                                label = "Accept"
+                            }
+
+                            interactionButton(ButtonStyle.Danger, "deny") {
+                                label = "Deny"
+                            }
+                        }
+                    }
+
+                    scheduler.launch {
+                        DiscordConnection.bot?.kordRef
+                            ?.getUser(Snowflake(updatedModel.carrier.id))
+                            ?.dm {
+                                val embed = ApplicationService.embed
+                                embed.color(EmbedColor.Information)
+                                embed.title = "Approval needed"
+                                embed.description =
+                                    "Due to the high number of score (${updatedModel.calculateScore()}) or carries (${updatedModel.amount}), your ${updatedModel.carryTier.displayName} - ${updatedModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
+                                            "You will be notified here once it was approved or denied."
+
+                                embeds = mutableListOf(embed)
+                            }
+                    }
+
+                    val secondUpdateModel = updatedModel.getUpdateModel()
+
+                    secondUpdateModel.queueStep = QueueStep.Approving
+                    secondUpdateModel.relationId = createdMessage.id.value.toLong()
+
+                    QueueConnection.authenticated().updateQueue(updatedModel.id, secondUpdateModel)
+                } else {
+                    val updatedScore = QueueConnection.authenticated().logQueue(updatedModel.id, firstUpdateModel)
+                        ?.scoreModels
+                        ?.firstOrNull { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
+                        ?.scoreAmount
+                        ?: (ScoreConnection[updatedModel.carryType].authenticated()
+                            .getScore(updatedModel.carrier.id)?.scoreAmount ?: 0)
+
+                    val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(updatedModel.carrier.id))
+
+                    if (carrier != null) {
+                        carrier.dm {
+                            this.content = "Your carry was logged!\n\n" +
+                                    "**Your Updated Score:** $updatedScore"
+
+                            val embed = ApplicationService.loadEmbedFromCarryQueue(updatedModel)
+                            embed.title = "Information"
+                            embed.color = EmbedColor.Default.color
+
+                            embeds = mutableListOf(embed)
+                        }
+
+                        val logChannel = updatedModel.carryTier
+                            .carryType
+                            .logChannel
+                            ?.let { id: Long ->
+                                server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
+                            }
+
+                        if (logChannel != null) {
+                            logger.debug(
+                                "Carry logged: {}",
+                                MoshiService.moshi.adapter(CarryQueueModel::class.java).toJson(updatedModel)
+                            )
+
+                            logChannel.createMessage {
+                                val embed = ApplicationService.getEmbed(
+                                    updatedModel.time?.toKotlinInstant() ?: Clock.System.now()
+                                )
+                                embed.title = "Carry accepted."
+                                embed.color = EmbedColor.Positive.color
+                                embed.field("Number of carries", true) { updatedModel.amount.toString() }
+                                embed.field("Type of carry", true) {
+                                    "${updatedModel.carryTier.displayName} - ${updatedModel.carryDifficulty.displayName}"
+                                }
+                                embed.field("Player", true) {
+                                    "<@${updatedModel.player.id}>"
+                                }
+                                embed.field("Carrier", true) {
+                                    "<@${updatedModel.carrier.id}>"
+                                }
+                                embed.field("Transcript-Link", true) {
+                                    "[Click to open](${updatedModel.attachmentLink})"
+                                }
+
+                                embeds = mutableListOf(embed)
+                            }
+                        }
+
+                        QueueConnection.authenticated().deleteQueue(updatedModel.id)
+
+                        carryTypes.add(updatedModel.carryType)
+                    }
+                }
+            }
+        }
+
+        scheduler.launch {
+            StaticMessageService.updateScoreLeaderboard(carryTypes.distinctBy { it.id })
         }
     }
 
