@@ -363,7 +363,7 @@ object RolesService {
 
                 leaderboard?.playerPosition?.let {
                     roleRequirement.compare(
-                        it
+                        it + 1
                     )
                 } ?: false
             }
