@@ -361,7 +361,7 @@ object RolesService {
                     )
                 }
 
-                leaderboard?.playerPosition?.let {
+                leaderboard?.playerPosition?.takeIf { it != -1 }?.let {
                     roleRequirement.compare(
                         it + 1
                     )
