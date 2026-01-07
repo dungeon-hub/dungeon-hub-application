@@ -374,9 +374,9 @@ object RolesService {
                     userId = discordUser.id
                 )
 
-                leaderboard?.playerPosition?.let {
+                leaderboard?.playerPosition?.takeIf { it != -1 }?.let {
                     roleRequirement.compare(
-                        it
+                        it + 1
                     )
                 } ?: false
             }
