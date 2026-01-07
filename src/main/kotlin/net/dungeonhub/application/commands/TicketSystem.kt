@@ -46,6 +46,7 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 import kotlin.time.ExperimentalTime
 
+// TODO command: /ticket escalate --> this should move the ticket to a different panel and then update the ticket status
 @OptIn(ExperimentalTime::class)
 @LoadExtension
 class TicketSystem : Extension() {
@@ -203,12 +204,19 @@ class TicketSystem : Extension() {
         placeholders: TicketPlaceholders
     ): (ActionRowBuilder.() -> Unit)? {
         return when (additionalButton) {
-            "skycrypt" -> {
+            "user.skycrypt" -> {
                 {
                     placeholders.ticketUserIgn?.let {
                         linkButton("https://sky.shiiyu.moe/stats/$it") {
                             label = "SkyCrypt"
                         }
+                    }
+                }
+            }
+            "user.status" -> {
+                {
+                    interactionButton(ButtonStyle.Secondary, "ticket-user-status") {
+                        label = "User Status"
                     }
                 }
             }
