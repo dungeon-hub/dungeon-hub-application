@@ -294,7 +294,6 @@ class LinkingSystem : Extension() {
         publicSlashCommand {
             name = Sync.name
             description = Sync.description
-            //TODO maybe rewrite to also allow usage in dms
             allowInDms = false
 
             action {

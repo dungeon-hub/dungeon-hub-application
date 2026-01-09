@@ -260,7 +260,6 @@ class LoggingSystem : Extension() {
         ) ?: HashSet()) {
             val carrier = event.kord.getUser(Snowflake(queueModel.carrier.id))
 
-            //TODO request exception
             carrier?.dm {
                 content = "Your log was denied by ${event.interaction.user.mention}."
 
@@ -321,7 +320,6 @@ class LoggingSystem : Extension() {
 
             val carrier = event.kord.getUser(Snowflake(loggedCarryModel.carryModel.carrier.id))
 
-            //TODO request exception
             carrier?.dm {
                 content = "Your carry was logged!\n\n**Your Updated Score:** $updatedScore"
 

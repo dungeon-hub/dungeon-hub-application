@@ -210,7 +210,6 @@ class WarningSystem : Extension() {
                                 }
                             }
 
-                        //TODO request exception
                         if(arguments.dmUser != false) {
                             target.dm {
                                 val dmEmbed = ApplicationService.formatWarnDm(addedWarning.warningModel)
@@ -233,7 +232,6 @@ class WarningSystem : Extension() {
                 }
             }
 
-            //TODO what about reactivate?
             publicSubCommand(::WarnRemoveArguments) {
                 name = "deactivate".toKey()
                 description = "Deactivate a given warning.".toKey()
@@ -267,7 +265,6 @@ class WarningSystem : Extension() {
                             }
 
                         try {
-                            //TODO request exception
                             DiscordConnection.bot!!.kordRef.getUser(Snowflake(removedWarning.user.id))
                                 ?.dm {
                                     val dmEmbed = ApplicationService.embed
