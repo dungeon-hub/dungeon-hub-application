@@ -39,6 +39,7 @@ import net.dungeonhub.application.service.ApplicationService.footer
 import net.dungeonhub.connection.*
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.StaticMessageType
+import net.dungeonhub.model.carry_tier.CarryTierModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.reputation.ReputationLeaderboardModel
 import net.dungeonhub.model.reputation.ReputationSumModel
@@ -223,6 +224,11 @@ object StaticMessageService : StartupListener {
                     }
                 }
             }
+
+            StaticMessageType.PriceMessage -> {
+                // TODO maybe add a button "load-prices" --> that then opens a modal that lets you enter a number of carries, for which a price is then generated
+                return { }
+            }
         }
     }
 
@@ -333,6 +339,81 @@ object StaticMessageService : StartupListener {
 
                 return mutableListOf(embed)
             }
+
+            StaticMessageType.PriceMessage -> {
+                val serverConnection = DiscordServerConnection.authenticated()
+                val allCarryTiers = serverConnection.getAllCarryTiers(staticMessage.server.id) ?: emptyList()
+
+                val carryTiers = staticMessage.objectIds.mapNotNull { id -> allCarryTiers.firstOrNull { it.id == id } }
+
+                if(carryTiers.isEmpty()) {
+                    return mutableListOf(
+                        buildEmbed {
+                            title = "Price Message"
+                            description = "Please assign an object to this leaderboard."
+                            color(EmbedColor.Negative)
+                        }
+                    )
+                }
+
+                return addPriceFooterToLast(carryTiers.map { getPriceEmbed(it) }).toMutableList()
+            }
+        }
+    }
+
+    fun addPriceFooterToLast(embeds: List<EmbedBuilder>): List<EmbedBuilder> {
+        for (embed in embeds) {
+            embed.footer { text = "" }
+        }
+
+        if (embeds.isNotEmpty()) {
+            embeds[embeds.size - 1].footer { text = ApplicationService.priceFooter }
+        }
+
+        return embeds
+    }
+
+    @OptIn(ExperimentalTime::class)
+    fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder {
+        val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().allCarryDifficulties ?: listOf()
+
+        val title = "## " + carryTier.priceTitle + "\n"
+        val priceDescription = carryTier.priceDescription?.let { s: String -> s + "\n\n" } ?: ""
+
+        val description = title + priceDescription + if (carryDifficulties.isNotEmpty()) {
+            carryDifficulties.joinToString("\n") { carryDifficulty ->
+                val result = StringBuilder()
+                if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
+                    result.append("\n")
+                }
+
+                result.append("**")
+                    .append(carryDifficulty.priceName)
+                    .append("**: ")
+
+                val priceText = if (carryDifficulty.price != 0
+                ) ApplicationService.makeNumberReadable(carryDifficulty.price.toLong()) + " coins"
+                else "Free"
+
+                result.append(priceText)
+
+                if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
+                    result.append("\n\\*")
+                        .append(ApplicationService.makeNumberReadable(carryDifficulty.bulkPrice!!.toLong()))
+                        .append(" per carry if you buy ")
+                        .append(carryDifficulty.bulkAmount)
+                        .append("+ carries.")
+                }
+                result
+            }
+        } else {
+            "Please add at least one carry difficulty to the carry tier `${carryTier.displayName}`."
+        }
+
+        return buildEmbed(null) {
+            this.description = description
+            color(if (carryDifficulties.isEmpty()) EmbedColor.Negative else EmbedColor.Default)
+            carryTier.thumbnailUrl?.let { thumbnail { this.url = it } }
         }
     }
 

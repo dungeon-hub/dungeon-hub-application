@@ -499,6 +499,7 @@ object ApplicationService {
     fun getCarryTypeEmbed(carryType: CarryTypeModel): EmbedBuilder {
         val embed = embed
         embed.color = EmbedColor.Default.color
+        embed.field("ID", true) { carryType.id.toString() }
         embed.field("Identifier", true) { carryType.identifier }
         embed.field("Display Name", true) { carryType.displayName }
 
@@ -515,6 +516,7 @@ object ApplicationService {
         val embed = embed
 
         embed.color = EmbedColor.Default.color
+        embed.field("ID", true) { carryTier.id.toString() }
         embed.field("Identifier", true) { carryTier.identifier }
         embed.field("Display Name", true) { carryTier.displayName }
         embed.field("Descriptive Name", true) { carryTier.descriptiveName!! }
@@ -524,12 +526,6 @@ object ApplicationService {
         ) { carryTier.carryType.displayName + " (" + carryTier.carryType.identifier + ")" }
 
         carryTier.category?.let { category: Long -> embed.field("Category", true) { "<#$category>" } }
-        carryTier.priceChannel?.let { priceChannel: Long ->
-            embed.field(
-                "Price Channel",
-                true
-            ) { "<#$priceChannel>" }
-        }
         carryTier.thumbnailUrl?.let { thumbnailUrl: String ->
             embed.field("Thumbnail URL", true) { thumbnailUrl }
         }
@@ -543,6 +539,7 @@ object ApplicationService {
         val embed = embed
         embed.color = EmbedColor.Default.color
 
+        embed.field("ID", true) { carryDifficulty.id.toString() }
         embed.field("Identifier", true) { carryDifficulty.identifier }
         embed.field("Display Name", true) { carryDifficulty.displayName }
         embed.field(

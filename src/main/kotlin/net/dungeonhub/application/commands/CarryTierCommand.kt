@@ -85,8 +85,7 @@ class CarryTierCommand : Extension() {
                             identifier = identifier,
                             displayName = arguments.displayName,
                             relatedTicketPanel = null, // TODO set
-                            category = arguments.category!!.id.value.toLong(),
-                            priceChannel = arguments.priceChannel!!.id.value.toLong(),
+                            category = arguments.category?.id?.value?.toLong(),
                             descriptiveName = arguments.descriptiveName,
                             thumbnailUrl = arguments.thumbnailUrl,
                             priceTitle = arguments.priceTitle,
@@ -169,7 +168,7 @@ class CarryTierCommand : Extension() {
                             CarryTierConnection[carryType].authenticated().getByIdentifier(arguments.carryTier)
                                 ?: throw InvalidOptionException("carry-tier", "That carry tier doesn't exist")
 
-                        if (arguments.displayName == null && arguments.category == null && arguments.priceChannel == null && arguments.descriptiveName == null && arguments.thumbnailUrl == null && arguments.priceTitle == null) {
+                        if (arguments.displayName == null && arguments.category == null && arguments.descriptiveName == null && arguments.thumbnailUrl == null && arguments.priceTitle == null) {
                             throw CommandExecutionWarning("Please provide something you want to edit.")
                         }
 
@@ -196,11 +195,7 @@ class CarryTierCommand : Extension() {
                         }
 
                         if (arguments.category != null) {
-                            updateModel.category = arguments.category!!.id.value.toLong()
-                        }
-
-                        if (arguments.priceChannel != null) {
-                            updateModel.priceChannel = arguments.priceChannel!!.id.value.toLong()
+                            updateModel.category = arguments.category?.id?.value?.toLong()
                         }
 
                         if (arguments.descriptiveName != null) {
@@ -249,10 +244,6 @@ class CarryTierCommand : Extension() {
 
                         if (arguments.category) {
                             updateModel.category = null
-                        }
-
-                        if (arguments.priceChannel) {
-                            updateModel.priceChannel = null
                         }
 
                         if (arguments.descriptiveName) {
@@ -308,12 +299,6 @@ class CarryTierCommand : Extension() {
             name = CarryTier.Create.Arguments.Category.name
             description = CarryTier.Create.Arguments.Category.description
             requiredChannelTypes = mutableSetOf(ChannelType.GuildCategory)
-        }
-
-        val priceChannel by optionalChannel {
-            name = CarryTier.Create.Arguments.PriceChannel.name
-            description = CarryTier.Create.Arguments.PriceChannel.description
-            requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
         val priceDescription by optionalString {
@@ -377,12 +362,6 @@ class CarryTierCommand : Extension() {
             name = CarryTier.Edit.Arguments.Category.name
             description = CarryTier.Edit.Arguments.Category.description
             requiredChannelTypes = mutableSetOf(ChannelType.GuildCategory)
-        }
-
-        val priceChannel by optionalChannel {
-            name = CarryTier.Edit.Arguments.PriceChannel.name
-            description = CarryTier.Edit.Arguments.PriceChannel.description
-            requiredChannelTypes = mutableSetOf(ChannelType.GuildText)
         }
 
         val thumbnailUrl by optionalString {
