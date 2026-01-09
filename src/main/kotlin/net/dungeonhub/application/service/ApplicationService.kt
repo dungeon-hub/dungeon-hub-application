@@ -531,6 +531,9 @@ object ApplicationService {
         }
         carryTier.priceTitle?.let { s: String -> embed.field("Price Title", true) { s } }
         carryTier.priceDescription?.let { s: String -> embed.field("Price Description", true) { s } }
+        carryTier.relatedTicketPanel?.let { ticketPanel -> embed.field("Related Ticket Panel", true) {
+            "${ticketPanel.displayName ?: ticketPanel.name} (${ticketPanel.id})"
+        } }
 
         return embed
     }
