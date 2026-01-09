@@ -608,21 +608,6 @@ object ApplicationService {
         return outputStream.toByteArray()
     }
 
-    fun calculatePrice(carryDifficulty: CarryDifficultyModel, amount: Long): Long {
-        return calculatePricePerCarry(carryDifficulty, amount) * amount
-    }
-
-    fun calculatePricePerCarry(carryDifficulty: CarryDifficultyModel, amount: Long): Long {
-        val bulkPrice = carryDifficulty.bulkPrice
-        val bulkAmount = carryDifficulty.bulkAmount
-
-        if (bulkPrice != null && bulkAmount != null && bulkAmount <= amount) {
-            return bulkPrice.toLong()
-        }
-
-        return carryDifficulty.price.toLong()
-    }
-
     //TODO maybe make sure that multiple actions on roles don't override each other?
     suspend fun applyWarningActions(actions: List<WarningActionModel>, member: Member): String? {
         if (actions.isEmpty()) {

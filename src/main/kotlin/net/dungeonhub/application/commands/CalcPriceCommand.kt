@@ -3,7 +3,7 @@ package net.dungeonhub.application.commands
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kordex.core.commands.Arguments
-import dev.kordex.core.commands.converters.impl.long
+import dev.kordex.core.commands.converters.impl.int
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
@@ -69,14 +69,14 @@ class CalcPriceCommand : Extension() {
                         .getByIdentifier(arguments.carryDifficulty)
                         ?: throw InvalidOptionException("carry-difficulty")
 
-                    val price = ApplicationService.calculatePrice(carryDifficulty, arguments.amount)
-                    val pricePerCarry = ApplicationService.calculatePricePerCarry(carryDifficulty, arguments.amount)
+                    val totalPrice = carryDifficulty.calculateTotalPrice(arguments.amount)
+                    val pricePerCarry = carryDifficulty.calculatePricePerCarry(arguments.amount)
 
-                    if (price < 0) {
-                        throw CommandExecutionException("Something went wrong.. The calculated price ($price) is negative?")
+                    if (totalPrice < 0) {
+                        throw CommandExecutionException("Something went wrong.. The calculated price ($totalPrice) is negative?")
                     }
 
-                    val priceText = if (price != 0L) "${ApplicationService.makeNumberReadable(price)} (${
+                    val priceText = if (totalPrice != 0L) "${ApplicationService.makeNumberReadable(totalPrice)} (${
                         ApplicationService.makeNumberReadable(pricePerCarry)
                     }) coins" else "Free"
 
@@ -129,7 +129,7 @@ class CalcPriceCommand : Extension() {
             autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
 
-        val amount by long {
+        val amount by int {
             name = Translations.Command.CalcPrice.Arguments.Amount.name
             description = Translations.Command.CalcPrice.Arguments.Amount.description
             maxValue = 200
