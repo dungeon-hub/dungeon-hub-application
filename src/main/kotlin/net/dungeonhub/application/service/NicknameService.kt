@@ -52,7 +52,6 @@ object NicknameService {
     fun linkToIgn(ign: String, user: User): UUID {
         val uuid = MojangConnection.getUUIDByName(ign)
 
-        //TODO test if cache expiration 1 actually works
         val hypixelName = HypixelApiConnection().withCacheExpiration(1).getHypixelLinkedDiscord(uuid)
         val username = user.tag
 
@@ -281,18 +280,4 @@ object NicknameService {
             { discordRoleModel: DiscordRoleModel -> discordRoleModel }
         )
     }
-}
-
-//TODO move to connection?
-fun User.getUUIDOrNull(): UUID? {
-    return DiscordUserConnection.authenticated().getById(id.value.toLong())?.minecraftId
-}
-
-@Throws(NotLinkedException::class)
-fun User.getUUID(): UUID {
-    return getUUIDOrNull() ?: throw NotLinkedException()
-}
-
-fun UUID.fetchIgn(): String {
-    return MojangConnection.getNameByUUID(this)
 }

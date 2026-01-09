@@ -68,7 +68,6 @@ class TicketTranscriptListener : Extension() {
                     }
                 }
 
-                // TODO send transcript, but just inside the transcript channel
                 TicketSystem.scheduler.launch {
                     val transcript = textChannel.createTranscript()
 
