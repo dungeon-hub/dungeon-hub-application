@@ -35,7 +35,6 @@ import kotlinx.coroutines.flow.reduce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
@@ -587,7 +586,7 @@ class MessageListener : Extension() {
                 components {
                     linkButton {
                         label = "SkyCrypt".toKey()
-                        url = ConfigProperty.SKYCRYPT_API_URL.value + "stats/" + ign
+                        url = ApplicationService.skyCryptUrl + "stats/" + ign
                     }
                 }
             }
@@ -606,7 +605,7 @@ class MessageListener : Extension() {
                 components {
                     linkButton {
                         label = "SkyCrypt".toKey()
-                        url = ConfigProperty.SKYCRYPT_API_URL.value + "stats/" + ign
+                        url = ApplicationService.skyCryptUrl + "stats/" + ign
                     }
                 }
             }

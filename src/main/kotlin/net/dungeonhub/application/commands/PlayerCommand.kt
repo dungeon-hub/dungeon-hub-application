@@ -6,7 +6,6 @@ import dev.kordex.core.components.components
 import dev.kordex.core.components.linkButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
@@ -32,7 +31,7 @@ class PlayerCommand : Extension() {
                     components {
                         linkButton {
                             label = Player.Response.Buttons.Skycrypt.label
-                            url = ConfigProperty.SKYCRYPT_API_URL.toString() + "stats/" + arguments.ign
+                            url = ApplicationService.skyCryptUrl + "stats/" + arguments.ign
                         }
                     }
 

@@ -26,7 +26,6 @@ import dev.kordex.core.utils.dm
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.commands.LinkingSystem
-import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.FlaggingConnection
 import net.dungeonhub.application.enums.EmbedColor
@@ -71,6 +70,8 @@ object ApplicationService {
     private val logger: Logger = LoggerFactory.getLogger(DiscordConnection::class.java)
 
     val dungeonHubDirectory = "${System.getProperty("user.home")}${File.separator}dungeon-hub"
+
+    val skyCryptUrl = "https://sky.shiiyu.moe/"
 
     private val serverLink: String
         get() = "discord.dungeon-hub.net"
@@ -422,7 +423,7 @@ object ApplicationService {
         embed.thumbnail {
             url = "https://visage.surgeplay.com/face/$uuid"
         }
-        embed.url = ConfigProperty.SKYCRYPT_API_URL.toString() + "stats/" + ign
+        embed.url = skyCryptUrl + "stats/" + ign
         embed.title = try {
             MojangConnection.getNameByUUID(uuid)
         } catch (_: PlayerNotFoundException) {
