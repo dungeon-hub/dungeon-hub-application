@@ -14,6 +14,7 @@ import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.hypixel.service.FormattingService
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
@@ -71,7 +72,7 @@ object AppearanceService : StartupListener {
                 0
             }
 
-            "${ApplicationService.makeNumberReadable(amount, 3)} coins spent on Dungeon Hub!"
+            "${FormattingService.makeNumberReadable(amount, 3)} coins spent on Dungeon Hub!"
         }
     )
 

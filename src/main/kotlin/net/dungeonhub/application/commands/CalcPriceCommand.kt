@@ -19,6 +19,7 @@ import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.CarryTierConnection
 import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.hypixel.service.FormattingService
 import net.dungeonhub.i18n.Translations
 
 /**
@@ -76,8 +77,8 @@ class CalcPriceCommand : Extension() {
                         throw CommandExecutionException("Something went wrong.. The calculated price ($totalPrice) is negative?")
                     }
 
-                    val priceText = if (totalPrice != 0L) "${ApplicationService.makeNumberReadable(totalPrice)} (${
-                        ApplicationService.makeNumberReadable(pricePerCarry)
+                    val priceText = if (totalPrice != 0L) "${FormattingService.makeNumberReadable(totalPrice)} (${
+                        FormattingService.makeNumberReadable(pricePerCarry)
                     }) coins" else "Free"
 
                     val embed = ApplicationService.embed

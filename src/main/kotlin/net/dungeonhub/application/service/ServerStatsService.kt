@@ -21,6 +21,7 @@ import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.hypixel.service.FormattingService
 import org.slf4j.LoggerFactory
 import java.time.ZonedDateTime
 import kotlin.time.Duration.Companion.hours
@@ -81,7 +82,7 @@ object ServerStatsService : StartupListener {
     private suspend fun updateStatChannels(guild: Guild, channels: List<Pair<Long, String>>) {
         val linkedUsers = DiscordUserConnection.authenticated().countLinkedUsers() ?: 0
         val spentMoney = try {
-            ApplicationService.makeNumberReadable(
+            FormattingService.makeNumberReadable(
                 DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(guild.id.value.toLong())
                     ?: throw CommandExecutionException("Couldn't load the total amount of money spent."),
                 3

@@ -39,6 +39,7 @@ import net.dungeonhub.application.service.ApplicationService.footer
 import net.dungeonhub.connection.*
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.StaticMessageType
+import net.dungeonhub.hypixel.service.FormattingService
 import net.dungeonhub.model.carry_tier.CarryTierModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.reputation.ReputationLeaderboardModel
@@ -392,14 +393,14 @@ object StaticMessageService : StartupListener {
                     .append("**: ")
 
                 val priceText = if (carryDifficulty.price != 0
-                ) ApplicationService.makeNumberReadable(carryDifficulty.price.toLong()) + " coins"
+                ) FormattingService.makeNumberReadable(carryDifficulty.price.toLong()) + " coins"
                 else "Free"
 
                 result.append(priceText)
 
                 if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
                     result.append("\n\\*")
-                        .append(ApplicationService.makeNumberReadable(carryDifficulty.bulkPrice!!.toLong()))
+                        .append(FormattingService.makeNumberReadable(carryDifficulty.bulkPrice!!.toLong()))
                         .append(" per carry if you buy ")
                         .append(carryDifficulty.bulkAmount)
                         .append("+ carries.")

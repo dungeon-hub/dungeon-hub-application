@@ -38,6 +38,7 @@ import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
 import net.dungeonhub.exception.PlayerNotFoundException
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
+import net.dungeonhub.hypixel.service.FormattingService
 import net.dungeonhub.model.carry.CarryModel
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
@@ -58,8 +59,6 @@ import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
-import java.text.DecimalFormat
-import java.text.DecimalFormatSymbols
 import java.util.*
 import javax.imageio.ImageIO
 import kotlin.time.*
@@ -132,45 +131,6 @@ object ApplicationService {
         }
 
         return kord.getUser(ownerId)
-    }
-
-    //TODO move to the method by the hypixel-wrapper
-    /**
-     * This formats a decimal number as a String.
-     */
-    fun makeDoubleReadable(number: Double, maxFractionDigits: Int = 340, locale: Locale = Locale.US): String {
-        val df = DecimalFormat("0", DecimalFormatSymbols.getInstance(locale))
-        df.setMaximumFractionDigits(maxFractionDigits) //340 = DecimalFormat.DOUBLE_FRACTION_DIGITS
-
-        return df.format(number)
-    }
-
-    /**
-     * Returns a (large) number as a readable String.
-     * Numbers < 1000 are returned as is, simply formatted as a String.
-     * Numbers >= 1000 are returned with the respective extension:
-     * 1312.1852 -> "1.3121852k"
-     * 3882761 -> "3.882761m"
-     * 45544000000 -> "45.544b"
-     */
-    fun makeNumberReadable(number: Long, maxFractionDigits: Int = 340): String {
-        if (number >= 1000000000000L) {
-            return makeDoubleReadable(number / 1000000000000.0, maxFractionDigits) + "t"
-        }
-
-        if (number >= 1000000000L) {
-            return makeDoubleReadable(number / 1000000000.0, maxFractionDigits) + "b"
-        }
-
-        if (number >= 1000000L) {
-            return makeDoubleReadable(number / 1000000.0, maxFractionDigits) + "m"
-        }
-
-        if (number >= 1000L) {
-            return makeDoubleReadable(number / 1000.0, maxFractionDigits) + "k"
-        }
-
-        return number.toString()
     }
 
     val errorEmbed: EmbedBuilder
@@ -557,7 +517,7 @@ object ApplicationService {
         embed.field(
             "Price",
             true
-        ) { carryDifficulty.price.toString() + " (" + makeNumberReadable(carryDifficulty.price.toLong()) + ")" }
+        ) { carryDifficulty.price.toString() + " (" + FormattingService.makeNumberReadable(carryDifficulty.price.toLong()) + ")" }
         embed.field("Score", true) { carryDifficulty.score.toString() }
 
         carryDifficulty.bulkAmount

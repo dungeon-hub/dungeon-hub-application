@@ -9,10 +9,10 @@ import net.dungeonhub.application.connection.DiscordConnection.uptime
 import net.dungeonhub.application.connection.getGuildOrNull
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.LoadExtension
-import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.hypixel.service.FormattingService
 import net.dungeonhub.i18n.Translations.Command.Stats
 import java.time.Duration
 import java.time.Instant
@@ -38,11 +38,11 @@ class StatsCommand : Extension() {
                     val locale = event.getLocale()
 
                     val memberCount = guild.approximateMemberCount ?: 0
-                    val spentMoney = ApplicationService.makeNumberReadable(
+                    val spentMoney = FormattingService.makeNumberReadable(
                         DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(guild.id.value.toLong()) ?: 0,
                         3
                     )
-                    val spentMoneyMonthly = ApplicationService.makeNumberReadable(
+                    val spentMoneyMonthly = FormattingService.makeNumberReadable(
                         DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(
                             guild.id.value.toLong(),
                             since = ZonedDateTime.now().minusDays(30).toInstant()

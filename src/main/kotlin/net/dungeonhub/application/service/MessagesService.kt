@@ -7,6 +7,7 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.flow.firstOrNull
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.connection.CarryDifficultyConnection
+import net.dungeonhub.hypixel.service.FormattingService
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_tier.CarryTierModel
 import java.util.stream.Collectors
@@ -36,14 +37,14 @@ object MessagesService {
                         .append("**: ")
 
                     val priceText = if (carryDifficulty.price != 0
-                    ) ApplicationService.makeNumberReadable(carryDifficulty.price.toLong()) + " coins"
+                    ) FormattingService.makeNumberReadable(carryDifficulty.price.toLong()) + " coins"
                     else "Free"
 
                     result.append(priceText)
 
                     if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
                         result.append("\n\\*")
-                            .append(ApplicationService.makeNumberReadable(carryDifficulty.bulkPrice!!.toLong()))
+                            .append(FormattingService.makeNumberReadable(carryDifficulty.bulkPrice!!.toLong()))
                             .append(" per carry if you buy ")
                             .append(carryDifficulty.bulkAmount)
                             .append("+ carries.")
