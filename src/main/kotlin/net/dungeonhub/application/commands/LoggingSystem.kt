@@ -12,7 +12,7 @@ import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.actionRow
 import dev.kordex.core.commands.Arguments
-import dev.kordex.core.commands.converters.impl.long
+import dev.kordex.core.commands.converters.impl.int
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.components.components
 import dev.kordex.core.components.ephemeralButton
@@ -451,7 +451,7 @@ class LoggingSystem : Extension() {
     }
 
     class LogArguments : Arguments() {
-        val carryAmount by long {
+        val carryAmount by int {
             name = Log.Arguments.Amount.name
             description = Log.Arguments.Amount.description
             minValue = 1
