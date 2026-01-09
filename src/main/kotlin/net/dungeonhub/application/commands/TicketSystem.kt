@@ -32,16 +32,21 @@ import net.dungeonhub.application.misc.TicketPlaceholders
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
+import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.connection.TicketConnection
 import net.dungeonhub.connection.TicketPanelConnection
 import net.dungeonhub.enums.TicketPermissionCandidate
 import net.dungeonhub.enums.TicketPermissionType
 import net.dungeonhub.enums.TicketState
+import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.model.ticket.TicketCreationModel
 import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.model.ticket_panel.TicketPanelModel
+import net.dungeonhub.mojang.connection.MojangConnection
 import net.dungeonhub.service.GsonService
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import kotlin.time.ExperimentalTime
@@ -115,6 +120,64 @@ class TicketSystem : Extension() {
 
                     scheduler.launch {
                         sendInitialTicketMessage(ticketPanel, ticket, ticketChannel)
+                    }
+                }
+            }
+        }
+
+        event<GuildButtonInteractionCreateEvent> {
+            check {
+                failIfNot(event.interaction.componentId == "ticket-guild-status")
+            }
+
+            action {
+                val response = event.interaction.deferEphemeralResponse()
+
+                response.respond {
+                    val ticket = DiscordServerConnection.authenticated()
+                        .findTickets(event.interaction.guildId.value.toLong(), event.interaction.channelId.value.toLong())
+                        ?.firstOrNull()
+
+                    if(ticket == null) {
+                        addEmbed {
+                            description = "Couldn't load the ticket!"
+                            color(EmbedColor.Negative)
+                        }
+                        return@respond
+                    }
+
+                    val uuid = ticket.user.minecraftId
+
+                    if(uuid == null) {
+                        addEmbed {
+                            description = "The ticket user currently isn't linked!"
+                            color(EmbedColor.Negative)
+                        }
+                        return@respond
+                    }
+
+                    val ign = MojangConnection.getNameByUUID(uuid)
+
+                    val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(5)
+
+                    val guild = hypixelApiConnection.getPlayerGuild(uuid)
+
+                    val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")
+                        .withZone(ZoneId.systemDefault())
+
+                    addEmbed {
+                        title = "Guild of $ign"
+                        color(if(guild != null) EmbedColor.Positive else EmbedColor.Negative)
+                        description = if(guild != null) {
+                            "$ign is currently in guild `${guild.displayName}${
+                                if(guild.tag != null) " [${guild.tag}]" else ""
+                            }`, since ${guild.members.firstOrNull { it.uuid == uuid }?.joinedAt?.let { formatter.format(it) }}"
+                        } else {
+                            "$ign isn't in any guild!"
+                        }
+                        thumbnail {
+                            url = "https://visage.surgeplay.com/face/$uuid"
+                        }
                     }
                 }
             }
@@ -217,6 +280,13 @@ class TicketSystem : Extension() {
                 {
                     interactionButton(ButtonStyle.Secondary, "ticket-user-status") {
                         label = "User Status"
+                    }
+                }
+            }
+            "user.guild_status" -> {
+                {
+                    interactionButton(ButtonStyle.Secondary, "ticket-guild-status") {
+                        label = "User Guild"
                     }
                 }
             }
