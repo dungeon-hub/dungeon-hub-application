@@ -15,6 +15,8 @@ import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageUpdateEvent
+import dev.kord.gateway.Intent
+import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
 import dev.kordex.core.components.components
@@ -83,6 +85,8 @@ class MessageListener : Extension() {
     }
 
     override val name = "message-listener"
+    @OptIn(PrivilegedIntent::class)
+    override val intents = mutableSetOf<Intent>(Intent.MessageContent)
 
     override suspend fun setup() {
         scheduler = Scheduler()

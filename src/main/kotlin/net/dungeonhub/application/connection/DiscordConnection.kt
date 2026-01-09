@@ -169,9 +169,10 @@ object DiscordConnection : StartupListener {
             }
 
             @OptIn(PrivilegedIntent::class)
-            intents {
-                -Intent.GuildExpressions
+            intents(addDefaultIntents = false, addExtensionIntents = true) { // TODO add these to the extensions themselves
+                +Intent.Guilds
                 +Intent.GuildMembers
+                +Intent.GuildMessages
                 +Intent.MessageContent
             }
 

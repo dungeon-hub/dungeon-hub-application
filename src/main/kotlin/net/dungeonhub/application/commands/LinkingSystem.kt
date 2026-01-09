@@ -14,6 +14,7 @@ import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.actionRow
@@ -56,6 +57,7 @@ import java.util.*
 @LoadExtension
 class LinkingSystem : Extension() {
     override val name = "linking-system"
+    override val intents = mutableSetOf<Intent>(Intent.GuildMembers)
     private val logger = LoggerFactory.getLogger(LinkingSystem::class.java)
 
     override suspend fun setup() {

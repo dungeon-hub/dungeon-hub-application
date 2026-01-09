@@ -1,6 +1,7 @@
 package net.dungeonhub.application.listener
 
 import dev.kord.core.event.guild.GuildDeleteEvent
+import dev.kord.gateway.Intent
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.utils.dm
@@ -15,6 +16,7 @@ class ServerLeaveListener : Extension() {
     val logger: Logger = LoggerFactory.getLogger(ServerLeaveListener::class.java)
 
     override val name = "server-leave-listener"
+    override val intents = mutableSetOf<Intent>(Intent.Guilds)
     override suspend fun setup() {
         event<GuildDeleteEvent> {
             action {
