@@ -1,5 +1,9 @@
 package net.dungeonhub.application.misc
 
+import dev.kord.common.entity.Snowflake
+import dev.kord.core.entity.Member
+import kotlinx.coroutines.runBlocking
+import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.exceptions.NotLinkedException
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
@@ -11,11 +15,20 @@ import net.dungeonhub.mojang.connection.MojangConnection
 class TicketPlaceholders(
     val ticketPanel: TicketPanelModel,
     val ticket: TicketModel,
+    val interactionUser: Member,
     val cacheExpiration: Int = 60 * 3
 ) {
     val ticketUserId = ticket.user.id
     val ticketUserIgn by lazy {
         ticketUserModel?.minecraftId?.let { MojangConnection.getNameByUUID(it) }
+    }
+
+    val ticketUser by lazy {
+        runBlocking {
+            DiscordConnection.bot!!.kordRef
+                .getUser(Snowflake(ticketUserId))
+                ?.asMemberOrNull(Snowflake(ticketPanel.discordServer.id))
+        }
     }
 
     val ticketUserModel by lazy {
@@ -29,7 +42,9 @@ class TicketPlaceholders(
             val replacements: MutableMap<String, () -> String> = HashMap()
 
             replacements["user.mention"] = { "<@${ticketUserId}>" }
-            replacements["user.minecraft.name"] = { ticketUserIgn ?: "Not linked" }
+            replacements["user.displayName"] = { ticketUser?.effectiveName ?: "unknown" }
+            replacements["interactionUser.displayName"] = { interactionUser.effectiveName }
+            replacements["user.minecraft.name"] = { ticketUserIgn ?: "unlinked" }
             replacements["user.skyblock.level"] = {
                 apiConnection.getSkyblockProfiles(
                     ticketUserModel?.minecraftId ?: throw NotLinkedException()
@@ -39,6 +54,7 @@ class TicketPlaceholders(
                 }?.toString() ?: "?"
             }
             replacements["panel.name"] = { ticketPanel.displayName ?: ticketPanel.name }
+            replacements["ticket.id"] = { ticket.id.toString() }
 
             return replacements
         }

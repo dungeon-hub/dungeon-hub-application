@@ -119,7 +119,7 @@ class TicketSystem : Extension() {
                     }
 
                     scheduler.launch {
-                        sendInitialTicketMessage(ticketPanel, ticket, ticketChannel)
+                        sendInitialTicketMessage(ticketPanel, ticket, ticketChannel, event.interaction.user)
                     }
                 }
             }
@@ -230,7 +230,8 @@ class TicketSystem : Extension() {
     suspend fun sendInitialTicketMessage(
         ticketPanel: TicketPanelModel,
         ticket: TicketModel,
-        ticketChannel: TextChannel
+        ticketChannel: TextChannel,
+        member: Member
     ) {
         var content: String
         var embeds = mutableListOf<EmbedBuilder>()
@@ -245,7 +246,7 @@ class TicketSystem : Extension() {
             null
         }
 
-        val placeholders = TicketPlaceholders(ticketPanel, ticket)
+        val placeholders = TicketPlaceholders(ticketPanel, ticket, member)
 
         content = replacePlaceholders(
             messageJson?.get("content")?.asString ?: DEFAULT_CONTENT,
@@ -385,27 +386,6 @@ class TicketSystem : Extension() {
         }
     }
 
-    fun replacePlaceholders(string: String, placeholders: TicketPlaceholders): String {
-        val replacements = placeholders.replacements
-
-        val regex = "(\\{[^}]+})"
-        val usernameBuilder = StringBuilder()
-        val pattern = Pattern.compile(regex)
-        val matcher = pattern.matcher(string)
-
-        while (matcher.find()) {
-            val argument = matcher.group(1)
-
-            val repString = replacements[argument.substring(1, argument.length - 1)]?.invoke()
-            if (repString != null) {
-                matcher.appendReplacement(usernameBuilder, Matcher.quoteReplacement(repString))
-            }
-        }
-        matcher.appendTail(usernameBuilder)
-
-        return usernameBuilder.toString().trim()
-    }
-
     fun getDefaultButtons(claimButton: Boolean): List<ActionRowBuilder.() -> Unit> {
         return listOf<ActionRowBuilder.() -> Unit>({
             interactionButton(ButtonStyle.Danger, "close-ticket") {
@@ -443,6 +423,27 @@ class TicketSystem : Extension() {
         lateinit var scheduler: Scheduler
         const val DEFAULT_CONTENT = "Welcome, {user.mention}!\nPlease describe your {panel.name} request below further."
 
+        fun replacePlaceholders(string: String, placeholders: TicketPlaceholders): String {
+            val replacements = placeholders.replacements
+
+            val regex = "(\\{[^}]+})"
+            val result = StringBuilder()
+            val pattern = Pattern.compile(regex)
+            val matcher = pattern.matcher(string)
+
+            while (matcher.find()) {
+                val argument = matcher.group(1)
+
+                val repString = replacements[argument.substring(1, argument.length - 1)]?.invoke()
+                if (repString != null) {
+                    matcher.appendReplacement(result, Matcher.quoteReplacement(repString))
+                }
+            }
+            matcher.appendTail(result)
+
+            return result.toString().trim()
+        }
+
         fun getControlButtons(): List<ActionRowBuilder.() -> Unit> {
             return listOf({
                 interactionButton(ButtonStyle.Secondary, "transcript-ticket") {
@@ -469,7 +470,9 @@ class TicketSystem : Extension() {
 
         // TODO support full placeholders?
         fun buildTicketName(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member): String? {
-            var result = if (ticket.state == TicketState.Open && ticket.claimer != null) {
+            val placeholders = TicketPlaceholders(ticketPanel, ticket, member)
+
+            val channelName = if (ticket.state == TicketState.Open && ticket.claimer != null) {
                 ticketPanel.claimedChannelName
             } else {
                 when (ticket.state) {
@@ -478,13 +481,7 @@ class TicketSystem : Extension() {
                 }
             }
 
-            result = result?.replace("{count}", "${ticket.id}")
-            result = result?.replace(
-                "{user}",
-                member.effectiveName
-            ) // TODO currently, member is just the user that interacted with the ticket. this can be someone else in case of claiming/unclaiming tho
-
-            return result
+            return channelName?.let { replacePlaceholders(it, placeholders) }
         }
 
         // TODO is this method correct so far?
