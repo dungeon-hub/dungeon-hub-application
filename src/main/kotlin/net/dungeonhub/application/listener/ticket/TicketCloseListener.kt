@@ -6,7 +6,6 @@ import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.edit
-import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
@@ -16,7 +15,6 @@ import dev.kordex.core.components.components
 import dev.kordex.core.components.ephemeralButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
-import dev.kordex.core.utils.dm
 import dev.kordex.i18n.toKey
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.commands.TicketSystem
@@ -27,13 +25,10 @@ import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
-import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.TicketConnection
 import net.dungeonhub.enums.TicketState
 import net.dungeonhub.model.ticket.TicketModel
-import net.dungeonhub.wrapper.kord.createTranscript
-import java.nio.charset.StandardCharsets
 
 @LoadExtension
 class TicketCloseListener : Extension() {
@@ -81,14 +76,7 @@ class TicketCloseListener : Extension() {
                 }
 
                 if(!ticket.ticketPanel.closeable) {
-                    // TODO actually delete ticket
-                    // TODO also add a confirmation if closeConfirmation is true
-                    response.respond {
-                        addEmbed {
-                            description = "Deleting ticket.. 3.. 2.. 1.. Haha, PRANKED! (I forgot to implement)"
-                            color(EmbedColor.Negative)
-                        }
-                    }
+                    TicketDeleteListener.deleteTicket(ticket, event.interaction.user, event.interaction.channel.asChannelOf<TextChannel>(), response)
                     return@action
                 }
 
@@ -165,7 +153,7 @@ class TicketCloseListener : Extension() {
             }
 
             textChannel.edit {
-                val newName = TicketSystem.buildTicketName(updatedTicket.ticketPanel, updatedTicket, member.asMember())
+                val newName = TicketSystem.buildTicketName(updatedTicket.ticketPanel, updatedTicket, member.asMember(), textChannel)
 
                 if(newName != null) {
                     name = newName
@@ -189,48 +177,12 @@ class TicketCloseListener : Extension() {
                 }
             }
 
-            val transcriptInfoMessage = textChannel.createMessage {
-                addEmbed {
-                    description = "Saving transcript..."
-                    color(EmbedColor.Information)
-                }
-            }
-
-            // TODO send transcript --> user, transcript channel or both, depending on settings
-            TicketSystem.scheduler.launch {
-                val transcript = textChannel.createTranscript()
-
-                val url = ContentConnection.authenticated().uploadFile(transcript.toByteArray(StandardCharsets.UTF_8))?.let {
-                    ContentConnection.authenticated().getCdnUrl(it).toString()
-                }
-
-                if(url != null) {
-                    kord.getUser(Snowflake(updatedTicket.user.id))?.let { user ->
-                        user.dm {
-                            // TODO improve embed
-                            embeds = mutableListOf(buildEmbed {
-                                field("Panel", true) { updatedTicket.ticketPanel.displayName ?: updatedTicket.ticketPanel.name }
-                                field("Ticket Name", true) { textChannel.name }
-                                field("Transcript", true) { "[Click here]($url)" }
-                            })
-                        }
-                    }
-
-                    transcriptInfoMessage.edit {
-                        embeds = mutableListOf(buildEmbed {
-                            description = "[Transcript]($url) sent to <@${ticket.user.id}>"
-                            color(EmbedColor.Positive)
-                        })
-                    }
-                } else {
-                    transcriptInfoMessage.edit {
-                        embeds = mutableListOf(buildEmbed {
-                            description = "Couldn't generate the transcript!"
-                            color(EmbedColor.Negative)
-                        })
-                    }
-                }
-            }
+            TicketTranscriptListener.generateTranscript(
+                textChannel,
+                null,
+                updatedTicket,
+                updatedTicket.ticketPanel.closeTranscriptTarget
+            )
 
             textChannel.createMessage {
                 addEmbed {

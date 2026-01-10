@@ -168,7 +168,7 @@ class TicketClaimListener : Extension() {
 
     suspend fun updateTicketChannel(ticket: TicketModel, member: Member, textChannel: TextChannel) {
         textChannel.edit {
-            val newName = TicketSystem.buildTicketName(ticket.ticketPanel, ticket, member)
+            val newName = TicketSystem.buildTicketName(ticket.ticketPanel, ticket, member, textChannel)
 
             if(newName != null) {
                 name = newName

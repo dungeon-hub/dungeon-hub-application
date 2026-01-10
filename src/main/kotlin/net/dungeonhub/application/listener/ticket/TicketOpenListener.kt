@@ -95,7 +95,7 @@ class TicketOpenListener : Extension() {
             }
 
             textChannel.edit {
-                val newName = TicketSystem.buildTicketName(updatedTicket.ticketPanel, updatedTicket, member.asMember())
+                val newName = TicketSystem.buildTicketName(updatedTicket.ticketPanel, updatedTicket, member.asMember(), textChannel)
 
                 if(newName != null) {
                     name = newName

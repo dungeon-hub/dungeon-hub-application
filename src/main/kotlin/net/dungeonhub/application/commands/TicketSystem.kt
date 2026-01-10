@@ -202,7 +202,7 @@ class TicketSystem : Extension() {
     }
 
     suspend fun createTicketChannel(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member): TextChannel {
-        val name = buildTicketName(ticketPanel, ticket, member)
+        val name = buildTicketName(ticketPanel, ticket, member, null)
 
         return member.guild.createTextChannel(name ?: ticketPanel.name) {
             permissionOverwrites.clear()
@@ -246,7 +246,7 @@ class TicketSystem : Extension() {
             null
         }
 
-        val placeholders = TicketPlaceholders(ticketPanel, ticket, member)
+        val placeholders = TicketPlaceholders(ticketPanel, ticket, member, ticketChannel)
 
         content = replacePlaceholders(
             messageJson?.get("content")?.asString ?: DEFAULT_CONTENT,
@@ -468,9 +468,8 @@ class TicketSystem : Extension() {
             })
         }
 
-        // TODO support full placeholders?
-        fun buildTicketName(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member): String? {
-            val placeholders = TicketPlaceholders(ticketPanel, ticket, member)
+        fun buildTicketName(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member, ticketChannel: TextChannel?): String? {
+            val placeholders = TicketPlaceholders(ticketPanel, ticket, member, ticketChannel)
 
             val channelName = if (ticket.state == TicketState.Open && ticket.claimer != null) {
                 ticketPanel.claimedChannelName
@@ -484,7 +483,6 @@ class TicketSystem : Extension() {
             return channelName?.let { replacePlaceholders(it, placeholders) }
         }
 
-        // TODO is this method correct so far?
         fun PermissionOverwritesBuilder.updateTicketPermissions(ticketPanel: TicketPanelModel, ticket: TicketModel) {
             for (entry in ticketPanel.permissions.entries) {
                 when (entry.key) {

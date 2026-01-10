@@ -71,7 +71,7 @@ object DiscordConnection : StartupListener {
     private var started: Boolean = false
     var uptime: Instant = Instant.now()
 
-    var bot: ExtensibleBot? = null
+    lateinit var bot: ExtensibleBot
 
     /**
      * Returns a line for command-line output.

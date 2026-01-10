@@ -2,6 +2,7 @@ package net.dungeonhub.application.misc
 
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
+import dev.kord.core.entity.channel.TextChannel
 import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.exceptions.NotLinkedException
@@ -16,6 +17,8 @@ class TicketPlaceholders(
     val ticketPanel: TicketPanelModel,
     val ticket: TicketModel,
     val interactionUser: Member,
+    val ticketChannel: TextChannel?,
+    val transcriptUrl: String? = null,
     val cacheExpiration: Int = 60 * 3
 ) {
     val ticketUserId = ticket.user.id
@@ -25,7 +28,7 @@ class TicketPlaceholders(
 
     val ticketUser by lazy {
         runBlocking {
-            DiscordConnection.bot!!.kordRef
+            DiscordConnection.bot.kordRef
                 .getUser(Snowflake(ticketUserId))
                 ?.asMemberOrNull(Snowflake(ticketPanel.discordServer.id))
         }
@@ -55,6 +58,8 @@ class TicketPlaceholders(
             }
             replacements["panel.name"] = { ticketPanel.displayName ?: ticketPanel.name }
             replacements["ticket.id"] = { ticket.id.toString() }
+            replacements["ticket.name"] = { ticketChannel?.name ?: "not-set" }
+            replacements["transcript.url"] = { transcriptUrl ?: "unknown" }
 
             return replacements
         }
