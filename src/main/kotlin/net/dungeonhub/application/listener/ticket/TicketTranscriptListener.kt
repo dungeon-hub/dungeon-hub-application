@@ -1,5 +1,9 @@
 package net.dungeonhub.application.listener.ticket
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.JsonSyntaxException
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.channel.asChannelOf
@@ -7,10 +11,12 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.getChannelOf
 import dev.kord.core.behavior.interaction.response.respond
+import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
+import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.utils.dm
@@ -18,10 +24,13 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.commands.TicketSystem
 import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedToChangeState
+import net.dungeonhub.application.commands.TicketSystem.Companion.replacePlaceholders
 import net.dungeonhub.application.connection.DiscordConnection
+import net.dungeonhub.application.connection.applyJson
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.event.TicketTranscriptCreatedEvent
 import net.dungeonhub.application.loader.LoadExtension
+import net.dungeonhub.application.misc.TicketPlaceholders
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
@@ -29,6 +38,7 @@ import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.enums.TranscriptTarget
 import net.dungeonhub.model.ticket.TicketModel
+import net.dungeonhub.service.GsonService
 import net.dungeonhub.wrapper.kord.createTranscript
 import java.nio.charset.StandardCharsets
 
@@ -105,7 +115,14 @@ class TicketTranscriptListener : Extension() {
                 val transcriptInfoMessage = createPlaceholderMessage(textChannel, requester)
 
                 TicketSystem.scheduler.launch {
-                    sendUserTranscript(url.await(), transcriptInfoMessage, ticket, textChannel, requester)
+                    sendUserTranscript(
+                        url.await(),
+                        transcriptInfoMessage,
+                        ticket,
+                        textChannel,
+                        requester?.asMemberOrNull()
+                            ?: DiscordConnection.bot.kordRef.getSelf().asMember(textChannel.guildId)
+                    )
                 }
             } else null
 
@@ -113,7 +130,14 @@ class TicketTranscriptListener : Extension() {
                 val transcriptInfoMessage = createPlaceholderMessage(textChannel, requester)
 
                 TicketSystem.scheduler.launch {
-                    sendChannelTranscript(url.await(), transcriptInfoMessage, ticket, textChannel, requester)
+                    sendChannelTranscript(
+                        url.await(),
+                        transcriptInfoMessage,
+                        ticket,
+                        textChannel,
+                        requester?.asMemberOrNull()
+                            ?: DiscordConnection.bot.kordRef.getSelf().asMember(textChannel.guildId)
+                    )
                 }
             } else null
 
@@ -143,7 +167,7 @@ class TicketTranscriptListener : Extension() {
             transcriptInfoMessage: Message,
             ticket: TicketModel,
             textChannel: TextChannel,
-            requester: MemberBehavior?
+            requester: Member
         ) {
             handleTranscript(
                 url,
@@ -151,18 +175,102 @@ class TicketTranscriptListener : Extension() {
                 requester,
                 "[Transcript]($url) sent to <@${ticket.user.id}>"
             ) { url ->
+                val placeholders = TicketPlaceholders(
+                    ticket.ticketPanel,
+                    ticket,
+                    requester,
+                    textChannel,
+                    url
+                )
+
+                val fallbackMessage = JsonArray()
+                fallbackMessage.add("transcript")
+
+                @Suppress("DEPRECATION")
+                val messageJson = try {
+                    ticket.ticketPanel.userTranscriptDm?.let {
+                        GsonService.gson.fromJson(it, JsonObject::class.java)
+                    }
+                } catch (_: JsonSyntaxException) {
+                    null
+                } ?: fallbackMessage
+
                 DiscordConnection.bot.kordRef
                     .getUser(Snowflake(ticket.user.id))
                     ?.let { user ->
                         user.dm {
-                            // TODO improve embed
-                            embeds = mutableListOf(buildEmbed {
-                                field("Panel", true) { ticket.ticketPanel.displayName ?: ticket.ticketPanel.name }
-                                field("Ticket Name", true) { textChannel.name }
-                                field("Transcript", true) { "[Click here]($url)" }
-                            })
+                            embeds = parseTranscriptDmEmbeds(messageJson, placeholders)
                         }
                     }
+            }
+        }
+
+        // TODO maybe merge with the method in the TicketSystem?
+        private fun parseTranscriptDmEmbeds(embedData: JsonElement, placeholders: TicketPlaceholders): MutableList<EmbedBuilder> {
+            val embedBuilders: MutableList<EmbedBuilder> = mutableListOf()
+
+            try {
+                if (embedData.isJsonObject) {
+                    val embedBuilder = EmbedBuilder()
+
+                    embedData.asJsonObject
+                        .entrySet()
+                        .forEach {
+                            embedBuilder.applyJson(
+                                it.key,
+                                replacePlaceholders(it.value, placeholders)
+                            )
+                        }
+
+                    embedBuilders.add(embedBuilder)
+                } else if (embedData.isJsonArray) {
+                    embedData.asJsonArray
+                        .forEach { jsonElement: JsonElement ->
+                            if (jsonElement.isJsonObject) {
+                                val embedBuilder = EmbedBuilder()
+
+                                jsonElement.asJsonObject
+                                    .entrySet()
+                                    .forEach { entry: Map.Entry<String, JsonElement> ->
+                                        embedBuilder.applyJson(
+                                            entry.key,
+                                            replacePlaceholders(entry.value, placeholders)
+                                        )
+                                    }
+
+                                embedBuilders.add(embedBuilder)
+                            } else if (jsonElement.isJsonPrimitive) {
+                                buildCustomEmbed(jsonElement.asString, placeholders)?.let { embedBuilders.add(it) }
+                            }
+                        }
+                } else if (embedData.isJsonPrimitive) {
+                    buildCustomEmbed(embedData.asString, placeholders)?.let { embedBuilders.add(it) }
+                }
+            } catch (_: JsonSyntaxException) {
+
+            }
+
+            return embedBuilders
+        }
+
+        private fun buildCustomEmbed(type: String, placeholders: TicketPlaceholders): EmbedBuilder? {
+            return when (type) {
+                "transcript" -> generateTranscriptEmbed(placeholders)
+
+                else -> null
+            }
+        }
+
+        // TODO improve message content
+        private fun generateTranscriptEmbed(placeholders: TicketPlaceholders): EmbedBuilder = buildEmbed {
+            field("Panel", true) { replacePlaceholders("{panel.name}", placeholders) }
+            field("Ticket Name", true) { replacePlaceholders("{ticket.name}", placeholders) }
+            field("Transcript", true) {
+                replacePlaceholders("{transcript.url}", placeholders).takeIf {
+                    it != "unknown"
+                }?.let {
+                    "[Click here]($it)"
+                } ?: "Not available"
             }
         }
 
@@ -171,7 +279,7 @@ class TicketTranscriptListener : Extension() {
             transcriptInfoMessage: Message,
             ticket: TicketModel,
             textChannel: TextChannel,
-            requester: MemberBehavior?
+            requester: Member
         ) {
             handleTranscript(
                 url,
@@ -183,16 +291,19 @@ class TicketTranscriptListener : Extension() {
                     "[Transcript]($url) generated"
                 }
             ) { url ->
+                val placeholders = TicketPlaceholders(
+                    ticket.ticketPanel,
+                    ticket,
+                    requester,
+                    textChannel,
+                    url
+                )
+
                 ticket.ticketPanel.transcriptChannel?.let { transcriptChannel ->
                     textChannel.guild.getChannelOf<GuildMessageChannel>(Snowflake(transcriptChannel.id))
                 }?.let { transcriptChannel ->
                     transcriptChannel.createMessage {
-                        // TODO improve embed
-                        addEmbed {
-                            field("Panel", true) { ticket.ticketPanel.displayName ?: ticket.ticketPanel.name }
-                            field("Ticket Name", true) { textChannel.name }
-                            field("Transcript", true) { "[Click here]($url)" }
-                        }
+                        embeds = mutableListOf(generateTranscriptEmbed(placeholders))
                     }
                 }
             }

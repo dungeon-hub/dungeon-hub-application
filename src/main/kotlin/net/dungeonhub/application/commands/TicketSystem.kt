@@ -356,36 +356,6 @@ class TicketSystem : Extension() {
         }
     }
 
-    fun replacePlaceholders(element: JsonElement, placeholders: TicketPlaceholders): JsonElement {
-        return when (element) {
-            is JsonObject -> {
-                val obj = JsonObject()
-                for ((key, value) in element.entrySet()) {
-                    obj.add(key, replacePlaceholders(value, placeholders))
-                }
-                obj
-            }
-
-            is JsonArray -> {
-                val array = JsonArray()
-                for (value in element) {
-                    array.add(replacePlaceholders(value, placeholders))
-                }
-                array
-            }
-
-            is JsonPrimitive -> {
-                if (element.isString) {
-                    JsonPrimitive(replacePlaceholders(element.asString, placeholders))
-                } else {
-                    element
-                }
-            }
-
-            else -> element
-        }
-    }
-
     fun getDefaultButtons(claimButton: Boolean): List<ActionRowBuilder.() -> Unit> {
         return listOf<ActionRowBuilder.() -> Unit>({
             interactionButton(ButtonStyle.Danger, "close-ticket") {
@@ -442,6 +412,36 @@ class TicketSystem : Extension() {
             matcher.appendTail(result)
 
             return result.toString().trim()
+        }
+
+        fun replacePlaceholders(element: JsonElement, placeholders: TicketPlaceholders): JsonElement {
+            return when (element) {
+                is JsonObject -> {
+                    val obj = JsonObject()
+                    for ((key, value) in element.entrySet()) {
+                        obj.add(key, replacePlaceholders(value, placeholders))
+                    }
+                    obj
+                }
+
+                is JsonArray -> {
+                    val array = JsonArray()
+                    for (value in element) {
+                        array.add(replacePlaceholders(value, placeholders))
+                    }
+                    array
+                }
+
+                is JsonPrimitive -> {
+                    if (element.isString) {
+                        JsonPrimitive(replacePlaceholders(element.asString, placeholders))
+                    } else {
+                        element
+                    }
+                }
+
+                else -> element
+            }
         }
 
         fun getControlButtons(): List<ActionRowBuilder.() -> Unit> {
