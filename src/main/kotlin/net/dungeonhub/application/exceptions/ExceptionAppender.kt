@@ -57,12 +57,12 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
         }
 
         scheduler.launch {
-            val kord: Kord? = DiscordConnection.bot?.kordRef
+            if(!DiscordConnection.botIsLoaded) return@launch
 
-            if (kord != null) {
-                ApplicationService.getBotOwner(kord)?.dm {
-                    embeds = mutableListOf(embed)
-                }
+            val kord: Kord = DiscordConnection.bot.kordRef
+
+            ApplicationService.getBotOwner(kord)?.dm {
+                embeds = mutableListOf(embed)
             }
         }
     }

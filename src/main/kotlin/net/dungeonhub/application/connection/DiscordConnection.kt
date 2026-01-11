@@ -72,6 +72,8 @@ object DiscordConnection : StartupListener {
     var uptime: Instant = Instant.now()
 
     lateinit var bot: ExtensibleBot
+    val botIsLoaded: Boolean
+        get() = ::bot.isInitialized
 
     /**
      * Returns a line for command-line output.
