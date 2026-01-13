@@ -476,6 +476,10 @@ class CntSystem : Extension() {
                             ?.asChannelOfOrNull<GuildMessageChannel>() ?: channel
 
                         response = cntChannel.createMessage {
+                            ServerProperty.CNT_PING_ROLE
+                                .getValue(channel.guildId.value.toLong())
+                                .orElse(null)
+                                ?.let { content = "<@&$it>" }
                             embeds = mutableListOf(cntEmbed)
 
                             addUnclaimedCntButtons()
@@ -510,6 +514,11 @@ class CntSystem : Extension() {
                         )
 
                     response.edit {
+                        ServerProperty.CNT_PING_ROLE
+                            .getValue(channel.guildId.value.toLong())
+                            .orElse(null)
+                            ?.let { content = "<@&$it>" }
+
                         embeds = embed
                     }
                 }
