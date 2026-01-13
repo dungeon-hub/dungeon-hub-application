@@ -2,6 +2,7 @@ package net.dungeonhub.application.commands
 
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.entity.channel.CategorizableChannel
+import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.converters.impl.int
 import dev.kordex.core.commands.converters.impl.string
@@ -21,6 +22,8 @@ import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.hypixel.service.FormattingService
 import net.dungeonhub.i18n.Translations
+import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
+import java.util.*
 
 /**
  * Command to calculate the price for some amount of carries.
@@ -70,37 +73,7 @@ class CalcPriceCommand : Extension() {
                         .getByIdentifier(arguments.carryDifficulty)
                         ?: throw InvalidOptionException("carry-difficulty")
 
-                    val totalPrice = carryDifficulty.calculateTotalPrice(arguments.amount)
-                    val pricePerCarry = carryDifficulty.calculatePricePerCarry(arguments.amount)
-
-                    if (totalPrice < 0) {
-                        throw CommandExecutionException("Something went wrong.. The calculated price ($totalPrice) is negative?")
-                    }
-
-                    val priceText = if (totalPrice != 0L) "${FormattingService.makeNumberReadable(totalPrice)} (${
-                        FormattingService.makeNumberReadable(pricePerCarry)
-                    }) coins" else "Free"
-
-                    val embed = ApplicationService.embed
-                    embed.color = EmbedColor.Information.color
-                    embed.title =
-                        Translations.Command.CalcPrice.Response.title.withLocale(event.getLocale()).translate()
-                    embed.field(
-                        Translations.Command.CalcPrice.Response.Fields.type.translateLocale(event.getLocale()),
-                        true
-                    ) {
-                        carryTier.displayName + " | " + carryDifficulty.displayName
-                    }
-                    embed.field(
-                        Translations.Command.CalcPrice.Response.Fields.amount.translateLocale(event.getLocale()),
-                        true
-                    ) { arguments.amount.toString() }
-                    embed.field(
-                        Translations.Command.CalcPrice.Response.Fields.price.translateLocale(event.getLocale()),
-                        true
-                    ) { priceText }
-
-                    carryDifficulty.thumbnailUrl?.let { embed.thumbnail { url = it } }
+                    val embed = generateCalculatedPriceEmbed(carryDifficulty, arguments.amount, event.getLocale())
 
                     embeds = mutableListOf(embed)
                 }
@@ -135,6 +108,44 @@ class CalcPriceCommand : Extension() {
             description = Translations.Command.CalcPrice.Arguments.Amount.description
             maxValue = 200
             minValue = 1
+        }
+    }
+
+    companion object {
+        fun generateCalculatedPriceEmbed(carryDifficulty: CarryDifficultyModel, amount: Int, locale: Locale? = null): EmbedBuilder {
+            val totalPrice = carryDifficulty.calculateTotalPrice(amount)
+            val pricePerCarry = carryDifficulty.calculatePricePerCarry(amount)
+
+            if (totalPrice < 0) {
+                throw CommandExecutionException("Something went wrong.. The calculated price ($totalPrice) is negative?")
+            }
+
+            val priceText = if (totalPrice != 0L) "${FormattingService.makeNumberReadable(totalPrice)} (${
+                FormattingService.makeNumberReadable(pricePerCarry)
+            }) coins" else "Free"
+
+            val embed = ApplicationService.embed
+            embed.color = EmbedColor.Information.color
+            embed.title =
+                Translations.Command.CalcPrice.Response.title.withLocale(locale).translate()
+            embed.field(
+                Translations.Command.CalcPrice.Response.Fields.type.withLocale(locale).translate(),
+                true
+            ) {
+                carryDifficulty.carryTier.displayName + " | " + carryDifficulty.displayName
+            }
+            embed.field(
+                Translations.Command.CalcPrice.Response.Fields.amount.withLocale(locale).translate(),
+                true
+            ) { amount.toString() }
+            embed.field(
+                Translations.Command.CalcPrice.Response.Fields.price.withLocale(locale).translate(),
+                true
+            ) { priceText }
+
+            carryDifficulty.thumbnailUrl?.let { embed.thumbnail { url = it } }
+
+            return embed
         }
     }
 }
