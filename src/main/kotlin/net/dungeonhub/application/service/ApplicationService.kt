@@ -38,6 +38,7 @@ import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
 import net.dungeonhub.exception.PlayerNotFoundException
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
+import net.dungeonhub.hypixel.entities.skyblock.statsoverview.StatsOverviewType
 import net.dungeonhub.hypixel.service.FormattingService
 import net.dungeonhub.model.carry.CarryModel
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
@@ -264,7 +265,7 @@ object ApplicationService {
         val embedBuilder = getEmbed(warningModel.time.toKotlinInstant())
         embedBuilder.color = EmbedColor.Information.color
         embedBuilder.title = "You were warned on server `${
-            DiscordConnection.bot!!.kordRef.getGuildOrNull(Snowflake(warningModel.server.id))?.name ?: "unknown"
+            DiscordConnection.bot.kordRef.getGuildOrNull(Snowflake(warningModel.server.id))?.name ?: "unknown"
         }`"
 
         embedBuilder.field("You") { "<@${warningModel.user.id}>" }
@@ -353,7 +354,7 @@ object ApplicationService {
     // as well as the skycrypt api takes long too
     //probably first load skycrypt, then the rest?
     @Throws(FailedToLoadEmbedException::class)
-    suspend fun getPlayerDataEmbed(ign: String, discordId: Long?, cacheExpiration: Int = 60): EmbedBuilder {
+    suspend fun getPlayerDataEmbed(ign: String, discordId: Long?, cacheExpiration: Int = 60, statsOverviewTypes: List<StatsOverviewType>? = null): EmbedBuilder {
         val embed = embed
 
         val uuid: UUID = MojangConnection.getUUIDByName(ign)
@@ -390,7 +391,7 @@ object ApplicationService {
             ign
         }
 
-        val statsOverview = HypixelApiConnection().withCacheExpiration(cacheExpiration).getStatsOverview(uuid)
+        val statsOverview = HypixelApiConnection().withCacheExpiration(cacheExpiration).getStatsOverview(uuid, statsOverviewTypes)
 
         if (statsOverview == null) {
             embed.description = "No profiles found."
@@ -788,7 +789,7 @@ object ApplicationService {
     }
 
     suspend fun getGlobalCommandId(name: String): Snowflake? {
-        return DiscordConnection.bot?.kordRef?.getGlobalApplicationCommands()?.firstOrNull { it.name == name }?.id
+        return DiscordConnection.bot.kordRef.getGlobalApplicationCommands().firstOrNull { it.name == name }?.id
     }
 
     fun StaticMessageModel.toEmbed(locale: Locale? = null): EmbedBuilder {

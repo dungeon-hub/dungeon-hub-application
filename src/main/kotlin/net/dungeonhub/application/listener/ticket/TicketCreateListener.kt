@@ -42,6 +42,8 @@ import net.dungeonhub.connection.TicketConnection
 import net.dungeonhub.connection.TicketPanelConnection
 import net.dungeonhub.enums.FormType
 import net.dungeonhub.enums.TicketState
+import net.dungeonhub.hypixel.entities.skyblock.statsoverview.BuiltInStatsOverviewType
+import net.dungeonhub.hypixel.entities.skyblock.statsoverview.StatsOverviewType
 import net.dungeonhub.model.ticket.TicketCreationModel
 import net.dungeonhub.model.ticket.TicketFormResponseModel
 import net.dungeonhub.model.ticket.TicketModel
@@ -300,36 +302,39 @@ class TicketCreateListener : Extension() {
         suspend fun parseEmbeds(embedData: JsonElement, placeholders: TicketPlaceholders): MutableList<EmbedBuilder> {
             val embedBuilders: MutableList<EmbedBuilder> = mutableListOf()
 
+            suspend fun parseJsonObjectEmbed(jsonElement: JsonElement): EmbedBuilder? {
+                val embedBuilder = EmbedBuilder()
+
+                val jsonObject = jsonElement.asJsonObject
+
+                if(jsonObject.has("customEmbed") && !jsonObject.getAsJsonPrimitive("customEmbed")?.asString.isNullOrEmpty()) {
+                    return buildCustomEmbed(
+                        jsonObject.getAsJsonPrimitive("customEmbed")?.asString!!,
+                        placeholders,
+                        jsonObject.getAsJsonPrimitive("customData")?.asString
+                    )
+                }
+
+                jsonObject
+                    .entrySet()
+                    .forEach { entry: Map.Entry<String, JsonElement> ->
+                        embedBuilder.applyJson(
+                            entry.key,
+                            replacePlaceholders(entry.value, placeholders)
+                        )
+                    }
+
+                return embedBuilder
+            }
+
             try {
                 if (embedData.isJsonObject) {
-                    val embedBuilder = EmbedBuilder()
-
-                    embedData.asJsonObject
-                        .entrySet()
-                        .forEach {
-                            embedBuilder.applyJson(
-                                it.key,
-                                replacePlaceholders(it.value, placeholders)
-                            )
-                        }
-
-                    embedBuilders.add(embedBuilder)
+                    parseJsonObjectEmbed(embedData)?.let { embedBuilders.add(it) }
                 } else if (embedData.isJsonArray) {
                     embedData.asJsonArray
                         .forEach { jsonElement: JsonElement ->
                             if (jsonElement.isJsonObject) {
-                                val embedBuilder = EmbedBuilder()
-
-                                jsonElement.asJsonObject
-                                    .entrySet()
-                                    .forEach { entry: Map.Entry<String, JsonElement> ->
-                                        embedBuilder.applyJson(
-                                            entry.key,
-                                            replacePlaceholders(entry.value, placeholders)
-                                        )
-                                    }
-
-                                embedBuilders.add(embedBuilder)
+                                parseJsonObjectEmbed(jsonElement)?.let { embedBuilders.add(it) }
                             } else if (jsonElement.isJsonPrimitive) {
                                 buildCustomEmbed(jsonElement.asString, placeholders)?.let { embedBuilders.add(it) }
                             }
@@ -344,12 +349,16 @@ class TicketCreateListener : Extension() {
             return embedBuilders
         }
 
-        suspend fun buildCustomEmbed(type: String, placeholders: TicketPlaceholders): EmbedBuilder? {
+        suspend fun buildCustomEmbed(type: String, placeholders: TicketPlaceholders, customData: String? = null): EmbedBuilder? {
             return when (type) {
                 "stats-overview" -> placeholders.ticketUserIgn?.let {
+                    val customStats: List<StatsOverviewType>? = customData?.split(",")
+                        ?.map { statsType -> BuiltInStatsOverviewType.valueOf(statsType) }
+
                     ApplicationService.getPlayerDataEmbed(
                         it,
-                        placeholders.ticketUserId
+                        placeholders.ticketUserId,
+                        statsOverviewTypes = customStats
                     )
                 }
                 "price-overview" -> placeholders.carryTier?.let { MessagesService.getPriceEmbed(it) }
