@@ -12,8 +12,6 @@ import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.TicketPanelConnection
 import net.dungeonhub.enums.FormType
-import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
-import net.dungeonhub.model.carry_tier.CarryTierModel
 import net.dungeonhub.model.ticket.TicketFormResponseModel
 import net.dungeonhub.model.ticket_panel.TicketPanelFormModel
 import net.dungeonhub.model.ticket_panel.TicketPanelModel
@@ -93,9 +91,11 @@ class TicketFormListener : Extension() {
                     carryTier.relatedTicketPanel?.id == ticketPanel.id
                 } ?: return "This ticket panel doesn't have a linked carry tier."
 
-                if(findCarryDifficulty(carryTier, value) == null) {
+                val carryDifficultyConnection = CarryDifficultyConnection[carryTier].authenticated()
+
+                if(carryDifficultyConnection.findCarryDifficultyByString(value) == null) {
                     "The carry difficulty $value does not exist; select one of the following:\n${
-                        CarryDifficultyConnection[carryTier].authenticated().allCarryDifficulties?.map { it.displayName }?.joinToString(", ")
+                        carryDifficultyConnection.allCarryDifficulties?.joinToString(", ") { it.displayName }
                     }"
                 } else null
             }
@@ -112,18 +112,5 @@ class TicketFormListener : Extension() {
     fun validateCustomForm(relatedQuestion: TicketPanelFormModel, value: String?): String? {
         // TODO implement
         return null
-    }
-
-    companion object {
-        // TODO extract into service/connection?
-        fun findCarryDifficulty(carryTier: CarryTierModel, carryDifficultyName: String): CarryDifficultyModel? {
-            val allCarryDifficulties = CarryDifficultyConnection[carryTier].authenticated().allCarryDifficulties
-                ?: return null
-
-            return allCarryDifficulties.firstOrNull { it.displayName.equals(carryDifficultyName, true) }
-                ?: allCarryDifficulties.firstOrNull { it.identifier.equals(carryDifficultyName, true) }
-                ?: allCarryDifficulties.firstOrNull { it.displayName.startsWith(carryDifficultyName) }
-                ?: allCarryDifficulties.firstOrNull { it.identifier.startsWith(carryDifficultyName) }
-        }
     }
 }

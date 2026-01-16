@@ -161,7 +161,6 @@ class TicketTranscriptListener : Extension() {
                 }
             }
 
-        // TODO make it possible to add a custom message to this
         private suspend fun sendUserTranscript(
             url: String?,
             transcriptInfoMessage: Message,

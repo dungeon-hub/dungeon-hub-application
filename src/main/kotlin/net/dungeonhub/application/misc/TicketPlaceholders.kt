@@ -6,7 +6,7 @@ import dev.kord.core.entity.channel.TextChannel
 import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.exceptions.NotLinkedException
-import net.dungeonhub.application.listener.ticket.TicketFormListener
+import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
@@ -52,7 +52,7 @@ class TicketPlaceholders(
     val formCarryDifficulty by lazy {
         formCarryDifficultyName?.let { formCarryDifficultyName ->
             carryTier?.let { carryTier ->
-                TicketFormListener.findCarryDifficulty(carryTier, formCarryDifficultyName)
+                CarryDifficultyConnection[carryTier].authenticated().findCarryDifficultyByString(formCarryDifficultyName)
             }
         }
     }

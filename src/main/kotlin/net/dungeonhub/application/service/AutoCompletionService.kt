@@ -14,21 +14,20 @@ import net.dungeonhub.connection.*
 object AutoCompletionService {
     val carryType: AutoCompleteCallback = { event ->
         suggest(
-            (CarryTypeConnection[event.getGuildId()].authenticated()
+            CarryTypeConnection[event.getGuildId()].authenticated()
                 .allCarryTypes
-                ?: listOf())
-                .filter { carryType ->
+                ?.filter { carryType ->
                     focusedOption.value.isEmpty()
                             || (carryType.identifier.contains(focusedOption.value, true)
                             || carryType.displayName.contains(focusedOption.value, true))
                 }
-                .map { carryType ->
+                ?.map { carryType ->
                     Choice.StringChoice(
                         name = carryType.displayName,
                         value = carryType.identifier,
                         nameLocalizations = Optional()
                     )
-                }
+                } ?: listOf()
         )
     }
 
@@ -41,27 +40,25 @@ object AutoCompletionService {
 
         if (carryType != null) {
             suggest(
-                (CarryTypeConnection[event.getGuildId()].authenticated()
-                    .getByIdentifier(carryType)
+                CarryTypeConnection[event.getGuildId()].authenticated()
+                    .findCarryTypeByString(carryType)
                     ?.let { carryTypeModel ->
                         CarryTierConnection[carryTypeModel].authenticated().allCarryTiers
-                    } ?: listOf())
-                    .filter { carryTier ->
+                    }
+                    ?.filter { carryTier ->
                         focusedOption.value.isEmpty()
                                 || (carryTier.identifier.contains(focusedOption.value, true)
                                 || carryTier.displayName.contains(focusedOption.value, true))
                     }
-                    .map { carryTier ->
+                    ?.map { carryTier ->
                         Choice.StringChoice(
                             name = carryTier.displayName,
                             value = carryTier.identifier,
                             nameLocalizations = Optional()
                         )
-                    }
+                    } ?: listOf()
             )
         }
-
-        listOf<Choice>()
     }
 
     val carryDifficulty: AutoCompleteCallback = { event ->
@@ -75,30 +72,30 @@ object AutoCompletionService {
             entry.key.equals("carry-tier", ignoreCase = true)
         }.values.firstOrNull()?.value as String?
 
-        if (carryTier != null) {
+        if (carryType != null && carryTier != null) {
             val carryTierModel =
                 CarryTypeConnection[event.getGuildId()].authenticated()
-                    .getByIdentifier(carryType)
-                    ?.let { carryTypeModel ->
-                        CarryTierConnection[carryTypeModel].authenticated().getByIdentifier(carryTier)
+                    .findCarryTypeByString(carryType)
+                    ?.let {
+                        CarryTierConnection[it].authenticated().findCarryTierByString(carryTier)
                     }
 
             if (carryTierModel != null) {
                 suggest(
-                    (CarryDifficultyConnection[carryTierModel].authenticated()
-                        .allCarryDifficulties ?: listOf())
-                        .filter { carryDifficulty ->
+                    CarryDifficultyConnection[carryTierModel].authenticated()
+                        .allCarryDifficulties
+                        ?.filter { carryDifficulty ->
                             focusedOption.value.isEmpty()
                                     || (carryDifficulty.identifier.contains(focusedOption.value, true)
                                     || carryDifficulty.displayName.contains(focusedOption.value, true))
                         }
-                        .map { carryDifficulty ->
+                        ?.map { carryDifficulty ->
                             Choice.StringChoice(
                                 name = carryDifficulty.displayName,
                                 value = carryDifficulty.identifier,
                                 nameLocalizations = Optional()
                             )
-                        }
+                        } ?: listOf()
                 )
             }
         } else {
@@ -110,25 +107,23 @@ object AutoCompletionService {
 
             if (carryTierByCategory != null) {
                 suggest(
-                    (CarryDifficultyConnection[carryTierByCategory].authenticated()
-                        .allCarryDifficulties ?: listOf())
-                        .filter { carryDifficulty ->
+                    CarryDifficultyConnection[carryTierByCategory].authenticated()
+                        .allCarryDifficulties
+                        ?.filter { carryDifficulty ->
                             focusedOption.value.isEmpty()
                                     || (carryDifficulty.identifier.contains(focusedOption.value, true)
                                     || carryDifficulty.displayName.contains(focusedOption.value, true))
                         }
-                        .map { carryDifficulty ->
+                        ?.map { carryDifficulty ->
                             Choice.StringChoice(
                                 name = carryDifficulty.displayName,
                                 value = carryDifficulty.identifier,
                                 nameLocalizations = Optional()
                             )
-                        }
+                        } ?: listOf()
                 )
             }
         }
-
-        listOf<Choice>()
     }
 
     val purgeType: AutoCompleteCallback = { event ->
@@ -159,8 +154,6 @@ object AutoCompletionService {
                     }
             )
         }
-
-        listOf<Choice>()
     }
 
     val knownStaticResource: AutoCompleteCallback = { _ ->

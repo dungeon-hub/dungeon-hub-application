@@ -147,8 +147,8 @@ class LoggingSystem : Extension() {
                         return@respond
                     }
 
-                    val carryDifficulty =
-                        CarryDifficultyConnection[carryTier].authenticated().getByIdentifier(arguments.carryDifficulty)
+                    val carryDifficulty = CarryDifficultyConnection[carryTier].authenticated()
+                        .findCarryDifficultyByString(arguments.carryDifficulty)
 
                     if (carryDifficulty == null) {
                         embeds = mutableListOf(

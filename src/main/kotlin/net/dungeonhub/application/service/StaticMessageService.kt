@@ -116,8 +116,8 @@ object StaticMessageService : StartupListener {
 
     suspend fun updateStaticMessage(staticMessage: StaticMessageModel) {
         val channel = try {
-            DiscordConnection.bot?.kordRef
-                ?.getChannel(Snowflake(staticMessage.channelId))
+            DiscordConnection.bot.kordRef
+                .getChannel(Snowflake(staticMessage.channelId))
                 ?.asChannelOfOrNull<MessageChannel>()
         } catch (_: RestRequestException) {
             null
