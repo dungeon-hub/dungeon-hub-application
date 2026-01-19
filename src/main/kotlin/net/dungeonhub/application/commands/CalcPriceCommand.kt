@@ -70,7 +70,7 @@ class CalcPriceCommand : Extension() {
                     }
 
                     val carryDifficulty = CarryDifficultyConnection[carryTier].authenticated()
-                        .getByIdentifier(arguments.carryDifficulty)
+                        .findCarryDifficultyByString(arguments.carryDifficulty)
                         ?: throw InvalidOptionException("carry-difficulty")
 
                     val embed = generateCalculatedPriceEmbed(carryDifficulty, arguments.amount, event.getLocale())

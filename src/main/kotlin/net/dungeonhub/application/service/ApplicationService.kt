@@ -34,6 +34,7 @@ import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.misc.FlagResponse
+import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
 import net.dungeonhub.exception.PlayerNotFoundException
@@ -391,7 +392,9 @@ object ApplicationService {
             ign
         }
 
-        val statsOverview = HypixelApiConnection().withCacheExpiration(cacheExpiration).getStatsOverview(uuid, statsOverviewTypes)
+        val discordUser = DiscordUserConnection.authenticated().findUserByUuid(uuid)
+
+        val statsOverview = HypixelApiConnection().withCacheExpiration(cacheExpiration).getStatsOverview(uuid, discordUser?.primarySkyblockProfile, statsOverviewTypes)
 
         if (statsOverview == null) {
             embed.description = "No profiles found."

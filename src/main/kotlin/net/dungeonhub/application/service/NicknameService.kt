@@ -84,7 +84,7 @@ object NicknameService {
             }
         }
 
-        val updateModel = DiscordUserUpdateModel(uuid)
+        val updateModel = DiscordUserUpdateModel(uuid, null)
 
         val userModel = DiscordUserConnection.authenticated().updateUser(user.id.value.toLong(), updateModel)
             ?: throw CommandExecutionException("Couldn't update your user data.")

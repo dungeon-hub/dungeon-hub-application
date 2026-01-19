@@ -12,10 +12,22 @@ class PlayerInformation(
     private val discordUserModel: DiscordUserModel,
     private val cacheExpiration: Int
 ) {
+    private val apiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
+
+    val profiles by lazy {
+        apiConnection.getSkyblockProfiles(
+            discordUserModel.minecraftId ?: throw NotLinkedException()
+        )?.profiles
+    }
+
+    val selectedProfiles by lazy {
+        profiles?.filter { discordUserModel.primarySkyblockProfile == null || it.profileId == discordUserModel.primarySkyblockProfile }
+            ?.takeIf { it.isNotEmpty() }
+            ?: profiles
+    }
+
     val replacements: Map<String, () -> String>
         get() {
-            val apiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
-
             val replacements: MutableMap<String, () -> String> = HashMap()
 
             replacements["discord.name"] = { user.username }
@@ -25,16 +37,12 @@ class PlayerInformation(
             }
             replacements["skyblock.catacombs.level"] =
                 {
-                    apiConnection.getSkyblockProfiles(
-                        discordUserModel.minecraftId ?: throw NotLinkedException()
-                    )?.profiles?.maxOfOrNull {
+                    selectedProfiles?.maxOfOrNull {
                         it.getCurrentMember(discordUserModel.minecraftId!!)?.dungeons?.catacombsLevel ?: 0
                     }?.toString() ?: "?"
                 }
             replacements["skyblock.level"] = {
-                apiConnection.getSkyblockProfiles(
-                    discordUserModel.minecraftId ?: throw NotLinkedException()
-                )?.profiles?.maxOfOrNull {
+                selectedProfiles?.maxOfOrNull {
                     it.getCurrentMember(discordUserModel.minecraftId ?: throw NotLinkedException())?.leveling?.level
                         ?: 0
                 }?.toString() ?: "?"

@@ -193,9 +193,9 @@ object DiscordConnection : StartupListener {
             }
         }
 
-        ClassLoader.loadExtensions(bot!!)
+        ClassLoader.loadExtensions(bot)
 
-        bot?.on<ReadyEvent> {
+        bot.on<ReadyEvent> {
             if (!started) {
                 ClassLoader.executePostStart()
 
@@ -204,7 +204,7 @@ object DiscordConnection : StartupListener {
             }
         }
 
-        bot?.start()
+        bot.start()
     }
 
     /**
@@ -217,11 +217,11 @@ object DiscordConnection : StartupListener {
 
         message.add("Im on servers:")
         message.addAll(
-            bot?.kordRef?.guilds?.map { server ->
+            bot.kordRef.guilds.map { server ->
                 "${server.name} with id '${server.id}' by ${
                     server.withStrategy(EntitySupplyStrategy.cache).getOwnerOrNull()?.effectiveName ?: "no-name"
                 } (${server.ownerId})"
-            }!!.toList()
+            }.toList()
         )
 
         return message
@@ -229,9 +229,9 @@ object DiscordConnection : StartupListener {
 
     override suspend fun onStart() {
         ServerJoinListener.GUILD_ON_JOIN.addAll(
-            bot?.kordRef?.guilds?.map { guild ->
+            bot.kordRef.guilds.map { guild ->
                 guild.id.value
-            }?.toList()!!
+            }.toList()
         )
     }
 
@@ -240,7 +240,7 @@ object DiscordConnection : StartupListener {
         getServerListMessage().forEach(logger::info)
         logger.info(LINE)
 
-        ApplicationService.getBotOwner(bot?.kordRef!!)?.dm {
+        ApplicationService.getBotOwner(bot.kordRef)?.dm {
             val embed = ApplicationService.embed
             embed.color(EmbedColor.Positive)
             embed.description = "Bot started"

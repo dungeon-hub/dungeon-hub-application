@@ -51,7 +51,6 @@ import net.dungeonhub.enums.StaticMessageType
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.model.cnt_request.CntRequestCreationModel
 import net.dungeonhub.model.cnt_request.CntRequestModel
-import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
 import net.dungeonhub.model.reputation.ReputationCreationModel
 import net.dungeonhub.model.reputation.ReputationModel
 import net.dungeonhub.mojang.connection.MojangConnection
@@ -142,8 +141,7 @@ class CntSystem : Extension() {
                     return@action
                 }
 
-                val claimer = DiscordUserConnection.authenticated().getById(claimerId)
-                    ?: DiscordUserConnection.authenticated().updateUser(claimerId, DiscordUserUpdateModel(null))
+                val claimer = DiscordUserConnection.authenticated().getByIdOrCreate(claimerId)
                     ?: throw CommandExecutionException("Couldn't load CNT claimer!")
 
                 val claimedIgn = claimer.minecraftId?.let(MojangConnection::getNameByUUID)
