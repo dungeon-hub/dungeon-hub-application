@@ -1,5 +1,6 @@
 package net.dungeonhub.application.listener.ticket
 
+import com.google.gson.JsonParser
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.event.interaction.GuildModalSubmitInteractionCreateEvent
 import dev.kordex.core.extensions.Extension
@@ -65,7 +66,9 @@ class TicketFormListener : Extension() {
 
     fun findRelatedQuestion(ticketPanel: TicketPanelModel, key: String): TicketPanelFormModel? {
         for(formQuestion in ticketPanel.formQuestions) {
-            if(formQuestion.type == FormType.Predefined && formQuestion.data == key) {
+            val data = JsonParser.parseString(formQuestion.data)?.asJsonPrimitive?.asString
+
+            if(formQuestion.type == FormType.Predefined && data == key) {
                 return formQuestion
             }
         }
@@ -81,8 +84,10 @@ class TicketFormListener : Extension() {
             return validateCustomForm(relatedQuestion, value)
         }
 
+        val data = JsonParser.parseString(relatedQuestion.data)?.asJsonPrimitive?.asString
+
         // TODO enum?
-        return when(relatedQuestion.data) {
+        return when(data) {
             "carry-difficulty" -> {
                 if(value == null) return null // TODO setting about "required"?
 

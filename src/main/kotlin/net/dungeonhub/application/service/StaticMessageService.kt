@@ -57,6 +57,7 @@ import kotlin.time.Instant.Companion.fromEpochMilliseconds
 object StaticMessageService : StartupListener {
     private val logger = LoggerFactory.getLogger(StaticMessageService::class.java)
     lateinit var scheduler: Scheduler
+    val staticMessageUpdates = mutableListOf<StaticMessageModel>()
 
     val reputationLeaderboardDescription by lazy {
         "Check `/help topic:reputation` to see how you can gain reputation.\n" +
@@ -70,28 +71,42 @@ object StaticMessageService : StartupListener {
 
         scheduler = Scheduler()
 
-        val task = scheduler.schedule(4.hours, startNow = false, name = "Static-Message-Schedule", repeat = true) {
+        val refreshAllTask = scheduler.schedule(4.hours, startNow = false, name = "Static-Message-Schedule", repeat = true) {
             refreshAllStaticMessages()
         }
 
+        val refreshScheduleTask = scheduler.schedule(3.seconds, startNow = false, name = "Static-Message-Update-Scheduler", repeat = true) {
+            staticMessageUpdateWave()
+        }
+
         scheduler.launch {
-            delay(30.seconds)
-            task.callNow()
-            task.start()
+            delay(20.seconds)
+            refreshAllTask.callNow()
+            refreshScheduleTask.callNow()
+            refreshAllTask.start()
+            refreshScheduleTask.start()
         }
     }
 
-    // TODO rather use a list and a worker that handles those jobs
-    suspend fun refreshAllStaticMessages() {
-        val staticMessages = DiscordServerConnection.authenticated().findGlobalStaticMessages()
-            ?: return
+    private suspend fun staticMessageUpdateWave() {
+        val currentWave = staticMessageUpdates.removeFirstOrNull() ?: return
+
+        refreshStaticMessage(currentWave)
+    }
+
+    fun refreshAllStaticMessages() {
+        val staticMessages = DiscordServerConnection.authenticated().findGlobalStaticMessages() ?: return
 
         for(staticMessage in staticMessages) {
-            updateStaticMessage(staticMessage)
+            staticMessageUpdates.addLast(staticMessage)
         }
     }
 
-    suspend fun updateScoreLeaderboard(carryTypes: List<CarryTypeModel>) {
+    fun updateStaticMessage(staticMessage: StaticMessageModel) {
+        staticMessageUpdates.addFirst(staticMessage)
+    }
+
+    fun updateScoreLeaderboard(carryTypes: List<CarryTypeModel>) {
         for(carryType in carryTypes) {
             updateStaticMessages(carryType.server.id, StaticMessageType.ScoreLeaderboard, listOf(carryType.id))
         }
@@ -102,7 +117,7 @@ object StaticMessageService : StartupListener {
         }
     }
 
-    suspend fun updateStaticMessages(server: Long, staticMessageType: StaticMessageType, objectIds: List<Long>?) {
+    fun updateStaticMessages(server: Long, staticMessageType: StaticMessageType, objectIds: List<Long>?) {
         var staticMessages = StaticMessageConnection[server].authenticated().findStaticMessages(staticMessageType, null) ?: emptyList()
 
         if(objectIds != null) {
@@ -114,7 +129,7 @@ object StaticMessageService : StartupListener {
         }
     }
 
-    suspend fun updateStaticMessage(staticMessage: StaticMessageModel) {
+    suspend fun refreshStaticMessage(staticMessage: StaticMessageModel) {
         val channel = try {
             DiscordConnection.bot.kordRef
                 .getChannel(Snowflake(staticMessage.channelId))
@@ -156,10 +171,10 @@ object StaticMessageService : StartupListener {
             createdMessage
         } ?: return
 
-        updateStaticMessage(updatedStaticMessage, message)
+        refreshStaticMessage(updatedStaticMessage, message)
     }
 
-    suspend fun updateStaticMessage(staticMessage: StaticMessageModel, message: MessageBehavior) {
+    private suspend fun refreshStaticMessage(staticMessage: StaticMessageModel, message: MessageBehavior) {
         message.edit {
             embeds = getStaticMessageEmbeds(staticMessage)
             setAdditionalMessageProperties(staticMessage)()
@@ -336,6 +351,10 @@ object StaticMessageService : StartupListener {
                 if(staticMessage.objectIds.isEmpty()) {
                     embed.description = "Please assign a ticket panel to this message."
                     embed.color = EmbedColor.Negative.color
+                }
+
+                if(embed.title.isNullOrEmpty() && embed.description.isNullOrEmpty()) {
+                    embed.description = "Open a ticket using the buttons below."
                 }
 
                 return mutableListOf(embed)

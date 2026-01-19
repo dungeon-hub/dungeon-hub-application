@@ -128,6 +128,7 @@ class StaticMessageCommand: Extension() {
                     val connection = StaticMessageConnection[guild!!.id.value.toLong()].authenticated()
 
                     val staticMessage = connection.getById(arguments.id)
+                        ?: connection.findStaticMessages()?.firstOrNull { it.messageId == arguments.id } // TODO add endpoint
                         ?: throw CommandExecutionWarning("Couldn't find static message with the given id ${arguments.id}.")
 
                     if(staticMessage.objectIds.contains(arguments.objectId)) {
@@ -163,6 +164,7 @@ class StaticMessageCommand: Extension() {
                     val connection = StaticMessageConnection[guild!!.id.value.toLong()].authenticated()
 
                     val staticMessage = connection.getById(arguments.id)
+                        ?: connection.findStaticMessages()?.firstOrNull { it.messageId == arguments.id } // TODO add endpoint
                         ?: throw CommandExecutionWarning("Couldn't find static message with the given id ${arguments.id}.")
 
                     val updateModel = staticMessage.getUpdateModel()

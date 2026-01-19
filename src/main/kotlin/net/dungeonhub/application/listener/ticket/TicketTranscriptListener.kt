@@ -28,6 +28,7 @@ import net.dungeonhub.application.commands.TicketSystem.Companion.replacePlaceho
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.applyJson
 import net.dungeonhub.application.enums.EmbedColor
+import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.event.TicketTranscriptCreatedEvent
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.misc.TicketPlaceholders
@@ -298,9 +299,13 @@ class TicketTranscriptListener : Extension() {
                     url
                 )
 
-                ticket.ticketPanel.transcriptChannel?.let { transcriptChannel ->
+                val transcriptChannel = ticket.ticketPanel.transcriptChannel?.let { transcriptChannel ->
                     textChannel.guild.getChannelOf<GuildMessageChannel>(Snowflake(transcriptChannel.id))
-                }?.let { transcriptChannel ->
+                } ?: ServerProperty.TRANSCRIPTS_CHANNEL.getValue(ticket.ticketPanel.discordServer.id).orElse(null)?.toLongOrNull()?.let {
+                    textChannel.guild.getChannelOf<GuildMessageChannel>(Snowflake(it))
+                }
+
+                transcriptChannel?.let { transcriptChannel ->
                     transcriptChannel.createMessage {
                         embeds = mutableListOf(generateTranscriptEmbed(placeholders))
                     }

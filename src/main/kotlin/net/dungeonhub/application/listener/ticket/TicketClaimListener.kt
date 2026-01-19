@@ -104,6 +104,7 @@ class TicketClaimListener : Extension() {
         TicketSystem.scheduler.launch {
             updateTicketChannel(updatedTicket, member, textChannel)
 
+            // TODO configurable message
             textChannel.createMessage {
                 content = "<@${ticket.user.id}>, your ticket has been claimed by ${member.mention}."
                 addEmbed {

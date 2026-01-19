@@ -2,6 +2,7 @@ package net.dungeonhub.application.listener.ticket
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
@@ -89,8 +90,10 @@ class TicketCreateListener : Extension() {
     }
 
     fun ModalBuilder.loadModalOption(formQuestion: TicketPanelFormModel) {
+        val data = JsonParser.parseString(formQuestion.data)?.asJsonPrimitive?.asString
+
         if(formQuestion.type == FormType.Predefined) {
-            if(formQuestion.data == "carry-difficulty") { // TODO enum?
+            if(data == "carry-difficulty") { // TODO enum?
                 actionRow {
                     textInput( // TODO make this a select menu once that becomes available in Kord
                         TextInputStyle.Short,
@@ -100,7 +103,7 @@ class TicketCreateListener : Extension() {
                         required = true
                     }
                 }
-            } else if(formQuestion.data == "carry-amount") { // TODO enum?
+            } else if(data == "carry-amount") { // TODO enum?
                 actionRow {
                     textInput( // TODO make this a select menu once that becomes available in Kord
                         TextInputStyle.Short,
@@ -393,7 +396,7 @@ class TicketCreateListener : Extension() {
         ) {
             val allButtons = getDefaultButtons(ticketPanel.claimable) + additionalButtons
 
-            ticketChannel.createMessage {
+            val message = ticketChannel.createMessage {
                 this.content = content
                 this.embeds = embeds.toMutableList()
 
@@ -403,6 +406,9 @@ class TicketCreateListener : Extension() {
                     }
                 }
             }
+
+            // TODO config for that?
+            message.pin()
         }
     }
 }

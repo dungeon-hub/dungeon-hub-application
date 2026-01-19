@@ -9,6 +9,7 @@ import net.dungeonhub.application.exceptions.NotLinkedException
 import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.connection.TicketConnection
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.model.ticket_panel.TicketPanelModel
@@ -59,10 +60,22 @@ class TicketPlaceholders(
 
     val formCarryAmount by lazy { ticket.formResponses.firstOrNull { it.customId == "carry-amount" }?.value }
 
+    private val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
+
+    val skyblockProfiles by lazy {
+        hypixelApiConnection.getSkyblockProfiles(
+            ticketUserModel?.minecraftId ?: throw NotLinkedException()
+        )?.profiles
+    }
+
+    val selectedSkyblockProfiles by lazy {
+        skyblockProfiles?.filter { ticketUserModel?.primarySkyblockProfile == null || it.profileId == ticketUserModel?.primarySkyblockProfile }
+            ?.takeIf { it.isNotEmpty() }
+            ?: skyblockProfiles
+    }
+
     val replacements: Map<String, () -> String>
         get() {
-            val apiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
-
             val replacements: MutableMap<String, () -> String> = HashMap()
 
             replacements["user.mention"] = { "<@${ticketUserId}>" }
@@ -70,17 +83,13 @@ class TicketPlaceholders(
             replacements["interactionUser.displayName"] = { interactionUser.effectiveName }
             replacements["user.minecraft.name"] = { ticketUserIgn ?: "unlinked" }
             replacements["user.skyblock.level"] = {
-                apiConnection.getSkyblockProfiles(
-                    ticketUserModel?.minecraftId ?: throw NotLinkedException()
-                )?.profiles?.maxOfOrNull {
+                selectedSkyblockProfiles?.maxOfOrNull {
                     it.getCurrentMember(ticketUserModel?.minecraftId ?: throw NotLinkedException())?.leveling?.level
                         ?: 0
                 }?.toString() ?: "?"
             }
             replacements["user.catacombs.level"] = {
-                apiConnection.getSkyblockProfiles(
-                    ticketUserModel?.minecraftId ?: throw NotLinkedException()
-                )?.profiles?.maxOfOrNull {
+                selectedSkyblockProfiles?.maxOfOrNull {
                     it.getCurrentMember(
                         ticketUserModel?.minecraftId ?: throw NotLinkedException()
                     )?.dungeons?.catacombsLevel
@@ -89,6 +98,13 @@ class TicketPlaceholders(
             }
             replacements["panel.name"] = { ticketPanel.displayName ?: ticketPanel.name }
             replacements["ticket.id"] = { ticket.id.toString() }
+            replacements["ticket.count"] = { // TODO custom endpoint
+                val allTickets = TicketConnection[ticketPanel.discordServer, ticketPanel].authenticated().allTickets ?: emptyList()
+
+                val count = allTickets.map { it.id }.sorted().indexOf(ticket.id) + 1
+
+                count.toString()
+            }
             replacements["ticket.name"] = { ticketChannel?.name ?: "not-set" }
             replacements["transcript.url"] = { transcriptUrl ?: "unknown" }
             replacements["carry-tier.name"] = { carryTier?.displayName ?: "unknown" }
