@@ -114,6 +114,7 @@ object DiscordConnection : StartupListener {
                         }
                     }
                 }
+                stackTraceRecovery = true
             }
 
             about {
