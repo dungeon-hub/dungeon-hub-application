@@ -37,10 +37,9 @@ object AppearanceService : StartupListener {
         AppearanceType.Competing to {
             "score leaderboards for first place"
         },
-        //TODO uncomment once released
-        /*AppearanceType.Custom to {
+        AppearanceType.Custom to {
             "Customize me at dungeon-hub.net"
-        },*/
+        },
         AppearanceType.Custom to {
             "Running 100% in Kotlin!"
         },
