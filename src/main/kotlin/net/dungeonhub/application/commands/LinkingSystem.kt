@@ -398,6 +398,7 @@ class LinkingSystem : Extension() {
 
                     val updateModel = oldUserModel.getUpdateModel()
                     updateModel.minecraftId = null
+                    updateModel.primarySkyblockProfile = null
 
                     DiscordUserConnection.authenticated().updateUser(user.id.value.toLong(), updateModel)
                         ?: throw CommandExecutionException("Couldn't update your user data.")

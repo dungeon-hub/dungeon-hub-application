@@ -75,6 +75,7 @@ object NicknameService {
         DiscordUserConnection.authenticated().findUserByUuid(uuid)?.let {
             val updateModel = it.getUpdateModel()
             updateModel.minecraftId = null
+            updateModel.primarySkyblockProfile = null
             DiscordUserConnection.authenticated().updateUser(it.id, updateModel)
 
             scheduler.launch {

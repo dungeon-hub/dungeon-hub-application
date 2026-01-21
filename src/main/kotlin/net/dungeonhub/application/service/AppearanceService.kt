@@ -32,7 +32,7 @@ object AppearanceService : StartupListener {
             "Handling ${DiscordUserConnection.authenticated().countLinkedUsers() ?: 0} linked users!"
         },
         AppearanceType.Watching to {
-            "carriers on ${bot?.kordRef?.guilds?.count() ?: 0} servers"
+            "carriers on ${bot.kordRef.guilds.count()} servers"
         },
         AppearanceType.Competing to {
             "score leaderboards for first place"
@@ -97,7 +97,7 @@ object AppearanceService : StartupListener {
      * This resets the bot's appearance.
      */
     private suspend fun resetBotAppearance() {
-        bot?.kordRef?.editPresence {
+        bot.kordRef.editPresence {
             status = PresenceStatus.Online
 
             currentAppearance = if (currentAppearance >= possibleAppearances.size - 1) 0 else currentAppearance + 1

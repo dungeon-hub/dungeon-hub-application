@@ -10,6 +10,8 @@ import dev.kordex.core.commands.converters.AutoCompleteCallback
 import net.dungeonhub.application.enums.KnownStaticResource
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.connection.*
+import net.dungeonhub.hypixel.connection.HypixelApiConnection
+import net.dungeonhub.mojang.connection.MojangConnection
 
 object AutoCompletionService {
     val carryType: AutoCompleteCallback = { event ->
@@ -187,6 +189,29 @@ object AutoCompletionService {
                 )
             }.take(25)
         )
+    }
+
+    val skyblockProfile: AutoCompleteCallback = { event ->
+        val uuid = if(event.interaction.command.options.any { it.key.equals("ign") || it.key.equals("player") }) {
+            val ign = event.interaction.command.options.entries.firstOrNull { it.key.equals("ign") || it.key.equals("player") }.let { it?.value?.value as? String? }
+            ign?.let { MojangConnection.getUUIDByName(it) }
+        } else {
+            DiscordUserConnection.authenticated().getLinkedById(event.interaction.user.id.value.toLong())?.minecraftId
+        }
+
+        if(uuid != null) {
+            suggest(
+                HypixelApiConnection().getSkyblockProfiles(uuid)?.profiles?.map {
+                    it.cuteName to it.profileId
+                }?.map {
+                    Choice.StringChoice(
+                        name = it.first ?: "Unknown (${it.second})",
+                        value = it.second.toString(),
+                        nameLocalizations = Optional()
+                    )
+                } ?: emptyList()
+            )
+        }
     }
 }
 
