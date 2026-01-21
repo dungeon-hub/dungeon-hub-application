@@ -812,6 +812,12 @@ object ApplicationService {
             }
         }
 
+        if(embedOverride != null) {
+            embed.field("Embed Override") {
+                embedOverride!!
+            }
+        }
+
         return embed
     }
 }
