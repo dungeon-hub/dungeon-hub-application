@@ -78,7 +78,9 @@ class TicketPlaceholders(
         get() {
             val replacements: MutableMap<String, () -> String> = HashMap()
 
+            replacements["user.id"] = { ticketUserId.toString() }
             replacements["user.mention"] = { "<@${ticketUserId}>" }
+            replacements["user.name"] = { ticketUser?.username ?: "unknown" }
             replacements["user.displayName"] = { ticketUser?.effectiveName ?: "unknown" }
             replacements["interactionUser.displayName"] = { interactionUser.effectiveName }
             replacements["user.minecraft.name"] = { ticketUserIgn ?: "unlinked" }
