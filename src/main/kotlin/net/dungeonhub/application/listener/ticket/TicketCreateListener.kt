@@ -17,6 +17,7 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.interaction.ActionInteractionCreateEvent
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.rest.builder.component.ActionRowBuilder
+import dev.kord.rest.builder.component.option
 import dev.kord.rest.builder.interaction.ModalBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
@@ -38,9 +39,7 @@ import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.MessagesService
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
-import net.dungeonhub.connection.DiscordUserConnection
-import net.dungeonhub.connection.TicketConnection
-import net.dungeonhub.connection.TicketPanelConnection
+import net.dungeonhub.connection.*
 import net.dungeonhub.enums.FormType
 import net.dungeonhub.enums.TicketState
 import net.dungeonhub.hypixel.entities.skyblock.statsoverview.BuiltInStatsOverviewType
@@ -94,13 +93,24 @@ class TicketCreateListener : Extension() {
 
         if(formQuestion.type == FormType.Predefined) {
             if(data == "carry-difficulty") { // TODO enum?
-                actionRow {
-                    textInput( // TODO make this a select menu once that becomes available in Kord
-                        TextInputStyle.Short,
-                        "carry-difficulty",
-                        "Enter a carry difficulty"
-                    ) {
-                        required = true
+                // TODO dedicated endpoint
+                val carryTier = DiscordServerConnection.authenticated()
+                    .getAllCarryTiers(ticketPanel.discordServer.id)
+                    ?.firstOrNull { carryTier ->
+                        carryTier.relatedTicketPanel?.id == ticketPanel.id
+                    } ?: return
+
+                val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().allCarryDifficulties
+                    ?: return
+
+                label("Carry Difficulty") {
+                    stringSelect("carry-difficulty") {
+                        carryDifficulties.forEach {
+                            option(
+                                it.displayName,
+                                it.identifier
+                            )
+                        }
                     }
                 }
             } else if(data == "carry-amount") { // TODO enum?

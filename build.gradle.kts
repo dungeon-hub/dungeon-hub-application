@@ -26,6 +26,7 @@ repositories {
 
 kordEx {
     kordExVersion = "2.4.1-SNAPSHOT"
+    kordVersion = "feat-components-v2-updates-SNAPSHOT"
     jvmTarget = 21
 
     bot {

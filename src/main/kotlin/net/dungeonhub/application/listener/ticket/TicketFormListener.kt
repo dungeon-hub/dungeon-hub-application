@@ -2,6 +2,8 @@ package net.dungeonhub.application.listener.ticket
 
 import com.google.gson.JsonParser
 import dev.kord.core.behavior.interaction.response.respond
+import dev.kord.core.entity.component.StringSelectComponent
+import dev.kord.core.entity.component.TextInputComponent
 import dev.kord.core.event.interaction.GuildModalSubmitInteractionCreateEvent
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
@@ -38,8 +40,10 @@ class TicketFormListener : Extension() {
 
                 val responses = mutableListOf<TicketFormResponseModel>()
                 var responseCounter = 0
-                for (input in event.interaction.textInputs) {
-                    val validationResult = validateForm(ticketPanel!!, input.key, input.value.value)
+                for (input in event.interaction.responseComponents) {
+                    val textInput = (input.value as? TextInputComponent)?.value
+                        ?: (input.value as? StringSelectComponent)?.options?.firstOrNull()?.value
+                    val validationResult = validateForm(ticketPanel!!, input.key, textInput)
 
                     if(validationResult != null) {
                         event.interaction.deferEphemeralResponse().respond {
@@ -55,7 +59,7 @@ class TicketFormListener : Extension() {
                     responses += TicketFormResponseModel(
                         responseCounter++,
                         input.key,
-                        input.value.value ?: "no-input"
+                        textInput ?: "no-input"
                     )
                 }
 
