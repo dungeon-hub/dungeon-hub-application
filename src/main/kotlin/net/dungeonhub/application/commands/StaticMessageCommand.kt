@@ -39,7 +39,6 @@ import net.dungeonhub.i18n.Translations.Command.StaticMessage
 import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.static_message.StaticMessageCreationModel
 
-// TODO new subcommand to edit the message override
 @OptIn(AlwaysPublicResponse::class)
 @LoadExtension
 class StaticMessageCommand: Extension() {

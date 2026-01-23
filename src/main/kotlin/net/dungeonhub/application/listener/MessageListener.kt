@@ -124,7 +124,7 @@ class MessageListener : Extension() {
 
         val approvingChannel = ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.id.value.toLong())
             .orElse(null)
-            ?.let { DiscordConnection.bot?.kordRef?.getChannelOf<TextChannel>(Snowflake(it)) }
+            ?.let { DiscordConnection.bot.kordRef.getChannelOf<TextChannel>(Snowflake(it)) }
 
         val carryTypes: MutableList<CarryTypeModel> = mutableListOf()
 
@@ -163,8 +163,8 @@ class MessageListener : Extension() {
                     }
 
                     scheduler.launch {
-                        DiscordConnection.bot?.kordRef
-                            ?.getUser(Snowflake(updatedModel.carrier.id))
+                        DiscordConnection.bot.kordRef
+                            .getUser(Snowflake(updatedModel.carrier.id))
                             ?.dm {
                                 val embed = ApplicationService.embed
                                 embed.color(EmbedColor.Information)
@@ -191,7 +191,7 @@ class MessageListener : Extension() {
                         ?: (ScoreConnection[updatedModel.carryType].authenticated()
                             .getScore(updatedModel.carrier.id)?.scoreAmount ?: 0)
 
-                    val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(updatedModel.carrier.id))
+                    val carrier = DiscordConnection.bot.kordRef.getUser(Snowflake(updatedModel.carrier.id))
 
                     if (carrier != null) {
                         carrier.dm {
@@ -314,7 +314,7 @@ class MessageListener : Extension() {
 
             val approvingChannel = ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.id.value.toLong())
                 .orElse(null)
-                ?.let { DiscordConnection.bot?.kordRef?.getChannelOf<TextChannel>(Snowflake(it)) }
+                ?.let { DiscordConnection.bot.kordRef.getChannelOf<TextChannel>(Snowflake(it)) }
 
             val carryTypes: MutableList<CarryTypeModel> = mutableListOf()
 
@@ -374,8 +374,8 @@ class MessageListener : Extension() {
                         }
 
                         scheduler.launch {
-                            DiscordConnection.bot?.kordRef
-                                ?.getUser(Snowflake(updatedModel.carrier.id))
+                            DiscordConnection.bot.kordRef
+                                .getUser(Snowflake(updatedModel.carrier.id))
                                 ?.dm {
                                     val embed = ApplicationService.embed
                                     embed.color(EmbedColor.Information)
@@ -402,7 +402,7 @@ class MessageListener : Extension() {
                             ?: (ScoreConnection[updatedModel.carryType].authenticated()
                                 .getScore(updatedModel.carrier.id)?.scoreAmount ?: 0)
 
-                        val carrier = DiscordConnection.bot?.kordRef?.getUser(Snowflake(updatedModel.carrier.id))
+                        val carrier = DiscordConnection.bot.kordRef.getUser(Snowflake(updatedModel.carrier.id))
 
                         if (carrier != null) {
                             carrier.dm {
@@ -521,6 +521,15 @@ class MessageListener : Extension() {
 
     private suspend fun loadSkycryptFromTicket(event: MessageCreateEvent) {
         if (event.guildId == null || event.message.channel is DmChannel) {
+            return
+        }
+
+        if(
+            DiscordServerConnection.authenticated().findTickets(
+                event.guildId!!.value.toLong(),
+                channelId = event.message.channelId.value.toLong()
+            )?.isNotEmpty() == true
+        ) {
             return
         }
 

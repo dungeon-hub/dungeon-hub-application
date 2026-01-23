@@ -41,12 +41,11 @@ object ServerService : StartupListener {
     private suspend fun loadServers() {
         serverData.clear()
 
-        DiscordConnection.bot?.kordRef?.guilds
-            ?.collect { server ->
-                loadServerData(
-                    server.id.value.toLong()
-                )
-            }
+        DiscordConnection.bot.kordRef.guilds.collect { server ->
+            loadServerData(
+                server.id.value.toLong()
+            )
+        }
     }
 
     private suspend fun resetTimer() {

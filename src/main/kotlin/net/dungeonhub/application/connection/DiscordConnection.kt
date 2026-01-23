@@ -257,14 +257,6 @@ fun User.getMutualServers(): Flow<Member> {
     }
 }
 
-fun Guild.isDungeonHub(): Boolean {
-    return listOf(693263712626278553, 1023684107877761196).contains(id.value.toLong())
-}
-
-fun Snowflake.isDungeonHub(): Boolean {
-    return listOf(693263712626278553, 1023684107877761196).contains(value.toLong())
-}
-
 @OptIn(ExperimentalTime::class)
 fun EmbedBuilder.copy(other: EmbedBuilder) {
     this.description = other.description

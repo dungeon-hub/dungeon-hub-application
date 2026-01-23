@@ -124,7 +124,7 @@ class PurgeCommand : Extension() {
                                 }
                             }
                             .awaitAll()
-                            .flatMap { it }
+                            .flatten()
                             .distinct()
                             .filter { user -> !safeCarriers.contains(user.id.value.toLong()) }
                             .toList()
@@ -247,7 +247,7 @@ class PurgeCommand : Extension() {
                                 }
                             }
                             .awaitAll()
-                            .flatMap { it }
+                            .flatten()
                             .distinct()
                             .filter { !safeCarriers.contains(it.id.value.toLong()) }
                             .toList()

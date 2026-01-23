@@ -283,7 +283,7 @@ class ConfigCommand : Extension() {
         return embed
     }
 
-    inner class GetArguments : Arguments() {
+    class GetArguments : Arguments() {
         val property by string {
             name = "property".toKey()
             description = "The property to choose.".toKey()
@@ -306,7 +306,7 @@ class ConfigCommand : Extension() {
         }
     }
 
-    inner class SetStringArguments : Arguments() {
+    class SetStringArguments : Arguments() {
         val property by stringChoice {
             name = "property".toKey()
             description = "The string property to choose.".toKey()
@@ -337,7 +337,7 @@ class ConfigCommand : Extension() {
         }
     }
 
-    inner class SetNumberArguments : Arguments() {
+    class SetNumberArguments : Arguments() {
         val property by stringChoice {
             name = "property".toKey()
             description = "The number property to choose.".toKey()
@@ -368,7 +368,7 @@ class ConfigCommand : Extension() {
         }
     }
 
-    inner class SetBooleanArguments : Arguments() {
+    class SetBooleanArguments : Arguments() {
         val property by stringChoice {
             name = "property".toKey()
             description = "The boolean property to choose.".toKey()
@@ -399,7 +399,7 @@ class ConfigCommand : Extension() {
         }
     }
 
-    inner class SetChannelArguments : Arguments() {
+    class SetChannelArguments : Arguments() {
         val property by stringChoice {
             name = "property".toKey()
             description = "The channel property to choose.".toKey()
@@ -433,7 +433,7 @@ class ConfigCommand : Extension() {
         }
     }
 
-    inner class SetCategoryArguments : Arguments() {
+    class SetCategoryArguments : Arguments() {
         val property by stringChoice {
             name = "property".toKey()
             description = "The category property to choose.".toKey()
@@ -467,7 +467,7 @@ class ConfigCommand : Extension() {
         }
     }
 
-    inner class SetRoleArguments : Arguments() {
+    class SetRoleArguments : Arguments() {
         val property by stringChoice {
             name = "property".toKey()
             description = "The role property to choose.".toKey()

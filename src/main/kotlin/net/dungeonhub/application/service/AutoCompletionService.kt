@@ -192,8 +192,8 @@ object AutoCompletionService {
     }
 
     val skyblockProfile: AutoCompleteCallback = { event ->
-        val uuid = if(event.interaction.command.options.any { it.key.equals("ign") || it.key.equals("player") }) {
-            val ign = event.interaction.command.options.entries.firstOrNull { it.key.equals("ign") || it.key.equals("player") }.let { it?.value?.value as? String? }
+        val uuid = if(event.interaction.command.options.any { it.key == "ign" || it.key == "player" }) {
+            val ign = event.interaction.command.options.entries.firstOrNull { it.key == "ign" || it.key == "player" }.let { it?.value?.value as? String? }
             ign?.let { MojangConnection.getUUIDByName(it) }
         } else {
             DiscordUserConnection.authenticated().getLinkedById(event.interaction.user.id.value.toLong())?.minecraftId

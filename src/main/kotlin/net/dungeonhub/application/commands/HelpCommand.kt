@@ -100,7 +100,7 @@ class HelpCommand : Extension() {
         return embed
     }
 
-    inner class HelpArguments : Arguments() {
+    class HelpArguments : Arguments() {
         val helpTopic by optionalEnumChoice<HelpTopic> {
             name = "topic".toKey()
             description = "Select what topic you need help with.".toKey()

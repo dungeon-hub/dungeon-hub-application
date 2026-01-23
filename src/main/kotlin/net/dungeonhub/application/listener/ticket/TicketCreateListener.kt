@@ -78,7 +78,7 @@ class TicketCreateListener : Extension() {
                         "ticket-form-${ticketPanel.id}"
                     ) {
                         ticketPanel.formQuestions.forEach { formQuestion ->
-                            loadModalOption(formQuestion)
+                            loadModalOption(ticketPanel, formQuestion)
                         }
                     }
                     return@action
@@ -89,7 +89,7 @@ class TicketCreateListener : Extension() {
         }
     }
 
-    fun ModalBuilder.loadModalOption(formQuestion: TicketPanelFormModel) {
+    fun ModalBuilder.loadModalOption(ticketPanel: TicketPanelModel, formQuestion: TicketPanelFormModel) {
         val data = JsonParser.parseString(formQuestion.data)?.asJsonPrimitive?.asString
 
         if(formQuestion.type == FormType.Predefined) {
@@ -356,7 +356,7 @@ class TicketCreateListener : Extension() {
             return when (type) {
                 "stats-overview" -> placeholders.ticketUserIgn?.let {
                     val customStats: List<StatsOverviewType>? = customData?.split(",")
-                        ?.map { statsType -> BuiltInStatsOverviewType.valueOf(statsType) }
+                        ?.mapNotNull { statsType -> try { BuiltInStatsOverviewType.valueOf(statsType) } catch (_: IllegalArgumentException) { null } }
 
                     ApplicationService.getPlayerDataEmbed(
                         it,

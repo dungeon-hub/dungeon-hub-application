@@ -2,7 +2,6 @@ package net.dungeonhub.application.listener.ticket
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
-import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.MemberBehavior
@@ -189,7 +188,7 @@ class TicketTranscriptListener : Extension() {
                 @Suppress("DEPRECATION")
                 val messageJson = try {
                     ticket.ticketPanel.userTranscriptDm?.let {
-                        GsonService.gson.fromJson(it, JsonObject::class.java)
+                        GsonService.gson.fromJson(it, JsonElement::class.java)
                     }
                 } catch (_: JsonSyntaxException) {
                     null

@@ -125,7 +125,7 @@ class SendCommand : Extension() {
         }
     }
 
-    open inner class SendArguments : Arguments() {
+    open class SendArguments : Arguments() {
         val channel by channel {
             name = "channel".toKey()
             description = "The channel to send the message into.".toKey()
@@ -137,7 +137,7 @@ class SendCommand : Extension() {
         }
     }
 
-    inner class SendLinkMessageArguments : SendArguments() {
+    class SendLinkMessageArguments : SendArguments() {
         val silent by optionalBoolean {
             name = "silent".toKey()
             description = "If the bot should reply silently (using ephemeral messages)".toKey()

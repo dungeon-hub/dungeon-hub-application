@@ -83,14 +83,14 @@ object PurgingService : StartupListener {
 
         try {
             currentWave.forEach { purgeData: PurgeData ->
-                val server = DiscordConnection.bot?.kordRef?.getGuild(Snowflake(purgeData.purgeType.carryType.server.id))
+                val server = DiscordConnection.bot.kordRef.getGuildOrNull(Snowflake(purgeData.purgeType.carryType.server.id))
 
                 if (server == null) {
                     logger.error("Server isn't a valid server for purging anymore!")
                     return@forEach
                 }
 
-                val member = DiscordConnection.bot?.kordRef?.getUser(Snowflake(purgeData.userId))?.asMember(server.id)
+                val member = DiscordConnection.bot.kordRef.getUser(Snowflake(purgeData.userId))?.asMember(server.id)
 
                 if (member == null) {
                     logger.error("Member wasn't found anymore! I guess they escaped the purge.")

@@ -70,7 +70,7 @@ object ServerStatsService : StartupListener {
 
     private suspend fun loadServerStatChannels() {
         serverStatChannels.forEach { server ->
-            val supplier: RestEntitySupplier = DiscordConnection.bot!!.kordRef.with(EntitySupplyStrategy.rest)
+            val supplier: RestEntitySupplier = DiscordConnection.bot.kordRef.with(EntitySupplyStrategy.rest)
 
             supplier.getGuildOrNull(Snowflake(server.first), true)
                 ?.let {

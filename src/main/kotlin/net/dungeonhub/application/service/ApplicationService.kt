@@ -68,11 +68,11 @@ import kotlin.time.*
 @OptIn(ExperimentalTime::class)
 object ApplicationService {
     const val MAX_MINECRAFT_USERNAME_LENGTH = 16
+    const val skyCryptUrl = "https://sky.shiiyu.moe/"
+
     private val logger: Logger = LoggerFactory.getLogger(DiscordConnection::class.java)
 
     val dungeonHubDirectory = "${System.getProperty("user.home")}${File.separator}dungeon-hub"
-
-    val skyCryptUrl = "https://sky.shiiyu.moe/"
 
     private val serverLink: String
         get() = "discord.dungeon-hub.net"

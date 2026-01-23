@@ -136,7 +136,7 @@ class PlayerCommand : Extension() {
         }
     }
 
-    inner class PlayerArguments : Arguments() {
+    class PlayerArguments : Arguments() {
         val ign by string {
             name = Player.Arguments.Ign.name
             description = Player.Arguments.Ign.description
@@ -153,7 +153,7 @@ class PlayerCommand : Extension() {
     class SetProfileArguments : Arguments() {
         val profile by string {
             name = Player.Arguments.Profile.name
-            description = "Select your main profile, which will then be used to display your stats accross multiple features.".toKey()
+            description = "Select your main profile, which will then be used to display your stats across multiple features.".toKey()
             autoCompleteCallback = AutoCompletionService.skyblockProfile
         }
     }

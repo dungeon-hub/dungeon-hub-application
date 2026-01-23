@@ -80,6 +80,13 @@ class TicketPlaceholders(
 
             replacements["user.id"] = { ticketUserId.toString() }
             replacements["user.mention"] = { "<@${ticketUserId}>" }
+            replacements["claimer.mention"] = {
+                if(ticket.claimer != null) {
+                    "<@${ticket.claimer?.id}"
+                } else {
+                    "unknown"
+                }
+            }
             replacements["user.name"] = { ticketUser?.username ?: "unknown" }
             replacements["user.displayName"] = { ticketUser?.effectiveName ?: "unknown" }
             replacements["interactionUser.displayName"] = { interactionUser.effectiveName }

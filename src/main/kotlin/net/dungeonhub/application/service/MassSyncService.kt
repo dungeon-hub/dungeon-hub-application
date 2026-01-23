@@ -33,7 +33,7 @@ object MassSyncService : StartupListener {
         getUsersToSync(guildId).removeAll(currentWave)
 
         try {
-            currentWave.mapNotNull { DiscordConnection.bot!!.kordRef.getGuild(guildId).getMemberOrNull(it) }
+            currentWave.mapNotNull { DiscordConnection.bot.kordRef.getGuild(guildId).getMemberOrNull(it) }
                 .forEach { user ->
                     syncUser(user)
                 }

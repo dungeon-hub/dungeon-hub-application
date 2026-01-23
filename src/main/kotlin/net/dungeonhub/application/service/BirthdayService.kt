@@ -106,7 +106,7 @@ object BirthdayService : StartupListener {
         }
 
         if (embeds.isNotEmpty()) {
-            DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(BIRTHDAYS_CHANNEL))
+            DiscordConnection.bot.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(BIRTHDAYS_CHANNEL))
                 ?.createMessage {
                     this.content = "<@&$BIRTHDAY_PING_ROLE>"
                     this.embeds = embeds

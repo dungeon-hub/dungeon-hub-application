@@ -4,7 +4,6 @@ import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.utils.getLocale
-import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.DiscordConnection.uptime
 import net.dungeonhub.application.connection.getGuildOrNull
 import net.dungeonhub.application.enums.EmbedColor
@@ -31,8 +30,7 @@ class StatsCommand : Extension() {
 
             action {
                 respond {
-                    val guild = DiscordConnection.bot!!.kordRef
-                        .with(EntitySupplyStrategy.rest)
+                    val guild = bot.kordRef.with(EntitySupplyStrategy.rest)
                         .getGuildOrNull(guild!!.id, true)!!
 
                     val locale = event.getLocale()
