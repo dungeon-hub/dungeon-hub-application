@@ -35,6 +35,7 @@ import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.misc.FlagResponse
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.enums.CntRequestType
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
 import net.dungeonhub.exception.PlayerNotFoundException
@@ -693,6 +694,7 @@ object ApplicationService {
     }
 
     fun getCntEmbed(
+        requestType: CntRequestType,
         description: String,
         coinValue: String,
         requirement: String,
@@ -703,6 +705,7 @@ object ApplicationService {
         embed.color = EmbedColor.Default.color
         embed.description = "### Craft and Transfers"
 
+        embed.field("User supplied value") { requestType.description }
         embed.field("Request", true) { description }
         embed.field("Value", true) { coinValue }
         embed.field("Requirement", true) { requirement }
@@ -715,6 +718,7 @@ object ApplicationService {
 
     fun getCntEmbed(cntRequest: CntRequestModel): EmbedBuilder {
         val embed = getCntEmbed(
+            cntRequest.requestType,
             cntRequest.description,
             cntRequest.coinValue,
             cntRequest.requirement,

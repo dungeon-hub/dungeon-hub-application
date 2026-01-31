@@ -456,6 +456,7 @@ class CntSystem : Extension() {
                         "Thanks for trusting in our service! I'm now trying to send your CNT request into <#$channelId>"
 
                     val cntEmbed = ApplicationService.getCntEmbed(
+                        requestType,
                         requestDescription,
                         coinValue,
                         requirement,
