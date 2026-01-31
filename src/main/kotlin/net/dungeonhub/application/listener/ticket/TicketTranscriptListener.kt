@@ -205,7 +205,7 @@ class TicketTranscriptListener : Extension() {
         }
 
         // TODO maybe merge with the method in the TicketSystem?
-        private fun parseTranscriptDmEmbeds(embedData: JsonElement, placeholders: TicketPlaceholders): MutableList<EmbedBuilder> {
+        private suspend fun parseTranscriptDmEmbeds(embedData: JsonElement, placeholders: TicketPlaceholders): MutableList<EmbedBuilder> {
             val embedBuilders: MutableList<EmbedBuilder> = mutableListOf()
 
             try {
@@ -252,7 +252,7 @@ class TicketTranscriptListener : Extension() {
             return embedBuilders
         }
 
-        private fun buildCustomEmbed(type: String, placeholders: TicketPlaceholders): EmbedBuilder? {
+        private suspend fun buildCustomEmbed(type: String, placeholders: TicketPlaceholders): EmbedBuilder? {
             return when (type) {
                 "transcript" -> generateTranscriptEmbed(placeholders)
 
@@ -261,15 +261,20 @@ class TicketTranscriptListener : Extension() {
         }
 
         // TODO improve message content
-        private fun generateTranscriptEmbed(placeholders: TicketPlaceholders): EmbedBuilder = buildEmbed {
-            field("Panel", true) { replacePlaceholders("{panel.name}", placeholders) }
-            field("Ticket Name", true) { replacePlaceholders("{ticket.name}", placeholders) }
-            field("Transcript", true) {
-                replacePlaceholders("{transcript.url}", placeholders).takeIf {
-                    it != "unknown"
-                }?.let {
-                    "[Click here]($it)"
-                } ?: "Not available"
+        private suspend fun generateTranscriptEmbed(placeholders: TicketPlaceholders): EmbedBuilder {
+            val panelName = replacePlaceholders("{panel.name}", placeholders)
+            val ticketName = replacePlaceholders("{ticket.name}", placeholders)
+            val transcriptUrl = replacePlaceholders("{transcript.url}", placeholders)
+            return buildEmbed {
+                field("Panel", true) { panelName }
+                field("Ticket Name", true) { ticketName }
+                field("Transcript", true) {
+                    transcriptUrl.takeIf {
+                        it != "unknown"
+                    }?.let {
+                        "[Click here]($it)"
+                    } ?: "Not available"
+                }
             }
         }
 

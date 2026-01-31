@@ -100,7 +100,7 @@ class PurgeCommand : Extension() {
                         val rolesToRemove = purgeType.purgeTypeRoleModels
                             .map { obj: PurgeTypeRoleModel -> obj.discordRoleModel }
 
-                        val scores = (ScoreConnection[carryType].authenticated().scores ?: listOf())
+                        val scores = (ScoreConnection[carryType].authenticated().getScores() ?: listOf())
                             .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
 
                         val safeCarriers = scores
@@ -222,7 +222,7 @@ class PurgeCommand : Extension() {
                         val rolesToRemove = purgeType.purgeTypeRoleModels
                             .map { it.discordRoleModel }
 
-                        val scores = (ScoreConnection[carryType].authenticated().scores ?: listOf())
+                        val scores = (ScoreConnection[carryType].authenticated().getScores() ?: listOf())
                             .filter { it.scoreType == ScoreType.Default }
 
                         val safeCarriers = scores

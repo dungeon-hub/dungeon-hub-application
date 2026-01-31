@@ -49,7 +49,7 @@ object NicknameService {
     val scheduler = Scheduler()
 
     @Throws(CommandExecutionWarning::class)
-    fun linkToIgn(ign: String, user: User): UUID {
+    suspend fun linkToIgn(ign: String, user: User): UUID {
         val uuid = MojangConnection.getUUIDByName(ign)
 
         val hypixelName = HypixelApiConnection().withCacheExpiration(1).getHypixelLinkedDiscord(uuid)
@@ -241,7 +241,7 @@ object NicknameService {
      * @throws NullPointerException  if the server or roles are `null`
      */
     @Contract(pure = true)
-    private fun getRoleModel(member: Member, roles: List<Role>): DiscordRoleModel {
+    private suspend fun getRoleModel(member: Member, roles: List<Role>): DiscordRoleModel {
         val discordRoles = getRoleModels(member.guild)
         val toModel = Function { role: Role -> discordRoles[role.id.value.toLong()] }
         val roleOptional = roles.parallelStream().filter(validateRole(discordRoles)).findFirst()
@@ -260,8 +260,8 @@ object NicknameService {
      * @throws NullPointerException if the specified server is `null`
      */
     @Contract(pure = true)
-    private fun getRoleModels(guild: GuildBehavior): Map<Long, DiscordRoleModel> {
-        return (DiscordRoleConnection[guild.id.value.toLong()].authenticated().allRoles ?: emptyList())
+    private suspend fun getRoleModels(guild: GuildBehavior): Map<Long, DiscordRoleModel> {
+        return (DiscordRoleConnection[guild.id.value.toLong()].authenticated().getAllRoles() ?: emptyList())
             .stream().collect(toMap())
     }
 

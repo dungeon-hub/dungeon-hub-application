@@ -94,7 +94,7 @@ object StaticMessageService : StartupListener {
         refreshStaticMessage(currentWave)
     }
 
-    fun refreshAllStaticMessages() {
+    suspend fun refreshAllStaticMessages() {
         val staticMessages = DiscordServerConnection.authenticated().findGlobalStaticMessages() ?: return
 
         for(staticMessage in staticMessages) {
@@ -106,7 +106,7 @@ object StaticMessageService : StartupListener {
         staticMessageUpdates.addFirst(staticMessage)
     }
 
-    fun updateScoreLeaderboard(carryTypes: List<CarryTypeModel>) {
+    suspend fun updateScoreLeaderboard(carryTypes: List<CarryTypeModel>) {
         for(carryType in carryTypes) {
             updateStaticMessages(carryType.server.id, StaticMessageType.ScoreLeaderboard, listOf(carryType.id))
         }
@@ -117,7 +117,7 @@ object StaticMessageService : StartupListener {
         }
     }
 
-    fun updateStaticMessages(server: Long, staticMessageType: StaticMessageType, objectIds: List<Long>?) {
+    suspend fun updateStaticMessages(server: Long, staticMessageType: StaticMessageType, objectIds: List<Long>?) {
         var staticMessages = StaticMessageConnection[server].authenticated().findStaticMessages(staticMessageType, null) ?: emptyList()
 
         if(objectIds != null) {
@@ -194,7 +194,7 @@ object StaticMessageService : StartupListener {
             ?: throw CommandExecutionException("Couldn't update static message after being sent.")
     }
 
-    fun setAdditionalMessageProperties(staticMessage: StaticMessageModel): MessageBuilder.() -> Unit {
+    suspend fun setAdditionalMessageProperties(staticMessage: StaticMessageModel): MessageBuilder.() -> Unit {
         when (staticMessage.staticMessageType) {
             StaticMessageType.ScoreLeaderboard, StaticMessageType.TotalLeaderboard -> {
                 return {
@@ -248,7 +248,7 @@ object StaticMessageService : StartupListener {
         }
     }
 
-    fun getStaticMessageEmbeds(staticMessage: StaticMessageModel): MutableList<EmbedBuilder> {
+    suspend fun getStaticMessageEmbeds(staticMessage: StaticMessageModel): MutableList<EmbedBuilder> {
         when (staticMessage.staticMessageType) {
             StaticMessageType.ScoreLeaderboard -> {
                 val carryTypeConnection = CarryTypeConnection[staticMessage.server.id].authenticated()
@@ -394,8 +394,8 @@ object StaticMessageService : StartupListener {
     }
 
     @OptIn(ExperimentalTime::class)
-    fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder {
-        val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().allCarryDifficulties ?: listOf()
+    suspend fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder {
+        val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().getAllCarryDifficulties() ?: listOf()
 
         val title = "## " + carryTier.priceTitle + "\n"
         val priceDescription = carryTier.priceDescription?.let { s: String -> s + "\n\n" } ?: ""

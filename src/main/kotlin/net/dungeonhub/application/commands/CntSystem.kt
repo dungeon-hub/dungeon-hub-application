@@ -795,7 +795,7 @@ class CntSystem : Extension() {
         val cntRequest: CntRequestModel? = null
     )
 
-    fun isAllowedToGiveReputation(userId: Long, target: MemberBehavior): ReputationValidityResult {
+    suspend fun isAllowedToGiveReputation(userId: Long, target: MemberBehavior): ReputationValidityResult {
         val timeout = Instant.now().minusSeconds(reputationTimeout.inWholeSeconds)
 
         val reputationConnection = ReputationConnection[target].authenticated()

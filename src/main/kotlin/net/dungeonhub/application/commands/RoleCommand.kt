@@ -226,7 +226,7 @@ class RoleCommand : Extension() {
 
                     action {
                         val roleRequirements =
-                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().allRoleRequirements
+                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().getAllRoleRequirements()
                                 ?.filter { it.discordRole.id == arguments.role.id.value.toLong() } ?: listOf()
 
                         if (roleRequirements.isEmpty()) {
@@ -261,7 +261,7 @@ class RoleCommand : Extension() {
 
                     action {
                         val roleRequirements =
-                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().allRoleRequirements
+                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().getAllRoleRequirements()
                                 ?: listOf()
 
                         if (roleRequirements.isEmpty()) {

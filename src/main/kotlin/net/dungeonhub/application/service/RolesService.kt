@@ -51,7 +51,7 @@ object RolesService {
     }
 
     suspend fun calculateRoles(member: Member, cacheExpiration: Int): List<Role> {
-        val serverRoles = (DiscordRoleConnection[member.guildId.value.toLong()].authenticated().allRoles ?: emptyList())
+        val serverRoles = (DiscordRoleConnection[member.guildId.value.toLong()].authenticated().getAllRoles() ?: emptyList())
             .stream()
             .collect(
                 Collectors.toMap(
@@ -103,9 +103,9 @@ object RolesService {
         return discordRoles.map { id -> member.guild.getRole(id) }
     }
 
-    fun calculateRoleRequirements(member: Member, cacheExpiration: Int): Map<RoleRequirementModel, Boolean> {
+    suspend fun calculateRoleRequirements(member: Member, cacheExpiration: Int): Map<RoleRequirementModel, Boolean> {
         val roleRequirements =
-            RoleRequirementConnection[member.guild.id.value.toLong()].authenticated().allRoleRequirements ?: emptyList()
+            RoleRequirementConnection[member.guild.id.value.toLong()].authenticated().getAllRoleRequirements() ?: emptyList()
 
         return roleRequirements.associateWith {
             checkRoleRequirement(it, member, cacheExpiration)
@@ -113,7 +113,7 @@ object RolesService {
     }
 
     //TODO maybe make profile loading lazy? -> would then only be loaded if needed
-    fun checkRoleRequirement(roleRequirement: RoleRequirementModel, member: Member, cacheExpiration: Int): Boolean {
+    suspend fun checkRoleRequirement(roleRequirement: RoleRequirementModel, member: Member, cacheExpiration: Int): Boolean {
         if (!roleRequirement.checkExtraData()) return false
 
         val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
@@ -388,9 +388,9 @@ object RolesService {
         }
     }
 
-    fun applyRoleGroups(server: GuildBehavior, roles: Set<Snowflake>): MutableSet<Snowflake> {
+    suspend fun applyRoleGroups(server: GuildBehavior, roles: Set<Snowflake>): MutableSet<Snowflake> {
         var mutableRoles = roles.toMutableSet()
-        val roleGroups = DiscordRoleGroupConnection[server.id.value.toLong()].authenticated().all ?: emptyList()
+        val roleGroups = DiscordRoleGroupConnection[server.id.value.toLong()].authenticated().getAll() ?: emptyList()
 
         var lastRoles = 0
         while (lastRoles != mutableRoles.size) {
@@ -465,7 +465,7 @@ object RolesService {
     suspend fun removeRoleGroup(member: Member, roleGroupId: Long) {
         var userRoles = member.roleIds.toMutableSet()
 
-        val roleGroups = DiscordRoleGroupConnection[member.guild.id.value.toLong()].authenticated().all ?: listOf()
+        val roleGroups = DiscordRoleGroupConnection[member.guild.id.value.toLong()].authenticated().getAll() ?: listOf()
 
         var lastRoles = 0
         while (lastRoles != userRoles.size) {

@@ -8,6 +8,7 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.service.ApplicationService
@@ -36,9 +37,10 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
         } else {
             embed.title = "Title would be too long, see field"
             embed.field("Title") {
-                ContentConnection.authenticated().uploadFile(title.toByteArray(StandardCharsets.UTF_8))
-                    ?.let { ContentConnection.authenticated().getCdnUrl(it).toString() }
-                    ?: title
+                runBlocking {
+                    ContentConnection.authenticated().uploadFile(title.toByteArray(StandardCharsets.UTF_8))
+                        ?.let { ContentConnection.authenticated().getCdnUrl(it).toString() }
+                } ?: title
             }
         }
 
@@ -48,9 +50,10 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
             var description = getExceptionMessage(throwable.throwable)
 
             if (description != null && description.length > 3000) {
-                description = ContentConnection.authenticated().uploadFile(description.toByteArray(StandardCharsets.UTF_8))
-                    ?.let { ContentConnection.authenticated().getCdnUrl(it).toString() }
-                    ?: description
+                description = runBlocking {
+                    ContentConnection.authenticated().uploadFile(description.toByteArray(StandardCharsets.UTF_8))
+                        ?.let { ContentConnection.authenticated().getCdnUrl(it).toString() }
+                } ?: description
             }
 
             embed.description = description

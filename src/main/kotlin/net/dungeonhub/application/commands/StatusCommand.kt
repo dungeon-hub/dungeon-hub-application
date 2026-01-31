@@ -30,17 +30,13 @@ class StatusCommand : Extension() {
 
             action {
                 respond {
-                    val ticket by lazy {
-                        guild?.id?.value?.toLong()?.let { guildId ->
-                            DiscordServerConnection.authenticated()
-                                .findTickets(guildId, channelId = event.interaction.channelId.value.toLong())
-                                ?.firstOrNull()
-                        }
+                    val ticket = guild?.id?.value?.toLong()?.let { guildId ->
+                        DiscordServerConnection.authenticated()
+                            .findTickets(guildId, channelId = event.interaction.channelId.value.toLong())
+                            ?.firstOrNull()
                     }
 
-                    val discordUser by lazy {
-                        DiscordUserConnection.authenticated().getLinkedById(user.id.value.toLong())
-                    }
+                    val discordUser = DiscordUserConnection.authenticated().getLinkedById(user.id.value.toLong())
 
                     val ignArgument = arguments.ign
 

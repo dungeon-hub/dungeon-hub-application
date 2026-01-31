@@ -77,7 +77,7 @@ class TicketCreateListener : Extension() {
                         "ticket-form-${ticketPanel.id}"
                     ) {
                         ticketPanel.formQuestions.forEach { formQuestion ->
-                            loadModalOption(ticketPanel, formQuestion)
+                            loadModalOption(event.interaction.user, ticketPanel, formQuestion)
                         }
                     }
                     return@action
@@ -88,7 +88,11 @@ class TicketCreateListener : Extension() {
         }
     }
 
-    fun ModalBuilder.loadModalOption(ticketPanel: TicketPanelModel, formQuestion: TicketPanelFormModel) {
+    suspend fun ModalBuilder.loadModalOption(
+        member: Member,
+        ticketPanel: TicketPanelModel,
+        formQuestion: TicketPanelFormModel
+    ) {
         val data = JsonParser.parseString(formQuestion.data)?.asJsonPrimitive?.asString
 
         if(formQuestion.type == FormType.Predefined) {
@@ -100,7 +104,7 @@ class TicketCreateListener : Extension() {
                         carryTier.relatedTicketPanel?.id == ticketPanel.id
                     } ?: return
 
-                val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().allCarryDifficulties
+                val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().getAllCarryDifficulties()
                     ?: return
 
                 label("Carry Difficulty") {
@@ -203,7 +207,7 @@ class TicketCreateListener : Extension() {
             }
         }
 
-        fun createTicketModel(panel: TicketPanelModel, user: MemberBehavior, responses: List<TicketFormResponseModel>): TicketModel? {
+        suspend fun createTicketModel(panel: TicketPanelModel, user: MemberBehavior, responses: List<TicketFormResponseModel>): TicketModel? {
             val connection = TicketConnection[user.guildId.value.toLong(), panel].authenticated()
 
             val creationModel = TicketCreationModel(
@@ -233,7 +237,7 @@ class TicketCreateListener : Extension() {
             }
         }
 
-        fun updateTicketChannel(ticket: TicketModel, ticketChannel: TextChannel): TicketModel? {
+        suspend fun updateTicketChannel(ticket: TicketModel, ticketChannel: TextChannel): TicketModel? {
             val connection = TicketConnection[ticketChannel.guildId.value.toLong(), ticket.ticketPanel].authenticated()
 
             val updateModel = ticket.getUpdateModel()
@@ -364,7 +368,7 @@ class TicketCreateListener : Extension() {
 
         suspend fun buildCustomEmbed(type: String, placeholders: TicketPlaceholders, customData: String? = null): EmbedBuilder? {
             return when (type) {
-                "stats-overview" -> placeholders.ticketUserIgn?.let {
+                "stats-overview" -> placeholders.ticketUserIgn.await()?.let {
                     val customStats: List<StatsOverviewType>? = customData?.split(",")
                         ?.mapNotNull { statsType -> try { BuiltInStatsOverviewType.valueOf(statsType) } catch (_: IllegalArgumentException) { null } }
 
@@ -374,8 +378,8 @@ class TicketCreateListener : Extension() {
                         statsOverviewTypes = customStats
                     )
                 }
-                "price-overview" -> placeholders.carryTier?.let { MessagesService.getPriceEmbed(it) }
-                "carry-price" -> placeholders.formCarryDifficulty?.let { carryDifficulty ->
+                "price-overview" -> placeholders.carryTier.await()?.let { MessagesService.getPriceEmbed(it) }
+                "carry-price" -> placeholders.formCarryDifficulty.await()?.let { carryDifficulty ->
                     placeholders.formCarryAmount?.toIntOrNull()?.let { carryAmount ->
                         CalcPriceCommand.generateCalculatedPriceEmbed(carryDifficulty, carryAmount)
                     }
