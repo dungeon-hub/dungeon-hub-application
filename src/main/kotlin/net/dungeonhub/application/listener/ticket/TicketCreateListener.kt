@@ -49,6 +49,7 @@ import net.dungeonhub.model.ticket.TicketFormResponseModel
 import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.model.ticket_panel.TicketPanelFormModel
 import net.dungeonhub.model.ticket_panel.TicketPanelModel
+import net.dungeonhub.mojang.connection.MojangConnection
 import net.dungeonhub.service.GsonService
 
 @LoadExtension
@@ -96,7 +97,16 @@ class TicketCreateListener : Extension() {
         val data = JsonParser.parseString(formQuestion.data)?.asJsonPrimitive?.asString
 
         if(formQuestion.type == FormType.Predefined) {
-            if(data == "carry-difficulty") { // TODO enum?
+            if(data == "ign-display") { // TODO enum?
+                val discordUser = DiscordUserConnection.authenticated().getLinkedById(member.id.value.toLong()) ?: return
+
+                val ign = discordUser.minecraftId?.let { MojangConnection.getNameByUUID(it) } ?: return
+
+                textDisplay {
+                    content = "You're currently linked to the Minecraft account `$ign`.\n" +
+                            "-# If that seems incorrect, please unlink using `/unlink` and then `/link` to the correct account."
+                }
+            } else if(data == "carry-difficulty") { // TODO enum?
                 // TODO dedicated endpoint
                 val carryTier = DiscordServerConnection.authenticated()
                     .getAllCarryTiers(ticketPanel.discordServer.id)

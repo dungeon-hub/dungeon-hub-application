@@ -42,7 +42,7 @@ class TicketFormListener : Extension() {
                 var responseCounter = 0
                 for (input in event.interaction.responseComponents) {
                     val textInput = (input.value as? TextInputComponent)?.value
-                        ?: (input.value as? StringSelectComponent)?.options?.firstOrNull()?.value
+                        ?: (input.value as? StringSelectComponent)?.values?.firstOrNull()
                     val validationResult = validateForm(ticketPanel!!, input.key, textInput)
 
                     if(validationResult != null) {
