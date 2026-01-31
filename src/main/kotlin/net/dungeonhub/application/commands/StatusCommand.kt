@@ -16,8 +16,11 @@ import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.exception.PlayerNotFoundException
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
+import net.dungeonhub.hypixel.entities.player.HypixelPlayer
 import net.dungeonhub.hypixel.entities.status.PlayerSession
 import net.dungeonhub.mojang.connection.MojangConnection
+import java.time.Duration
+import kotlin.time.toKotlinDuration
 
 @LoadExtension
 class StatusCommand : Extension() {
@@ -68,6 +71,7 @@ class StatusCommand : Extension() {
                     val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(2)
 
                     val session = hypixelApiConnection.getSession(uuid)
+                    val playerData by lazy { hypixelApiConnection.getPlayerData(uuid) }
 
                     if(session == null) {
                         addEmbed {
@@ -83,7 +87,7 @@ class StatusCommand : Extension() {
                         description = if(session.online) {
                             parseSessionText(session, ign)
                         } else {
-                            "$ign is offline!"
+                            parseOfflineText(playerData, ign)
                         }
                         thumbnail {
                             url = "https://visage.surgeplay.com/face/$uuid"
@@ -129,6 +133,7 @@ class StatusCommand : Extension() {
                     val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(2)
 
                     val session = hypixelApiConnection.getSession(uuid)
+                    val playerData by lazy { hypixelApiConnection.getPlayerData(uuid) }
 
                     if(session == null) {
                         addEmbed {
@@ -144,7 +149,7 @@ class StatusCommand : Extension() {
                         description = if(session.online) {
                             parseSessionText(session, ign)
                         } else {
-                            "$ign is offline!"
+                            parseOfflineText(playerData, ign)
                         }
                         thumbnail {
                             url = "https://visage.surgeplay.com/face/$uuid"
@@ -169,6 +174,27 @@ class StatusCommand : Extension() {
         } else {
             "$ign is currently online!"
         }
+    }
+
+    fun parseOfflineText(player: HypixelPlayer?, ign: String): String {
+        val lastLogin = player?.lastLogin
+        val lastLogout = player?.lastLogout
+        val lastPlayTime = lastLogout?.let { lastLogout ->
+            lastLogin?.let {
+                Duration.between(it, lastLogout)
+            }
+        }?.withNanos(0)?.toKotlinDuration()?.toString()
+
+        var result = "$ign is offline!"
+
+        if(lastLogout != null) {
+            result += "\nLast seen: <t:${lastLogout.epochSecond}:R>."
+            if(lastPlayTime != null) {
+                result += "\nLast session length: `$lastPlayTime`."
+            }
+        }
+
+        return result
     }
 
     class StatusArguments : Arguments() {
