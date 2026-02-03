@@ -6,11 +6,11 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
-import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import net.dungeonhub.application.connection.getMutualServers
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.connection.*
 import net.dungeonhub.enums.RoleRequirementType
 import net.dungeonhub.enums.ScoreType
@@ -30,7 +30,7 @@ import kotlin.time.toJavaInstant
 
 @OptIn(ExperimentalTime::class)
 object RolesService {
-    val scheduler = Scheduler()
+    val scheduler = DhScheduler()
 
     suspend fun updateRoles(user: User, cacheExpiration: Int = 60 * 3): Map<Long, List<Role>> {
         return scheduler.async {

@@ -28,6 +28,7 @@ import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.InvalidOptionException
 import net.dungeonhub.application.exceptions.MissingPermissionException
 import net.dungeonhub.application.loader.LoadExtension
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.application.service.PermissionService
@@ -47,7 +48,7 @@ class ManageScoreCommand : Extension() {
     override val name = "manage-score-command"
 
     override suspend fun setup() {
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         publicSlashCommand {
             name = ManageScore.name

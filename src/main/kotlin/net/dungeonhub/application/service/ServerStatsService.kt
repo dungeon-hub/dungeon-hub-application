@@ -19,6 +19,7 @@ import net.dungeonhub.application.connection.getGuildOrNull
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.hypixel.service.FormattingService
@@ -53,7 +54,7 @@ object ServerStatsService : StartupListener {
             scheduler.cancel("Application was restarted.")
         }
 
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         val task = scheduler.schedule(2.hours, startNow = false, name = "Server-Stats-Schedule", repeat = true) {
             logger.debug("Server stat channels reloading...")

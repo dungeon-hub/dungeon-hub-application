@@ -3,7 +3,6 @@ package net.dungeonhub.application.misc
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.channel.TextChannel
-import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import net.dungeonhub.application.connection.DiscordConnection
@@ -130,6 +129,6 @@ class TicketPlaceholders(
         }
 
     companion object {
-        val scheduler = Scheduler()
+        val scheduler = DhScheduler()
     }
 }

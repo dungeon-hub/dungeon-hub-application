@@ -46,6 +46,7 @@ import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.exceptions.PlayerNotFoundWarning
 import net.dungeonhub.application.loader.LoadExtension
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.MessagesService
 import net.dungeonhub.application.service.StaticMessageService
@@ -89,7 +90,7 @@ class MessageListener : Extension() {
     override val intents = mutableSetOf<Intent>(Intent.MessageContent)
 
     override suspend fun setup() {
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         event<MessageCreateEvent> {
             action {

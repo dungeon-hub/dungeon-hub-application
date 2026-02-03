@@ -24,6 +24,7 @@ import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.cancel
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.LoadExtension
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.misc.TicketPlaceholders
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
@@ -48,7 +49,7 @@ class TicketSystem : Extension() {
     override val name = "ticket-system"
 
     override suspend fun setup() {
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         event<GuildButtonInteractionCreateEvent> {
             check {

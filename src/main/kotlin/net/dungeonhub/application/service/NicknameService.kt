@@ -8,11 +8,11 @@ import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
 import dev.kord.core.entity.effectiveName
 import dev.kord.rest.request.KtorRequestException
-import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.getMutualServers
 import net.dungeonhub.application.exceptions.*
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.misc.PlayerInformation
 import net.dungeonhub.connection.DiscordRoleConnection
 import net.dungeonhub.connection.DiscordUserConnection
@@ -46,7 +46,7 @@ import java.util.stream.Collectors
 </pre> *
  */
 object NicknameService {
-    val scheduler = Scheduler()
+    val scheduler = DhScheduler()
 
     @Throws(CommandExecutionWarning::class)
     suspend fun linkToIgn(ign: String, user: User): UUID {

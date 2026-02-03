@@ -6,11 +6,11 @@ import ch.qos.logback.core.AppenderBase
 import dev.kord.core.Kord
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.utils.dm
-import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.exception.PlayerNotFoundException
@@ -82,6 +82,6 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
     }
 
     companion object {
-        private val scheduler = Scheduler()
+        private val scheduler = DhScheduler()
     }
 }
