@@ -24,6 +24,7 @@ import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.cancel
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.LoadExtension
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.misc.TicketPlaceholders
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
@@ -48,7 +49,7 @@ class TicketSystem : Extension() {
     override val name = "ticket-system"
 
     override suspend fun setup() {
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         event<GuildButtonInteractionCreateEvent> {
             check {
@@ -116,7 +117,7 @@ class TicketSystem : Extension() {
     companion object {
         lateinit var scheduler: Scheduler
 
-        fun replacePlaceholders(string: String, placeholders: TicketPlaceholders): String {
+        suspend fun replacePlaceholders(string: String, placeholders: TicketPlaceholders): String {
             val replacements = placeholders.replacements
 
             val regex = "(\\{[^}]+})"
@@ -137,7 +138,7 @@ class TicketSystem : Extension() {
             return result.toString().trim()
         }
 
-        fun replacePlaceholders(element: JsonElement, placeholders: TicketPlaceholders): JsonElement {
+        suspend fun replacePlaceholders(element: JsonElement, placeholders: TicketPlaceholders): JsonElement {
             return when (element) {
                 is JsonObject -> {
                     val obj = JsonObject()
@@ -191,7 +192,7 @@ class TicketSystem : Extension() {
             })
         }
 
-        fun buildTicketName(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member, ticketChannel: TextChannel?): String? {
+        suspend fun buildTicketName(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member, ticketChannel: TextChannel?): String? {
             val placeholders = TicketPlaceholders(ticketPanel, ticket, member, ticketChannel)
 
             val channelName = if (ticket.state == TicketState.Open && ticket.claimer != null) {

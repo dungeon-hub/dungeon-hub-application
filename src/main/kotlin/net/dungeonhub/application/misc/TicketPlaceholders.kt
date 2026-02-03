@@ -3,7 +3,8 @@ package net.dungeonhub.application.misc
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.channel.TextChannel
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.exceptions.NotLinkedException
 import net.dungeonhub.connection.CarryDifficultyConnection
@@ -25,23 +26,21 @@ class TicketPlaceholders(
     val cacheExpiration: Int = 60 * 3
 ) {
     val ticketUserId = ticket.user.id
-    val ticketUserIgn by lazy {
-        ticketUserModel?.minecraftId?.let { MojangConnection.getNameByUUID(it) }
+    val ticketUserIgn = scheduler.async(start = CoroutineStart.LAZY) {
+        ticketUserModel.await()?.minecraftId?.let { MojangConnection.getNameByUUID(it) }
     }
 
-    val ticketUser by lazy {
-        runBlocking {
-            DiscordConnection.bot.kordRef
-                .getUser(Snowflake(ticketUserId))
-                ?.asMemberOrNull(Snowflake(ticketPanel.discordServer.id))
-        }
+    val ticketUser = scheduler.async(start = CoroutineStart.LAZY) {
+        DiscordConnection.bot.kordRef
+            .getUser(Snowflake(ticketUserId))
+            ?.asMemberOrNull(Snowflake(ticketPanel.discordServer.id))
     }
 
-    val ticketUserModel by lazy {
+    val ticketUserModel = scheduler.async(start = CoroutineStart.LAZY) {
         DiscordUserConnection.authenticated().getByIdOrCreate(ticketUserId)
     }
 
-    val carryTier by lazy {
+    val carryTier = scheduler.async(start = CoroutineStart.LAZY) {
         // TODO dedicated endpoint
         DiscordServerConnection.authenticated().getAllCarryTiers(ticketPanel.discordServer.id)
             ?.firstOrNull { carryTier ->
@@ -50,9 +49,9 @@ class TicketPlaceholders(
     }
 
     val formCarryDifficultyName by lazy { ticket.formResponses.firstOrNull { it.customId == "carry-difficulty" }?.value }
-    val formCarryDifficulty by lazy {
+    val formCarryDifficulty = scheduler.async(start = CoroutineStart.LAZY) {
         formCarryDifficultyName?.let { formCarryDifficultyName ->
-            carryTier?.let { carryTier ->
+            carryTier.await()?.let { carryTier ->
                 CarryDifficultyConnection[carryTier].authenticated().findCarryDifficultyByString(formCarryDifficultyName)
             }
         }
@@ -62,21 +61,21 @@ class TicketPlaceholders(
 
     private val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
 
-    val skyblockProfiles by lazy {
+    val skyblockProfiles = scheduler.async(start = CoroutineStart.LAZY) {
         hypixelApiConnection.getSkyblockProfiles(
-            ticketUserModel?.minecraftId ?: throw NotLinkedException()
+            ticketUserModel.await()?.minecraftId ?: throw NotLinkedException()
         )?.profiles
     }
 
-    val selectedSkyblockProfiles by lazy {
-        skyblockProfiles?.filter { ticketUserModel?.primarySkyblockProfile == null || it.profileId == ticketUserModel?.primarySkyblockProfile }
+    val selectedSkyblockProfiles = scheduler.async(start = CoroutineStart.LAZY) {
+        skyblockProfiles.await()?.filter { ticketUserModel.await()?.primarySkyblockProfile == null || it.profileId == ticketUserModel.await()?.primarySkyblockProfile }
             ?.takeIf { it.isNotEmpty() }
-            ?: skyblockProfiles
+            ?: skyblockProfiles.await()
     }
 
-    val replacements: Map<String, () -> String>
+    val replacements: Map<String, suspend () -> String>
         get() {
-            val replacements: MutableMap<String, () -> String> = HashMap()
+            val replacements: MutableMap<String, suspend () -> String> = HashMap()
 
             replacements["user.id"] = { ticketUserId.toString() }
             replacements["user.mention"] = { "<@${ticketUserId}>" }
@@ -87,20 +86,20 @@ class TicketPlaceholders(
                     "unknown"
                 }
             }
-            replacements["user.name"] = { ticketUser?.username ?: "unknown" }
-            replacements["user.displayName"] = { ticketUser?.effectiveName ?: "unknown" }
+            replacements["user.name"] = { ticketUser.await()?.username ?: "unknown" }
+            replacements["user.displayName"] = { ticketUser.await()?.effectiveName ?: "unknown" }
             replacements["interactionUser.displayName"] = { interactionUser.effectiveName }
-            replacements["user.minecraft.name"] = { ticketUserIgn ?: "unlinked" }
+            replacements["user.minecraft.name"] = { ticketUserIgn.await() ?: "unlinked" }
             replacements["user.skyblock.level"] = {
-                selectedSkyblockProfiles?.maxOfOrNull {
-                    it.getCurrentMember(ticketUserModel?.minecraftId ?: throw NotLinkedException())?.leveling?.level
+                selectedSkyblockProfiles.await()?.maxOfOrNull {
+                    it.getCurrentMember(ticketUserModel.await()?.minecraftId ?: throw NotLinkedException())?.leveling?.level
                         ?: 0
                 }?.toString() ?: "?"
             }
             replacements["user.catacombs.level"] = {
-                selectedSkyblockProfiles?.maxOfOrNull {
+                selectedSkyblockProfiles.await()?.maxOfOrNull {
                     it.getCurrentMember(
-                        ticketUserModel?.minecraftId ?: throw NotLinkedException()
+                        ticketUserModel.await()?.minecraftId ?: throw NotLinkedException()
                     )?.dungeons?.catacombsLevel
                         ?: 0
                 }?.toString() ?: "?"
@@ -108,7 +107,7 @@ class TicketPlaceholders(
             replacements["panel.name"] = { ticketPanel.displayName ?: ticketPanel.name }
             replacements["ticket.id"] = { ticket.id.toString() }
             replacements["ticket.count"] = { // TODO custom endpoint
-                val allTickets = TicketConnection[ticketPanel.discordServer, ticketPanel].authenticated().allTickets ?: emptyList()
+                val allTickets = TicketConnection[ticketPanel.discordServer, ticketPanel].authenticated().getAllTickets() ?: emptyList()
 
                 val count = allTickets.map { it.id }.sorted().indexOf(ticket.id) + 1
 
@@ -116,16 +115,20 @@ class TicketPlaceholders(
             }
             replacements["ticket.name"] = { ticketChannel?.name ?: "not-set" }
             replacements["transcript.url"] = { transcriptUrl ?: "unknown" }
-            replacements["carry-tier.name"] = { carryTier?.displayName ?: "unknown" }
-            replacements["carry-difficulty.name"] = { formCarryDifficulty?.displayName ?: "unknown" }
+            replacements["carry-tier.name"] = { carryTier.await()?.displayName ?: "unknown" }
+            replacements["carry-difficulty.name"] = { formCarryDifficulty.await()?.displayName ?: "unknown" }
             replacements["ticket.form.1"] = { ticket.formResponses.firstOrNull { it.ordinal == 1 }?.value ?: "unknown" }
             replacements["ticket.form.2"] = { ticket.formResponses.firstOrNull { it.ordinal == 2 }?.value ?: "unknown" }
             replacements["ticket.form.3"] = { ticket.formResponses.firstOrNull { it.ordinal == 3 }?.value ?: "unknown" }
             replacements["ticket.form.4"] = { ticket.formResponses.firstOrNull { it.ordinal == 4 }?.value ?: "unknown" }
             replacements["ticket.form.5"] = { ticket.formResponses.firstOrNull { it.ordinal == 5 }?.value ?: "unknown" }
-            replacements["ticket.form.carry-difficulty"] = { formCarryDifficulty?.displayName ?: "unknown" }
+            replacements["ticket.form.carry-difficulty"] = { formCarryDifficulty.await()?.displayName ?: "unknown" }
             replacements["ticket.form.carry-amount"] = { formCarryAmount ?: "unknown" }
 
             return replacements
         }
+
+    companion object {
+        val scheduler = DhScheduler()
+    }
 }

@@ -29,7 +29,7 @@ enum class HelpTopic(
 
             val reputationRequirements = (RoleRequirementConnection[guild.id.value.toLong()]
                 .authenticated()
-                .allRoleRequirements
+                .getAllRoleRequirements()
                 ?: emptyList())
                 .filter { it.requirementType == RoleRequirementType.Reputation }
                 .takeIf { it.isNotEmpty() }
@@ -223,8 +223,7 @@ enum class HelpTopic(
                         "\n" +
                         "> If you think you're linked to the wrong Minecraft account, use the `/unlink` command.\n" +
                         "You can find a video example [here]("
-                        + ContentConnection.authenticated().getStaticUrl(KnownStaticResource.VerificationExample.path)
-                    .build().toUrl()
+                        + ContentConnection.authenticated().getStaticUrl(KnownStaticResource.VerificationExample.path).toString()
                         + ")."
             )
         });
@@ -236,11 +235,11 @@ enum class HelpTopic(
     )
 
     fun interface DescriptionSupplier {
-        fun getDescription(user: User, server: Guild?): HelpDisplay
+        suspend fun getDescription(user: User, server: Guild?): HelpDisplay
     }
 
     companion object {
-        fun generateHelpEmbed(helpTopic: HelpTopic, user: User, guild: Guild?): EmbedBuilder {
+        suspend fun generateHelpEmbed(helpTopic: HelpTopic, user: User, guild: Guild?): EmbedBuilder {
             val embed = EmbedBuilder()
             embed.title = "**" + helpTopic.title + "**"
 

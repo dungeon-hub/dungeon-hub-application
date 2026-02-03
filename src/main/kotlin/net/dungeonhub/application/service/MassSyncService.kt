@@ -9,6 +9,7 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.exceptions.NotLinkedException
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
+import net.dungeonhub.application.misc.DhScheduler
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.seconds
@@ -79,7 +80,7 @@ object MassSyncService : StartupListener {
             scheduler.cancel("Application was restarted.")
         }
 
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         scheduler.schedule(waveDuration, startNow = true, name = "Mass-Sync-Schedule", repeat = true) {
             syncWave()

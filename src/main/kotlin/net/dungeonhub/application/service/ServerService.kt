@@ -6,6 +6,7 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.misc.ServerData
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -112,7 +113,7 @@ object ServerService : StartupListener {
             scheduler.cancel("Application was restarted.")
         }
 
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         loadServers()
 

@@ -14,6 +14,7 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.misc.PurgeData
 import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.purge_type.PurgeTypeModel
@@ -33,7 +34,7 @@ object PurgingService : StartupListener {
             scheduler.cancel("Application was restarted.")
         }
 
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         scheduler.schedule(6.seconds, startNow = true, name = "Purging-Schedule", repeat = true) {
             purgeWave()

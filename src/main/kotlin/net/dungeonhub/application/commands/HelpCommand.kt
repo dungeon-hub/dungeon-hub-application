@@ -68,7 +68,7 @@ class HelpCommand : Extension() {
         }
     }
 
-    fun returnEmbed(user: User?, guild: Guild?, helpTopic: HelpTopic?): EmbedBuilder {
+    suspend fun returnEmbed(user: User?, guild: Guild?, helpTopic: HelpTopic?): EmbedBuilder {
         val embed: EmbedBuilder = ApplicationService.embed
 
         if (helpTopic == null) {

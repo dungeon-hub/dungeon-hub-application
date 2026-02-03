@@ -38,6 +38,7 @@ import kotlinx.coroutines.launch
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.exceptions.*
 import net.dungeonhub.application.loader.LoadExtension
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.service.*
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.exception.PlayerNotFoundException
@@ -61,7 +62,7 @@ class LinkingSystem : Extension() {
     private val logger = LoggerFactory.getLogger(LinkingSystem::class.java)
 
     override suspend fun setup() {
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         publicSlashCommand(::SingleIgnArguments) {
             name = Link.name

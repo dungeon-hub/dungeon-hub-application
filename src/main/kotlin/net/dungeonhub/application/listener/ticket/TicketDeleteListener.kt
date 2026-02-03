@@ -114,7 +114,7 @@ class TicketDeleteListener : Extension() {
             }
         }
 
-        fun updateTicketState(ticket: TicketModel): TicketModel? {
+        suspend fun updateTicketState(ticket: TicketModel): TicketModel? {
             val updateModel = ticket.getUpdateModel()
             updateModel.state = TicketState.Deleted
             return TicketConnection[ticket.ticketPanel.discordServer, ticket.ticketPanel].authenticated().updateTicket(ticket.id, updateModel)

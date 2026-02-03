@@ -17,7 +17,7 @@ object AutoCompletionService {
     val carryType: AutoCompleteCallback = { event ->
         suggest(
             CarryTypeConnection[event.getGuildId()].authenticated()
-                .allCarryTypes
+                .getAllCarryTypes()
                 ?.filter { carryType ->
                     focusedOption.value.isEmpty()
                             || (carryType.identifier.contains(focusedOption.value, true)
@@ -45,7 +45,7 @@ object AutoCompletionService {
                 CarryTypeConnection[event.getGuildId()].authenticated()
                     .findCarryTypeByString(carryType)
                     ?.let { carryTypeModel ->
-                        CarryTierConnection[carryTypeModel].authenticated().allCarryTiers
+                        CarryTierConnection[carryTypeModel].authenticated().getAllCarryTiers()
                     }
                     ?.filter { carryTier ->
                         focusedOption.value.isEmpty()
@@ -85,7 +85,7 @@ object AutoCompletionService {
             if (carryTierModel != null) {
                 suggest(
                     CarryDifficultyConnection[carryTierModel].authenticated()
-                        .allCarryDifficulties
+                        .getAllCarryDifficulties()
                         ?.filter { carryDifficulty ->
                             focusedOption.value.isEmpty()
                                     || (carryDifficulty.identifier.contains(focusedOption.value, true)
@@ -110,7 +110,7 @@ object AutoCompletionService {
             if (carryTierByCategory != null) {
                 suggest(
                     CarryDifficultyConnection[carryTierByCategory].authenticated()
-                        .allCarryDifficulties
+                        .getAllCarryDifficulties()
                         ?.filter { carryDifficulty ->
                             focusedOption.value.isEmpty()
                                     || (carryDifficulty.identifier.contains(focusedOption.value, true)
@@ -140,7 +140,7 @@ object AutoCompletionService {
                 (CarryTypeConnection[event.getGuildId()].authenticated()
                     .getByIdentifier(carryType)
                     ?.let { carryTypeModel ->
-                        PurgeTypeConnection[carryTypeModel].authenticated().allPurgeTypes
+                        PurgeTypeConnection[carryTypeModel].authenticated().getAllPurgeTypes()
                     } ?: listOf())
                     .filter { purgeType ->
                         focusedOption.value.isEmpty()

@@ -29,6 +29,7 @@ import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.exceptions.NoNameSchemaWarning
 import net.dungeonhub.application.exceptions.NoOptionFoundException
 import net.dungeonhub.application.loader.LoadExtension
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.service.*
 import net.dungeonhub.application.service.ApplicationService.toEmbed
 import net.dungeonhub.connection.DiscordRoleConnection
@@ -48,7 +49,7 @@ class RoleCommand : Extension() {
     private lateinit var scheduler: Scheduler
 
     override suspend fun setup() {
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         publicSlashCommand {
             name = Role.name
@@ -226,7 +227,7 @@ class RoleCommand : Extension() {
 
                     action {
                         val roleRequirements =
-                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().allRoleRequirements
+                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().getAllRoleRequirements()
                                 ?.filter { it.discordRole.id == arguments.role.id.value.toLong() } ?: listOf()
 
                         if (roleRequirements.isEmpty()) {
@@ -261,7 +262,7 @@ class RoleCommand : Extension() {
 
                     action {
                         val roleRequirements =
-                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().allRoleRequirements
+                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().getAllRoleRequirements()
                                 ?: listOf()
 
                         if (roleRequirements.isEmpty()) {

@@ -17,6 +17,9 @@ import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasPermission
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.EmbedColor
@@ -33,8 +36,6 @@ import net.dungeonhub.i18n.Translations.Command.Warn
 import net.dungeonhub.i18n.Translations.Command.Warns
 import net.dungeonhub.model.warning.WarningCreationModel
 import net.dungeonhub.model.warning.WarningEvidenceCreationModel
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Request
 import org.slf4j.LoggerFactory
 import java.time.temporal.ChronoUnit
 
@@ -325,10 +326,9 @@ class WarningSystem : Extension() {
                 action {
                     respond {
                         val evidence: String = if (arguments.attachment != null) {
-                            val attachmentRequest =
-                                Request.Builder().url(arguments.attachment!!.url.toHttpUrl()).build()
-
-                            val attachmentData = DungeonHubClient().executeRawRequest(attachmentRequest)?.result
+                            val attachmentData = DungeonHubClient().executeRawRequest {
+                                url(Url(arguments.attachment!!.url))
+                            }?.bodyAsBytes()?.takeIf { it.isNotEmpty() }
                                 ?: throw CommandExecutionException("Couldn't read file data.")
 
                             val uri = ContentConnection.authenticated().uploadFile(attachmentData)
@@ -364,7 +364,7 @@ class WarningSystem : Extension() {
                             .getValue(guild!!.id.value.toLong())
                             .orElse(null)
                             ?.let {
-                                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
+                                bot.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
                             }
                             ?.let { channel ->
                                 channel.createMessage {

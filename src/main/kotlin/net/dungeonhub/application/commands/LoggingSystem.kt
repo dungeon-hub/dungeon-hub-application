@@ -242,7 +242,7 @@ class LoggingSystem : Extension() {
         }
     }
 
-    fun getCarryTierFromTicket(guildId: Long, ticket: TicketModel): CarryTierModel? {
+    suspend fun getCarryTierFromTicket(guildId: Long, ticket: TicketModel): CarryTierModel? {
         // TODO dedicated endpoint
         return DiscordServerConnection.authenticated().getAllCarryTiers(guildId)?.firstOrNull { carryTier ->
             carryTier.relatedTicketPanel == ticket.ticketPanel

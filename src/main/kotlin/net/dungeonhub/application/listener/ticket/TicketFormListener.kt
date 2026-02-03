@@ -42,7 +42,7 @@ class TicketFormListener : Extension() {
                 var responseCounter = 0
                 for (input in event.interaction.responseComponents) {
                     val textInput = (input.value as? TextInputComponent)?.value
-                        ?: (input.value as? StringSelectComponent)?.options?.firstOrNull()?.value
+                        ?: (input.value as? StringSelectComponent)?.values?.firstOrNull()
                     val validationResult = validateForm(ticketPanel!!, input.key, textInput)
 
                     if(validationResult != null) {
@@ -81,7 +81,7 @@ class TicketFormListener : Extension() {
         return null
     }
 
-    fun validateForm(ticketPanel: TicketPanelModel, key: String, value: String?): String? {
+    suspend fun validateForm(ticketPanel: TicketPanelModel, key: String, value: String?): String? {
         val relatedQuestion = findRelatedQuestion(ticketPanel, key) ?: return null
 
         if(relatedQuestion.type == FormType.Custom) {
@@ -104,7 +104,7 @@ class TicketFormListener : Extension() {
 
                 if(carryDifficultyConnection.findCarryDifficultyByString(value) == null) {
                     "The carry difficulty $value does not exist; select one of the following:\n${
-                        carryDifficultyConnection.allCarryDifficulties?.joinToString(", ") { it.displayName }
+                        carryDifficultyConnection.getAllCarryDifficulties()?.joinToString(", ") { it.displayName }
                     }"
                 } else null
             }

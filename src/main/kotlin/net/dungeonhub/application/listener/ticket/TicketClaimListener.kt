@@ -160,7 +160,7 @@ class TicketClaimListener : Extension() {
         }
     }
 
-    fun updateTicketState(ticket: TicketModel, member: Member?): TicketModel? {
+    suspend fun updateTicketState(ticket: TicketModel, member: Member?): TicketModel? {
         val updateModel = ticket.getUpdateModel()
         updateModel.claimer = member?.id?.value?.toLong()
 

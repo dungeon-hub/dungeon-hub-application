@@ -456,6 +456,7 @@ class CntSystem : Extension() {
                         "Thanks for trusting in our service! I'm now trying to send your CNT request into <#$channelId>"
 
                     val cntEmbed = ApplicationService.getCntEmbed(
+                        requestType,
                         requestDescription,
                         coinValue,
                         requirement,
@@ -795,7 +796,7 @@ class CntSystem : Extension() {
         val cntRequest: CntRequestModel? = null
     )
 
-    fun isAllowedToGiveReputation(userId: Long, target: MemberBehavior): ReputationValidityResult {
+    suspend fun isAllowedToGiveReputation(userId: Long, target: MemberBehavior): ReputationValidityResult {
         val timeout = Instant.now().minusSeconds(reputationTimeout.inWholeSeconds)
 
         val reputationConnection = ReputationConnection[target].authenticated()

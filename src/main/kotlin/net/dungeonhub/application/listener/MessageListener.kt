@@ -28,6 +28,9 @@ import dev.kordex.core.utils.addReaction
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.respond
 import dev.kordex.core.utils.scheduling.Scheduler
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
@@ -43,6 +46,7 @@ import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.exceptions.PlayerNotFoundWarning
 import net.dungeonhub.application.loader.LoadExtension
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.MessagesService
 import net.dungeonhub.application.service.StaticMessageService
@@ -57,8 +61,6 @@ import net.dungeonhub.model.score.ScoreModel
 import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.mojang.connection.MojangConnection
 import net.dungeonhub.service.MoshiService
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Request
 import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
 import java.util.*
@@ -88,7 +90,7 @@ class MessageListener : Extension() {
     override val intents = mutableSetOf<Intent>(Intent.MessageContent)
 
     override suspend fun setup() {
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         event<MessageCreateEvent> {
             action {
@@ -286,9 +288,9 @@ class MessageListener : Extension() {
 
             val attachment = attachments.first()
 
-            val attachmentRequest = Request.Builder().url(attachment.url.toHttpUrl()).build()
-
-            val attachmentData: ByteArray = DungeonHubClient().executeRawRequest(attachmentRequest)?.result
+            val attachmentData = DungeonHubClient().executeRawRequest {
+                url(Url(attachment.url))
+            }?.bodyAsBytes()?.takeIf { it.isNotEmpty() }
                 ?: throw CommandExecutionException("Couldn't read file data.")
 
             val content = String(attachmentData, StandardCharsets.UTF_8)

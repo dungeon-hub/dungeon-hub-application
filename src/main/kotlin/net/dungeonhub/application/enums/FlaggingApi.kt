@@ -11,12 +11,11 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.CompletionException
-import java.util.function.Function
 
 enum class FlaggingApi(
     val displayName: String,
-    val uuidFunction: Function<UUID, FlagDetail?>?,
-    val discordIdFunction: Function<Long, FlagDetail?>?
+    val uuidFunction: (suspend (UUID) -> FlagDetail?)?,
+    val discordIdFunction: (suspend (Long) -> FlagDetail?)?
 ) {
     JERRY(
         "Jerry",
@@ -80,13 +79,13 @@ enum class FlaggingApi(
     suspend fun execute(uuid: UUID?, id: Long?): FlagResponse = coroutineScope {
         try {
             val uuidFlagged = if (uuidFunction != null && uuid != null) {
-                async { uuidFunction.apply(uuid) }
+                async { uuidFunction(uuid) }
             } else {
                 null
             }
 
             val discordIdFlagged = if (discordIdFunction != null && id != null && id != 0L) {
-                async { discordIdFunction.apply(id) }
+                async { discordIdFunction(id) }
             } else {
                 null
             }

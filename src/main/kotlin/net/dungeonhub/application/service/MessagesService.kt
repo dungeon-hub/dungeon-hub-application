@@ -14,8 +14,8 @@ import java.util.stream.Collectors
 
 // TODO either: delete this, or add some other embeds from e.g. StaticMessageService into here
 object MessagesService {
-    fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder? {
-        val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().allCarryDifficulties ?: listOf()
+    suspend fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder? {
+        val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().getAllCarryDifficulties() ?: listOf()
 
         if (carryDifficulties.isEmpty()) {
             return null
