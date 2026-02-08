@@ -818,7 +818,7 @@ object ApplicationService {
 
         if(embedOverride != null) {
             embed.field("Embed Override") {
-                embedOverride!!
+                "```json\n$embedOverride\n```"
             }
         }
 
