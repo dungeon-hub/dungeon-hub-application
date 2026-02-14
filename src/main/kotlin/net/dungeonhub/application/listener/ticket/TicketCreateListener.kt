@@ -132,7 +132,7 @@ class TicketCreateListener : Extension() {
                     textInput( // TODO make this a select menu once that becomes available in Kord
                         TextInputStyle.Short,
                         "carry-amount",
-                        "Enter an amount"
+                        "Enter a number of carries"
                     ) {
                         placeholder = "Only enter a number here"
                         required = true
