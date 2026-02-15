@@ -265,7 +265,7 @@ class TicketCreateListener : Extension() {
         ) {
             var content: String
             var embeds = mutableListOf<EmbedBuilder>()
-            var additionalButtons: List<(ActionRowBuilder.() -> Unit)?>
+            var additionalButtons: List<(suspend ActionRowBuilder.() -> Unit)?>
 
             @Suppress("DEPRECATION")
             val messageJson = try {
@@ -296,11 +296,11 @@ class TicketCreateListener : Extension() {
         fun parseAdditionalButton(
             additionalButton: String,
             placeholders: TicketPlaceholders
-        ): (ActionRowBuilder.() -> Unit)? {
+        ): (suspend ActionRowBuilder.() -> Unit)? {
             return when (additionalButton) {
                 "user.skycrypt" -> {
                     {
-                        placeholders.ticketUserIgn?.let {
+                        placeholders.ticketUserIgn.await()?.let {
                             linkButton("https://sky.shiiyu.moe/stats/$it") {
                                 label = "SkyCrypt"
                             }
@@ -399,8 +399,8 @@ class TicketCreateListener : Extension() {
             }
         }
 
-        fun getDefaultButtons(claimButton: Boolean): List<ActionRowBuilder.() -> Unit> {
-            return listOf<ActionRowBuilder.() -> Unit>({
+        fun getDefaultButtons(claimButton: Boolean): List<suspend ActionRowBuilder.() -> Unit> {
+            return listOf<suspend ActionRowBuilder.() -> Unit>({
                 interactionButton(ButtonStyle.Danger, "close-ticket") {
                     label = "Close"
                 }
@@ -416,15 +416,15 @@ class TicketCreateListener : Extension() {
             ticketChannel: TextChannel,
             content: String,
             embeds: List<EmbedBuilder>,
-            additionalButtons: List<ActionRowBuilder.() -> Unit>
+            additionalButtons: List<suspend ActionRowBuilder.() -> Unit>
         ) {
-            val allButtons = getDefaultButtons(ticketPanel.claimable) + additionalButtons
+            val allButtons: List<suspend ActionRowBuilder.() -> Unit> = getDefaultButtons(ticketPanel.claimable) + additionalButtons
 
             val message = ticketChannel.createMessage {
                 this.content = content
                 this.embeds = embeds.toMutableList()
 
-                allButtons.windowed(5, 5, true) { actionRowBuilders ->
+                allButtons.windowed(5, 5, true).forEach { actionRowBuilders ->
                     actionRow {
                         actionRowBuilders.forEach { actionRowBuilder -> actionRowBuilder() }
                     }
