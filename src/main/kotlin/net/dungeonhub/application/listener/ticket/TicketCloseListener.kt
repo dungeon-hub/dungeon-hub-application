@@ -76,7 +76,9 @@ class TicketCloseListener : Extension() {
                 }
 
                 if(!ticket.ticketPanel.closeable) {
-                    TicketDeleteListener.deleteTicket(ticket, event.interaction.user, event.interaction.channel.asChannelOf<TextChannel>(), response)
+                    response.respond {
+                        embeds = mutableListOf(TicketDeleteListener.deleteTicket(ticket, event.interaction.user, event.interaction.channel.asChannelOf<TextChannel>()))
+                    }
                     return@action
                 }
 
@@ -136,70 +138,72 @@ class TicketCloseListener : Extension() {
         }
     }
 
-    fun closeTicket(member: MemberBehavior, textChannel: TextChannel, ticket: TicketModel): EmbedBuilder {
-        TicketSystem.scheduler.launch {
-            val updateModel = ticket.getUpdateModel()
-            updateModel.state = TicketState.Closed
-            val updatedTicket = TicketConnection[member.guildId.value.toLong(), ticket.ticketPanel].authenticated().updateTicket(ticket.id, updateModel)
+    companion object {
+        fun closeTicket(member: MemberBehavior, textChannel: TextChannel, ticket: TicketModel): EmbedBuilder {
+            TicketSystem.scheduler.launch {
+                val updateModel = ticket.getUpdateModel()
+                updateModel.state = TicketState.Closed
+                val updatedTicket = TicketConnection[member.guildId.value.toLong(), ticket.ticketPanel].authenticated().updateTicket(ticket.id, updateModel)
 
-            if(updatedTicket == null) {
+                if(updatedTicket == null) {
+                    textChannel.createMessage {
+                        addEmbed {
+                            description = "Couldn't update ticket state!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@launch
+                }
+
+                textChannel.edit {
+                    val newName = TicketSystem.buildTicketName(updatedTicket.ticketPanel, updatedTicket, member.asMember(), textChannel)
+
+                    if(newName != null) {
+                        name = newName
+                    }
+
+                    permissionOverwrites?.clear()
+                    updateTicketPermissions(updatedTicket.ticketPanel, updatedTicket)
+
+                    val categories = if (ticket.state in listOf(TicketState.Creating, TicketState.Open)) {
+                        updatedTicket.ticketPanel.openCategories
+                    } else {
+                        updatedTicket.ticketPanel.closedCategories
+                    }
+                    TicketSystem.getCategory(categories)?.let { parentId = Snowflake(it) }
+                }
+
                 textChannel.createMessage {
                     addEmbed {
-                        description = "Couldn't update ticket state!"
-                        color(EmbedColor.Negative)
+                        description = "Ticket closed by ${member.mention}."
+                        color(EmbedColor.Default)
                     }
                 }
-                return@launch
-            }
 
-            textChannel.edit {
-                val newName = TicketSystem.buildTicketName(updatedTicket.ticketPanel, updatedTicket, member.asMember(), textChannel)
+                TicketTranscriptListener.generateTranscript(
+                    textChannel,
+                    null,
+                    updatedTicket,
+                    updatedTicket.ticketPanel.closeTranscriptTarget
+                )
 
-                if(newName != null) {
-                    name = newName
-                }
+                textChannel.createMessage {
+                    addEmbed {
+                        title = "Manage Ticket"
+                    }
 
-                permissionOverwrites?.clear()
-                updateTicketPermissions(updatedTicket.ticketPanel, updatedTicket)
-
-                val categories = if (ticket.state in listOf(TicketState.Creating, TicketState.Open)) {
-                    updatedTicket.ticketPanel.openCategories
-                } else {
-                    updatedTicket.ticketPanel.closedCategories
-                }
-                TicketSystem.getCategory(categories)?.let { parentId = Snowflake(it) }
-            }
-
-            textChannel.createMessage {
-                addEmbed {
-                    description = "Ticket closed by ${member.mention}."
-                    color(EmbedColor.Default)
-                }
-            }
-
-            TicketTranscriptListener.generateTranscript(
-                textChannel,
-                null,
-                updatedTicket,
-                updatedTicket.ticketPanel.closeTranscriptTarget
-            )
-
-            textChannel.createMessage {
-                addEmbed {
-                    title = "Manage Ticket"
-                }
-
-                actionRow {
-                    TicketSystem.getControlButtons().forEach {
-                        it()
+                    actionRow {
+                        TicketSystem.getControlButtons().forEach {
+                            it()
+                        }
                     }
                 }
             }
-        }
 
-        return buildEmbed {
-            description = "Closing ticket..."
-            color(EmbedColor.Positive)
+            return buildEmbed {
+                description = "Closing ticket..."
+                color(EmbedColor.Positive)
+            }
         }
     }
 }

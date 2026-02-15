@@ -2,11 +2,11 @@ package net.dungeonhub.application.listener.ticket
 
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
-import dev.kord.core.behavior.interaction.response.DeferredEphemeralMessageInteractionResponseBehavior
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
+import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import kotlinx.coroutines.delay
@@ -16,6 +16,7 @@ import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedToCha
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.addEmbed
+import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.TicketConnection
@@ -68,23 +69,18 @@ class TicketDeleteListener : Extension() {
                     return@action
                 }
 
-                deleteTicket(ticket, event.interaction.user, event.interaction.channel.asChannelOf<TextChannel>(), response)
+                response.respond {
+                    embeds = mutableListOf(deleteTicket(ticket, event.interaction.user, event.interaction.channel.asChannelOf<TextChannel>()))
+                }
             }
         }
     }
 
     companion object {
-        suspend fun deleteTicket(ticket: TicketModel, member: Member, textChannel: TextChannel, response: DeferredEphemeralMessageInteractionResponseBehavior) {
-            val updatedTicket = updateTicketState(ticket)
-
-            if(updatedTicket == null) {
-                response.respond {
-                    addEmbed {
-                        description = "Couldn't set the ticket state to deleted!"
-                        color(EmbedColor.Negative)
-                    }
-                }
-                return
+        suspend fun deleteTicket(ticket: TicketModel, member: Member, textChannel: TextChannel): EmbedBuilder {
+            val updatedTicket = updateTicketState(ticket) ?: return buildEmbed {
+                description = "Couldn't set the ticket state to deleted!"
+                color(EmbedColor.Negative)
             }
 
             TicketSystem.scheduler.launch {
@@ -106,11 +102,9 @@ class TicketDeleteListener : Extension() {
                 }
             }
 
-            response.respond {
-                addEmbed {
-                    description = "Deleting the ticket..."
-                    color(EmbedColor.Positive)
-                }
+            return buildEmbed {
+                description = "Deleting the ticket..."
+                color(EmbedColor.Positive)
             }
         }
 
