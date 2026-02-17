@@ -16,7 +16,6 @@ import net.dungeonhub.application.misc.FlagDetail.FlagDetailBuilder.builder
 import net.dungeonhub.application.misc.FlagResponse
 import net.dungeonhub.client.DungeonHubClient
 import net.dungeonhub.service.MoshiService.moshi
-import net.dungeonhub.structure.Connection
 import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -70,7 +69,7 @@ object FlaggingConnection {
 
         val jsonBody = mapOf("ids" to listOf(id.toString()))
 
-        val requestBody = moshi.adapter<Map<String, List<String>>>().toJson(jsonBody).toRequestBody(Connection.jsonMediaType)
+        val requestBody = moshi.adapter<Map<String, List<String>>>().toJson(jsonBody).toRequestBody()
 
         val request = Request.Builder()
             .url(httpUrl)
