@@ -76,7 +76,7 @@ object StaticMessageService : StartupListener {
             refreshAllStaticMessages()
         }
 
-        val refreshScheduleTask = scheduler.schedule(3.seconds, startNow = false, name = "Static-Message-Update-Scheduler", repeat = true) {
+        val refreshScheduleTask = scheduler.schedule(15.seconds, startNow = false, name = "Static-Message-Update-Scheduler", repeat = true) {
             staticMessageUpdateWave()
         }
 
