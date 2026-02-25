@@ -1,35 +1,35 @@
 package net.dungeonhub.application.config
 
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.cancel
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartPriority
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.service.ApplicationService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.sql.Time
-import java.util.*
+import kotlin.time.Duration.Companion.minutes
 
 @OnStart(priority = StartPriority.CONFIGURATION_LOADER)
 object ConfigService : ConfigFile<ConfigProperty>() {
     private val logger: Logger = LoggerFactory.getLogger(ConfigService::class.java)
-    private var timer: Timer? = null
+    private lateinit var scheduler: Scheduler
 
     override val possibleProperties
         get() = ConfigProperty.properties
 
-    private fun resetTimer() {
-        if (timer != null) {
-            timer!!.cancel()
+    private suspend fun resetScheduler() {
+        if(::scheduler.isInitialized) {
+            scheduler.cancel("Application was restarted.")
         }
 
-        timer = Timer()
+        scheduler = DhScheduler()
 
-        timer!!.scheduleAtFixedRate(object : TimerTask() {
-            override fun run() {
-                logger.debug("Config reloaded!")
-                reloadConfig()
-            }
-        }, Time(System.currentTimeMillis() + 10000), 1000L * 60 * 5)
+        scheduler.schedule(5.minutes, startNow = true, name = "Config-Service-Schedule", repeat = true) {
+            logger.debug("Config reloaded!")
+            reloadConfig()
+        }
     }
 
     val configFolder: String
@@ -43,6 +43,6 @@ object ConfigService : ConfigFile<ConfigProperty>() {
     }
 
     override suspend fun onStart() {
-        resetTimer()
+        resetScheduler()
     }
 }

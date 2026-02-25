@@ -272,7 +272,6 @@ class LoggingSystem : Extension() {
 
             ServerProperty.SCORE_LOGS_CHANNEL
                 .getValue(event.interaction.guild.id.value.toLong())
-                .orElse(null)
                 ?.let { id: String ->
                     event.interaction.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
                 }

@@ -1,9 +1,11 @@
 package net.dungeonhub.application.config
 
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
+import kotlinx.coroutines.withContext
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartPriority
 import net.dungeonhub.application.loader.StartupListener
+import net.dungeonhub.application.misc.DhScheduler
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -19,7 +21,7 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
 
     protected abstract val configFile: File
 
-    fun setConfig(property: T, value: String?) {
+    suspend fun setConfig(property: T, value: String?) {
         if(value == null) {
             properties.remove(property.readableName.key)
         } else {
@@ -33,9 +35,11 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
         return properties.getProperty(property.readableName.key)
     }
 
-    fun saveProperties() {
+    suspend fun saveProperties() {
         try {
-            Files.newBufferedWriter(configFile.toPath()).use { bufferedWriter ->
+            withContext(scheduler.coroutineContext) {
+                Files.newBufferedWriter(configFile.toPath())
+            }.use { bufferedWriter ->
                 properties.store(bufferedWriter, null)
             }
         } catch (ioException: IOException) {
@@ -43,7 +47,7 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
         }
     }
 
-    protected fun reloadConfig() {
+    protected suspend fun reloadConfig() {
         val file = configFile
 
         if (!file.exists()) {
@@ -54,7 +58,9 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
             }
 
             try {
-                Files.createFile(file.toPath())
+                withContext(scheduler.coroutineContext) {
+                    Files.createFile(file.toPath())
+                }
             } catch (ioException: IOException) {
                 logger.error("Error when trying to create file {}.", file.absolutePath, ioException)
                 return
@@ -65,7 +71,9 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
             }
         } else {
             try {
-                Files.newBufferedReader(file.toPath()).use { bufferedReader ->
+                withContext(scheduler.coroutineContext) {
+                    Files.newBufferedReader(file.toPath())
+                }.use { bufferedReader ->
                     properties.load(bufferedReader)
                 }
             } catch (ioException: IOException) {
@@ -80,7 +88,9 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
         }
 
         try {
-            Files.newBufferedWriter(file.toPath()).use { bufferedWriter ->
+            withContext(scheduler.coroutineContext) {
+                Files.newBufferedWriter(file.toPath())
+            }.use { bufferedWriter ->
                 properties.store(bufferedWriter, null)
             }
         } catch (ioException: IOException) {
@@ -90,5 +100,6 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(ConfigFile::class.java)
+        internal val scheduler = DhScheduler()
     }
 }

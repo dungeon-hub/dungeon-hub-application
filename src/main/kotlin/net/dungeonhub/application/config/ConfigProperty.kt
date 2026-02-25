@@ -3,8 +3,6 @@ package net.dungeonhub.application.config
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.core.i18n.toKey
 import dev.kordex.i18n.Key
-import java.util.*
-import java.util.stream.Collectors
 
 enum class ConfigProperty(override val readableName: Key) : ChoiceEnum {
     DISCORD_BOT_TOKEN("discord-bot.token"),
@@ -37,19 +35,19 @@ enum class ConfigProperty(override val readableName: Key) : ChoiceEnum {
 
     constructor(readableName: String) : this(readableName.toKey())
 
-    var value: String?
+    val value: String?
         get() = ConfigService.getConfig(this)
-        set(value) {
-            ConfigService.setConfig(this, value)
-        }
+
+    suspend fun updateValue(value: String?) {
+        ConfigService.setConfig(this, value)
+    }
 
     override fun toString(): String {
-        return value!!
+        return "$value"
     }
 
     companion object {
         val properties: Set<ConfigProperty>
-            get() = Arrays.stream(entries.toTypedArray())
-                .collect(Collectors.toSet())
+            get() = entries.toSet()
     }
 }

@@ -67,7 +67,7 @@ enum class ServerProperty(
         relatedProperties
     )
 
-    fun getValue(serverId: Long): Optional<String> {
+    fun getValue(serverId: Long): String? {
         return getActualServerProperty(serverId, this)
     }
 
@@ -76,12 +76,9 @@ enum class ServerProperty(
     }
 
     fun isEnabled(serverId: Long): Boolean {
-        return (enabled
-                && Arrays.stream(relatedProperties)
-            .flatMap { serverProperty: ServerProperty -> serverProperty.getValue(serverId).stream() }
-            .allMatch { s: String? -> s.equals("true", ignoreCase = true) }
-                && Arrays.stream(relatedProperties)
-            .allMatch { serverProperty: ServerProperty -> serverProperty.isEnabled(serverId) })
+        return enabled &&
+                relatedProperties.map { it.getValue(serverId) }.all { it.equals("true", ignoreCase = true) } &&
+                relatedProperties.all { it.isEnabled(serverId) }
     }
 
     companion object {

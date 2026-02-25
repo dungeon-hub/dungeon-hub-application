@@ -147,7 +147,7 @@ class ManageScoreCommand : Extension() {
             .firstOrNull() ?: 0L
 
         val logChannel = ServerProperty.SCORE_LOGS_CHANNEL
-            .getValue(guild.id.value.toLong()).orElse(null)
+            .getValue(guild.id.value.toLong())
             ?.let { id ->
                 guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
             }

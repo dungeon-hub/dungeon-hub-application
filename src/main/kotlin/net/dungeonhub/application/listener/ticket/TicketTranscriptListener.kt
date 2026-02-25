@@ -305,7 +305,7 @@ class TicketTranscriptListener : Extension() {
 
                 val transcriptChannel = ticket.ticketPanel.transcriptChannel?.let { transcriptChannel ->
                     textChannel.guild.getChannelOf<GuildMessageChannel>(Snowflake(transcriptChannel.id))
-                } ?: ServerProperty.TRANSCRIPTS_CHANNEL.getValue(ticket.ticketPanel.discordServer.id).orElse(null)?.toLongOrNull()?.let {
+                } ?: ServerProperty.TRANSCRIPTS_CHANNEL.getValue(ticket.ticketPanel.discordServer.id)?.toLongOrNull()?.let {
                     textChannel.guild.getChannelOf<GuildMessageChannel>(Snowflake(it))
                 }
 

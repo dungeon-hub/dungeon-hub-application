@@ -302,7 +302,7 @@ object StaticMessageService : StartupListener {
                 val leaderboards: MutableList<ScoreLeaderboard> = mutableListOf()
 
                 for (scoreType in ScoreType.entries) {
-                    if (scoreType == ScoreType.Event && !ServerProperty.TOTAL_SCORE_EVENT.getValue(staticMessage.server.id).map { it == "true" }.orElse(false)) {
+                    if (scoreType == ScoreType.Event && ServerProperty.TOTAL_SCORE_EVENT.getValue(staticMessage.server.id)?.let { it == "true" } == false) {
                         continue
                     }
 
@@ -442,7 +442,7 @@ object StaticMessageService : StartupListener {
     private fun handleScoreLeaderboards(guildId: Long, leaderboards: List<ScoreLeaderboard>): MutableList<EmbedBuilder> {
         val embeds = mutableListOf<EmbedBuilder>()
 
-        val compactLeaderboard = ServerProperty.COMPACT_LEADERBOARD.getValue(guildId).map { it == "true" }.orElse(false)
+        val compactLeaderboard = ServerProperty.COMPACT_LEADERBOARD.getValue(guildId)?.let { it == "true" } ?: false
 
         if (compactLeaderboard) {
             embeds.addAll(LeaderboardService.generateCompactLeaderboard(leaderboards))

@@ -1,9 +1,14 @@
 package net.dungeonhub.application.misc
 
 import dev.kordex.core.utils.scheduling.Scheduler
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class DhScheduler : Scheduler() {
-    override val coroutineContext = Dispatchers.IO + SupervisorJob()
+    override val coroutineContext get() = executor.asCoroutineDispatcher()
+
+    companion object {
+        val executor: ExecutorService = Executors.newCachedThreadPool()
+    }
 }

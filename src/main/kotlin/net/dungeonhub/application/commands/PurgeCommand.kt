@@ -83,7 +83,6 @@ class PurgeCommand : Extension() {
                     scheduler.launch {
                         val purgeImmunityRole = ServerProperty.PURGE_IMMUNITY_ROLE
                             .getValue(guild!!.id.value.toLong())
-                            .orElse(null)
                             ?.let { Snowflake(it) }
 
                         val carryType =
@@ -184,7 +183,6 @@ class PurgeCommand : Extension() {
                 action {
                     val purgeImmunityRole = ServerProperty.PURGE_IMMUNITY_ROLE
                         .getValue(guild!!.id.value.toLong())
-                        .orElse(null)
                         ?.let { Snowflake(it) }
 
                     val carryType = CarryTypeConnection[guild!!.id.value.toLong()].authenticated()

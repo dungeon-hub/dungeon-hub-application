@@ -10,13 +10,10 @@ import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.misc.ServerData
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.File
 import java.io.IOException
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.*
-import java.util.function.Predicate
 import kotlin.time.Duration.Companion.minutes
 
 @OnStart
@@ -30,11 +27,10 @@ object ServerService : StartupListener {
 
     init {
         try {
-            Files.createDirectory(Path.of(serverFolder))
+            Files.createDirectory(Path.of(ServerData.configFolder))
         } catch (_: FileAlreadyExistsException) {
             //Ignored since I just want to be sure that the folder always exists.
         } catch (ioException: IOException) {
-
             logger.error(null, ioException)
         }
     }
@@ -42,55 +38,32 @@ object ServerService : StartupListener {
     private suspend fun loadServers() {
         serverData.clear()
 
-        DiscordConnection.bot.kordRef.guilds.collect { server ->
-            loadServerData(
-                server.id.value.toLong()
-            )
+        DiscordConnection.bot.kordRef.guilds.collect {
+            loadServerData(it.id.value.toLong())
         }
     }
 
-    private suspend fun resetTimer() {
+    private suspend fun resetScheduler() {
         scheduler.schedule(15.minutes, startNow = true, name = "Server-Config-Schedule", repeat = true) {
             logger.debug("Server configs reloaded!")
             loadServers()
         }
     }
 
-    val serverFolder: String
-        get() = ApplicationService.dungeonHubDirectory + File.separator + "servers"
-
     fun loadServerData(id: Long) {
         serverData.add(ServerData(id))
     }
 
     fun unloadServerData(id: Long) {
-        serverData.removeIf { serverData1: ServerData -> serverData1.id == id }
+        serverData.removeIf { it.id == id }
     }
 
-    fun getServerData(id: Long): Optional<ServerData> {
-        return serverData.stream()
-            .filter { data: ServerData -> data.id == id }
-            .findAny()
+    fun getServerData(id: Long): ServerData? {
+        return serverData.firstOrNull { it.id == id }
     }
 
-    val allServers: Set<ServerData>
-        get() = serverData
-
-    fun getServersWhere(function: Predicate<ServerData>?): List<ServerData> {
-        return serverData.stream()
-            .filter(function)
-            .toList()
-    }
-
-    fun getActualServerProperty(id: Long, serverProperty: ServerProperty): Optional<String> {
-        return getServerData(id)
-            .map { data: ServerData ->
-                data.getConfig(
-                    serverProperty
-                )
-            }
-            .flatMap { s -> Optional.ofNullable(s) }
-            .filter { s -> s.isNotBlank() }
+    fun getActualServerProperty(id: Long, serverProperty: ServerProperty): String? {
+        return getServerData(id)?.getConfig(serverProperty)?.takeIf { it.isNotBlank() }
     }
 
     fun canUse(id: Long, serverProperty: ServerProperty?): Boolean {
@@ -99,13 +72,7 @@ object ServerService : StartupListener {
             return false
         }
 
-        return getServerData(id)
-            .map { serverData1: ServerData ->
-                serverData1.isEnabled(
-                    serverProperty
-                )
-            }
-            .orElse(false)
+        return getServerData(id)?.isEnabled(serverProperty) ?: false
     }
 
     override suspend fun postStart() {
@@ -117,6 +84,6 @@ object ServerService : StartupListener {
 
         loadServers()
 
-        resetTimer()
+        resetScheduler()
     }
 }

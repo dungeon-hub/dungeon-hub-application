@@ -130,7 +130,7 @@ class CntSystem : Extension() {
                 }
 
                 val requiredRoles = serverProperties.mapNotNull { serverProperty ->
-                    serverProperty.getValue(event.interaction.guildId.value.toLong()).orElse(null)?.toLongOrNull()
+                    serverProperty.getValue(event.interaction.guildId.value.toLong())?.toLongOrNull()
                 }
 
                 if(requiredRoles.isNotEmpty()
@@ -448,7 +448,7 @@ class CntSystem : Extension() {
                     }
 
                     val channelId =
-                        ServerProperty.CNT_MESSAGES_CHANNEL.getValue(channel.guildId.value.toLong()).orElse(null)
+                        ServerProperty.CNT_MESSAGES_CHANNEL.getValue(channel.guildId.value.toLong())
 
                     val responseEmbed = embed
                     responseEmbed.color(EmbedColor.Default)
@@ -477,7 +477,6 @@ class CntSystem : Extension() {
                         response = cntChannel.createMessage {
                             ServerProperty.CNT_PING_ROLE
                                 .getValue(channel.guildId.value.toLong())
-                                .orElse(null)
                                 ?.let { content = "<@&$it>" }
                             embeds = mutableListOf(cntEmbed)
 
@@ -515,7 +514,6 @@ class CntSystem : Extension() {
                     response.edit {
                         ServerProperty.CNT_PING_ROLE
                             .getValue(channel.guildId.value.toLong())
-                            .orElse(null)
                             ?.let { content = "<@&$it>" }
 
                         embeds = embed
@@ -784,7 +782,7 @@ class CntSystem : Extension() {
     }
 
     suspend fun getCntRequestMessage(guild: GuildBehavior, cntRequest: CntRequestModel): MessageBehavior? {
-        return ServerProperty.CNT_MESSAGES_CHANNEL.getValue(guild.id.value.toLong()).orElse(null)
+        return ServerProperty.CNT_MESSAGES_CHANNEL.getValue(guild.id.value.toLong())
             ?.let {
                 guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(it))
             }?.getMessageOrNull(Snowflake(cntRequest.messageId))

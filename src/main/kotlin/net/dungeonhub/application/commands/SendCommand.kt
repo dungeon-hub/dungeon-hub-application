@@ -82,8 +82,8 @@ class SendCommand : Extension() {
                         val channel = arguments.channel.asChannelOfOrNull<GuildMessageChannel>()
                             ?: throw CommandExecutionException("Channel couldn't be found or isn't a message channel. Please let an administrator know.")
 
-                        val cntChannel = ServerProperty.CNT_MESSAGES_CHANNEL.getValue(guild!!.id.value.toLong()).orElse(null)
-                        val cntInfoChannel = ServerProperty.CNT_INFORMATION_CHANNEL.getValue(guild!!.id.value.toLong()).orElse(null)
+                        val cntChannel = ServerProperty.CNT_MESSAGES_CHANNEL.getValue(guild!!.id.value.toLong())
+                        val cntInfoChannel = ServerProperty.CNT_INFORMATION_CHANNEL.getValue(guild!!.id.value.toLong())
 
                         val embed = ApplicationService.embed
                         embed.color(EmbedColor.Positive)

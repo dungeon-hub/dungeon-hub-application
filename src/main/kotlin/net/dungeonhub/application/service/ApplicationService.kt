@@ -584,11 +584,10 @@ object ApplicationService {
             try {
                 member.dm {
                     val unbanForm = ServerProperty.UNBAN_FORM.getValue(member.guildId.value.toLong())
-                        .orElse(null)
 
-                    var message = ServerProperty.BAN_MESSAGE
+                    var message = (ServerProperty.BAN_MESSAGE
                         .getValue(member.guildId.value.toLong())
-                        .orElse("You got banned from `%server%` because of too many severe warnings.\nIf you think this is a mistake, contact the administrators for further information.")
+                        ?: "You got banned from `%server%` because of too many severe warnings.\nIf you think this is a mistake, contact the administrators for further information.")
                         .replace("%server%", member.guild.asGuildOrNull()?.name ?: member.guildId.toString())
 
                     unbanForm?.let {

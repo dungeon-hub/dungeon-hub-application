@@ -194,9 +194,8 @@ class WarningSystem : Extension() {
 
                         getChannelProperty(addedWarning.warningModel.warningType)
                             .getValue(guild!!.id.value.toLong())
-                            .orElse(null)
                             ?.let {
-                                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
+                                DiscordConnection.bot.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
                             }
                             ?.let { channel ->
                                 channel.createMessage {
@@ -251,7 +250,6 @@ class WarningSystem : Extension() {
 
                         getChannelProperty(removedWarning.warningType)
                             .getValue(guild!!.id.value.toLong())
-                            .orElse(null)
                             ?.let {
                                 DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
                             }
@@ -362,7 +360,6 @@ class WarningSystem : Extension() {
 
                         getChannelProperty(warning.warningType)
                             .getValue(guild!!.id.value.toLong())
-                            .orElse(null)
                             ?.let {
                                 bot.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
                             }

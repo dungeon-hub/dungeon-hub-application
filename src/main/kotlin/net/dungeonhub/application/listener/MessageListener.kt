@@ -125,7 +125,6 @@ class MessageListener : Extension() {
         val server = kord.getGuildOrNull(Snowflake(ticket.ticketPanel.discordServer.id)) ?: return
 
         val approvingChannel = ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.id.value.toLong())
-            .orElse(null)
             ?.let { DiscordConnection.bot.kordRef.getChannelOf<TextChannel>(Snowflake(it)) }
 
         val carryTypes: MutableList<CarryTypeModel> = mutableListOf()
@@ -277,9 +276,9 @@ class MessageListener : Extension() {
             return
         }
 
-        if (ServerProperty.TRANSCRIPTS_CHANNEL.getValue(server.id.value.toLong()).map { s: String ->
+        if (ServerProperty.TRANSCRIPTS_CHANNEL.getValue(server.id.value.toLong())?.let { s ->
                 message.channelId.toString() == s
-            }.orElse(false)) {
+            } ?: false) {
             val attachments = message.attachments
 
             if (message.author?.isSelf == true || attachments.size != 1) {
@@ -315,7 +314,6 @@ class MessageListener : Extension() {
             var attachmentLink: String? = null
 
             val approvingChannel = ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.id.value.toLong())
-                .orElse(null)
                 ?.let { DiscordConnection.bot.kordRef.getChannelOf<TextChannel>(Snowflake(it)) }
 
             val carryTypes: MutableList<CarryTypeModel> = mutableListOf()
