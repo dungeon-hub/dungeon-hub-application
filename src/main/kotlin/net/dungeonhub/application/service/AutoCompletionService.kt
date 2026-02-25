@@ -11,6 +11,8 @@ import net.dungeonhub.application.enums.KnownStaticResource
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.connection.*
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
+import net.dungeonhub.model.carry_tier.CarryTierModel
+import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.mojang.connection.MojangConnection
 
 object AutoCompletionService {
@@ -101,11 +103,19 @@ object AutoCompletionService {
                 )
             }
         } else {
-            val categoryId = event.interaction.channel.asChannelOfOrNull<CategorizableChannel>()?.categoryId
+            val guildId = event.getGuildId()
 
-            val carryTierByCategory = categoryId?.let { category ->
-                DiscordServerConnection.authenticated().getCarryTierFromCategory(event.getGuildId(), category.value.toLong())
-            }
+            val ticket = DiscordServerConnection.authenticated().findTickets(guildId, channelId = channel.id.value.toLong())?.firstOrNull()
+
+            val carryTierByCategory = ticket?.let { getCarryTierFromTicket(guildId, it) }
+                ?: channel.asChannelOfOrNull<CategorizableChannel>()
+                    ?.categoryId
+                    ?.let { categoryId ->
+                        DiscordServerConnection.authenticated().getCarryTierFromCategory(
+                            guildId,
+                            categoryId.value.toLong()
+                        )
+                    }
 
             if (carryTierByCategory != null) {
                 suggest(
@@ -211,6 +221,13 @@ object AutoCompletionService {
                     )
                 } ?: emptyList()
             )
+        }
+    }
+
+    suspend fun getCarryTierFromTicket(guildId: Long, ticket: TicketModel): CarryTierModel? {
+        // TODO dedicated endpoint
+        return DiscordServerConnection.authenticated().getAllCarryTiers(guildId)?.firstOrNull { carryTier ->
+            carryTier.relatedTicketPanel?.id == ticket.ticketPanel.id
         }
     }
 }
