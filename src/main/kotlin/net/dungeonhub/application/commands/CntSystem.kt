@@ -129,11 +129,12 @@ class CntSystem : Extension() {
                     }
                 }
 
-                val requiredRoles = serverProperties.mapNotNull { serverProperty ->
+                val requiredRoles = serverProperties.map { serverProperty ->
                     serverProperty.getValue(event.interaction.guildId.value.toLong())?.toLongOrNull()
                 }
 
                 if(requiredRoles.isNotEmpty()
+                    && requiredRoles.first() != null
                     && !event.interaction.user.roleIds.any { requiredRoles.contains(it.value.toLong()) }) {
                     response.respond {
                         content = "You don't have the required role <@&${requiredRoles.first()}> to claim requests of that value!"
