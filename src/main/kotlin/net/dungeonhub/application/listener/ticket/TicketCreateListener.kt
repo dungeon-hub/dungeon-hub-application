@@ -33,6 +33,7 @@ import net.dungeonhub.application.commands.TicketSystem.Companion.updateTicketPe
 import net.dungeonhub.application.commands.addSilentLinkButtons
 import net.dungeonhub.application.connection.applyJson
 import net.dungeonhub.application.enums.EmbedColor
+import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.misc.TicketPlaceholders
 import net.dungeonhub.application.service.ApplicationService
@@ -382,11 +383,15 @@ class TicketCreateListener : Extension() {
                     val customStats: List<StatsOverviewType>? = customData?.split(",")
                         ?.mapNotNull { statsType -> try { BuiltInStatsOverviewType.valueOf(statsType) } catch (_: IllegalArgumentException) { null } }
 
-                    ApplicationService.getPlayerDataEmbed(
-                        it,
-                        placeholders.ticketUserId,
-                        statsOverviewTypes = customStats
-                    )
+                    try {
+                        ApplicationService.getPlayerDataEmbed(
+                            it,
+                            placeholders.ticketUserId,
+                            statsOverviewTypes = customStats
+                        )
+                    } catch (e: FailedToLoadEmbedException) {
+                        e.embed
+                    }
                 }
                 "price-overview" -> placeholders.carryTier.await()?.let { MessagesService.getPriceEmbed(it) }
                 "carry-price" -> placeholders.formCarryDifficulty.await()?.let { carryDifficulty ->
