@@ -164,6 +164,12 @@ class TicketSystem : Extension() {
                                 description = "This ticket is already closed!"
                                 color(EmbedColor.Negative)
                             }
+
+                            actionRow {
+                                getControlButtons().forEach {
+                                    it()
+                                }
+                            }
                         }
                         return@action
                     }
