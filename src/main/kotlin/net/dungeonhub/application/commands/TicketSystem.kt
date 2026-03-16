@@ -245,6 +245,81 @@ class TicketSystem : Extension() {
                     }
                 }
             }
+
+            publicSubCommand(::TicketAddArguments) {
+                name = Translations.Command.Ticket.Add.name
+                description = Translations.Command.Ticket.Add.description
+
+                action {
+                    val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
+
+                    val ticketChannel = channel.asChannelOfOrNull<TextChannel>()
+
+                    if(ticket == null || ticketChannel == null) {
+                        respond {
+                            addEmbed {
+                                description = "This isn't a ticket channel!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    if(ticket.state == TicketState.Closed) {
+                        respond {
+                            addEmbed {
+                                description = "This ticket is already closed!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    if(ticket.state == TicketState.Deleted) {
+                        respond {
+                            addEmbed {
+                                description = "This ticket is already deleted!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    if(!member!!.asMember().isAllowedToChangeState(ticket)) { // TODO should this be a separate check?
+                        respond {
+                            addEmbed {
+                                description = "You're not allowed to add users to this ticket!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    ticket.ticketPanel.permissions[TicketPermissionCandidate.TicketClaimer]?.let { permissions ->
+                        ticketChannel.edit {
+                            keepOverwrites(ticketChannel)
+                            addMemberOverwrite(arguments.target.id) {
+                                addOverwritePermissions(permissions.entries)
+                            }
+                        }
+                    }
+
+                    respond {
+                        addEmbed {
+                            description = "Added ${arguments.target.mention} to the ticket!\n" +
+                                    "-# Note that currently the user will lose access once the ticket changes state, such as being claimed/unclaimed or closed."
+                            color(EmbedColor.Positive)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    class TicketAddArguments : Arguments() {
+        val target by user {
+            name = "user".toKey()
+            description = "The user to add to the ticket.".toKey()
         }
     }
 
@@ -397,6 +472,15 @@ class TicketSystem : Extension() {
                     TicketPermissionType.Allowed -> allowed = permissionEntry.value
                     TicketPermissionType.Denied -> denied = permissionEntry.value
                 }
+            }
+        }
+
+        fun TextChannelModifyBuilder.keepOverwrites(textChannel: TextChannel) {
+            textChannel.permissionOverwrites.forEach { overwrite ->
+                val newOverwrite = PermissionOverwriteBuilder(overwrite.type, overwrite.target)
+                newOverwrite.allowed = overwrite.allowed
+                newOverwrite.denied = overwrite.denied
+                addOverwrite(newOverwrite.toOverwrite())
             }
         }
 
