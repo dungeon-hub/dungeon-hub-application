@@ -4,21 +4,23 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import dev.kord.common.entity.ButtonStyle
-import dev.kord.common.entity.Permission
-import dev.kord.common.entity.Permissions
-import dev.kord.common.entity.Snowflake
+import dev.kord.common.entity.*
+import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.channel.asChannelOf
+import dev.kord.core.behavior.channel.asChannelOfOrNull
+import dev.kord.core.behavior.channel.edit
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
-import dev.kord.rest.builder.channel.PermissionOverwriteBuilder
-import dev.kord.rest.builder.channel.PermissionOverwritesBuilder
-import dev.kord.rest.builder.channel.addMemberOverwrite
-import dev.kord.rest.builder.channel.addRoleOverwrite
+import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.rest.builder.channel.*
 import dev.kord.rest.builder.component.ActionRowBuilder
+import dev.kord.rest.builder.message.actionRow
+import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.ephemeralSubCommand
+import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.components.components
 import dev.kordex.core.components.ephemeralButton
 import dev.kordex.core.extensions.Extension
@@ -51,7 +53,9 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 // TODO command: /ticket escalate --> this should move the ticket to a different panel and then update the ticket status
 @OptIn(ExperimentalTime::class)
@@ -61,6 +65,18 @@ class TicketSystem : Extension() {
 
     override suspend fun setup() {
         scheduler = DhScheduler()
+
+        event<MessageCreateEvent> {
+            check {
+                failIfNot(
+                    event.message.type == MessageType.ChannelPinnedMessage && event.message.author?.isSelf == true
+                )
+            }
+
+            action {
+                event.message.delete("I'm deleting my own pin notifications to keep tickets clean :)")
+            }
+        }
 
         event<GuildButtonInteractionCreateEvent> {
             check {
