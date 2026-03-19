@@ -1,12 +1,18 @@
 package net.dungeonhub.application.connection
 
-import com.squareup.moshi.adapter
+import com.hypercubetools.ktor.moshi.moshi
+import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.engine.okhttp.*
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.io.IOException
 import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.enums.FlaggingApi
 import net.dungeonhub.application.enums.FlaggingApi.HypixelSafetyData
@@ -17,10 +23,6 @@ import net.dungeonhub.application.misc.FlagResponse
 import net.dungeonhub.client.DungeonHubClient
 import net.dungeonhub.service.MoshiService.moshi
 import okhttp3.Dns
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.Inet4Address
@@ -44,9 +46,33 @@ object FlaggingConnection {
         }
     }
 
-    val ipv4Client = OkHttpClient.Builder()
-        .dns(Ipv4Dns())
-        .build()
+    val ipv4Client = HttpClient(OkHttp) {
+        install(ContentNegotiation) {
+            moshi(moshi)
+        }
+
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30_000
+            connectTimeoutMillis = 30_000
+            socketTimeoutMillis = 30_000
+        }
+
+        install(HttpRequestRetry) {
+            maxRetries = 3
+            retryOnExceptionIf { request, cause ->
+                request.method in setOf(HttpMethod.Get, HttpMethod.Head, HttpMethod.Put, HttpMethod.Post, HttpMethod.Delete) &&
+                        cause !is CancellationException &&
+                        cause is IOException
+            }
+            exponentialDelay()
+        }
+
+        engine {
+            config {
+                dns(Ipv4Dns())
+            }
+        }
+    }
 
     suspend fun isFlagged(id: Long?): List<FlagResponse> {
         return isFlagged(null, id)
@@ -62,33 +88,23 @@ object FlaggingConnection {
         }.awaitAll()
     }
 
-    fun isBlockGameFlagged(id: Long): FlagDetail? {
-        val httpUrl = (ConfigProperty.BLOCK_GAME_API_URL.toString()).toHttpUrl()
-            .newBuilder()
-            .build()
+    suspend fun isBlockGameFlagged(id: Long): FlagDetail? {
+        val url = Url(ConfigProperty.BLOCK_GAME_API_URL.toString())
 
         val jsonBody = mapOf("ids" to listOf(id.toString()))
 
-        val requestBody = moshi.adapter<Map<String, List<String>>>().toJson(jsonBody).toRequestBody()
+        return ipv4Client.post(url) {
+            header("authorization", ConfigProperty.BLOCK_GAME_API_KEY.value!!)
 
-        val request = Request.Builder()
-            .url(httpUrl)
-            .addHeader("authorization", ConfigProperty.BLOCK_GAME_API_KEY.value!!)
-            .post(requestBody)
-            .build()
-
-        return ipv4Client.newCall(request).execute().use { response ->
+            setBody(jsonBody)
+        }.let { response ->
             val fallback = FlagDetail.Builder().flagged(false).build()
 
-            if(!response.isSuccessful) return fallback
-
-            val body = response.body?.string()
-                ?: return fallback
+            if(!response.status.isSuccess()) return fallback
 
             fromBlockGameResponse(
-                moshi.adapter<FlaggingApi.BlockGameResponse>().fromJson(
-                    body
-                )!!, id
+                response.body<FlaggingApi.BlockGameResponse>(),
+                id
             )
         }
     }
