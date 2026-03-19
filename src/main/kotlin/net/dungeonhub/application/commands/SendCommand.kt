@@ -1,6 +1,5 @@
 package net.dungeonhub.application.commands
 
-import com.google.common.collect.Iterables
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
@@ -109,7 +108,7 @@ class SendCommand : Extension() {
                                 }
                             }
 
-                            Iterables.partition(CntRequestType.entries.asIterable(), 5).forEach { requestTypes ->
+                            CntRequestType.entries.windowed(5, 5, true).forEach { requestTypes ->
                                 actionRow {
                                     requestTypes.forEach { requestType ->
                                         interactionButton(ButtonStyle.Secondary, requestType.buttonId) {

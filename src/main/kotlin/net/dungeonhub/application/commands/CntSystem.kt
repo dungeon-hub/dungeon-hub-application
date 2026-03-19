@@ -1,6 +1,5 @@
 package net.dungeonhub.application.commands
 
-import com.google.common.collect.Iterables
 import dev.kord.common.entity.*
 import dev.kord.core.behavior.*
 import dev.kord.core.behavior.channel.GuildMessageChannelBehavior
@@ -631,7 +630,7 @@ class CntSystem : Extension() {
                     respondingPaginator {
                         owner = user
 
-                        Iterables.partition(reputations, 10).forEach { reputation ->
+                        reputations.windowed(10, 10, true).forEach { reputation ->
                             page(
                                 Page {
                                     copy(embed)
