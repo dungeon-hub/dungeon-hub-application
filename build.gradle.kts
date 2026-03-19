@@ -64,7 +64,7 @@ dependencies {
     //Functionality
     implementation("net.dungeon-hub:transcripts-kord:0.2.2")
     implementation("com.google.zxing:javase:3.5.2")
-    implementation("com.google.guava:guava:33.0.0-jre")
+    implementation("com.google.guava:guava:33.0.0-jre") // TODO use Koin and plug their dependency injection in the class loader instead of the current custom logic that uses guava
     implementation("org.mnode.ical4j:ical4j:4.1.1")
 
     //HTTP Client

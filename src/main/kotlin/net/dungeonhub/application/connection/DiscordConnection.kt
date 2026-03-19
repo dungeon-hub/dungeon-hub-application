@@ -239,6 +239,7 @@ object DiscordConnection : StartupListener {
     }
 }
 
+// TODO slowly move these method usages to alternatives such as mass-syncing
 fun User.getMutualServers(): Flow<Member> {
     return kord.guilds.mapNotNull { server ->
         this.asMemberOrNull(server.id)
