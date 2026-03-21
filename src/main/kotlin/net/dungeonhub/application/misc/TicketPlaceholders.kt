@@ -117,11 +117,11 @@ class TicketPlaceholders(
             replacements["transcript.url"] = { transcriptUrl ?: "unknown" }
             replacements["carry-tier.name"] = { carryTier.await()?.displayName ?: "unknown" }
             replacements["carry-difficulty.name"] = { formCarryDifficulty.await()?.displayName ?: "unknown" }
-            replacements["ticket.form.1"] = { ticket.formResponses.firstOrNull { it.ordinal == 1 }?.value ?: "unknown" }
-            replacements["ticket.form.2"] = { ticket.formResponses.firstOrNull { it.ordinal == 2 }?.value ?: "unknown" }
-            replacements["ticket.form.3"] = { ticket.formResponses.firstOrNull { it.ordinal == 3 }?.value ?: "unknown" }
-            replacements["ticket.form.4"] = { ticket.formResponses.firstOrNull { it.ordinal == 4 }?.value ?: "unknown" }
-            replacements["ticket.form.5"] = { ticket.formResponses.firstOrNull { it.ordinal == 5 }?.value ?: "unknown" }
+            replacements["ticket.form.1"] = { ticket.formResponses.firstOrNull { it.ordinal == 0 }?.value ?: "unknown" }
+            replacements["ticket.form.2"] = { ticket.formResponses.firstOrNull { it.ordinal == 1 }?.value ?: "unknown" }
+            replacements["ticket.form.3"] = { ticket.formResponses.firstOrNull { it.ordinal == 2 }?.value ?: "unknown" }
+            replacements["ticket.form.4"] = { ticket.formResponses.firstOrNull { it.ordinal == 3 }?.value ?: "unknown" }
+            replacements["ticket.form.5"] = { ticket.formResponses.firstOrNull { it.ordinal == 4 }?.value ?: "unknown" }
             replacements["ticket.form.carry-difficulty"] = { formCarryDifficulty.await()?.displayName ?: "unknown" }
             replacements["ticket.form.carry-amount"] = { formCarryAmount ?: "unknown" }
 
