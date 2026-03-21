@@ -95,7 +95,8 @@ object FlaggingConnection {
 
         return ipv4Client.post(url) {
             header("authorization", ConfigProperty.BLOCK_GAME_API_KEY.value!!)
-
+            userAgent("DHApiModule")
+            contentType(ContentType.Application.Json)
             setBody(jsonBody)
         }.let { response ->
             val fallback = FlagDetail.Builder().flagged(false).build()
