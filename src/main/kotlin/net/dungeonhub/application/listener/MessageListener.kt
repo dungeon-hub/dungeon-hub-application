@@ -2,13 +2,13 @@ package net.dungeonhub.application.listener
 
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.behavior.MessageBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.entity.Guild
-import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kord.core.entity.channel.DmChannel
 import dev.kord.core.entity.channel.GuildMessageChannel
@@ -266,19 +266,21 @@ class MessageListener : Extension() {
 
     private suspend fun logTicket(event: MessageUpdateEvent) {
         logTicket(
-            event.message.asMessage(),
+            event.message,
             event.message.getChannelOrNull()?.asChannelOfOrNull<GuildMessageChannel>()?.getGuildOrNull()
         )
     }
 
-    private suspend fun logTicket(message: Message, server: Guild?) {
+    private suspend fun logTicket(messageBehavior: MessageBehavior, server: Guild?) {
         if (server == null) {
             return
         }
 
         if (ServerProperty.TRANSCRIPTS_CHANNEL.getValue(server.id.value.toLong())?.let { s ->
-                message.channelId.toString() == s
+                messageBehavior.channelId.toString() == s
             } ?: false) {
+            val message = messageBehavior.asMessage()
+
             val attachments = message.attachments
 
             if (message.author?.isSelf == true || attachments.size != 1) {
