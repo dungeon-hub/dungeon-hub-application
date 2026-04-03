@@ -35,11 +35,11 @@ class SendCommand : Extension() {
             name = Send.name
             description = Send.description
             allowInDms = false
+            defaultMemberPermissions = Permissions(Permission.Administrator)
 
             publicSubCommand(::SendLinkMessageArguments) {
                 name = "link-message".toKey()
                 description = "Sends a message with buttons that help with linking.".toKey()
-                defaultMemberPermissions = Permissions(Permission.ManageMessages)
 
                 action {
                     respond {
@@ -74,7 +74,6 @@ class SendCommand : Extension() {
             publicSubCommand(::SendArguments) {
                 name = "cnt-message".toKey()
                 description = "Send the CNT message into the given channel.".toKey()
-                defaultMemberPermissions = Permissions(Permission.Administrator)
 
                 action {
                     respond {
