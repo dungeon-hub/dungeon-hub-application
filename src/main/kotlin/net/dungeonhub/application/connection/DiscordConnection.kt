@@ -2,22 +2,25 @@ package net.dungeonhub.application.connection
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import dev.kord.common.annotation.KordUnsafe
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.channel.asChannelOfOrNull
-import dev.kord.core.cache.data.toData
-import dev.kord.core.entity.*
+import dev.kord.core.entity.Embed
 import dev.kord.core.entity.Embed.*
+import dev.kord.core.entity.Member
+import dev.kord.core.entity.Message
+import dev.kord.core.entity.User
 import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
-import dev.kord.core.supplier.RestEntitySupplier
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.embed
-import dev.kord.rest.request.RestRequestException
+import dev.kord.rest.ratelimit.ParallelRequestRateLimiter
+import dev.kord.rest.request.KtorRequestHandler
 import dev.kordex.core.ExtensibleBot
 import dev.kordex.core.components.components
 import dev.kordex.core.components.linkButton
@@ -433,13 +436,4 @@ fun Author.toModel(): EmbedModel.Author {
 
 fun Field.toModel(): EmbedModel.Field {
     return EmbedModel.Field(name, inline, value)
-}
-
-suspend fun RestEntitySupplier.getGuildOrNull(id: Snowflake, withCounts: Boolean = false): Guild? {
-    return try {
-        Guild(kord.rest.guild.getGuild(id, withCounts).toData(), kord)
-    } catch (exception: RestRequestException) {
-        if (exception.status.code == 404) null
-        else throw exception
-    }
 }

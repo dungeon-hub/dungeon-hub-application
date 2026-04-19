@@ -129,6 +129,7 @@ class LinkingSystem : Extension() {
 
                         NicknameService.updateNickname(member, roles)
                     } else {
+                        // TODO dont use this. rework it, this causes too many updates
                         val user = user.asUser()
 
                         val roles = RolesService.updateRoles(user)
@@ -560,6 +561,7 @@ class LinkingSystem : Extension() {
                 }
 
                 scheduler.launch {
+                    // TODO dont use this. this updates the user on all servers. use the member object here instead
                     val roles = RolesService.updateRoles(event.interaction.user)
 
                     NicknameService.updateNickname(event.interaction.user, roles)

@@ -103,10 +103,10 @@ object AppearanceService : StartupListener {
 
             currentAppearance = if (currentAppearance >= possibleAppearances.size - 1) 0 else currentAppearance + 1
 
-            val appearance = possibleAppearances[currentAppearance]
+            val (appearanceType, appearanceFunction) = possibleAppearances[currentAppearance]
 
             try {
-                appearance.first.apply(appearance.second())()
+                appearanceType.apply(appearanceFunction())()
             } catch (exception: Exception) {
                 logger.error("Error during reset of appearance.", exception)
             }

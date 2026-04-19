@@ -61,6 +61,12 @@ class TicketCloseListener : Extension() {
                             description = "This ticket is already closed!"
                             color(EmbedColor.Negative)
                         }
+
+                        actionRow {
+                            TicketSystem.getControlButtons().forEach {
+                                it()
+                            }
+                        }
                     }
                     return@action
                 }

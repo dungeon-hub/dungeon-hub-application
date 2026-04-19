@@ -213,10 +213,10 @@ object AutoCompletionService {
             suggest(
                 HypixelApiConnection().getSkyblockProfiles(uuid)?.profiles?.map {
                     it.cuteName to it.profileId
-                }?.map {
+                }?.map { (name, uuid) ->
                     Choice.StringChoice(
-                        name = it.first ?: "Unknown (${it.second})",
-                        value = it.second.toString(),
+                        name = name ?: "Unknown ($uuid)",
+                        value = uuid.toString(),
                         nameLocalizations = Optional()
                     )
                 } ?: emptyList()
