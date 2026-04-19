@@ -70,10 +70,12 @@ class TicketFormListener : Extension() {
 
     fun findRelatedQuestion(ticketPanel: TicketPanelModel, key: String): TicketPanelFormModel? {
         for(formQuestion in ticketPanel.formQuestions) {
-            val data = JsonParser.parseString(formQuestion.data)?.asJsonPrimitive?.asString
+            if(formQuestion.type == FormType.Predefined) {
+                val data = JsonParser.parseString(formQuestion.data)?.asJsonPrimitive?.asString
 
-            if(formQuestion.type == FormType.Predefined && data == key) {
-                return formQuestion
+                if(data == key) {
+                    return formQuestion
+                }
             }
         }
 
@@ -84,7 +86,7 @@ class TicketFormListener : Extension() {
     suspend fun validateForm(ticketPanel: TicketPanelModel, key: String, value: String?): String? {
         val relatedQuestion = findRelatedQuestion(ticketPanel, key) ?: return null
 
-        if(relatedQuestion.type == FormType.Custom) {
+        if(relatedQuestion.type != FormType.Predefined) {
             return validateCustomForm(relatedQuestion, value)
         }
 

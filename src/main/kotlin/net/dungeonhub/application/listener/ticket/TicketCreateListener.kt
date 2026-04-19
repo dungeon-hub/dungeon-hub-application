@@ -52,10 +52,12 @@ import net.dungeonhub.model.ticket_panel.TicketPanelFormModel
 import net.dungeonhub.model.ticket_panel.TicketPanelModel
 import net.dungeonhub.mojang.connection.MojangConnection
 import net.dungeonhub.service.GsonService
+import org.slf4j.LoggerFactory
 
 @LoadExtension
 class TicketCreateListener : Extension() {
     override val name = "ticket-create-listener"
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     override suspend fun setup() {
         event<GuildButtonInteractionCreateEvent> {
@@ -78,8 +80,8 @@ class TicketCreateListener : Extension() {
                         ticketPanel.displayName ?: ticketPanel.name,
                         "ticket-form-${ticketPanel.id}"
                     ) {
-                        ticketPanel.formQuestions.forEach { formQuestion ->
-                            loadModalOption(event.interaction.user, ticketPanel, formQuestion)
+                        ticketPanel.formQuestions.forEachIndexed { index, formQuestion ->
+                            loadModalOption(event.interaction.user, ticketPanel, index, formQuestion)
                         }
                     }
                     return@action
@@ -93,11 +95,14 @@ class TicketCreateListener : Extension() {
     suspend fun ModalBuilder.loadModalOption(
         member: Member,
         ticketPanel: TicketPanelModel,
+        index: Int,
         formQuestion: TicketPanelFormModel
     ) {
-        val data = JsonParser.parseString(formQuestion.data)?.asJsonPrimitive?.asString
+        val formQuestionData = JsonParser.parseString(formQuestion.data)
 
         if(formQuestion.type == FormType.Predefined) {
+            val data = formQuestionData?.asJsonPrimitive?.asString
+
             if(data == "ign-display") { // TODO enum?
                 val discordUser = DiscordUserConnection.authenticated().getLinkedById(member.id.value.toLong()) ?: return
 
@@ -141,6 +146,66 @@ class TicketCreateListener : Extension() {
                 }
             }
         } else {
+            val data = formQuestionData?.asJsonObject ?: return
+
+            when(formQuestion.type) {
+                FormType.TextInput -> {
+                    val inputType = data.get("input-type").asString.let {
+                        when(it?.lowercase()) {
+                            "short" -> TextInputStyle.Short
+                            "paragraph" -> TextInputStyle.Paragraph
+                            else -> TextInputStyle.Short
+                        }
+                    }
+                    val label = data.get("label").asString
+                    val placeholder = data.get("placeholder").asString
+                    val required = data.get("required").asBoolean
+
+                    label(label) {
+                        textInput(inputType, "form-question-$index") {
+                            this.placeholder = placeholder
+                            this.required = required
+                        }
+                    }
+                }
+                FormType.StringSelect -> {
+                    val label = data.get("label").asString
+                    val labelDescription = data.get("description")?.asString
+                    val options = data.get("options").asJsonArray.map { it.asString }
+                    val maxValues = data.get("max-values")?.asInt ?: 1
+
+                    label(label) {
+                        description = labelDescription
+
+                        stringSelect("form-question-$index") {
+                            options.forEach { option -> // TODO support requirements for the options
+                                if(option.contains(":")) {
+                                    val split = option.split(":", limit = 2)
+
+                                    val value = split[0]
+                                    val label = split[1]
+
+                                    option(label, value)
+                                } else {
+                                    option(option, option)
+                                }
+                            }
+
+                            allowedValues = 1..maxValues
+                        }
+                    }
+                }
+                FormType.TextDisplay -> {
+                    textDisplay {
+                        content = data.get("content").asString
+                    }
+                }
+
+                else -> {
+                    logger.warn("Unknown form type seen: ${formQuestion.type}")
+                }
+            }
+
             // TODO build discord form question
         }
     }
