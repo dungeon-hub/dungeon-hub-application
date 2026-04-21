@@ -442,5 +442,5 @@ fun Field.toModel(): EmbedModel.Field {
 }
 
 fun Duration.withNanos(nanos: Int): Duration {
-    return toJavaDuration().withNanos(0).toKotlinDuration()
+    return toJavaDuration().withNanos(nanos).toKotlinDuration()
 }
