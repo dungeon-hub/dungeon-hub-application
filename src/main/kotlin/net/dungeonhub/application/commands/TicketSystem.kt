@@ -17,6 +17,7 @@ import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.channel.*
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.actionRow
+import dev.kord.rest.request.KtorRequestException
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.ephemeralSubCommand
 import dev.kordex.core.commands.application.slash.publicSubCommand
@@ -29,7 +30,9 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.utils.hasPermission
 import dev.kordex.core.utils.scheduling.Scheduler
 import dev.kordex.i18n.toKey
+import io.ktor.http.*
 import kotlinx.coroutines.cancel
+import net.dungeonhub.application.connection.withNanos
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.listener.ticket.TicketCloseListener
 import net.dungeonhub.application.listener.ticket.TicketDeleteListener
@@ -54,8 +57,10 @@ import java.time.format.DateTimeFormatter
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
+import kotlin.time.toKotlinInstant
 
 // TODO command: /ticket escalate --> this should move the ticket to a different panel and then update the ticket status
 @OptIn(ExperimentalTime::class)
@@ -65,6 +70,34 @@ class TicketSystem : Extension() {
 
     override suspend fun setup() {
         scheduler = DhScheduler()
+
+        scheduler.schedule(5.minutes, startNow = true, name = "Delayed Ticket Name Updater", repeat = true) {
+            scheduledTicketRenames.toList().forEach { (guildId, channelId) ->
+                val channel = kord.getChannel(Snowflake(channelId))?.asChannelOfOrNull<TextChannel>()
+                if (channel == null) {
+                    scheduledTicketRenames.removeIf { it.second == channelId }
+                    return@forEach
+                }
+
+                val ticket = DiscordServerConnection.authenticated().findTickets(guildId, channelId = channelId)?.firstOrNull()
+                if (ticket == null) {
+                    scheduledTicketRenames.removeIf { it.second == channelId }
+                    return@forEach
+                }
+
+                val member = kord.getGuildOrNull(Snowflake(ticket.ticketPanel.discordServer.id))?.getMemberOrNull(Snowflake(ticket.user.id))
+                    ?: return@forEach
+
+                if (updateTicketName(ticket, member, channel) == null) {
+                    scheduledTicketRenames.removeIf { it.second == channelId }
+                }
+            }
+
+            val now = java.time.Instant.now().toKotlinInstant()
+            ticketRenames.entries.removeIf { (_, renames) ->
+                renames.none { it > now.minus(15.minutes) }
+            }
+        }
 
         event<MessageCreateEvent> {
             check {
@@ -329,6 +362,8 @@ class TicketSystem : Extension() {
 
     companion object {
         lateinit var scheduler: Scheduler
+        val ticketRenames = mutableMapOf<Long, List<Instant>>()
+        val scheduledTicketRenames = mutableSetOf<Pair<Long, Long>>()
 
         suspend fun replacePlaceholders(string: String, placeholders: TicketPlaceholders): String {
             val replacements = placeholders.replacements
@@ -403,6 +438,47 @@ class TicketSystem : Extension() {
                     label = "Unclaim"
                 }
             })
+        }
+
+        // TODO use this method with a discord timestamp embed rather
+        suspend fun updateTicketName(ticket: TicketModel, member: MemberBehavior, textChannel: TextChannel): Duration? {
+            val newName = buildTicketName(ticket.ticketPanel, ticket, member.asMember(), textChannel) ?: return null
+
+            if (newName != textChannel.name) {
+                val channelId = textChannel.id.value.toLong()
+                val now = java.time.Instant.now().toKotlinInstant()
+
+                val recentRenames = ticketRenames.getOrDefault(channelId, emptyList())
+                    .filter { it > now.minus(15.minutes) }
+
+                if (recentRenames.size >= 2) {
+                    scheduledTicketRenames.add(textChannel.guildId.value.toLong() to channelId)
+                    return ((recentRenames.first() + 15.minutes) - now).withNanos(0)
+                }
+
+                try {
+                    textChannel.edit {
+                        name = newName
+                    }
+
+                    ticketRenames[channelId] = recentRenames + now
+                } catch (ktorRequestException: KtorRequestException) {
+                    // We assume that the ratelimit didn't actually expire or is still in place after restarting
+                    if(ktorRequestException.status.code == HttpStatusCode.TooManyRequests.value) {
+                        if(recentRenames.isEmpty()) {
+                            ticketRenames[channelId] = (recentRenames + now) + now
+
+                            return 15.minutes
+                        } else {
+                            ticketRenames[channelId] = recentRenames + now
+
+                            return ((recentRenames.first() + 15.minutes) - now).withNanos(0)
+                        }
+                    }
+                }
+            }
+
+            return null
         }
 
         suspend fun buildTicketName(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member, ticketChannel: TextChannel?): String? {

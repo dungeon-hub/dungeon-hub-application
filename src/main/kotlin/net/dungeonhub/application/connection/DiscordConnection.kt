@@ -54,9 +54,7 @@ import java.awt.Color
 import java.time.Instant
 import java.util.*
 import java.util.regex.Pattern
-import kotlin.time.ExperimentalTime
-import kotlin.time.toJavaInstant
-import kotlin.time.toKotlinInstant
+import kotlin.time.*
 
 /**
  * This is the main-class for the application.
@@ -93,6 +91,7 @@ object DiscordConnection : StartupListener {
      * Method by the {@link StartupListener} interface, this is automatically executed on program launch.
      * This implementation starts the discord-bot.
      */
+    @OptIn(KordUnsafe::class, ExperimentalTime::class)
     override suspend fun preStart() {
         bot = ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value!!) {
             dataCollectionMode = DataCollection.Extra
@@ -106,6 +105,10 @@ object DiscordConnection : StartupListener {
                     install(WebSockets)
                 }
                 stackTraceRecovery = true
+
+                requestHandler {
+                    KtorRequestHandler(it.httpClient, ParallelRequestRateLimiter(), token = token)
+                }
             }
 
             about {
@@ -436,4 +439,8 @@ fun Author.toModel(): EmbedModel.Author {
 
 fun Field.toModel(): EmbedModel.Field {
     return EmbedModel.Field(name, inline, value)
+}
+
+fun Duration.withNanos(nanos: Int): Duration {
+    return toJavaDuration().withNanos(0).toKotlinDuration()
 }
