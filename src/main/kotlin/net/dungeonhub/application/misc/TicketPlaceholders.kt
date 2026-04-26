@@ -88,6 +88,9 @@ class TicketPlaceholders(
             }
             replacements["user.name"] = { ticketUser.await()?.username ?: "unknown" }
             replacements["user.displayName"] = { ticketUser.await()?.effectiveName ?: "unknown" }
+            replacements["interactionUser.id"] = { interactionUser.id.value.toString() }
+            replacements["interactionUser.mention"] = { interactionUser.mention }
+            replacements["interactionUser.name"] = { interactionUser.username }
             replacements["interactionUser.displayName"] = { interactionUser.effectiveName }
             replacements["user.minecraft.name"] = { ticketUserIgn.await() ?: "unlinked" }
             replacements["user.skyblock.level"] = {
