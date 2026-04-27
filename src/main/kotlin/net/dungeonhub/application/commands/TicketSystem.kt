@@ -5,10 +5,13 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import dev.kord.common.entity.*
+import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.asChannelOfOrNull
+import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.edit
+import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.channel.TextChannel
@@ -16,8 +19,10 @@ import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.channel.*
 import dev.kord.rest.builder.component.ActionRowBuilder
+import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.request.KtorRequestException
+import dev.kord.rest.request.RestRequestException
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.ephemeralSubCommand
 import dev.kordex.core.commands.application.slash.publicSubCommand
@@ -32,8 +37,10 @@ import dev.kordex.core.utils.scheduling.Scheduler
 import dev.kordex.i18n.toKey
 import io.ktor.http.*
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.withNanos
 import net.dungeonhub.application.enums.EmbedColor
+import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.listener.ticket.TicketCloseListener
 import net.dungeonhub.application.listener.ticket.TicketDeleteListener
 import net.dungeonhub.application.loader.LoadExtension
@@ -337,6 +344,8 @@ class TicketSystem : Extension() {
                         }
                     }
 
+                    // TODO log adding
+
                     respond {
                         addEmbed {
                             description = "Added ${arguments.target.mention} to the ticket!\n" +
@@ -596,6 +605,36 @@ class TicketSystem : Extension() {
             if (hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)) return true
 
             return ticket.claimer?.id == id.value.toLong()
+        }
+
+        fun logTicketAction(guild: GuildBehavior, ticket: TicketModel, addDefaultFields: Boolean = true, builder: suspend EmbedBuilder.() -> Unit) {
+            scheduler.launch {
+                val ticketLogChannel = ServerProperty.TICKET_LOGS_CHANNEL.getValue(guild.id)?.let {
+                    guild.getChannelOfOrNull<TextChannel>(guild.id)
+                } ?: return@launch
+
+                val embed = buildEmbed {
+                    color(EmbedColor.Log)
+                }
+
+                if(addDefaultFields) {
+                    embed.field("Panel", true) { ticket.ticketPanel.displayName ?: ticket.ticketPanel.name }
+                    embed.field("Ticket Name", true) {
+                        ticket.channel?.id?.let { guild.getChannelOrNull(Snowflake(it)) }?.name
+                            ?: ticket.channel?.name
+                            ?: "<#${ticket.channel?.id}>"
+                    }
+                }
+
+                builder(embed)
+                try {
+                    ticketLogChannel.createMessage {
+                        embeds = mutableListOf(embed)
+                    }
+                } catch (_: RestRequestException) {
+                    // ignore, just a mere log statement
+                }
+            }
         }
     }
 }

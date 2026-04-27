@@ -120,6 +120,10 @@ class TicketOpenListener : Extension() {
                     color(EmbedColor.Default)
                 }
             }
+
+            TicketSystem.logTicketAction(member.guild, ticket) {
+                description = "Ticket #${ticket.id} opened by ${member.mention}."
+            }
         }
 
         return buildEmbed {

@@ -277,6 +277,12 @@ class TicketCreateListener : Extension() {
                     color(EmbedColor.Positive)
                 }
 
+                TicketSystem.logTicketAction(member.guild, ticket) {
+                    description = "Ticket #${ticket.id} created by ${member.mention}."
+
+                    field("Channel", true) { ticketChannel.mention }
+                }
+
                 scheduler.launch {
                     sendInitialTicketMessage(ticketPanel, ticket, ticketChannel, member)
                 }

@@ -188,6 +188,10 @@ class TicketCloseListener : Extension() {
                     }
                 }
 
+                TicketSystem.logTicketAction(member.guild, ticket) {
+                    description = "Ticket #${ticket.id} closed by ${member.mention}."
+                }
+
                 TicketTranscriptListener.generateTranscript(
                     textChannel,
                     member,

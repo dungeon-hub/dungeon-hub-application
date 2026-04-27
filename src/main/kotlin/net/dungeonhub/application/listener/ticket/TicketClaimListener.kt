@@ -101,6 +101,10 @@ class TicketClaimListener : Extension() {
             }
         }
 
+        TicketSystem.logTicketAction(member.guild, ticket) {
+            description = "Ticket #${ticket.id} claimed by ${member.mention}."
+        }
+
         TicketSystem.scheduler.launch {
             updateTicketChannel(updatedTicket, textChannel)
 
@@ -149,6 +153,10 @@ class TicketClaimListener : Extension() {
                 description = "Couldn't unclaim the ticket!"
                 color(EmbedColor.Negative)
             }
+        }
+
+        TicketSystem.logTicketAction(member.guild, ticket) {
+            description = "Ticket #${ticket.id} unclaimed by ${member.mention}."
         }
 
         TicketSystem.scheduler.launch {

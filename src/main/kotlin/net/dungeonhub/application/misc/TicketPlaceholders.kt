@@ -3,6 +3,7 @@ package net.dungeonhub.application.misc
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.channel.TextChannel
+import dev.kord.core.entity.effectiveName
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import net.dungeonhub.application.connection.DiscordConnection
@@ -31,9 +32,11 @@ class TicketPlaceholders(
     }
 
     val ticketUser = scheduler.async(start = CoroutineStart.LAZY) {
-        DiscordConnection.bot.kordRef
-            .getUser(Snowflake(ticketUserId))
-            ?.asMemberOrNull(Snowflake(ticketPanel.discordServer.id))
+        DiscordConnection.bot.kordRef.getUser(Snowflake(ticketUserId))
+    }
+
+    val ticketMember = scheduler.async(start = CoroutineStart.LAZY) {
+        ticketUser.await()?.asMemberOrNull(Snowflake(ticketPanel.discordServer.id))
     }
 
     val ticketUserModel = scheduler.async(start = CoroutineStart.LAZY) {
@@ -87,7 +90,8 @@ class TicketPlaceholders(
                 }
             }
             replacements["user.name"] = { ticketUser.await()?.username ?: "unknown" }
-            replacements["user.displayName"] = { ticketUser.await()?.effectiveName ?: "unknown" }
+            replacements["user.globalName"] = { ticketUser.await()?.effectiveName ?: "unknown" }
+            replacements["user.displayName"] = { ticketMember.await()?.effectiveName ?: "unknown" }
             replacements["interactionUser.id"] = { interactionUser.id.value.toString() }
             replacements["interactionUser.mention"] = { interactionUser.mention }
             replacements["interactionUser.name"] = { interactionUser.username }

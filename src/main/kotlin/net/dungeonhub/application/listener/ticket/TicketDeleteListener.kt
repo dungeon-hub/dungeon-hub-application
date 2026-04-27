@@ -91,9 +91,13 @@ class TicketDeleteListener : Extension() {
                     }
                 }
 
+                TicketSystem.logTicketAction(member.guild, ticket) {
+                    description = "Ticket #${ticket.id} deleted by ${member.mention}."
+                }
+
                 TicketTranscriptListener.generateTranscript(
                     textChannel,
-                    null,
+                    member,
                     updatedTicket,
                     updatedTicket.ticketPanel.deleteTranscriptTarget
                 ) {
