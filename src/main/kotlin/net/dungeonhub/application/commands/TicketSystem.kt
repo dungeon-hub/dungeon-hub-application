@@ -344,7 +344,9 @@ class TicketSystem : Extension() {
                         }
                     }
 
-                    // TODO log adding
+                    logTicketAction(guild!!, ticket) {
+                        description = "${member!!.mention} added ${arguments.target.mention} to the ticket."
+                    }
 
                     respond {
                         addEmbed {
