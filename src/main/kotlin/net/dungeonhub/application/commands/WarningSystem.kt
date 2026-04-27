@@ -449,6 +449,44 @@ class WarningSystem : Extension() {
         }
     }
 
+    class WarnPunishKickArguments : Arguments() {
+        val user by user {
+            name = "user".toKey()
+            description = "The user to kick.".toKey()
+        }
+
+        val warningId by optionalLong {
+            name = "warning-id".toKey()
+            description = "Optional ID of the specific warning (defaults to latest active warning).".toKey()
+            minValue = 1
+        }
+    }
+
+    class WarnPunishBanArguments : Arguments() {
+        val user by user {
+            name = "user".toKey()
+            description = "The user to ban.".toKey()
+        }
+
+        val warningId by optionalLong {
+            name = "warning-id".toKey()
+            description = "Optional ID of the specific warning (defaults to latest active warning).".toKey()
+            minValue = 1
+        }
+
+        val duration by optionalLong {
+            name = "duration".toKey()
+            description = "Duration of ban in milliseconds (only for temporary bans). Set to 0 for permanent ban.".toKey()
+            minValue = 60000 // 1 minute minimum
+        }
+
+        val deleteMessages by optionalBoolean {
+            name = "delete-messages".toKey()
+            description = "Delete user's messages before banning (true by default).".toKey()
+            default = true
+        }
+    }
+
     class WarnAddEvidenceArguments : Arguments() {
         val id by long {
             name = "id".toKey()
@@ -474,36 +512,124 @@ class WarningSystem : Extension() {
         }
     }
 
-    private fun parseDurationString(raw: String): Duration {
-        val normalized = raw.lowercase().replace(",", " ")
-        val regex = Regex("(\\d+)\\s*(d|day|days|h|hr|hrs|hour|hours|m|min|mins|minute|minutes)")
-        val matches = regex.findAll(normalized).toList()
+    // ===== WARN PUNISH COMMAND GROUP =====
 
-        if (matches.isEmpty()) {
-            throw InvalidOptionException("time", "Invalid time format. Use values like 2h, 30m, 1h 30m, or 2d.")
-        }
+    publicSubCommand(::WarnPunishKickArguments) {
+        name = "kick".toKey()
+        description = "Kicks a user who has active warnings.".toKey()
+        defaultMemberPermissions = Permissions(Permission.ModerateMembers)
 
-        val remainder = regex.replace(normalized, "").trim()
-        if (remainder.isNotEmpty()) {
-            throw InvalidOptionException("time", "Invalid time format. Use values like 2h, 30m, 1h 30m, or 2d.")
-        }
+        action {
+            respond {
+                val target = arguments.user
+                var warningId: Long? = arguments.warningId?.value?.toLong()
 
-        var total = Duration.ZERO
-        for (match in matches) {
-            val value = match.groupValues[1].toLong()
-            val unit = match.groupValues[2]
-            total += when (unit) {
-                "d", "day", "days" -> value * 24.hours
-                "h", "hr", "hrs", "hour", "hours" -> value.hours
-                "m", "min", "mins", "minute", "minutes" -> value.minutes
-                else -> throw InvalidOptionException("time", "Invalid time unit: $unit")
+                // Get active warnings of the user
+                val warns = WarningConnection[guild!!.id.value.toLong()].authenticated()
+                    .getActiveWarns(target.id.value.toLong())
+                    ?: throw CommandExecutionException("Couldn't load active warns of the given user.")
+
+                // Find matching warning (use latest if no ID provided)
+                val ourWarning = when {
+                    warningId != null -> warns.find { it.id == warningId } ?: throw InvalidOptionException("warningId", "Couldn't find a warning with the given ID.")
+                    warns.isNotEmpty() -> warns.last()
+                    else -> throw InvalidOptionException("user", "User has no active warnings.")
+                }
+
+                try {
+                    target.kick("Too many warnings.") {
+                        reason = "Kicked due to ${ourWarning.warningType.name.lowercase()} warning."
+                    }
+
+                    // Log to channel
+                    getChannelProperty(ourWarning.warningType)
+                        .getValue(guild!!.id.value.toLong())
+                        ?.let { channelId ->
+                            DiscordConnection.bot.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(channelId))
+                                ?.let { logChannel ->
+                                    logChannel.createMessage {
+                                        val embed = ApplicationService.embed
+                                        embed.color = EmbedColor.Information.color
+                                        embed.title = "Kicked user"
+                                        this@createMessage.embeds = mutableListOf(embed)
+                                    }
+                                }
+                        }
+                } catch (_: Exception) {
+                    // Ignore kick failures gracefully
+                }
             }
         }
+    }
 
-        if (!total.isPositive()) {
-            throw InvalidOptionException("time", "Time must be greater than 0.")
+    publicSubCommand(::WarnPunishBanArguments) {
+        name = "ban".toKey()
+        description = "Bans a user who has active warnings.".toKey()
+        defaultMemberPermissions = Permissions(Permission.ModerateMembers)
+
+        action {
+            respond {
+                val target = arguments.user
+                var warningId: Long? = arguments.warningId?.value?.toLong()
+                val banDurationMs = arguments.duration?.value
+                val deleteMessages = arguments.deleteMessages != false
+
+                // Get active warnings of the user
+                val warns = WarningConnection[guild!!.id.value.toLong()].authenticated()
+                    .getActiveWarns(target.id.value.toLong())
+                    ?: throw CommandExecutionException("Couldn't load active warns of the given user.")
+
+                // Find matching warning (use latest if no ID provided)
+                val ourWarning = when {
+                    warningId != null -> warns.find { it.id == warningId } ?: throw InvalidOptionException("warningId", "Couldn't find a warning with the given ID.")
+                    warns.isNotEmpty() -> warns.last()
+                    else -> throw InvalidOptionException("user", "User has no active warnings.")
+                }
+
+                // Delete messages before ban if requested
+                if (deleteMessages) {
+                    try {
+                        target.deleteMessagesBeforeBan()
+                    } catch (_: Exception) {
+                        // Best effort - don't fail the entire command if message deletion fails
+                    }
+                }
+
+                // Apply ban
+                val banDuration = banDurationMs?.let { java.time.Duration.ofMillis(it) }
+                target.ban {
+                    reason = "Too many warnings."
+                    duration = banDuration
+                }
+
+                // Log embed to main thread
+                val embed = ApplicationService.embed
+                val title = if (banDurationMs != null) "User temporarily banned" else "User permanently banned"
+                embed.color = EmbedColor.Positive.color
+                embed.title = title
+                val desc = buildString()
+                desc += ""
+                if (deleteMessages) desc += "Deleted their messages before banning."
+                respond { 
+                    this@respond.embeds = mutableListOf(embed.copy(description = desc))
+                }
+
+                // Log to channel
+                getChannelProperty(ourWarning.warningType)
+                    .getValue(guild!!.id.value.toLong())
+                    ?.let { channelId ->
+                        DiscordConnection.bot.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(channelId))
+                            ?.let { logChannel ->
+                                val banReason = if (banDurationMs != null) "Temporary ban" else "Permanent ban"
+                                logChannel.createMessage {
+                                    val embed = ApplicationService.embed
+                                    embed.color = EmbedColor.Information.color
+                                    embed.title = "$banReason user"
+                                    this@createMessage.embeds = mutableListOf(embed)
+                                }
+                            }
+                    }
+            }
         }
-
-        return total
     }
 }
