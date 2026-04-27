@@ -610,7 +610,7 @@ class TicketSystem : Extension() {
         fun logTicketAction(guild: GuildBehavior, ticket: TicketModel, addDefaultFields: Boolean = true, builder: suspend EmbedBuilder.() -> Unit) {
             scheduler.launch {
                 val ticketLogChannel = ServerProperty.TICKET_LOGS_CHANNEL.getValue(guild.id)?.let {
-                    guild.getChannelOfOrNull<TextChannel>(guild.id)
+                    guild.getChannelOfOrNull<TextChannel>(Snowflake(it))
                 } ?: return@launch
 
                 val embed = buildEmbed {
