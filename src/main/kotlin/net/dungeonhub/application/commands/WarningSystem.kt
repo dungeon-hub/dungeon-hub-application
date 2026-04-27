@@ -32,12 +32,17 @@ import net.dungeonhub.client.DungeonHubClient
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.connection.WarningConnection
 import net.dungeonhub.enums.WarningType
+import net.dungeonhub.enums.WarningAction
 import net.dungeonhub.i18n.Translations.Command.Warn
 import net.dungeonhub.i18n.Translations.Command.Warns
+import net.dungeonhub.model.warning.WarningActionModel
 import net.dungeonhub.model.warning.WarningCreationModel
 import net.dungeonhub.model.warning.WarningEvidenceCreationModel
 import org.slf4j.LoggerFactory
 import java.time.temporal.ChronoUnit
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 @OptIn(AlwaysPublicResponse::class)
 @LoadExtension
@@ -164,8 +169,16 @@ class WarningSystem : Extension() {
                             WarningConnection[guild!!.id.value.toLong()].authenticated().addWarning(creationModel)
                                 ?: throw CommandExecutionException("Error while trying to add a warning")
 
+                        val warningActions = addedWarning.warningActionModel.map {
+                            if (it.warningAction == WarningAction.Timeout) {
+                                WarningActionModel(it.warningAction, arguments.getTimeoutDuration().inWholeMilliseconds.toString())
+                            } else {
+                                it
+                            }
+                        }
+
                         val actionDescription = ApplicationService.applyWarningActions(
-                            addedWarning.warningActionModel,
+                            warningActions,
                             target.asMember(guild!!.id)
                         )
 
@@ -405,9 +418,19 @@ class WarningSystem : Extension() {
             maxLength = 200
         }
 
+        val time by string {
+            name = "time".toKey()
+            description = "How long the automatic timeout from this warning should last (for example: 2h, 30m, 1h 30m).".toKey()
+            maxLength = 50
+        }
+
         val dmUser by optionalBoolean {
             name = "dm-user".toKey()
             description = "Whether to send a DM to the user about the warning (true by default).".toKey()
+        }
+
+        fun getTimeoutDuration(): Duration {
+            return parseDurationString(time)
         }
     }
 
@@ -449,5 +472,38 @@ class WarningSystem : Extension() {
             WarningType.Serious, WarningType.Major, WarningType.Minor, WarningType.Warning -> ServerProperty.MODERATION_LOGS_CHANNEL
             WarningType.Strike -> ServerProperty.STRIKES_LOGS_CHANNEL
         }
+    }
+
+    private fun parseDurationString(raw: String): Duration {
+        val normalized = raw.lowercase().replace(",", " ")
+        val regex = Regex("(\\d+)\\s*(d|day|days|h|hr|hrs|hour|hours|m|min|mins|minute|minutes)")
+        val matches = regex.findAll(normalized).toList()
+
+        if (matches.isEmpty()) {
+            throw InvalidOptionException("time", "Invalid time format. Use values like 2h, 30m, 1h 30m, or 2d.")
+        }
+
+        val remainder = regex.replace(normalized, "").trim()
+        if (remainder.isNotEmpty()) {
+            throw InvalidOptionException("time", "Invalid time format. Use values like 2h, 30m, 1h 30m, or 2d.")
+        }
+
+        var total = Duration.ZERO
+        for (match in matches) {
+            val value = match.groupValues[1].toLong()
+            val unit = match.groupValues[2]
+            total += when (unit) {
+                "d", "day", "days" -> value * 24.hours
+                "h", "hr", "hrs", "hour", "hours" -> value.hours
+                "m", "min", "mins", "minute", "minutes" -> value.minutes
+                else -> throw InvalidOptionException("time", "Invalid time unit: $unit")
+            }
+        }
+
+        if (!total.isPositive()) {
+            throw InvalidOptionException("time", "Time must be greater than 0.")
+        }
+
+        return total
     }
 }
