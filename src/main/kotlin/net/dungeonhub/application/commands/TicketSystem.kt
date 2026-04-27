@@ -345,7 +345,7 @@ class TicketSystem : Extension() {
                     }
 
                     logTicketAction(guild!!, ticket) {
-                        description = "${member!!.mention} added ${arguments.target.mention} to the ticket."
+                        description = "${member!!.mention} added ${arguments.target.mention} to ticket #${ticket.id}."
                     }
 
                     respond {

@@ -49,6 +49,7 @@ class TicketDeleteListener : Extension() {
                     return@action
                 }
 
+                // TODO should users be allowed to insta-delete not closed tickets, bypassing the general workflow?
                 if(ticket.state == TicketState.Deleted) {
                     response.respond {
                         addEmbed {
