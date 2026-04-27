@@ -190,7 +190,7 @@ class TicketCloseListener : Extension() {
 
                 TicketTranscriptListener.generateTranscript(
                     textChannel,
-                    null,
+                    member,
                     updatedTicket,
                     updatedTicket.ticketPanel.closeTranscriptTarget
                 )
