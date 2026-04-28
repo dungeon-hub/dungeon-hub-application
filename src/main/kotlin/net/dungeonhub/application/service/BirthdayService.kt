@@ -8,12 +8,14 @@ import dev.kordex.core.utils.scheduling.Scheduler
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import kotlinx.datetime.DateTimeZone
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.datetime.DateTimeZone
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.OnStart
@@ -27,7 +29,6 @@ import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import kotlin.time.Clock
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
 @OnStart
@@ -42,10 +43,64 @@ object BirthdayService : StartupListener {
     private lateinit var scheduler: Scheduler
     var birthdays: List<Birthday> = listOf()
 
+    override suspend fun postStart() {
+        if (::scheduler.isInitialized) {
+            scheduler.cancel("Application was restarted.")
+        }
 
-    
+        scheduler = DhScheduler()
+
+        val task = scheduler.schedule(24.hours, startNow = false, name = "Birthdays-Schedule", repeat = true) {
+            updateBirthdayData()
+
+            sendBirthdays()
+        }
+
+        // Calculate initial execution time for server time birthdays (no timezone)
+        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        var maxExecutionTime = calculateExecutionTime(now.time)
+        
+        // For timezone-aware birthdays, we need to find the furthest upcoming 9am in their timezone
+        // Convert each timezone's birthday date to server time and calculate execution duration
+        for (birthday in birthdays) {
+            if (birthday.timezone != null) {
+                try {
+                    val parsedTz = parseTimeZone(birthday.timezone)
+                    if (parsedTz != null) {
+                        // Find the next occurrence of this birthday
+                        val nowLocalDate = Clock.System.now().toLocalDate()
+                        
+                        var localNineAm: LocalDateTime? = null
+                        for (i in 0..365) {
+                            val candidateDate = if (birthday.date == nowLocalDate) nowLocalDate else nowLocalDate.plusYears(1, 1, i.toLong())
+                            localNineAm = LocalDateTime.of(candidateDate, LocalTime.of(9, 0))
+                            
+                            // Check if this date matches a birthday occurrence
+                            if (isBirthdayOnDate(birthday.date, candidateDate)) {
+                                break
+                            }
+                        }
+                        
+                        localNineAm?.let { nineAm ->
+                            val executionTime = calculateExecutionTimeWithSpecificTime(nineAm)
+                            maxExecutionTime = maxOf(maxExecutionTime, executionTime)
+                        }
+                    }
+                } catch (e: Exception) {
+                    logger.debug("Could not parse timezone for scheduling: ${birthday.timezone}", e)
+                }
+            }
+        }
+
+        scheduler.launch {
+            delay(maxExecutionTime)
+            task.callNow()
+            task.start()
+        }
+    }
+
     /**
-     * Calculate execution time to reach a specific local time.
+     * Calculate execution time to reach 9am in the given timezone.
      */
     private fun calculateExecutionTimeWithSpecificTime(targetDateTime: LocalDateTime): Duration {
         val targetLocalTime = targetDateTime.toLocalDateTime(TimeZone.currentSystemDefault()).time
@@ -63,50 +118,10 @@ object BirthdayService : StartupListener {
         }
     }
 
-    override suspend fun postStart() {
-        if (::scheduler.isInitialized) {
-            scheduler.cancel("Application was restarted.")
-        }
-
-        scheduler = DhScheduler()
-
-        val task = scheduler.schedule(24.hours, startNow = false, name = "Birthdays-Schedule", repeat = true) {
-            updateBirthdayData()
-
-            sendBirthdays()
-        }
-
-        // Calculate initial execution time for server time birthdays
-        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        var maxExecutionTime = calculateExecutionTime(now.time)
-        
-        // For timezone-aware birthdays, we need to schedule them at their local 9am
-        // This requires converting to server time and then to duration delay
-        for (birthday in birthdays) {
-            birthday.timezone?.let { tz ->
-                try {
-                    val parsedTz = parseTimeZone(tz)
-                    if (parsedTz != null) {
-                        val nowInServerTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-                        // Convert 9am in the user's timezone to server time equivalent
-                        val localNineAm = LocalDateTime.of(nowInServerTime.toLocalDate(), parsedTz.toLocalTime())
-                        val executionTime = calculateExecutionTimeWithSpecificTime(localNineAm)
-                        maxExecutionTime = maxOf(maxExecutionTime, executionTime)
-                    }
-                } catch (e: Exception) {
-                    logger.debug("Could not parse timezone for scheduling: $tz", e)
-                }
-            }
-        }
-
-        scheduler.launch {
-            delay(maxExecutionTime)
-            task.callNow()
-            task.start()
-        }
-    }
-
-    fun calculateExecutionTime(localTime: LocalTime): Duration {
+    /**
+     * Calculate execution time to reach 9am local time.
+     */
+    private fun calculateExecutionTime(localTime: LocalTime): Duration {
         return if (localTime.hour <= EXECUTION_HOUR) {
             val hDifference = EXECUTION_HOUR - localTime.hour
             val mDifference = 0 - localTime.minute
@@ -124,6 +139,22 @@ object BirthdayService : StartupListener {
         }
     }
 
+    /**
+     * Check if a birthday date falls on a specific calendar date (accounting for year progression).
+     */
+    private fun isBirthdayOnDate(birthdayDate: LocalDate, targetDate: LocalDate): Boolean {
+        // Get the day-of-year for both dates
+        val birthdayDayOfYear = java.time.LocalDate.of(birthdayDate.year, birthdayDate.month.value, birthdayDate.dayOfMonth.value)
+            .dayOfYear
+
+        return try {
+            val nextYearBirthday = java.time.LocalDate.of(birthdayDate.year + 1, birthdayDate.month.value, birthdayDate.dayOfMonth.value).dayOfYear
+            targetDate.dayOfYear in birthdayDayOfYear..nextYearBirthday
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     private suspend fun sendBirthdays() {
         val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         val todayBirthdays = getTodayBirthdays(now)
@@ -136,7 +167,6 @@ object BirthdayService : StartupListener {
             
             // Include the birthday date in the announcement text
             val formattedDate = "${birthday.date.day}/${birthday.date.month}"
-            val age = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).year - birthday.birthYear
             
             var timeInfo = if (birthday.timezone != null) {
                 "Birthday time: 9am in their timezone (${birthday.timezone})"
@@ -146,7 +176,7 @@ object BirthdayService : StartupListener {
             
             embed.description = """
                 Happy Birthday, ${birthday.username} (<@${birthday.userId}>)! 🎉 🤳 ❤️
-                Today, they are turning $age years old!
+                Today, they are turning ${now.year - birthday.birthYear} years old!
                 Born on: $formattedDate
                 
                 $timeInfo
@@ -198,54 +228,35 @@ object BirthdayService : StartupListener {
     fun parseBirthdayDate(date: String): LocalDate? {
         if (date.length != 8) return null
 
-        val year = (date.take(4))
-        val month = (date.substring(4, 6))
-        val day = (date.substring(6, 8))
+        val year = date.take(4).toIntOrNull() ?: return null
+        val month = date.substring(4, 6).toIntOrNull() ?: return null
+        val day = date.substring(6, 8).toIntOrNull() ?: return null
 
         return try {
-            LocalDate.parse("$year-$month-$day")
-        } catch (_: IllegalArgumentException) {
+            LocalDate(year.toLong(), month.toLong(), day.toLong())
+        } catch (e: IllegalArgumentException) {
             null
         }
     }
 
-    fun parseTimeZone(tzString: String): TimeZone? {
-        // Handle IANA timezone names (e.g., "Europe/Berlin", "America/New_York")
-        // Also handle simple offsets like "+0530" or "-0800"
+    /**
+     * Parse a timezone string and return the corresponding DateTimeZone.
+     * Handles IANA timezone names (e.g., "Europe/Berlin") and UTC offsets (+0530, -08:00).
+     */
+    fun parseTimeZone(tzString: String): DateTimeZone? {
+        val cleaned = tzString.trim()
+        
         return try {
-            if (tzString.startsWith("Etc/GMT")) {
-                // Etc/GMT+HH:MM format - note the sign is reversed in IANA naming
-                val parts = tzString.split("/")
-                val offsetPart = parts.lastOrNull() ?: ""
-                
-                // Etc/GMT+05:30 means UTC-05:30 (opposite sign!)
-                if (offsetPart.startsWith("Etc/GMT")) {
-                    val sign = if (tzString.contains("+") && !tzString.contains("-")) "negative" else "positive"
-                    return TimeZone.parse(tzString.replaceFirst("Etc/GMT", ""))
-                }
+            // Try IANA timezone name first (e.g., "America/New_York")
+            if (cleaned.contains("/")) {
+                return DateTimeZone.of(cleaned)
             }
             
-            // Handle simple offset format like +0530 or -0800
-            val cleaned = tzString.trim()
-            if (cleaned.length >= 5 && cleaned.all { it in "0123456789+-:" }) {
-                var tzStr = cleaned
-                // Remove trailing colon for consistency
-                if (tzStr.endsWith(":")) {
-                    tzStr = tzStr.substring(0, tzStr.length - 1)
-                }
-                
-                return TimeZone.parse(tzStr)
-            }
-            
-            // Handle IANA timezone names directly
-            if (tzString.contains("/") && !tzString.startsWith("+") && !tzString.startsWith("-")) {
-                return TimeZone.of(tzString)
-            }
-            
-            null
-        } catch (e: IllegalArgumentException) {
+            // Try UTC offset format (+0530, +05:30, -0800, etc.)
+            DateTimeZone.of(cleaned)
+        } catch (e: Exception) {
             logger.debug("Could not parse timezone: $tzString", e)
-            null
+            return null
         }
     }
 
@@ -254,7 +265,7 @@ object BirthdayService : StartupListener {
         val date: LocalDate,
         val userId: Long,
         val birthYear: Int? = null,
-        val timezone: String? = null,  // Added timezone field
+        val timezone: String? = null,  // Added timezone field for timezone support
         val recurrenceSet: Set<Period<java.time.LocalDate>>
     ) {
         val username: String = if (eventName.endsWith(" | Birthday")) {
