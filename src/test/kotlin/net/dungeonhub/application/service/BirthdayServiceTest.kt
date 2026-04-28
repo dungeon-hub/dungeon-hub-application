@@ -1,16 +1,16 @@
 package net.dungeonhub.application.service
 
+import kotlinx.datetime.DateTimeZone
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.seconds
 
 class BirthdayServiceTest {
+
     @Test
     fun testExecutionTimeCalculation() {
         assertEquals(
@@ -52,6 +52,18 @@ class BirthdayServiceTest {
     }
 
     @Test
+    fun testTimeZoneParsing() {
+        val tzBerlin = BirthdayService.parseTimeZone("Europe/Berlin")
+        assertEquals(true, tzBerlin != null)
+
+        val tzOffset = BirthdayService.parseTimeZone("+0530")
+        assertEquals(true, tzOffset != null)
+
+        val tzInvalid = BirthdayService.parseTimeZone("invalid/timezone")
+        assertNull(tzInvalid)
+    }
+
+    @Test
     fun testTodayBirthdayParsing() {
         val today = LocalDateTime(2024, 1, 2, 8, 0)
 
@@ -73,5 +85,30 @@ class BirthdayServiceTest {
             listOf("Test2", "Test11"),
             BirthdayService.getTodayBirthdays(today).map { it.username }
         )
+    }
+
+    @Test
+    fun testBirthdayWithTimezone() {
+        val birthdayWithTz = BirthdayService.Birthday(
+            eventName = "Alice | Birthday",
+            date = LocalDate(2024, 1, 2),
+            userId = 123456789L,
+            birthYear = 30,
+            timezone = "Europe/Berlin"
+        )
+
+        assertEquals("Alice", birthdayWithTz.username)
+        assertEquals(123456789L, birthdayWithTz.userId)
+        assertEquals(30, birthdayWithTz.birthYear)
+        assertEquals("Europe/Berlin", birthdayWithTz.timezone)
+
+        val birthdayWithoutTz = BirthdayService.Birthday(
+            eventName = "Bob | Birthday",
+            date = LocalDate(2024, 1, 2),
+            userId = 987654321L,
+            birthYear = 25
+        )
+
+        assertNull(birthdayWithoutTz.timezone)
     }
 }
