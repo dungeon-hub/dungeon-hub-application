@@ -4,7 +4,12 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import dev.kord.common.entity.*
+import dev.kord.common.entity.ButtonStyle
+import dev.kord.common.entity.ChannelType
+import dev.kord.common.entity.MessageType
+import dev.kord.common.entity.Permission
+import dev.kord.common.entity.Permissions
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.asChannelOfOrNull
@@ -21,6 +26,8 @@ import dev.kord.rest.request.KtorRequestException
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.ephemeralSubCommand
 import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.channel
+import dev.kordex.core.commands.converters.impl.optionalBoolean
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.components.components
 import dev.kordex.core.components.ephemeralButton
@@ -36,14 +43,13 @@ import net.dungeonhub.application.connection.withNanos
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.listener.ticket.TicketCloseListener
 import net.dungeonhub.application.listener.ticket.TicketDeleteListener
+import net.dungeonhub.application.listener.ticket.TicketTranscriptListener
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.misc.TicketPlaceholders
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
-import net.dungeonhub.connection.ContentConnection
-import net.dungeonhub.connection.DiscordConnection
 import net.dungeonhub.connection.TicketConnection
 import net.dungeonhub.enums.TicketPermissionCandidate
 import net.dungeonhub.enums.TicketPermissionType
@@ -189,11 +195,57 @@ class TicketSystem : Extension() {
                 action { this::addUserToTicket }
             }
 
-            publicSubCommand(::TranscriptArguments) {
+            ephemeralSubCommand(::TranscriptArguments) {
                 name = Translations.Command.Ticket.Transcript.name
                 description = Translations.Command.Ticket.Transcript.description
 
-                action { this::generateTicketTranscript }
+                action {
+                    val ticket = DiscordServerConnection.authenticated()
+                        .findTickets(guild!!.id.value.toLong(), channelId = event.interaction.channelId.value.toLong())
+                        ?.firstOrNull()
+
+                    val ticketChannel = channel.asChannelOfOrNull<TextChannel>()
+
+                    if(ticket == null || ticketChannel == null) {
+                        respond {
+                            addEmbed {
+                                description = "This isn't a ticket channel!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    if(!member!!.asMember().isAllowedToChangeState(ticket)) {
+                        respond {
+                            addEmbed {
+                                description = "You're not allowed to generate a transcript here!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    val target = when {
+                        arguments.sendToUser == false -> net.dungeonhub.enums.TranscriptTarget.TranscriptChannel
+                        arguments.channel != null -> net.dungeonhub.enums.TranscriptTarget.Both
+                        else -> net.dungeonhub.enums.TranscriptTarget.User
+                    }
+
+                    TicketTranscriptListener.generateTranscript(
+                        ticketChannel,
+                        event.interaction.user,
+                        ticket,
+                        target
+                    )
+
+                    respond {
+                        addEmbed {
+                            description = "Generating transcript..."
+                            color(EmbedColor.Positive)
+                        }
+                    }
+                }
             }
 
             private suspend fun closeTicketCommand() {
@@ -359,100 +411,6 @@ class TicketSystem : Extension() {
                 }
             }
 
-            private suspend fun generateTicketTranscript(translation: TranscriptArguments) {
-                val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
-                val ticketChannel = channel.asChannelOfOrNull<TextChannel>()
-
-                if (ticket == null || ticketChannel == null) {
-                    respond {
-                        addEmbed {
-                            description = "This isn't a ticket channel!"
-                            color(EmbedColor.Negative)
-                        }
-                    }
-                    return
-                }
-
-                if (!event.interaction.user.isAllowedToChangeState(ticket)) {
-                    respond {
-                        addEmbed {
-                            description = "You're not allowed to generate a transcript here!"
-                            color(EmbedColor.Negative)
-                        }
-                    }
-                    return
-                }
-
-                val sendToUser = translation.user != null || !translation.hasAnyValue()
-                val sendToChannelId = translation.channel?.value?.toLong()
-
-                TicketSystem.scheduler.async {
-                    val transcriptUrl = ticketChannel.createTranscript()
-                    val result = ContentConnection.authenticated()
-                        .uploadFile(transcriptUrl.toByteArray(java.nio.charset.StandardCharsets.UTF_8))
-                        ?.let { it -> ContentConnection.authenticated().getCdnUrl(it).toString() }
-
-                    TicketSystem.scheduler.launch {
-                        if (sendToUser) {
-                            sendUserTranscript(ticketChannel, ticket, event.interaction.user)
-                        }
-
-                        sendToChannelId?.let { id ->
-                            val transcriptChannel = ticketChannel.guild.getChannelOf<GuildMessageChannel>(Snowflake(id))
-                            transcriptChannel?.let { channel ->
-                                postTranscriptToChannel(channel, ticket, result ?: "")
-                            }
-                        }
-                    }
-
-                    respond {
-                        addEmbed {
-                            title = "Transcript generated!"
-                            color(EmbedColor.Positive)
-                            description = if (result != null) {
-                                "**[Click here]($result)** to download the transcript".toKey()
-                            } else {
-                                "Couldn't upload the transcript!".toKey()
-                            }.also { desc ->
-                                val suffixes = mutableListOf<String>()
-                                if (sendToUser && sendToChannelId == null) suffixes.add("A copy has been sent to the ticket user.")
-                                if (sendToChannelId != null && transcriptChannel != null) suffixes.add("A link has been posted in the designated channel.")
-                                if (suffixes.isNotEmpty()) {
-                                    desc.append("\n") + suffixes.joinToString(" ")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            private suspend fun sendUserTranscript(textChannel: TextChannel, ticket: TicketModel, requester: MemberBehavior) {
-                val url = ""
-                TicketSystem.scheduler.launch {
-                    net.dungeonhub.application.listener.ticket.TicketTranscriptListener.sendUserTranscript(
-                        url,
-                        createPlaceholderMessage(textChannel, requester),
-                        ticket,
-                        textChannel,
-                        requester.asMemberOrNull()
-                            ?: DiscordConnection.bot.kordRef.getSelf().asMember(textChannel.guildId)
-                    )
-                }
-            }
-
-            private suspend fun postTranscriptToChannel(channel: GuildMessageChannel, ticket: TicketModel, url: String) {
-                val placeholders = TicketPlaceholders(
-                    ticket.ticketPanel,
-                    ticket,
-                    event.interaction.user,
-                    channel.asChannelOfOrNull<TextChannel>() ?: error("Channel should be a text channel"),
-                    url
-                )
-
-                channel.createMessage {
-                    embeds = mutableListOf(net.dungeonhub.application.listener.ticket.TicketTranscriptListener.generateTranscriptEmbed(placeholders))
-                }
-            }
         }
     }
 
@@ -464,16 +422,18 @@ class TicketSystem : Extension() {
     }
 
     class TranscriptArguments : Arguments() {
-        // Optional: whether to send to user (default: true)
-        val user by option<Boolean>("user") {
-            name = Translations.Command.Ticket.Transcript.User.name?.toKey() ?: "send-to-user"
-            description = Translations.Command.Ticket.Transcript.User.description?.toKey() ?: "Send the transcript to the ticket user's DM"
+        val sendToUser by optionalBoolean {
+            name = "dm-user".toKey()
+            description = "Whether to send a DM to the ticket user (true by default).".toKey()
         }
 
-        // Optional: whether to send to a channel (default: false)
-        val channel by option<Long>("channel") {
-            name = Translations.Command.Ticket.Transcript.Channel.name?.toKey() ?: "transcript-channel"
-            description = Translations.Command.Ticket.Transcript.Channel.description?.toKey() ?: "The channel where the transcript should be posted (optional)"
+        val channel by channel {
+            name = "channel".toKey()
+            description = "The channel to send the transcript embed into.".toKey()
+            requiredChannelTypes = mutableSetOf(
+                ChannelType.GuildText,
+                ChannelType.PublicGuildThread
+            )
         }
     }
 
