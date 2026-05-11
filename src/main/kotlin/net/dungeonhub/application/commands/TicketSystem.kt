@@ -11,6 +11,7 @@ import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.edit
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.Member
+import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
@@ -41,7 +42,8 @@ import net.dungeonhub.application.misc.TicketPlaceholders
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
-import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.connection.ContentConnection
+import net.dungeonhub.connection.DiscordConnection
 import net.dungeonhub.connection.TicketConnection
 import net.dungeonhub.enums.TicketPermissionCandidate
 import net.dungeonhub.enums.TicketPermissionType
@@ -177,324 +179,278 @@ class TicketSystem : Extension() {
                 name = Translations.Command.Ticket.Close.name
                 description = Translations.Command.Ticket.Close.description
 
-                action {
-                    val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
-
-                    if(ticket == null) {
-                        respond {
-                            addEmbed {
-                                description = "This isn't a ticket channel!"
-                                color(EmbedColor.Negative)
-                            }
-                        }
-                        return@action
-                    }
-
-                    if(ticket.state == TicketState.Closed || ticket.state == TicketState.Deleted) {
-                        respond {
-                            addEmbed {
-                                description = "This ticket is already closed!"
-                                color(EmbedColor.Negative)
-                            }
-
-                            actionRow {
-                                getControlButtons().forEach {
-                                    it()
-                                }
-                            }
-                        }
-                        return@action
-                    }
-
-                    if(!member!!.asMember().isAllowedToChangeState(ticket)) {
-                        respond {
-                            addEmbed {
-                                description = "You're not allowed to close this ticket!"
-                                color(EmbedColor.Negative)
-                            }
-                        }
-                        return@action
-                    }
-
-                    if(!ticket.ticketPanel.closeable) {
-                        respond {
-                            embeds = mutableListOf(TicketDeleteListener.deleteTicket(ticket, member!!.asMember(), event.interaction.channel.asChannelOf<TextChannel>()))
-                        }
-                        return@action
-                    }
-
-                    if(ticket.ticketPanel.closeConfirmation) {
-                        respond {
-                            addEmbed {
-                                description = "Please confirm that you actually want to close this ticket."
-                                color(EmbedColor.Information)
-                            }
-
-                            components {
-                                ephemeralButton {
-                                    label = "Confirm".toKey()
-                                    style = ButtonStyle.Success
-
-                                    action {
-                                        val updatedTicket = TicketConnection[ticket.ticketPanel.discordServer, ticket.ticketPanel].authenticated().getById(ticket.id)
-
-                                        if(updatedTicket == null) {
-                                            respond {
-                                                embeds = mutableListOf(buildEmbed {
-                                                    description = "Couldn't load ticket info!"
-                                                    color(EmbedColor.Negative)
-                                                })
-                                            }
-                                            return@action
-                                        }
-
-                                        if(updatedTicket.state == TicketState.Closed || updatedTicket.state == TicketState.Deleted) {
-                                            respond {
-                                                addEmbed {
-                                                    description = "This ticket is already closed!"
-                                                    color(EmbedColor.Negative)
-                                                }
-                                            }
-                                            return@action
-                                        }
-
-                                        val embed = TicketCloseListener.closeTicket(member!!, channel.asChannelOf(), updatedTicket)
-
-                                        respond {
-                                            embeds = mutableListOf(embed)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        return@action
-                    }
-
-                    val embed = TicketCloseListener.closeTicket(member!!, event.interaction.channel.asChannelOf(), ticket)
-
-                    respond {
-                        embeds = mutableListOf(embed)
-                    }
-                }
+                action { this::closeTicketCommand }
             }
 
             publicSubCommand(::TicketAddArguments) {
                 name = Translations.Command.Ticket.Add.name
                 description = Translations.Command.Ticket.Add.description
 
-                action {
-                    val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
-
-                    val ticketChannel = channel.asChannelOfOrNull<TextChannel>()
-
-                    if(ticket == null || ticketChannel == null) {
-                        respond {
-                            addEmbed {
-                                description = "This isn't a ticket channel!"
-                                color(EmbedColor.Negative)
-                            }
-                        }
-                        return@action
-                    }
-
-                    if(ticket.state == TicketState.Closed) {
-                        respond {
-                            addEmbed {
-                                description = "This ticket is already closed!"
-                                color(EmbedColor.Negative)
-                            }
-                        }
-                        return@action
-                    }
-
-                    if(ticket.state == TicketState.Deleted) {
-                        respond {
-                            addEmbed {
-                                description = "This ticket is already deleted!"
-                                color(EmbedColor.Negative)
-                            }
-                        }
-                        return@action
-                    }
-
-                    if(!member!!.asMember().isAllowedToChangeState(ticket)) { // TODO should this be a separate check?
-                        respond {
-                            addEmbed {
-                                description = "You're not allowed to add users to this ticket!"
-                                color(EmbedColor.Negative)
-                            }
-                        }
-                        return@action
-                    }
-
-                    ticket.ticketPanel.permissions[TicketPermissionCandidate.TicketClaimer]?.let { permissions ->
-                        ticketChannel.edit {
-                            keepOverwrites(ticketChannel)
-                            addMemberOverwrite(arguments.target.id) {
-                                addOverwritePermissions(permissions.entries)
-                            }
-                        }
-                    }
-
-                    respond {
-                        addEmbed {
-                            description = "Added ${arguments.target.mention} to the ticket!\n" +
-                                    "-# Note that currently the user will lose access once the ticket changes state, such as being claimed/unclaimed or closed."
-                            color(EmbedColor.Positive)
-                        }
-                    }
-                }
+                action { this::addUserToTicket }
             }
 
             publicSubCommand(::TranscriptArguments) {
                 name = Translations.Command.Ticket.Transcript.name
                 description = Translations.Command.Ticket.Transcript.description
 
-                action {
-                    val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
+                action { this::generateTicketTranscript }
+            }
 
-                    val ticketChannel = channel.asChannelOfOrNull<TextChannel>()
+            private suspend fun closeTicketCommand() {
+                val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
 
-                    if(ticket == null || ticketChannel == null) {
-                        respond {
-                            addEmbed {
-                                description = "This isn't a ticket channel!"
-                                color(EmbedColor.Negative)
+                if(ticket == null) {
+                    respond {
+                        addEmbed {
+                            description = "This isn't a ticket channel!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                if(ticket.state == TicketState.Closed || ticket.state == TicketState.Deleted) {
+                    respond {
+                        addEmbed {
+                            description = "This ticket is already closed!"
+                            color(EmbedColor.Negative)
+                        }
+
+                        actionRow {
+                            getControlButtons().forEach {
+                                it()
                             }
                         }
-                        return@action
                     }
+                    return@action
+                }
 
-                    if(!event.interaction.user.isAllowedToChangeState(ticket)) {
-                        respond {
-                            addEmbed {
-                                description = "You're not allowed to generate a transcript here!"
-                                color(EmbedColor.Negative)
+                if(!member!!.asMember().isAllowedToChangeState(ticket)) {
+                    respond {
+                        addEmbed {
+                            description = "You're not allowed to close this ticket!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                if(!ticket.ticketPanel.closeable) {
+                    respond {
+                        embeds = mutableListOf(TicketDeleteListener.deleteTicket(ticket, member!!.asMember(), event.interaction.channel.asChannelOf<TextChannel>()))
+                    }
+                    return@action
+                }
+
+                if(ticket.ticketPanel.closeConfirmation) {
+                    respond {
+                        addEmbed {
+                            description = "Please confirm that you actually want to close this ticket."
+                            color(EmbedColor.Information)
+                        }
+
+                        components {
+                            ephemeralButton {
+                                label = "Confirm".toKey()
+                                style = ButtonStyle.Success
+
+                                action {
+                                    val updatedTicket = TicketConnection[ticket.ticketPanel.discordServer, ticket.ticketPanel].authenticated().getById(ticket.id)
+
+                                    if(updatedTicket == null) {
+                                        respond {
+                                            embeds = mutableListOf(buildEmbed {
+                                                description = "Couldn't load ticket info!"
+                                                color(EmbedColor.Negative)
+                                            })
+                                        }
+                                        return@action
+                                    }
+
+                                    if(updatedTicket.state == TicketState.Closed || updatedTicket.state == TicketState.Deleted) {
+                                        respond {
+                                            addEmbed {
+                                                description = "This ticket is already closed!"
+                                                color(EmbedColor.Negative)
+                                            }
+                                        }
+                                        return@action
+                                    }
+
+                                    val embed = TicketCloseListener.closeTicket(member!!, channel.asChannelOf(), updatedTicket)
+
+                                    respond {
+                                        embeds = mutableListOf(embed)
+                                    }
+                                }
                             }
                         }
-                        return@action
+                    }
+                    return@action
+                }
+
+                val embed = TicketCloseListener.closeTicket(member!!, event.interaction.channel.asChannelOf(), ticket)
+
+                respond {
+                    embeds = mutableListOf(embed)
+                }
+            }
+
+            private suspend fun addUserToTicket() {
+                val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
+
+                val ticketChannel = channel.asChannelOfOrNull<TextChannel>()
+
+                if(ticket == null || ticketChannel == null) {
+                    respond {
+                        addEmbed {
+                            description = "This isn't a ticket channel!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                if(ticket.state == TicketState.Closed) {
+                    respond {
+                        addEmbed {
+                            description = "This ticket is already closed!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                if(ticket.state == TicketState.Deleted) {
+                    respond {
+                        addEmbed {
+                            description = "This ticket is already deleted!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                if(!member!!.asMember().isAllowedToChangeState(ticket)) {
+                    respond {
+                        addEmbed {
+                            description = "You're not allowed to add users to this ticket!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                ticket.ticketPanel.permissions[TicketPermissionCandidate.TicketClaimer]?.let { permissions ->
+                    ticketChannel.edit {
+                        keepOverwrites(ticketChannel)
+                        addMemberOverwrite(arguments.target.id) {
+                            addOverwritePermissions(permissions.entries)
+                        }
+                    }
+                }
+
+                respond {
+                    addEmbed {
+                        description = "Added ${arguments.target.mention} to the ticket!\n" +
+                                "-# Note that currently the user will lose access once the ticket changes state, such as being claimed/unclaimed or closed."
+                        color(EmbedColor.Positive)
+                    }
+                }
+            }
+
+            private suspend fun generateTicketTranscript(translation: TranscriptArguments) {
+                val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
+                val ticketChannel = channel.asChannelOfOrNull<TextChannel>()
+
+                if (ticket == null || ticketChannel == null) {
+                    respond {
+                        addEmbed {
+                            description = "This isn't a ticket channel!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return
+                }
+
+                if (!event.interaction.user.isAllowedToChangeState(ticket)) {
+                    respond {
+                        addEmbed {
+                            description = "You're not allowed to generate a transcript here!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return
+                }
+
+                val sendToUser = translation.user != null || !translation.hasAnyValue()
+                val sendToChannelId = translation.channel?.value?.toLong()
+
+                TicketSystem.scheduler.async {
+                    val transcriptUrl = ticketChannel.createTranscript()
+                    val result = ContentConnection.authenticated()
+                        .uploadFile(transcriptUrl.toByteArray(java.nio.charset.StandardCharsets.UTF_8))
+                        ?.let { it -> ContentConnection.authenticated().getCdnUrl(it).toString() }
+
+                    TicketSystem.scheduler.launch {
+                        if (sendToUser) {
+                            sendUserTranscript(ticketChannel, ticket, event.interaction.user)
+                        }
+
+                        sendToChannelId?.let { id ->
+                            val transcriptChannel = ticketChannel.guild.getChannelOf<GuildMessageChannel>(Snowflake(id))
+                            transcriptChannel?.let { channel ->
+                                postTranscriptToChannel(channel, ticket, result ?: "")
+                            }
+                        }
                     }
 
-                    // Parse arguments for transcript destination options
-                    val sendToUser: Boolean = args.getOption<Boolean>("user", default = true) { !args.hasValue() }
-                    val sendToChannel: Boolean = args.getOption<Boolean>("channel", default = false) { !args.hasValue() }
-
-                    if(sendToChannel && args.hasValue("channel")) {
-                        val transcriptChannelId = args.getValue<Long>("channel")
-                        val transcriptChannel = ticketChannel.guild.getChannelOf<dev.kord.core.entity.channel.GuildMessageChannel>(Snowflake(transcriptChannelId))
-                        
-                        // Generate transcript with options
-                        TicketSystem.scheduler.async {
-                            val url = ticketChannel.createTranscript()
-
-                            val result = net.dungeonhub.connection.ContentConnection.authenticated().uploadFile(url.toByteArray(java.nio.charset.StandardCharsets.UTF_8))?.let {
-                                net.dungeonhub.connection.ContentConnection.authenticated().getCdnUrl(it).toString()
-                            }
-
-                            if(result != null) {
-                                // Send to user if requested
-                                if(sendToUser) {
-                                    TicketSystem.scheduler.launch {
-                                        net.dungeonhub.application.listener.ticket.TicketTranscriptListener.sendUserTranscript(
-                                            result,
-                                            net.dungeonhub.application.listener.ticket.TicketTranscriptListener.createPlaceholderMessage(ticketChannel, event.interaction.user),
-                                            ticket,
-                                            ticketChannel,
-                                            event.interaction.user.asMemberOrNull()
-                                                ?: DiscordConnection.bot.kordRef.getSelf().asMember(ticketChannel.guildId)
-                                        )
-                                    }
-                                }
-
-                                // Send to channel if requested and channel exists
-                                if(sendToChannel && transcriptChannel != null) {
-                                    TicketSystem.scheduler.launch {
-                                        transcriptChannel.createMessage {
-                                            embeds = mutableListOf(
-                                                net.dungeonhub.application.listener.ticket.TicketTranscriptListener.generateTranscriptEmbed(
-                                                    net.dungeonhub.application.misc.TicketPlaceholders(
-                                                        ticket.ticketPanel,
-                                                        ticket,
-                                                        event.interaction.user,
-                                                        ticketChannel,
-                                                        result
-                                                    )
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
-
-                                // Send confirmation to requester
-                                respond {
-                                    addEmbed {
-                                        title = "Transcript generated!"
-                                        color(EmbedColor.Positive)
-                                        description = if(result != null) {
-                                            "**[Click here]($result)** to download the transcript"
-                                        } else {
-                                            "Couldn't upload the transcript!"
-                                        }
-
-                                        if(sendToUser) {
-                                            append("A copy has been sent to the ticket user.")
-                                        }
-
-                                        if(sendToChannel && transcriptChannel != null) {
-                                            append("A link has been posted in the designated channel.")
-                                        }
-
-                                        color(EmbedColor.Positive)
-                                    }
-                                }
+                    respond {
+                        addEmbed {
+                            title = "Transcript generated!"
+                            color(EmbedColor.Positive)
+                            description = if (result != null) {
+                                "**[Click here]($result)** to download the transcript".toKey()
                             } else {
-                                respond {
-                                    addEmbed {
-                                        description = "Couldn't generate the transcript!"
-                                        color(EmbedColor.Negative)
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // Default: just send to user, don't post in channel
-                        TicketSystem.scheduler.async {
-                            val url = ticketChannel.createTranscript()
-
-                            val result = net.dungeonhub.connection.ContentConnection.authenticated().uploadFile(url.toByteArray(java.nio.charset.StandardCharsets.UTF_8))?.let {
-                                net.dungeonhub.connection.ContentConnection.authenticated().getCdnUrl(it).toString()
-                            }
-
-                            if(result != null) {
-                                TicketSystem.scheduler.launch {
-                                    net.dungeonhub.application.listener.ticket.TicketTranscriptListener.sendUserTranscript(
-                                        result,
-                                        net.dungeonhub.application.listener.ticket.TicketTranscriptListener.createPlaceholderMessage(ticketChannel, event.interaction.user),
-                                        ticket,
-                                        ticketChannel,
-                                        event.interaction.user.asMemberOrNull()
-                                            ?: DiscordConnection.bot.kordRef.getSelf().asMember(ticketChannel.guildId)
-                                    )
-                                }
-
-                                respond {
-                                    addEmbed {
-                                        title = "Transcript generated!"
-                                        color(EmbedColor.Positive)
-                                        description = "**[Click here]($result)** to download the transcript\n" +
-                                                "-# A copy has been sent to the ticket user."
-                                    }
-                                }
-                            } else {
-                                respond {
-                                    addEmbed {
-                                        description = "Couldn't generate the transcript!"
-                                        color(EmbedColor.Negative)
-                                    }
+                                "Couldn't upload the transcript!".toKey()
+                            }.also { desc ->
+                                val suffixes = mutableListOf<String>()
+                                if (sendToUser && sendToChannelId == null) suffixes.add("A copy has been sent to the ticket user.")
+                                if (sendToChannelId != null && transcriptChannel != null) suffixes.add("A link has been posted in the designated channel.")
+                                if (suffixes.isNotEmpty()) {
+                                    desc.append("\n") + suffixes.joinToString(" ")
                                 }
                             }
                         }
                     }
+                }
+            }
+
+            private suspend fun sendUserTranscript(textChannel: TextChannel, ticket: TicketModel, requester: MemberBehavior) {
+                val url = ""
+                TicketSystem.scheduler.launch {
+                    net.dungeonhub.application.listener.ticket.TicketTranscriptListener.sendUserTranscript(
+                        url,
+                        createPlaceholderMessage(textChannel, requester),
+                        ticket,
+                        textChannel,
+                        requester.asMemberOrNull()
+                            ?: DiscordConnection.bot.kordRef.getSelf().asMember(textChannel.guildId)
+                    )
+                }
+            }
+
+            private suspend fun postTranscriptToChannel(channel: GuildMessageChannel, ticket: TicketModel, url: String) {
+                val placeholders = TicketPlaceholders(
+                    ticket.ticketPanel,
+                    ticket,
+                    event.interaction.user,
+                    channel.asChannelOfOrNull<TextChannel>() ?: error("Channel should be a text channel"),
+                    url
+                )
+
+                channel.createMessage {
+                    embeds = mutableListOf(net.dungeonhub.application.listener.ticket.TicketTranscriptListener.generateTranscriptEmbed(placeholders))
                 }
             }
         }
