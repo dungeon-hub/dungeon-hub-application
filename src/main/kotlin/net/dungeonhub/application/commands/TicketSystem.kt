@@ -16,7 +16,6 @@ import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.channel.*
 import dev.kord.rest.builder.component.ActionRowBuilder
-import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.request.KtorRequestException
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.ephemeralSubCommand
@@ -80,7 +79,7 @@ class TicketSystem : Extension() {
                 }
 
                 val ticket = DiscordServerConnection.authenticated().findTickets(guildId, channelId = channelId)?.firstOrNull()
-                if (ticket == null) {
+                if(ticket == null) {
                     scheduledTicketRenames.removeIf { it.second == channelId }
                     return@forEach
                 }
@@ -88,7 +87,7 @@ class TicketSystem : Extension() {
                 val member = kord.getGuildOrNull(Snowflake(ticket.ticketPanel.discordServer.id))?.getMemberOrNull(Snowflake(ticket.user.id))
                     ?: return@forEach
 
-                if (updateTicketName(ticket, member, channel) == null) {
+                if(updateTicketName(ticket, member, channel) == null) {
                     scheduledTicketRenames.removeIf { it.second == channelId }
                 }
             }
@@ -346,6 +345,158 @@ class TicketSystem : Extension() {
                     }
                 }
             }
+
+            publicSubCommand(::TranscriptArguments) {
+                name = Translations.Command.Ticket.Transcript.name
+                description = Translations.Command.Ticket.Transcript.description
+
+                action {
+                    val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
+
+                    val ticketChannel = channel.asChannelOfOrNull<TextChannel>()
+
+                    if(ticket == null || ticketChannel == null) {
+                        respond {
+                            addEmbed {
+                                description = "This isn't a ticket channel!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    if(!event.interaction.user.isAllowedToChangeState(ticket)) {
+                        respond {
+                            addEmbed {
+                                description = "You're not allowed to generate a transcript here!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    // Parse arguments for transcript destination options
+                    val sendToUser: Boolean = args.getOption<Boolean>("user", default = true) { !args.hasValue() }
+                    val sendToChannel: Boolean = args.getOption<Boolean>("channel", default = false) { !args.hasValue() }
+
+                    if(sendToChannel && args.hasValue("channel")) {
+                        val transcriptChannelId = args.getValue<Long>("channel")
+                        val transcriptChannel = ticketChannel.guild.getChannelOf<dev.kord.core.entity.channel.GuildMessageChannel>(Snowflake(transcriptChannelId))
+                        
+                        // Generate transcript with options
+                        TicketSystem.scheduler.async {
+                            val url = ticketChannel.createTranscript()
+
+                            val result = net.dungeonhub.connection.ContentConnection.authenticated().uploadFile(url.toByteArray(java.nio.charset.StandardCharsets.UTF_8))?.let {
+                                net.dungeonhub.connection.ContentConnection.authenticated().getCdnUrl(it).toString()
+                            }
+
+                            if(result != null) {
+                                // Send to user if requested
+                                if(sendToUser) {
+                                    TicketSystem.scheduler.launch {
+                                        net.dungeonhub.application.listener.ticket.TicketTranscriptListener.sendUserTranscript(
+                                            result,
+                                            net.dungeonhub.application.listener.ticket.TicketTranscriptListener.createPlaceholderMessage(ticketChannel, event.interaction.user),
+                                            ticket,
+                                            ticketChannel,
+                                            event.interaction.user.asMemberOrNull()
+                                                ?: DiscordConnection.bot.kordRef.getSelf().asMember(ticketChannel.guildId)
+                                        )
+                                    }
+                                }
+
+                                // Send to channel if requested and channel exists
+                                if(sendToChannel && transcriptChannel != null) {
+                                    TicketSystem.scheduler.launch {
+                                        transcriptChannel.createMessage {
+                                            embeds = mutableListOf(
+                                                net.dungeonhub.application.listener.ticket.TicketTranscriptListener.generateTranscriptEmbed(
+                                                    net.dungeonhub.application.misc.TicketPlaceholders(
+                                                        ticket.ticketPanel,
+                                                        ticket,
+                                                        event.interaction.user,
+                                                        ticketChannel,
+                                                        result
+                                                    )
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Send confirmation to requester
+                                respond {
+                                    addEmbed {
+                                        title = "Transcript generated!"
+                                        color(EmbedColor.Positive)
+                                        description = if(result != null) {
+                                            "**[Click here]($result)** to download the transcript"
+                                        } else {
+                                            "Couldn't upload the transcript!"
+                                        }
+
+                                        if(sendToUser) {
+                                            append("A copy has been sent to the ticket user.")
+                                        }
+
+                                        if(sendToChannel && transcriptChannel != null) {
+                                            append("A link has been posted in the designated channel.")
+                                        }
+
+                                        color(EmbedColor.Positive)
+                                    }
+                                }
+                            } else {
+                                respond {
+                                    addEmbed {
+                                        description = "Couldn't generate the transcript!"
+                                        color(EmbedColor.Negative)
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Default: just send to user, don't post in channel
+                        TicketSystem.scheduler.async {
+                            val url = ticketChannel.createTranscript()
+
+                            val result = net.dungeonhub.connection.ContentConnection.authenticated().uploadFile(url.toByteArray(java.nio.charset.StandardCharsets.UTF_8))?.let {
+                                net.dungeonhub.connection.ContentConnection.authenticated().getCdnUrl(it).toString()
+                            }
+
+                            if(result != null) {
+                                TicketSystem.scheduler.launch {
+                                    net.dungeonhub.application.listener.ticket.TicketTranscriptListener.sendUserTranscript(
+                                        result,
+                                        net.dungeonhub.application.listener.ticket.TicketTranscriptListener.createPlaceholderMessage(ticketChannel, event.interaction.user),
+                                        ticket,
+                                        ticketChannel,
+                                        event.interaction.user.asMemberOrNull()
+                                            ?: DiscordConnection.bot.kordRef.getSelf().asMember(ticketChannel.guildId)
+                                    )
+                                }
+
+                                respond {
+                                    addEmbed {
+                                        title = "Transcript generated!"
+                                        color(EmbedColor.Positive)
+                                        description = "**[Click here]($result)** to download the transcript\n" +
+                                                "-# A copy has been sent to the ticket user."
+                                    }
+                                }
+                            } else {
+                                respond {
+                                    addEmbed {
+                                        description = "Couldn't generate the transcript!"
+                                        color(EmbedColor.Negative)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -353,6 +504,20 @@ class TicketSystem : Extension() {
         val target by user {
             name = "user".toKey()
             description = "The user to add to the ticket.".toKey()
+        }
+    }
+
+    class TranscriptArguments : Arguments() {
+        // Optional: whether to send to user (default: true)
+        val user by option<Boolean>("user") {
+            name = Translations.Command.Ticket.Transcript.User.name?.toKey() ?: "send-to-user"
+            description = Translations.Command.Ticket.Transcript.User.description?.toKey() ?: "Send the transcript to the ticket user's DM"
+        }
+
+        // Optional: whether to send to a channel (default: false)
+        val channel by option<Long>("channel") {
+            name = Translations.Command.Ticket.Transcript.Channel.name?.toKey() ?: "transcript-channel"
+            description = Translations.Command.Ticket.Transcript.Channel.description?.toKey() ?: "The channel where the transcript should be posted (optional)"
         }
     }
 
