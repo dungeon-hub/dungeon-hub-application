@@ -130,11 +130,11 @@ class MessageListener : Extension() {
         val carryTypes: MutableList<CarryTypeModel> = mutableListOf()
 
         mutex.withLock {
-            for (queueModel in (QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Transcript)
-                ?: HashSet())
-                .filter { carryQueueModel ->
-                    ticket.channel?.id == carryQueueModel.relationId
-                }) {
+            val queueEntries = QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Transcript)?.filter {
+                ticket.channel?.id == it.relationId
+            } ?: HashSet()
+
+            for (queueModel in queueEntries) {
                 val firstUpdateModel = queueModel.getUpdateModel()
                 firstUpdateModel.attachmentLink = transcriptUrl
 

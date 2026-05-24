@@ -9,7 +9,6 @@ import kotlinx.coroutines.async
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.exceptions.NotLinkedException
 import net.dungeonhub.connection.CarryDifficultyConnection
-import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.connection.TicketConnection
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
@@ -43,21 +42,18 @@ class TicketPlaceholders(
         DiscordUserConnection.authenticated().getByIdOrCreate(ticketUserId)
     }
 
-    val carryTier = scheduler.async(start = CoroutineStart.LAZY) {
-        // TODO dedicated endpoint
-        DiscordServerConnection.authenticated().getAllCarryTiers(ticketPanel.discordServer.id)
-            ?.firstOrNull { carryTier ->
-                carryTier.relatedTicketPanel?.id == ticket.ticketPanel.id
-            }
-    }
+    val carryTier = ticketPanel.relatedCarryTier
 
     val formCarryDifficultyName by lazy { ticket.formResponses.firstOrNull { it.customId == "carry-difficulty" }?.value }
     val formCarryDifficulty = scheduler.async(start = CoroutineStart.LAZY) {
         formCarryDifficultyName?.let { formCarryDifficultyName ->
-            carryTier.await()?.let { carryTier ->
+            carryTier?.let { carryTier ->
                 CarryDifficultyConnection[carryTier].authenticated().findCarryDifficultyByString(formCarryDifficultyName)
             }
         }
+    }
+    val carryDifficulty = scheduler.async(start = CoroutineStart.LAZY) {
+        formCarryDifficulty.await() ?: ticketPanel.relatedCarryDifficulty
     }
 
     val formCarryAmount by lazy { ticket.formResponses.firstOrNull { it.customId == "carry-amount" }?.value }
@@ -122,8 +118,8 @@ class TicketPlaceholders(
             }
             replacements["ticket.name"] = { ticketChannel?.name ?: "not-set" }
             replacements["transcript.url"] = { transcriptUrl ?: "unknown" }
-            replacements["carry-tier.name"] = { carryTier.await()?.displayName ?: "unknown" }
-            replacements["carry-difficulty.name"] = { formCarryDifficulty.await()?.displayName ?: "unknown" }
+            replacements["carry-tier.name"] = { carryTier?.displayName ?: "unknown" }
+            replacements["carry-difficulty.name"] = { carryDifficulty.await()?.displayName ?: "unknown" }
             replacements["ticket.form.1"] = { ticket.formResponses.firstOrNull { it.ordinal == 0 }?.value ?: "unknown" }
             replacements["ticket.form.2"] = { ticket.formResponses.firstOrNull { it.ordinal == 1 }?.value ?: "unknown" }
             replacements["ticket.form.3"] = { ticket.formResponses.firstOrNull { it.ordinal == 2 }?.value ?: "unknown" }

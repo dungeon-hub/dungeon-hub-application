@@ -40,7 +40,10 @@ import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.MessagesService
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
-import net.dungeonhub.connection.*
+import net.dungeonhub.connection.CarryDifficultyConnection
+import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.connection.TicketConnection
+import net.dungeonhub.connection.TicketPanelConnection
 import net.dungeonhub.enums.FormType
 import net.dungeonhub.enums.TicketState
 import net.dungeonhub.hypixel.entities.skyblock.statsoverview.BuiltInStatsOverviewType
@@ -113,12 +116,7 @@ class TicketCreateListener : Extension() {
                             "-# If that seems incorrect, please unlink using `/unlink` and then `/link` to the correct account."
                 }
             } else if(data == "carry-difficulty") { // TODO enum?
-                // TODO dedicated endpoint
-                val carryTier = DiscordServerConnection.authenticated()
-                    .getAllCarryTiers(ticketPanel.discordServer.id)
-                    ?.firstOrNull { carryTier ->
-                        carryTier.relatedTicketPanel?.id == ticketPanel.id
-                    } ?: return
+                val carryTier = ticketPanel.relatedCarryTier ?: return
 
                 val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().getAllCarryDifficulties()
                     ?: return
@@ -464,8 +462,8 @@ class TicketCreateListener : Extension() {
                         e.embed
                     }
                 }
-                "price-overview" -> placeholders.carryTier.await()?.let { MessagesService.getPriceEmbed(it) }
-                "carry-price" -> placeholders.formCarryDifficulty.await()?.let { carryDifficulty ->
+                "price-overview" -> placeholders.carryTier?.let { MessagesService.getPriceEmbed(it) }
+                "carry-price" -> placeholders.carryDifficulty.await()?.let { carryDifficulty ->
                     placeholders.formCarryAmount?.toIntOrNull()?.let { carryAmount ->
                         CalcPriceCommand.generateCalculatedPriceEmbed(carryDifficulty, carryAmount)
                     }

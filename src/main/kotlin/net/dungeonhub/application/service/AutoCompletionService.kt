@@ -107,7 +107,7 @@ object AutoCompletionService {
 
             val ticket = DiscordServerConnection.authenticated().findTickets(guildId, channelId = channel.id.value.toLong())?.firstOrNull()
 
-            val carryTierByCategory = ticket?.let { getCarryTierFromTicket(guildId, it) }
+            val carryTierByCategory = ticket?.let { getCarryTierFromTicket(it) }
                 ?: channel.asChannelOfOrNull<CategorizableChannel>()
                     ?.categoryId
                     ?.let { categoryId ->
@@ -224,11 +224,8 @@ object AutoCompletionService {
         }
     }
 
-    suspend fun getCarryTierFromTicket(guildId: Long, ticket: TicketModel): CarryTierModel? {
-        // TODO dedicated endpoint
-        return DiscordServerConnection.authenticated().getAllCarryTiers(guildId)?.firstOrNull { carryTier ->
-            carryTier.relatedTicketPanel?.id == ticket.ticketPanel.id
-        }
+    fun getCarryTierFromTicket(ticket: TicketModel): CarryTierModel? {
+        return ticket.ticketPanel.relatedCarryTier
     }
 }
 

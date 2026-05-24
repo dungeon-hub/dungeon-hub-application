@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.takeWhile
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
+import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.exceptions.InvalidOptionException
 import net.dungeonhub.application.exceptions.MissingPermissionException
 import net.dungeonhub.application.loader.LoadExtension
@@ -69,7 +70,7 @@ class LoggingSystem : Extension() {
                 respond {
                     val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = channel.id.value.toLong())?.firstOrNull()
 
-                    val carryTier = ticket?.let { getCarryTierFromTicket(guild!!.id.value.toLong(), it) }
+                    val carryTier = ticket?.let { getCarryTierFromTicket(it) }
                         ?: channel.asChannelOfOrNull<CategorizableChannel>()
                             ?.categoryId
                             ?.let { categoryId ->
@@ -80,7 +81,7 @@ class LoggingSystem : Extension() {
                             }
 
                     if (carryTier == null) {
-                        throw CommandExecutionException("Please use this in a carry-ticket. If this is one, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) to setup the bot correctly!")
+                        throw CommandExecutionWarning("Please use this in a ticket connected to a carry tier. If you think is is incorrect, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) about setting up the bot on [the dashboard](https://dashboard.dungeon-hub.net/).")
                     }
 
                     if (QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
@@ -242,11 +243,8 @@ class LoggingSystem : Extension() {
         }
     }
 
-    suspend fun getCarryTierFromTicket(guildId: Long, ticket: TicketModel): CarryTierModel? {
-        // TODO dedicated endpoint
-        return DiscordServerConnection.authenticated().getAllCarryTiers(guildId)?.firstOrNull { carryTier ->
-            carryTier.relatedTicketPanel?.id == ticket.ticketPanel.id
-        }
+    fun getCarryTierFromTicket(ticket: TicketModel): CarryTierModel? {
+        return ticket.ticketPanel.relatedCarryTier
     }
 
     private suspend fun deny(event: GuildButtonInteractionCreateEvent) {
