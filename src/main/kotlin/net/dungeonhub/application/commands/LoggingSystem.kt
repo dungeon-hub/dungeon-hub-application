@@ -448,17 +448,17 @@ class LoggingSystem : Extension() {
     }
 
     class LogArguments : Arguments() {
+        val carryDifficulty by string {
+            name = CommonArguments.CarryDifficulty.name
+            description = Log.Arguments.CarryDifficulty.description
+            autoCompleteCallback = AutoCompletionService.carryDifficulty
+        }
+
         val carryAmount by int {
             name = Log.Arguments.Amount.name
             description = Log.Arguments.Amount.description
             minValue = 1
             maxValue = 200
-        }
-
-        val carryDifficulty by string {
-            name = CommonArguments.CarryDifficulty.name
-            description = Log.Arguments.CarryDifficulty.description
-            autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
     }
 }
