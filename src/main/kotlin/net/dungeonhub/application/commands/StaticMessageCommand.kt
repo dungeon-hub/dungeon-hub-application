@@ -13,7 +13,7 @@ import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.builder.message.embed
 import dev.kordex.core.annotations.AlwaysPublicResponse
 import dev.kordex.core.commands.Arguments
-import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
+import dev.kordex.core.commands.application.slash.converters.impl.stringChoice
 import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.long
 import dev.kordex.core.commands.converters.impl.optionalChannel
@@ -61,7 +61,7 @@ class StaticMessageCommand: Extension() {
                     val creationModel = StaticMessageCreationModel(
                         (channel).id.value.toLong(),
                         null,
-                        arguments.staticMessageType,
+                        arguments.staticMessageTypeEnum,
                         emptyList(),
                         null
                     )
@@ -288,11 +288,14 @@ class StaticMessageCommand: Extension() {
     }
 
     class StaticMessageCreateArguments : Arguments() {
-        val staticMessageType by enumChoice<StaticMessageType> {
+        val staticMessageType by stringChoice {
             name = CommonArguments.StaticMessageType.name
             description = StaticMessage.Create.Arguments.StaticMessageType.description
-            typeName = "StaticMessageType".toKey()
+            choices = StaticMessageType.entries.associate { it.readableName to it.name }.toMutableMap()
         }
+
+        val staticMessageTypeEnum: StaticMessageType
+            get() = StaticMessageType.valueOf(staticMessageType)
 
         val channel by optionalChannel {
             name = StaticMessage.Create.Arguments.Channel.name
@@ -333,6 +336,7 @@ class StaticMessageCommand: Extension() {
         }
     }
 
+    // TODO add an option to disable the static message --> currently there's no way to disable sending it
     class StaticMessageEditArguments : Arguments() {
         val id by long {
             name = StaticMessage.Edit.Arguments.Id.name

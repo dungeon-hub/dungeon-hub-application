@@ -11,7 +11,7 @@ import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import dev.kordex.core.checks.hasPermission
 import dev.kordex.core.commands.Arguments
-import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
+import dev.kordex.core.commands.application.slash.converters.impl.stringChoice
 import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.long
 import dev.kordex.core.commands.converters.impl.string
@@ -93,13 +93,13 @@ class ManageScoreCommand : Extension() {
                                 .getByIdentifier(arguments.carryType)
                                 ?: throw InvalidOptionException("carry-type")
 
-                        val resetModel = ScoreConnection[carryType].authenticated().resetScore(arguments.resetType)
+                        val resetModel = ScoreConnection[carryType].authenticated().resetScore(arguments.resetTypeEnum)
                             ?: throw CommandExecutionException("Error while getting a response when resetting score.")
 
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.Information.color
                         embed.title = "Score for ${carryType.displayName} successfully reset!"
-                        embed.description = when (arguments.resetType) {
+                        embed.description = when (arguments.resetTypeEnum) {
                             ScoreResetType.Default -> "Default score of ${resetModel.defaultCount} users were reset. ${
                                 if (resetModel.eventCount != 0L) "\nSomehow also ${resetModel.eventCount} users got their event score reset?" else ""
                             }"
@@ -204,10 +204,13 @@ class ManageScoreCommand : Extension() {
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
-        val resetType by enumChoice<ScoreResetType> {
+        val resetType by stringChoice {
             name = "reset-type".toKey()
             description = "Choose which score should be reset".toKey()
-            typeName = "ScoreResetType".toKey()
+            choices = ScoreResetType.entries.associate { it.readableName to it.name }.toMutableMap()
         }
+
+        val resetTypeEnum: ScoreResetType
+            get() = ScoreResetType.valueOf(resetType)
     }
 }
