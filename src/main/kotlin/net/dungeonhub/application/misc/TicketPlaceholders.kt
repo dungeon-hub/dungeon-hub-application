@@ -61,9 +61,9 @@ class TicketPlaceholders(
     private val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
 
     val skyblockProfiles = scheduler.async(start = CoroutineStart.LAZY) {
-        hypixelApiConnection.getSkyblockProfiles(
-            ticketUserModel.await()?.minecraftId ?: throw NotLinkedException()
-        )?.profiles
+        ticketUserModel.await()?.minecraftId?.let {
+            hypixelApiConnection.getSkyblockProfiles(it)?.profiles
+        }
     }
 
     val selectedSkyblockProfiles = scheduler.async(start = CoroutineStart.LAZY) {
