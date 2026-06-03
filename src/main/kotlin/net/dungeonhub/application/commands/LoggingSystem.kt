@@ -398,15 +398,13 @@ class LoggingSystem : Extension() {
         response.respond {
             content =
                 "**Thank you for your service. Your carry will be sent to the staff team for review once the ticket is closed.**\n" +
-                        "**You will be notified once it has been reviewed.**"
+                        "**You will be notified once it has been reviewed.**\n" +
+                        "If the client doesn't want any more carries, please delete this ticket."
 
             channel.createMessage {
-                val embed = ApplicationService.loadEmbedFromCarryQueue(carryQueueModel)
-                embed.description = "This will get sent when the ticket is deleted.\n" +
-                        "If the client doesn't want any more carries, please delete this ticket."
-                embed.title = "Carry logged"
-
-                embeds = mutableListOf(embed)
+                embeds = mutableListOf(
+                    ApplicationService.loadTicketNotificationFromCarryQueue(carryQueueModel)
+                )
             }
 
             event.interaction.message.delete()

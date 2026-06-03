@@ -204,6 +204,13 @@ object ApplicationService {
         return embedBuilder
     }
 
+    fun loadTicketNotificationFromCarryQueue(carryQueue: CarryQueueModel): EmbedBuilder {
+        return buildEmbed {
+            description = "<@${carryQueue.carrier.id}> logged **${carryQueue.amount} ${carryQueue.carryTier.displayName} - ${carryQueue.carryDifficulty.displayName}** ${if(carryQueue.amount == 1) "carry" else "carries"} for <@${carryQueue.player.id}>, worth ${carryQueue.calculateScore()} score."
+            color(EmbedColor.Information)
+        }
+    }
+
     fun loadEmbedFromCarryQueue(carryQueue: CarryQueueModel, embedBuilder: EmbedBuilder): EmbedBuilder {
         embedBuilder.color = EmbedColor.Information.color
 
