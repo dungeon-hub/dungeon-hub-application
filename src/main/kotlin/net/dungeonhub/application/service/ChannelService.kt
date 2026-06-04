@@ -21,7 +21,6 @@ import net.dungeonhub.enums.QueueStep
 import net.dungeonhub.model.discord_channel.DiscordChannelCreationModel
 import net.dungeonhub.model.discord_channel.DiscordChannelUpdateModel
 import org.slf4j.LoggerFactory
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
 @LoadExtension
@@ -42,7 +41,7 @@ class ChannelService : Extension() {
             sendUnnotifiedCarryQueues()
         }
 
-        scheduler.schedule(12.hours, startNow = true, name = "Update-Channel-State-Schedule", repeat = true) {
+        scheduler.schedule(30.seconds, startNow = true, name = "Update-Channel-State-Schedule", repeat = false) {
             syncChannelNames()
         }
 

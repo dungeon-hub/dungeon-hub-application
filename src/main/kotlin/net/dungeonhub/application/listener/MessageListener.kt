@@ -185,9 +185,10 @@ class MessageListener : Extension() {
 
                     QueueConnection.authenticated().updateQueue(updatedModel.id, secondUpdateModel)
                 } else {
-                    val updatedScore = QueueConnection.authenticated().logQueue(updatedModel.id, firstUpdateModel)
-                        ?.scoreModels
-                        ?.firstOrNull { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
+                    val loggedCarryModel = QueueConnection.authenticated().logQueue(updatedModel.id, firstUpdateModel) ?: continue
+
+                    val updatedScore = loggedCarryModel.scoreModels
+                        .firstOrNull { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
                         ?.scoreAmount
                         ?: (ScoreConnection[updatedModel.carryType].authenticated()
                             .getScore(updatedModel.carrier.id)?.scoreAmount ?: 0)
@@ -220,25 +221,9 @@ class MessageListener : Extension() {
                             )
 
                             logChannel.createMessage {
-                                val embed = ApplicationService.getEmbed(
-                                    updatedModel.time?.toKotlinInstant() ?: Clock.System.now()
-                                )
+                                val embed = ApplicationService.loadEmbedFromCarry(loggedCarryModel.carryModel)
                                 embed.title = "Carry accepted."
                                 embed.color = EmbedColor.Positive.color
-                                embed.field("Number of carries", true) { updatedModel.amount.toString() }
-                                embed.field("Type of carry", true) {
-                                    "${updatedModel.carryTier.displayName} - ${updatedModel.carryDifficulty.displayName}"
-                                }
-                                embed.field("Player", true) {
-                                    "<@${updatedModel.player.id}>"
-                                }
-                                embed.field("Carrier", true) {
-                                    "<@${updatedModel.carrier.id}>"
-                                }
-                                embed.field("Transcript-Link", true) {
-                                    "[Click to open](${updatedModel.attachmentLink})"
-                                }
-
                                 embeds = mutableListOf(embed)
                             }
                         }
