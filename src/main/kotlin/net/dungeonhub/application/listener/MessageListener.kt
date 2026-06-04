@@ -313,7 +313,7 @@ class MessageListener : Extension() {
                             .orElse(false)
                     }) {
                     if (attachmentLink == null) {
-                        val attachmentUrl = ContentConnection.authenticated().uploadFile(attachmentData, "{uuid}.html")
+                        val attachmentUrl = ContentConnection.authenticated().uploadFile(attachmentData, "${UUID.randomUUID()}.html")
 
                         if (attachmentUrl == null) {
                             logger.error(
