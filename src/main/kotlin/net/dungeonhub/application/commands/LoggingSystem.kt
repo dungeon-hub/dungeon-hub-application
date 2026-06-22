@@ -81,7 +81,7 @@ class LoggingSystem : Extension() {
                             }
 
                     if (carryTier == null) {
-                        throw CommandExecutionWarning("Please use this in a ticket connected to a carry tier. If you think is is incorrect, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) about setting up the bot on [the dashboard](https://dashboard.dungeon-hub.net/).")
+                        throw CommandExecutionWarning("Please use this in a ticket connected to a carry tier. If you think this is incorrect, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) about setting up the bot on [the dashboard](https://dashboard.dungeon-hub.net/).")
                     }
 
                     if (QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
