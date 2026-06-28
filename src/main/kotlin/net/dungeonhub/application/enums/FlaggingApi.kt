@@ -34,13 +34,6 @@ enum class FlaggingApi(
         { discordId: Long ->
             FlaggingConnection.isSafetyFlagged(discordId)
         }
-    ),
-    BLOCK_GAME(
-        "Scammer List (BlockHelper)",
-        null,
-        { discordId: Long ->
-            FlaggingConnection.isBlockGameFlagged(discordId)
-        }
     );
 
     class JerryData(val success: Boolean, val scammer: Boolean, val details: JerryDetails?) {
@@ -67,12 +60,6 @@ enum class FlaggingApi(
             val reason: String
         )
     }
-
-    class BlockGameResponse(val success: Boolean, val data: BlockGameData)
-
-    class BlockGameData(val results: Map<String, BlockGameResult?>)
-
-    class BlockGameResult(val tag: String, val id: String, val method: String, val scammed: String)
 
     private val logger: Logger = LoggerFactory.getLogger(FlaggingApi::class.java)
 
