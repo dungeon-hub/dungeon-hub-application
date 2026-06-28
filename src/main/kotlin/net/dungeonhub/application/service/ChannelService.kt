@@ -5,6 +5,7 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.channel.Category
 import dev.kord.core.entity.channel.GuildChannel
 import dev.kord.core.entity.channel.TextChannel
+import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.event.channel.ChannelCreateEvent
 import dev.kord.core.event.channel.ChannelDeleteEvent
 import dev.kord.core.event.channel.ChannelUpdateEvent
@@ -47,7 +48,7 @@ class ChannelService : Extension() {
 
         event<ChannelCreateEvent> {
             check {
-                event.channel is GuildChannel && event.channel !is Category
+                event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel
             }
 
             action {
@@ -66,7 +67,7 @@ class ChannelService : Extension() {
 
         event<ChannelUpdateEvent> {
             check {
-                event.channel is GuildChannel && event.channel !is Category
+                event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel
             }
 
             action {
@@ -88,7 +89,7 @@ class ChannelService : Extension() {
 
         event<ChannelDeleteEvent> {
             check {
-                event.channel is GuildChannel && event.channel !is Category
+                event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel
             }
 
             action {
@@ -137,7 +138,7 @@ class ChannelService : Extension() {
             val channels = channelConnection.getAllChannels()?.associate { it.id to false }?.toMutableMap() ?: mutableMapOf()
 
             guild.channels.collect { channel ->
-                if(channel is Category) {
+                if(channel is Category || channel is ThreadChannel) {
                   return@collect
                 }
 
