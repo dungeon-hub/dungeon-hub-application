@@ -3,6 +3,7 @@ package net.dungeonhub.application.connection
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -45,6 +46,8 @@ object FlaggingConnection {
         }?.body<HypixelSafetyData>()?.let {
             fromSafetyResponse(it)
         }
+    } catch (exception: CancellationException) {
+        throw exception
     } catch (exception: Exception) {
         logger.error("Couldn't check safety-flagged status for uuid $uuid", exception)
         null
