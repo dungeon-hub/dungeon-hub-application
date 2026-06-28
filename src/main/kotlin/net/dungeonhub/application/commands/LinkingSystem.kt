@@ -325,8 +325,8 @@ class LinkingSystem : Extension() {
                         NicknameService.updateNickname(member, userModel, roles)
                     } catch (_: NoNameSchemaWarning) {
                         nicknameChanged = false
-                    } catch (notLinkedException: NotLinkedException) {
-                        embeds = mutableListOf(ApplicationService.getErrorEmbed(notLinkedException))
+                    } catch (notLinkedWarning: NotLinkedWarning) {
+                        embeds = mutableListOf(ApplicationService.getErrorEmbed(notLinkedWarning))
                         return@respond
                     }
 
@@ -350,7 +350,7 @@ class LinkingSystem : Extension() {
 
                     embed.color = EmbedColor.Positive.color
                     embed.description = "Username and roles of ${target.mention} were synced!"
-                } catch (_: NotLinkedException) {
+                } catch (_: NotLinkedWarning) {
                     embed.color = EmbedColor.Negative.color
                     embed.description = "${target.mention} is not linked, their roles were synced!"
                 }
@@ -367,7 +367,7 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val target = arguments.user.asMember(guild!!.id)
+                    val target = arguments.user.asMemberOrNull(guild!!.id)
 
                     respondToForceSync(target)()
                 }
@@ -381,7 +381,7 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val target = targetUsers.first().asMember(guild!!.id)
+                    val target = targetUsers.first().asMemberOrNull(guild!!.id)
 
                     respondToForceSync(target)()
                 }
@@ -396,7 +396,7 @@ class LinkingSystem : Extension() {
             action {
                 respond {
                     val oldUserModel = DiscordUserConnection.authenticated().getLinkedById(user.id.value.toLong())
-                        ?: throw NotLinkedException()
+                        ?: throw NotLinkedWarning()
 
                     val updateModel = oldUserModel.getUpdateModel()
                     updateModel.minecraftId = null
@@ -420,7 +420,7 @@ class LinkingSystem : Extension() {
 
                     try {
                         NicknameService.updateNickname(user, roles)
-                    } catch (_: NotLinkedException) {
+                    } catch (_: NotLinkedWarning) {
                         // Do nothing
                     }
                 }

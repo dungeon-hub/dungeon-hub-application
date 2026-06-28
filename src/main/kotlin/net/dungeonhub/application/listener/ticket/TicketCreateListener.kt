@@ -275,9 +275,10 @@ class TicketCreateListener : Extension() {
                     color(EmbedColor.Positive)
                 }
 
-                TicketSystem.logTicketAction(member.guild, ticket) {
+                TicketSystem.logTicketAction(member.guild, ticket, addDefaultFields = false) {
                     description = "Ticket #${ticket.id} created by ${member.mention}."
 
+                    field("Panel", true) { ticket.ticketPanel.displayName ?: ticket.ticketPanel.name }
                     field("Channel", true) { ticketChannel.mention }
                 }
 

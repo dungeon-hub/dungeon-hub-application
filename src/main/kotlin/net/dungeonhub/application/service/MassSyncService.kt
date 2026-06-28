@@ -6,7 +6,7 @@ import dev.kordex.core.utils.scheduling.Scheduler
 import io.ktor.util.collections.*
 import kotlinx.coroutines.cancel
 import net.dungeonhub.application.connection.DiscordConnection
-import net.dungeonhub.application.exceptions.NotLinkedException
+import net.dungeonhub.application.exceptions.NotLinkedWarning
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.application.misc.DhScheduler
@@ -47,7 +47,7 @@ object MassSyncService : StartupListener {
 
             NicknameService.updateNickname(member, roles, cacheExpiration = 60 * 24 * 365)
         }
-        catch (_: NotLinkedException) {
+        catch (_: NotLinkedWarning) {
             //ignore, just don't sync those users
         }
         catch (e: Exception) {

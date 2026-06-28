@@ -397,7 +397,7 @@ class RoleCommand : Extension() {
         if ((arguments.role.guild.asGuild().ownerId != issuer.id)
             && (arguments.role.getPosition() >= (issuer.roles.map { it.getPosition() }.toList().maxOrNull() ?: 0))
         ) {
-            throw CommandExecutionException("You aren't allowed to manage roles that are higher than those that you have.")
+            throw CommandExecutionWarning("You aren't allowed to manage roles that are higher than those that you have.")
         }
 
         val target = arguments.user.asMember(issuer.guildId)

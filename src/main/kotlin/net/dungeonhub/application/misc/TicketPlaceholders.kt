@@ -7,7 +7,7 @@ import dev.kord.core.entity.effectiveName
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import net.dungeonhub.application.connection.DiscordConnection
-import net.dungeonhub.application.exceptions.NotLinkedException
+import net.dungeonhub.application.exceptions.NotLinkedWarning
 import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.connection.TicketConnection
@@ -95,14 +95,14 @@ class TicketPlaceholders(
             replacements["user.minecraft.name"] = { ticketUserIgn.await() ?: "unlinked" }
             replacements["user.skyblock.level"] = {
                 selectedSkyblockProfiles.await()?.maxOfOrNull {
-                    it.getCurrentMember(ticketUserModel.await()?.minecraftId ?: throw NotLinkedException())?.leveling?.level
+                    it.getCurrentMember(ticketUserModel.await()?.minecraftId ?: throw NotLinkedWarning())?.leveling?.level
                         ?: 0
                 }?.toString() ?: "?"
             }
             replacements["user.catacombs.level"] = {
                 selectedSkyblockProfiles.await()?.maxOfOrNull {
                     it.getCurrentMember(
-                        ticketUserModel.await()?.minecraftId ?: throw NotLinkedException()
+                        ticketUserModel.await()?.minecraftId ?: throw NotLinkedWarning()
                     )?.dungeons?.catacombsLevel
                         ?: 0
                 }?.toString() ?: "?"

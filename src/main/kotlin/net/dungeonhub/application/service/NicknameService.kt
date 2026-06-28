@@ -23,11 +23,8 @@ import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
 import net.dungeonhub.mojang.connection.MojangConnection
 import org.jetbrains.annotations.Contract
 import java.util.*
-import java.util.function.Predicate
 import java.util.regex.Matcher
 import java.util.regex.Pattern
-import java.util.stream.Collector
-import java.util.stream.Collectors
 
 /**
  * Service class for managing nicknames.
@@ -121,9 +118,9 @@ object NicknameService {
      *
      * @param member  the discord server member for whom to update the nickname
      * @throws NoNameSchemaWarning if no valid role with a non-blank name schema is found while updating the nickname
-     * @throws NotLinkedException    if the user is not linked to a Minecraft account
+     * @throws NotLinkedWarning    if the user is not linked to a Minecraft account
      */
-    @Throws(NoNameSchemaWarning::class, NotLinkedException::class)
+    @Throws(NoNameSchemaWarning::class, NotLinkedWarning::class)
     suspend fun updateNickname(member: Member, serverRoles: List<Role>?, cacheExpiration: Int = 60 * 3) {
         val discordUserModel = DiscordUserConnection.authenticated().getByIdOrCreate(member.id.value.toLong())
             ?: throw CommandExecutionWarning("Couldn't get that users data!")
@@ -167,11 +164,7 @@ object NicknameService {
 
         try {
             member.edit {
-                this@edit.nickname =
-
-                if (nickname == member.asUser().effectiveName) {
-                    null
-                } else { nickname }
+                this@edit.nickname = if (nickname == member.asUser().effectiveName) null else nickname
             }
         } catch (ktor: KtorRequestException) {
             if (ktor.status.code == 403) {
@@ -222,8 +215,8 @@ object NicknameService {
         val discordRoles = getRoleModels(member.guild)
 
         val role = (roles.firstOrNull {
-            role: Role -> discordRoles[role.id.value.toLong()]?.nameSchema.isNullOrBlank();
-        } ?: throw NoNameSchemaWarning());
+            role -> discordRoles[role.id.value.toLong()]?.nameSchema.isNullOrBlank()
+        } ?: throw NoNameSchemaWarning())
 
         return discordRoles[role.id.value.toLong()]!!
     }
@@ -240,12 +233,9 @@ object NicknameService {
      */
     @Contract(pure = true)
     private suspend fun getRoleModels(guild: GuildBehavior): Map<Long, DiscordRoleModel> {
-
         val allRoles = DiscordRoleConnection[guild.id.value.toLong()].authenticated().getAllRoles()
-        if(allRoles.isNullOrEmpty())
-        {
-            return emptyMap()
-        }
+
+        if(allRoles.isNullOrEmpty()) return emptyMap()
 
         return allRoles.associateBy { it.id }
     }
