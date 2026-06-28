@@ -93,7 +93,10 @@ class TicketSystem : Extension() {
                 }
 
                 val member = kord.getGuildOrNull(Snowflake(ticket.ticketPanel.discordServer.id))?.getMemberOrNull(Snowflake(ticket.user.id))
-                    ?: return@forEach
+                if(member == null) {
+                    scheduledTicketRenames.remove(guildId to channelId)
+                    return@forEach
+                }
 
                 if (updateTicketName(ticket, member, channel) == null) {
                     scheduledTicketRenames.removeIf { it.second == channelId }

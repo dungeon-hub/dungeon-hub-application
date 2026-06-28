@@ -14,6 +14,7 @@ import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.User
+import dev.kord.core.entity.effectiveName
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -327,7 +328,7 @@ object ApplicationService {
         val embed = embed
 
         embed.title = if ((userToCheck.id != user.id && server != null)) {
-            server.getMember(userToCheck.id).effectiveName + "'s score${if (carryCount != null) " from $carryCount total carries" else ""}:"
+            (server.getMemberOrNull(userToCheck.id)?.effectiveName ?: userToCheck.effectiveName) + "'s score${if (carryCount != null) " from $carryCount total carries" else ""}:"
         } else {
             "Your score${if (carryCount != null) " from $carryCount total carries" else ""}:"
         }
