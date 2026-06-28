@@ -339,7 +339,16 @@ class LinkingSystem : Extension() {
             }
         }
 
-        fun respondToForceSync(target: Member): suspend FollowupMessageCreateBuilder.() -> Unit {
+        fun respondToForceSync(target: Member?): suspend FollowupMessageCreateBuilder.() -> Unit {
+            if(target == null) {
+                return {
+                    addEmbed {
+                        color(EmbedColor.Negative)
+                        description = "That user isn't a member of this server!"
+                    }
+                }
+            }
+
             return {
                 val roles = RolesService.updateRoles(target, cacheExpiration = 5)
 

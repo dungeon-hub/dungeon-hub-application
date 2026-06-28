@@ -2,14 +2,11 @@ package net.dungeonhub.application.commands
 
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.behavior.interaction.response.respond
-import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
-import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.actionRow
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.converters.impl.int
@@ -21,10 +18,6 @@ import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.dm
-import kotlinx.coroutines.flow.count
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.reduce
-import kotlinx.coroutines.flow.takeWhile
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
@@ -45,17 +38,12 @@ import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.i18n.Translations.Command.Log
 import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.carry_queue.CarryQueueCreationModel
-import net.dungeonhub.model.carry_queue.CarryQueueModel
-import net.dungeonhub.model.carry_tier.CarryTierModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.score.ScoreModel
-import net.dungeonhub.model.ticket.TicketModel
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import kotlin.time.ExperimentalTime
 
 @LoadExtension
-@OptIn(ExperimentalTime::class)
 class LoggingSystem : Extension() {
     override val name = "logging-system"
     private val logger = LoggerFactory.getLogger(LoggingSystem::class.java)
@@ -70,25 +58,15 @@ class LoggingSystem : Extension() {
                 respond {
                     val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = channel.id.value.toLong())?.firstOrNull()
 
-                    val carryTier = ticket?.let { getCarryTierFromTicket(it) }
-                        ?: channel.asChannelOfOrNull<CategorizableChannel>()
-                            ?.categoryId
-                            ?.let { categoryId ->
-                                DiscordServerConnection.authenticated().getCarryTierFromCategory(
-                                    guild!!.id.value.toLong(),
-                                    categoryId.value.toLong()
-                                )
-                            }
+                    val carryTier = ticket?.ticketPanel?.relatedCarryTier
+                        ?: throw CommandExecutionWarning("Please use this in a ticket connected to a carry tier. If you think this is incorrect, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) about setting up the bot on [the dashboard](https://dashboard.dungeon-hub.net/).")
 
-                    if (carryTier == null) {
-                        throw CommandExecutionWarning("Please use this in a ticket connected to a carry tier. If you think this is incorrect, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) about setting up the bot on [the dashboard](https://dashboard.dungeon-hub.net/).")
-                    }
+                    val alreadyPresentQueue = QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
+                        channel.id.value.toLong(),
+                        QueueStep.Confirmation
+                    )?.firstOrNull()
 
-                    if (QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
-                            channel.id.value.toLong(),
-                            QueueStep.Confirmation
-                        )?.firstOrNull() != null
-                    ) {
+                    if (alreadyPresentQueue != null) {
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.Negative.color
                         embed.description = " Someone is already logging this carry.\n" +
@@ -163,35 +141,7 @@ class LoggingSystem : Extension() {
                         return@respond
                     }
 
-                    val carried = if(ticket != null) {
-                        ticket.user.id
-                    } else {
-                        val interactionId = event.interaction.id
-                        val messageCount = channel.getMessagesBefore(interactionId, null).count()
-
-                        val firstMessage = try {
-                            channel.withStrategy(EntitySupplyStrategy.cachingRest)
-                                .getMessagesBefore(event.interaction.id, null)
-                                .takeWhile { true }
-                                .reduce { message1, message2 -> if (message1.timestamp < message2.timestamp) message1 else message2 }
-                        } catch (_: ArrayIndexOutOfBoundsException) {
-                            null
-                        } catch (_: NoSuchElementException) {
-                            null
-                        }
-
-                        if (firstMessage == null || try {
-                                firstMessage.mentionedUsers.count() != 1
-                            } catch (_: ArrayIndexOutOfBoundsException) {
-                                false
-                            }
-                        ) {
-                            logger.error("Couldn't load bot message, I only found the message '${firstMessage?.content}' by ${firstMessage?.author?.id} when searching through $messageCount messages that were sent before $interactionId.")
-                            throw CommandExecutionException("Couldn't retrieve bot message, so this ticket can't be logged - please retry this.\nIf you still have issues, please report this.")
-                        }
-
-                        firstMessage.mentionedUsers.first().id.value.toLong()
-                    }
+                    val carried = ticket.user.id
 
                     val time = Instant.now()
 
@@ -243,19 +193,17 @@ class LoggingSystem : Extension() {
         }
     }
 
-    fun getCarryTierFromTicket(ticket: TicketModel): CarryTierModel? {
-        return ticket.ticketPanel.relatedCarryTier
-    }
-
     private suspend fun deny(event: GuildButtonInteractionCreateEvent) {
         event.interaction.deferPublicMessageUpdate()
 
         val message = event.interaction.message
 
-        for (queueModel in QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
+        val carryQueues = QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
             message.id.value.toLong(),
             QueueStep.Approving
-        ) ?: HashSet()) {
+        ) ?: HashSet()
+
+        for (queueModel in carryQueues) {
             val carrier = event.kord.getUser(Snowflake(queueModel.carrier.id))
 
             carrier?.dm {
@@ -299,13 +247,15 @@ class LoggingSystem : Extension() {
 
         val carryTypes: MutableList<CarryTypeModel> = mutableListOf()
 
-        for (queueModel: CarryQueueModel in QueueConnection.authenticated()
-            .getCarryQueueByRelatedIdAndQueueStep(message.id.value.toLong(), QueueStep.Approving) ?: HashSet()) {
+        val carryQueues = QueueConnection.authenticated()
+            .getCarryQueueByRelatedIdAndQueueStep(message.id.value.toLong(), QueueStep.Approving) ?: HashSet()
+
+        for (queueModel in carryQueues) {
             val updateModel = queueModel.getUpdateModel()
             updateModel.approver = event.interaction.user.id.value.toLong()
 
             val loggedCarryModel = QueueConnection.authenticated().logQueue(queueModel.id, updateModel)
-                ?: return
+                ?: continue
 
             carryTypes.add(loggedCarryModel.carryModel.carryType)
 
