@@ -11,6 +11,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.CompletionException
+import kotlin.coroutines.cancellation.CancellationException
 
 enum class FlaggingApi(
     val displayName: String,
@@ -66,13 +67,31 @@ enum class FlaggingApi(
     suspend fun execute(uuid: UUID?, id: Long?): FlagResponse = coroutineScope {
         try {
             val uuidFlagged = if (uuidFunction != null && uuid != null) {
-                async { uuidFunction(uuid) }
+                async {
+                    try {
+                        uuidFunction(uuid)
+                    } catch (exception: CancellationException) {
+                        throw exception
+                    } catch (exception: Exception) {
+                        logger.error("Couldn't load $displayName player scammer data for UUID $uuid.", exception)
+                        null
+                    }
+                }
             } else {
                 null
             }
 
             val discordIdFlagged = if (discordIdFunction != null && id != null && id != 0L) {
-                async { discordIdFunction(id) }
+                async {
+                    try{
+                        discordIdFunction(id)
+                    } catch (exception: CancellationException) {
+                        throw exception
+                    } catch (exception: Exception) {
+                        logger.error("Couldn't load $displayName discord scammer for with id $id.", exception)
+                        null
+                    }
+                }
             } else {
                 null
             }
