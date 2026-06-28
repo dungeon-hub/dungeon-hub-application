@@ -38,9 +38,9 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
     suspend fun saveProperties() {
         try {
             withContext(scheduler.coroutineContext) {
-                Files.newBufferedWriter(configFile.toPath())
-            }.use { bufferedWriter ->
-                properties.store(bufferedWriter, null)
+                Files.newBufferedWriter(configFile.toPath()).use { bufferedWriter ->
+                    properties.store(bufferedWriter, null)
+                }
             }
         } catch (ioException: IOException) {
             logger.error("Error when trying to save properties of file {}.", configFile.name, ioException)
@@ -72,9 +72,9 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
         } else {
             try {
                 withContext(scheduler.coroutineContext) {
-                    Files.newBufferedReader(file.toPath())
-                }.use { bufferedReader ->
-                    properties.load(bufferedReader)
+                    Files.newBufferedReader(file.toPath()).use { bufferedReader ->
+                        properties.load(bufferedReader)
+                    }
                 }
             } catch (ioException: IOException) {
                 logger.error("Error when reading properties from file {}.", file.name, ioException)
@@ -89,9 +89,9 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
 
         try {
             withContext(scheduler.coroutineContext) {
-                Files.newBufferedWriter(file.toPath())
-            }.use { bufferedWriter ->
-                properties.store(bufferedWriter, null)
+                Files.newBufferedWriter(file.toPath()).use { bufferedWriter ->
+                    properties.store(bufferedWriter, null)
+                }
             }
         } catch (ioException: IOException) {
             logger.error("Error when writing properties to file {}.", file.name, ioException)
