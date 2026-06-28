@@ -326,7 +326,7 @@ class WarningSystem : Extension() {
                         val evidence: String = if (arguments.attachment != null) {
                             val attachmentData = DungeonHubClient().executeRawRequest {
                                 url(Url(arguments.attachment!!.url))
-                            }?.bodyAsBytes()?.takeIf { it.isNotEmpty() }
+                            }?.takeIf { it.status.isSuccess() }?.bodyAsBytes()?.takeIf { it.isNotEmpty() }
                                 ?: throw CommandExecutionException("Couldn't read file data.")
 
                             val uri = ContentConnection.authenticated().uploadFile(attachmentData)
