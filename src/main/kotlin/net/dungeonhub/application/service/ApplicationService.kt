@@ -9,9 +9,7 @@ import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.QRCodeWriter
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
-import dev.kord.core.behavior.GuildBehavior
-import dev.kord.core.behavior.ban
-import dev.kord.core.behavior.edit
+import dev.kord.core.behavior.*
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.User
 import dev.kord.core.entity.effectiveName
@@ -36,6 +34,8 @@ import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.misc.FlagResponse
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.connection.ReputationConnection
+import net.dungeonhub.connection.ReputationConnection.Companion.ClientlessReputationConnection
 import net.dungeonhub.enums.CntRequestType
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
@@ -890,4 +890,12 @@ fun Extension.createEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): Em
 
 fun EmbedBuilder.color(color: EmbedColor) {
     this.color = color.color
+}
+
+suspend fun UserBehavior.getUUIDOrNull(): UUID? {
+    return DiscordUserConnection.authenticated().getById(id.value.toLong())?.minecraftId
+}
+
+operator fun ReputationConnection.Companion.get(member: MemberBehavior): ClientlessReputationConnection {
+    return get(member.guild.id.value.toLong(), member.id.value.toLong())
 }
