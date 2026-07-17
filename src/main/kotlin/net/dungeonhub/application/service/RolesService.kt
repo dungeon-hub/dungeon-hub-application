@@ -156,8 +156,13 @@ object RolesService {
             hypixelApiConnection.getPlayerData(uuid)
         }
 
-        val guild by lazy {
+        val roleRequirementGuild by lazy {
             roleRequirement.extraData?.let { HypixelApiConnection().withCacheExpiration(5).getGuild(it) }
+        }
+
+        val usersGuild = suspendLazy {
+            val uuid = uuid.get() ?: return@suspendLazy null
+            hypixelApiConnection.getPlayerGuild(uuid)
         }
 
         val bingoData = suspendLazy {
@@ -317,12 +322,16 @@ object RolesService {
             }
 
             RoleRequirementType.GuildMembership -> {
+                val guild = usersGuild.get()?.takeIf { it.name == roleRequirement.extraData } ?: roleRequirementGuild
+
                 roleRequirement.compare(
                     if (guild?.members?.any { it.uuid == uuid.get() } == true) 1 else 0
                 )
             }
 
             RoleRequirementType.GuildRank -> {
+                val guild = usersGuild.get()?.takeIf { it.name == roleRequirement.extraData } ?: roleRequirementGuild
+
                 roleRequirement.compare(
                     guild?.members?.firstOrNull { it.uuid == uuid.get() }?.rank?.priority ?: 0
                 )
