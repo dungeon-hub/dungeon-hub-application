@@ -176,16 +176,16 @@ class TicketCreateListener : Extension() {
                         description = labelDescription
 
                         stringSelect("form-question-$index") {
-                            options.forEach { option -> // TODO support requirements for the options
-                                if(option.contains(":")) {
-                                    val split = option.split(":", limit = 2)
+                            options.forEach { selectOption -> // TODO support requirements for the options
+                                if(selectOption.contains(":")) {
+                                    val split = selectOption.split(":", limit = 2)
 
                                     val value = split[0]
                                     val label = split[1]
 
                                     option(label, value)
                                 } else {
-                                    option(option, option)
+                                    option(selectOption, selectOption)
                                 }
                             }
 

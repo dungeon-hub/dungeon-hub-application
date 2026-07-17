@@ -61,6 +61,7 @@ import net.dungeonhub.model.ticket_panel.TicketPanelModel
 import net.dungeonhub.mojang.connection.MojangConnection
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import kotlin.time.Duration
@@ -376,8 +377,8 @@ class TicketSystem : Extension() {
 
     companion object {
         lateinit var scheduler: Scheduler
-        val ticketRenames = mutableMapOf<Long, List<Instant>>()
-        val scheduledTicketRenames = mutableSetOf<Pair<Long, Long>>()
+        val ticketRenames = ConcurrentHashMap<Long, List<Instant>>()
+        val scheduledTicketRenames = ConcurrentHashMap.newKeySet<Pair<Long, Long>>()
 
         suspend fun replacePlaceholders(string: String, placeholders: TicketPlaceholders): String {
             val replacements = placeholders.replacements

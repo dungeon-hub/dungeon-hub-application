@@ -19,7 +19,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 
-@OptIn(ExperimentalStdlibApi::class)
 object FlaggingConnection {
     val logger: Logger = LoggerFactory.getLogger(FlaggingConnection::class.java)
     val client = DungeonHubClient()
@@ -61,6 +60,8 @@ object FlaggingConnection {
         }?.body<HypixelSafetyData>()?.let {
             fromSafetyResponse(it)
         }
+    } catch (exception: CancellationException) {
+        throw exception
     } catch (exception: Exception) {
         logger.error("Couldn't check safety-flagged status for id $id", exception)
         null
