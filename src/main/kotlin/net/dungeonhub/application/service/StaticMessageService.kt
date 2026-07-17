@@ -99,6 +99,8 @@ object StaticMessageService : StartupListener {
         val staticMessages = DiscordServerConnection.authenticated().findGlobalStaticMessages() ?: return
 
         for(staticMessage in staticMessages) {
+            if(!staticMessage.active) continue
+
             staticMessageUpdates.addLast(staticMessage)
         }
     }
@@ -131,6 +133,8 @@ object StaticMessageService : StartupListener {
     }
 
     suspend fun refreshStaticMessage(staticMessage: StaticMessageModel) {
+        if(!staticMessage.active) return
+
         val channel = try {
             DiscordConnection.bot.kordRef
                 .getChannel(Snowflake(staticMessage.channelId))
@@ -140,7 +144,12 @@ object StaticMessageService : StartupListener {
         }
 
         if(channel == null) {
-            logger.warn("Couldn't find channel with id ${staticMessage.channelId}.")
+            logger.warn("Couldn't find channel with id ${staticMessage.channelId}, deactivating the static message ${staticMessage.id}.")
+
+            val updateModel = staticMessage.getUpdateModel()
+            updateModel.active = false
+            StaticMessageConnection[staticMessage.server.id].authenticated().updateStaticMessage(staticMessage.id, updateModel)
+
             return
         }
 
