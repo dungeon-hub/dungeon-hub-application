@@ -1,6 +1,6 @@
 [versions]
 dungeon-hub-api-client = "0.7.1"
-hypixel-wrapper = "0.7.3"
+hypixel-wrapper = "0.7.4"
 
 [libraries]
 dungeon-hub-api-client = { module = "net.dungeon-hub.api:client", version.ref = "dungeon-hub-api-client" }
