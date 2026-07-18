@@ -2,24 +2,25 @@ package net.dungeonhub.application.connection
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import dev.kord.common.annotation.KordUnsafe
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.channel.asChannelOfOrNull
-import dev.kord.core.cache.data.toData
-import dev.kord.core.entity.*
+import dev.kord.core.entity.Embed
 import dev.kord.core.entity.Embed.*
+import dev.kord.core.entity.Member
+import dev.kord.core.entity.Message
+import dev.kord.core.entity.User
 import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
-import dev.kord.core.supplier.RestEntitySupplier
-import dev.kord.gateway.DefaultGateway
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
-import dev.kord.gateway.ratelimit.IdentifyRateLimiter
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.embed
-import dev.kord.rest.request.RestRequestException
+import dev.kord.rest.ratelimit.ParallelRequestRateLimiter
+import dev.kord.rest.request.KtorRequestHandler
 import dev.kordex.core.ExtensibleBot
 import dev.kordex.core.components.components
 import dev.kordex.core.components.linkButton
@@ -53,9 +54,7 @@ import java.awt.Color
 import java.time.Instant
 import java.util.*
 import java.util.regex.Pattern
-import kotlin.time.ExperimentalTime
-import kotlin.time.toJavaInstant
-import kotlin.time.toKotlinInstant
+import kotlin.time.*
 
 /**
  * This is the main-class for the application.
@@ -71,7 +70,9 @@ object DiscordConnection : StartupListener {
     private var started: Boolean = false
     var uptime: Instant = Instant.now()
 
-    var bot: ExtensibleBot? = null
+    lateinit var bot: ExtensibleBot
+    val botIsLoaded: Boolean
+        get() = ::bot.isInitialized
 
     /**
      * Returns a line for command-line output.
@@ -90,27 +91,23 @@ object DiscordConnection : StartupListener {
      * Method by the {@link StartupListener} interface, this is automatically executed on program launch.
      * This implementation starts the discord-bot.
      */
+    @OptIn(KordUnsafe::class, ExperimentalTime::class)
     override suspend fun preStart() {
-        val websocketClient = HttpClient(Java) {
-            engine {
-                protocolVersion = java.net.http.HttpClient.Version.HTTP_2
-            }
-
-            install(WebSockets)
-        }
-
         bot = ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value!!) {
             dataCollectionMode = DataCollection.Extra
 
             kord {
-                gateways { resources, shards ->
-                    val rateLimiter = IdentifyRateLimiter(resources.maxConcurrency, defaultDispatcher)
-                    shards.map {
-                        DefaultGateway {
-                            identifyRateLimiter = rateLimiter
-                            client = websocketClient
-                        }
+                httpClient = HttpClient(Java) {
+                    engine {
+                        protocolVersion = java.net.http.HttpClient.Version.HTTP_2
                     }
+
+                    install(WebSockets)
+                }
+                stackTraceRecovery = true
+
+                requestHandler {
+                    KtorRequestHandler(it.httpClient, ParallelRequestRateLimiter(), token = token)
                 }
             }
 
@@ -169,9 +166,10 @@ object DiscordConnection : StartupListener {
             }
 
             @OptIn(PrivilegedIntent::class)
-            intents {
-                -Intent.GuildExpressions
+            intents(addDefaultIntents = false, addExtensionIntents = true) { // TODO add these to the extensions themselves
+                +Intent.Guilds
                 +Intent.GuildMembers
+                +Intent.GuildMessages
                 +Intent.MessageContent
             }
 
@@ -190,9 +188,9 @@ object DiscordConnection : StartupListener {
             }
         }
 
-        ClassLoader.loadExtensions(bot!!)
+        ClassLoader.loadExtensions(bot)
 
-        bot?.on<ReadyEvent> {
+        bot.on<ReadyEvent> {
             if (!started) {
                 ClassLoader.executePostStart()
 
@@ -201,7 +199,7 @@ object DiscordConnection : StartupListener {
             }
         }
 
-        bot?.start()
+        bot.start()
     }
 
     /**
@@ -214,11 +212,11 @@ object DiscordConnection : StartupListener {
 
         message.add("Im on servers:")
         message.addAll(
-            bot?.kordRef?.guilds?.map { server ->
+            bot.kordRef.guilds.map { server ->
                 "${server.name} with id '${server.id}' by ${
                     server.withStrategy(EntitySupplyStrategy.cache).getOwnerOrNull()?.effectiveName ?: "no-name"
                 } (${server.ownerId})"
-            }!!.toList()
+            }.toList()
         )
 
         return message
@@ -226,9 +224,9 @@ object DiscordConnection : StartupListener {
 
     override suspend fun onStart() {
         ServerJoinListener.GUILD_ON_JOIN.addAll(
-            bot?.kordRef?.guilds?.map { guild ->
+            bot.kordRef.guilds.map { guild ->
                 guild.id.value
-            }?.toList()!!
+            }.toList()
         )
     }
 
@@ -237,7 +235,7 @@ object DiscordConnection : StartupListener {
         getServerListMessage().forEach(logger::info)
         logger.info(LINE)
 
-        ApplicationService.getBotOwner(bot?.kordRef!!)?.dm {
+        ApplicationService.getBotOwner(bot.kordRef)?.dm {
             val embed = ApplicationService.embed
             embed.color(EmbedColor.Positive)
             embed.description = "Bot started"
@@ -247,18 +245,11 @@ object DiscordConnection : StartupListener {
     }
 }
 
+// TODO slowly move these method usages to alternatives such as mass-syncing
 fun User.getMutualServers(): Flow<Member> {
     return kord.guilds.mapNotNull { server ->
         this.asMemberOrNull(server.id)
     }
-}
-
-fun Guild.isDungeonHub(): Boolean {
-    return listOf(693263712626278553, 1023684107877761196).contains(id.value.toLong())
-}
-
-fun Snowflake.isDungeonHub(): Boolean {
-    return listOf(693263712626278553, 1023684107877761196).contains(value.toLong())
 }
 
 @OptIn(ExperimentalTime::class)
@@ -450,15 +441,6 @@ fun Field.toModel(): EmbedModel.Field {
     return EmbedModel.Field(name, inline, value)
 }
 
-fun User.isSelf(): Boolean {
-    return id == kord.selfId
-}
-
-suspend fun RestEntitySupplier.getGuildOrNull(id: Snowflake, withCounts: Boolean = false): Guild? {
-    return try {
-        Guild(kord.rest.guild.getGuild(id, withCounts).toData(), kord)
-    } catch (exception: RestRequestException) {
-        if (exception.status.code == 404) null
-        else throw exception
-    }
+fun Duration.withNanos(nanos: Int): Duration {
+    return toJavaDuration().withNanos(nanos).toKotlinDuration()
 }

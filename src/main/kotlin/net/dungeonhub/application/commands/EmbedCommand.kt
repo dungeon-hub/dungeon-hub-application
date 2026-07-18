@@ -24,7 +24,10 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.getJumpUrl
 import net.dungeonhub.application.config.ConfigProperty
-import net.dungeonhub.application.connection.*
+import net.dungeonhub.application.connection.applyJson
+import net.dungeonhub.application.connection.loadMessageByLink
+import net.dungeonhub.application.connection.toBuilder
+import net.dungeonhub.application.connection.toModel
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.InvalidEmbedJsonWarning
@@ -278,7 +281,7 @@ class EmbedCommand : Extension() {
                         val message = arguments.getMessage() ?: throw InvalidOptionException("link")
 
                         //TODO how to handle interaction responses?
-                        if (message.author?.isSelf() != true) {
+                        if (message.author?.isSelf != true) {
                             throw InvalidOptionException(
                                 "link",
                                 "How should I edit a message that wasn't sent by myself?"
@@ -338,7 +341,7 @@ class EmbedCommand : Extension() {
                         //TODO how to handle interaction responses?
 
 
-                        if (message?.author?.isSelf() != true) {
+                        if (message?.author?.isSelf != true) {
                             throw InvalidOptionException(
                                 "link",
                                 "How should I edit a message that wasn't sent by myself?"

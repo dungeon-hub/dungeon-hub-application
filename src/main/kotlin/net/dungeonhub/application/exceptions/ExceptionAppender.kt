@@ -6,10 +6,11 @@ import ch.qos.logback.core.AppenderBase
 import dev.kord.core.Kord
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.utils.dm
-import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.exception.PlayerNotFoundException
@@ -36,33 +37,33 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
         } else {
             embed.title = "Title would be too long, see field"
             embed.field("Title") {
-                ContentConnection.authenticated().uploadFile(title.toByteArray(StandardCharsets.UTF_8))
-                    ?.let { ContentConnection.authenticated().getCdnUrl(it).toString() }
-                    ?: title
+                runBlocking {
+                    ContentConnection.authenticated().uploadFile(title.toByteArray(StandardCharsets.UTF_8))
+                        ?.let { ContentConnection.authenticated().getCdnUrl(it).toString() }
+                } ?: title
             }
         }
-
-        embed.title = logEvent.formattedMessage
 
         if (throwable?.throwable != null) {
             var description = getExceptionMessage(throwable.throwable)
 
             if (description != null && description.length > 3000) {
-                description = ContentConnection.authenticated().uploadFile(description.toByteArray(StandardCharsets.UTF_8))
-                    ?.let { ContentConnection.authenticated().getCdnUrl(it).toString() }
-                    ?: description
+                description = runBlocking {
+                    ContentConnection.authenticated().uploadFile(description.toByteArray(StandardCharsets.UTF_8))
+                        ?.let { ContentConnection.authenticated().getCdnUrl(it).toString() }
+                } ?: description
             }
 
             embed.description = description
         }
 
         scheduler.launch {
-            val kord: Kord? = DiscordConnection.bot?.kordRef
+            if(!DiscordConnection.botIsLoaded) return@launch
 
-            if (kord != null) {
-                ApplicationService.getBotOwner(kord)?.dm {
-                    embeds = mutableListOf(embed)
-                }
+            val kord: Kord = DiscordConnection.bot.kordRef
+
+            ApplicationService.getBotOwner(kord)?.dm {
+                embeds = mutableListOf(embed)
             }
         }
     }
@@ -79,6 +80,6 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
     }
 
     companion object {
-        private val scheduler = Scheduler()
+        private val scheduler = DhScheduler()
     }
 }

@@ -1,6 +1,5 @@
 package net.dungeonhub.application.commands
 
-import com.google.common.collect.Iterables
 import dev.kord.common.entity.*
 import dev.kord.core.behavior.*
 import dev.kord.core.behavior.channel.GuildMessageChannelBehavior
@@ -51,7 +50,6 @@ import net.dungeonhub.enums.StaticMessageType
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.model.cnt_request.CntRequestCreationModel
 import net.dungeonhub.model.cnt_request.CntRequestModel
-import net.dungeonhub.model.discord_user.DiscordUserUpdateModel
 import net.dungeonhub.model.reputation.ReputationCreationModel
 import net.dungeonhub.model.reputation.ReputationModel
 import net.dungeonhub.mojang.connection.MojangConnection
@@ -130,11 +128,12 @@ class CntSystem : Extension() {
                     }
                 }
 
-                val requiredRoles = serverProperties.mapNotNull { serverProperty ->
-                    serverProperty.getValue(event.interaction.guildId.value.toLong()).orElse(null)?.toLongOrNull()
+                val requiredRoles = serverProperties.map { serverProperty ->
+                    serverProperty.getValue(event.interaction.guildId.value.toLong())?.toLongOrNull()
                 }
 
                 if(requiredRoles.isNotEmpty()
+                    && requiredRoles.first() != null
                     && !event.interaction.user.roleIds.any { requiredRoles.contains(it.value.toLong()) }) {
                     response.respond {
                         content = "You don't have the required role <@&${requiredRoles.first()}> to claim requests of that value!"
@@ -142,8 +141,7 @@ class CntSystem : Extension() {
                     return@action
                 }
 
-                val claimer = DiscordUserConnection.authenticated().getById(claimerId)
-                    ?: DiscordUserConnection.authenticated().updateUser(claimerId, DiscordUserUpdateModel(null))
+                val claimer = DiscordUserConnection.authenticated().getByIdOrCreate(claimerId)
                     ?: throw CommandExecutionException("Couldn't load CNT claimer!")
 
                 val claimedIgn = claimer.minecraftId?.let(MojangConnection::getNameByUUID)
@@ -450,7 +448,7 @@ class CntSystem : Extension() {
                     }
 
                     val channelId =
-                        ServerProperty.CNT_MESSAGES_CHANNEL.getValue(channel.guildId.value.toLong()).orElse(null)
+                        ServerProperty.CNT_MESSAGES_CHANNEL.getValue(channel.guildId.value.toLong())
 
                     val responseEmbed = embed
                     responseEmbed.color(EmbedColor.Default)
@@ -458,6 +456,7 @@ class CntSystem : Extension() {
                         "Thanks for trusting in our service! I'm now trying to send your CNT request into <#$channelId>"
 
                     val cntEmbed = ApplicationService.getCntEmbed(
+                        requestType,
                         requestDescription,
                         coinValue,
                         requirement,
@@ -476,6 +475,9 @@ class CntSystem : Extension() {
                             ?.asChannelOfOrNull<GuildMessageChannel>() ?: channel
 
                         response = cntChannel.createMessage {
+                            ServerProperty.CNT_PING_ROLE
+                                .getValue(channel.guildId.value.toLong())
+                                ?.let { content = "<@&$it>" }
                             embeds = mutableListOf(cntEmbed)
 
                             addUnclaimedCntButtons()
@@ -510,6 +512,10 @@ class CntSystem : Extension() {
                         )
 
                     response.edit {
+                        ServerProperty.CNT_PING_ROLE
+                            .getValue(channel.guildId.value.toLong())
+                            ?.let { content = "<@&$it>" }
+
                         embeds = embed
                     }
                 }
@@ -624,7 +630,7 @@ class CntSystem : Extension() {
                     respondingPaginator {
                         owner = user
 
-                        Iterables.partition(reputations, 10).forEach { reputation ->
+                        reputations.windowed(10, 10, true).forEach { reputation ->
                             page(
                                 Page {
                                     copy(embed)
@@ -776,7 +782,7 @@ class CntSystem : Extension() {
     }
 
     suspend fun getCntRequestMessage(guild: GuildBehavior, cntRequest: CntRequestModel): MessageBehavior? {
-        return ServerProperty.CNT_MESSAGES_CHANNEL.getValue(guild.id.value.toLong()).orElse(null)
+        return ServerProperty.CNT_MESSAGES_CHANNEL.getValue(guild.id.value.toLong())
             ?.let {
                 guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(it))
             }?.getMessageOrNull(Snowflake(cntRequest.messageId))
@@ -788,7 +794,7 @@ class CntSystem : Extension() {
         val cntRequest: CntRequestModel? = null
     )
 
-    fun isAllowedToGiveReputation(userId: Long, target: MemberBehavior): ReputationValidityResult {
+    suspend fun isAllowedToGiveReputation(userId: Long, target: MemberBehavior): ReputationValidityResult {
         val timeout = Instant.now().minusSeconds(reputationTimeout.inWholeSeconds)
 
         val reputationConnection = ReputationConnection[target].authenticated()

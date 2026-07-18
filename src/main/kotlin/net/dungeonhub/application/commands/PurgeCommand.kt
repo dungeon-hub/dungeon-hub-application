@@ -24,6 +24,7 @@ import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.InvalidOptionException
 import net.dungeonhub.application.loader.LoadExtension
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.misc.PurgeData
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.AutoCompletionService
@@ -59,7 +60,7 @@ class PurgeCommand : Extension() {
     override val name = "purge-command"
 
     override suspend fun setup() {
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         publicSlashCommand {
             name = Purge.name
@@ -82,7 +83,6 @@ class PurgeCommand : Extension() {
                     scheduler.launch {
                         val purgeImmunityRole = ServerProperty.PURGE_IMMUNITY_ROLE
                             .getValue(guild!!.id.value.toLong())
-                            .orElse(null)
                             ?.let { Snowflake(it) }
 
                         val carryType =
@@ -100,7 +100,7 @@ class PurgeCommand : Extension() {
                         val rolesToRemove = purgeType.purgeTypeRoleModels
                             .map { obj: PurgeTypeRoleModel -> obj.discordRoleModel }
 
-                        val scores = (ScoreConnection[carryType].authenticated().scores ?: listOf())
+                        val scores = (ScoreConnection[carryType].authenticated().getScores() ?: listOf())
                             .filter { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
 
                         val safeCarriers = scores
@@ -124,7 +124,7 @@ class PurgeCommand : Extension() {
                                 }
                             }
                             .awaitAll()
-                            .flatMap { it }
+                            .flatten()
                             .distinct()
                             .filter { user -> !safeCarriers.contains(user.id.value.toLong()) }
                             .toList()
@@ -183,7 +183,6 @@ class PurgeCommand : Extension() {
                 action {
                     val purgeImmunityRole = ServerProperty.PURGE_IMMUNITY_ROLE
                         .getValue(guild!!.id.value.toLong())
-                        .orElse(null)
                         ?.let { Snowflake(it) }
 
                     val carryType = CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
@@ -222,7 +221,7 @@ class PurgeCommand : Extension() {
                         val rolesToRemove = purgeType.purgeTypeRoleModels
                             .map { it.discordRoleModel }
 
-                        val scores = (ScoreConnection[carryType].authenticated().scores ?: listOf())
+                        val scores = (ScoreConnection[carryType].authenticated().getScores() ?: listOf())
                             .filter { it.scoreType == ScoreType.Default }
 
                         val safeCarriers = scores
@@ -247,7 +246,7 @@ class PurgeCommand : Extension() {
                                 }
                             }
                             .awaitAll()
-                            .flatMap { it }
+                            .flatten()
                             .distinct()
                             .filter { !safeCarriers.contains(it.id.value.toLong()) }
                             .toList()

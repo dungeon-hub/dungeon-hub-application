@@ -17,6 +17,9 @@ import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasPermission
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.EmbedColor
@@ -33,8 +36,6 @@ import net.dungeonhub.i18n.Translations.Command.Warn
 import net.dungeonhub.i18n.Translations.Command.Warns
 import net.dungeonhub.model.warning.WarningCreationModel
 import net.dungeonhub.model.warning.WarningEvidenceCreationModel
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Request
 import org.slf4j.LoggerFactory
 import java.time.temporal.ChronoUnit
 
@@ -193,9 +194,9 @@ class WarningSystem : Extension() {
 
                         getChannelProperty(addedWarning.warningModel.warningType)
                             .getValue(guild!!.id.value.toLong())
-                            .orElse(null)
+                            ?.takeIf { it.toLongOrNull() != null }
                             ?.let {
-                                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
+                                DiscordConnection.bot.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
                             }
                             ?.let { channel ->
                                 channel.createMessage {
@@ -210,7 +211,6 @@ class WarningSystem : Extension() {
                                 }
                             }
 
-                        //TODO request exception
                         if(arguments.dmUser != false) {
                             target.dm {
                                 val dmEmbed = ApplicationService.formatWarnDm(addedWarning.warningModel)
@@ -233,7 +233,6 @@ class WarningSystem : Extension() {
                 }
             }
 
-            //TODO what about reactivate?
             publicSubCommand(::WarnRemoveArguments) {
                 name = "deactivate".toKey()
                 description = "Deactivate a given warning.".toKey()
@@ -252,9 +251,9 @@ class WarningSystem : Extension() {
 
                         getChannelProperty(removedWarning.warningType)
                             .getValue(guild!!.id.value.toLong())
-                            .orElse(null)
+                            ?.takeIf { it.toLongOrNull() != null }
                             ?.let {
-                                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
+                                DiscordConnection.bot.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
                             }
                             ?.let { channel ->
                                 channel.createMessage {
@@ -267,8 +266,7 @@ class WarningSystem : Extension() {
                             }
 
                         try {
-                            //TODO request exception
-                            DiscordConnection.bot!!.kordRef.getUser(Snowflake(removedWarning.user.id))
+                            DiscordConnection.bot.kordRef.getUser(Snowflake(removedWarning.user.id))
                                 ?.dm {
                                     val dmEmbed = ApplicationService.embed
                                     dmEmbed.color = EmbedColor.Positive.color
@@ -328,10 +326,9 @@ class WarningSystem : Extension() {
                 action {
                     respond {
                         val evidence: String = if (arguments.attachment != null) {
-                            val attachmentRequest =
-                                Request.Builder().url(arguments.attachment!!.url.toHttpUrl()).build()
-
-                            val attachmentData = DungeonHubClient().executeRawRequest(attachmentRequest)?.result
+                            val attachmentData = DungeonHubClient().executeRawRequest {
+                                url(Url(arguments.attachment!!.url))
+                            }?.takeIf { it.status.isSuccess() }?.bodyAsBytes()?.takeIf { it.isNotEmpty() }
                                 ?: throw CommandExecutionException("Couldn't read file data.")
 
                             val uri = ContentConnection.authenticated().uploadFile(attachmentData)
@@ -365,9 +362,9 @@ class WarningSystem : Extension() {
 
                         getChannelProperty(warning.warningType)
                             .getValue(guild!!.id.value.toLong())
-                            .orElse(null)
+                            ?.takeIf { it.toLongOrNull() != null }
                             ?.let {
-                                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
+                                bot.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
                             }
                             ?.let { channel ->
                                 channel.createMessage {

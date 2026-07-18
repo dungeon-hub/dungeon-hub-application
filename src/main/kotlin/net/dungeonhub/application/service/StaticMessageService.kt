@@ -1,5 +1,8 @@
 package net.dungeonhub.application.service
 
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.JsonSyntaxException
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.MessageBehavior
@@ -15,34 +18,39 @@ import dev.kord.rest.builder.message.MessageBuilder
 import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.builder.message.embed
 import dev.kord.rest.request.RestRequestException
+import dev.kordex.core.utils.from
 import dev.kordex.core.utils.scheduling.Scheduler
+import io.ktor.http.*
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.commands.addLeaderboardButtons
 import net.dungeonhub.application.connection.DiscordConnection
+import net.dungeonhub.application.connection.applyJson
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartPriority
 import net.dungeonhub.application.loader.StartupListener
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.misc.ScoreLeaderboard
 import net.dungeonhub.application.service.ApplicationService.embed
 import net.dungeonhub.application.service.ApplicationService.footer
-import net.dungeonhub.connection.CarryTypeConnection
-import net.dungeonhub.connection.DiscordServerConnection
-import net.dungeonhub.connection.ScoreConnection
-import net.dungeonhub.connection.StaticMessageConnection
+import net.dungeonhub.connection.*
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.StaticMessageType
+import net.dungeonhub.hypixel.service.FormattingService
+import net.dungeonhub.model.carry_tier.CarryTierModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.reputation.ReputationLeaderboardModel
 import net.dungeonhub.model.reputation.ReputationSumModel
 import net.dungeonhub.model.static_message.StaticMessageModel
+import net.dungeonhub.service.GsonService
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
@@ -52,6 +60,7 @@ import kotlin.time.Instant.Companion.fromEpochMilliseconds
 object StaticMessageService : StartupListener {
     private val logger = LoggerFactory.getLogger(StaticMessageService::class.java)
     lateinit var scheduler: Scheduler
+    val staticMessageUpdates = ConcurrentLinkedDeque<StaticMessageModel>()
 
     val reputationLeaderboardDescription by lazy {
         "Check `/help topic:reputation` to see how you can gain reputation.\n" +
@@ -63,27 +72,43 @@ object StaticMessageService : StartupListener {
             scheduler.cancel("Application was restarted.")
         }
 
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
-        val task = scheduler.schedule(4.hours, startNow = false, name = "Static-Message-Schedule", repeat = true) {
+        val refreshAllTask = scheduler.schedule(4.hours, startNow = false, name = "Static-Message-Schedule", repeat = true) {
             refreshAllStaticMessages()
         }
 
+        val refreshScheduleTask = scheduler.schedule(15.seconds, startNow = false, name = "Static-Message-Update-Scheduler", repeat = true) {
+            staticMessageUpdateWave()
+        }
+
         scheduler.launch {
-            delay(30.seconds)
-            task.callNow()
-            task.start()
+            delay(20.seconds)
+            refreshAllTask.callNow()
+            refreshScheduleTask.callNow()
+            refreshAllTask.start()
+            refreshScheduleTask.start()
         }
     }
 
-    // TODO rather use a list and a worker that handles those jobs
+    private suspend fun staticMessageUpdateWave() {
+        val currentWave = staticMessageUpdates.pollFirst() ?: return
+
+        refreshStaticMessage(currentWave)
+    }
+
     suspend fun refreshAllStaticMessages() {
-        val staticMessages = DiscordServerConnection.authenticated().findGlobalStaticMessages()
-            ?: return
+        val staticMessages = DiscordServerConnection.authenticated().findGlobalStaticMessages() ?: return
 
         for(staticMessage in staticMessages) {
-            updateStaticMessage(staticMessage)
+            if(!staticMessage.active) continue
+
+            staticMessageUpdates.addLast(staticMessage)
         }
+    }
+
+    fun updateStaticMessage(staticMessage: StaticMessageModel) {
+        staticMessageUpdates.addFirst(staticMessage)
     }
 
     suspend fun updateScoreLeaderboard(carryTypes: List<CarryTypeModel>) {
@@ -109,17 +134,29 @@ object StaticMessageService : StartupListener {
         }
     }
 
-    suspend fun updateStaticMessage(staticMessage: StaticMessageModel) {
+    suspend fun refreshStaticMessage(staticMessage: StaticMessageModel) {
+        if(!staticMessage.active) return
+
         val channel = try {
-            DiscordConnection.bot?.kordRef
-                ?.getChannel(Snowflake(staticMessage.channelId))
+            DiscordConnection.bot.kordRef
+                .getChannel(Snowflake(staticMessage.channelId))
                 ?.asChannelOfOrNull<MessageChannel>()
-        } catch (_: RestRequestException) {
-            null
+        } catch (exception: RestRequestException) {
+            if(exception.status == HttpStatusCode.Forbidden || exception.status == HttpStatusCode.NotFound) {
+                null
+            } else {
+                logger.error("Couldn't refresh the static message with id ${staticMessage.id}, retrying again later...", exception)
+                return
+            }
         }
 
         if(channel == null) {
-            logger.warn("Couldn't find channel with id ${staticMessage.channelId}.")
+            logger.warn("Couldn't find channel with id ${staticMessage.channelId}, deactivating the static message ${staticMessage.id}.")
+
+            val updateModel = staticMessage.getUpdateModel()
+            updateModel.active = false
+            StaticMessageConnection[staticMessage.server.id].authenticated().updateStaticMessage(staticMessage.id, updateModel)
+
             return
         }
 
@@ -151,10 +188,10 @@ object StaticMessageService : StartupListener {
             createdMessage
         } ?: return
 
-        updateStaticMessage(updatedStaticMessage, message)
+        refreshStaticMessage(updatedStaticMessage, message)
     }
 
-    suspend fun updateStaticMessage(staticMessage: StaticMessageModel, message: MessageBehavior) {
+    private suspend fun refreshStaticMessage(staticMessage: StaticMessageModel, message: MessageBehavior) {
         message.edit {
             embeds = getStaticMessageEmbeds(staticMessage)
             setAdditionalMessageProperties(staticMessage)()
@@ -174,7 +211,7 @@ object StaticMessageService : StartupListener {
             ?: throw CommandExecutionException("Couldn't update static message after being sent.")
     }
 
-    fun setAdditionalMessageProperties(staticMessage: StaticMessageModel): MessageBuilder.() -> Unit {
+    suspend fun setAdditionalMessageProperties(staticMessage: StaticMessageModel): MessageBuilder.() -> Unit {
         when (staticMessage.staticMessageType) {
             StaticMessageType.ScoreLeaderboard, StaticMessageType.TotalLeaderboard -> {
                 return {
@@ -194,10 +231,41 @@ object StaticMessageService : StartupListener {
                     }
                 }
             }
+
+            StaticMessageType.TicketPanel -> {
+                val ticketPanels = staticMessage.objectIds.mapNotNull {
+                    TicketPanelConnection[staticMessage.server.id].authenticated().getById(it)
+                }
+
+                return {
+                    for(panels in ticketPanels.windowed(5, 5, true)) {
+                        actionRow {
+                            for(panel in panels) {
+                                interactionButton(ButtonStyle.Primary, "create-ticket-${panel.id}") {
+                                    label = panel.displayName ?: panel.name
+                                    if(panel.emoji != null) {
+                                        val emoji = ReactionEmoji.from(panel.emoji!!)
+                                        if(emoji is ReactionEmoji.Unicode) {
+                                            emoji(emoji)
+                                        } else if(emoji is ReactionEmoji.Custom) {
+                                            emoji(emoji)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            StaticMessageType.PriceMessage -> {
+                // TODO maybe add a button "load-prices" --> that then opens a modal that lets you enter a number of carries, for which a price is then generated
+                return { }
+            }
         }
     }
 
-    fun getStaticMessageEmbeds(staticMessage: StaticMessageModel): MutableList<EmbedBuilder> {
+    suspend fun getStaticMessageEmbeds(staticMessage: StaticMessageModel): MutableList<EmbedBuilder> {
         when (staticMessage.staticMessageType) {
             StaticMessageType.ScoreLeaderboard -> {
                 val carryTypeConnection = CarryTypeConnection[staticMessage.server.id].authenticated()
@@ -250,7 +318,7 @@ object StaticMessageService : StartupListener {
                 val leaderboards: MutableList<ScoreLeaderboard> = mutableListOf()
 
                 for (scoreType in ScoreType.entries) {
-                    if (scoreType == ScoreType.Event && !ServerProperty.TOTAL_SCORE_EVENT.getValue(staticMessage.server.id).map { it == "true" }.orElse(false)) {
+                    if (scoreType == ScoreType.Event && !ServerProperty.TOTAL_SCORE_EVENT.getValue(staticMessage.server.id).let { it == "true" }) {
                         continue
                     }
 
@@ -277,6 +345,112 @@ object StaticMessageService : StartupListener {
                 embeds.add(getReputationEmbed(leaderboardTitle, leaderboardModel))
                 return embeds
             }
+
+            StaticMessageType.TicketPanel -> {
+                val embed = EmbedBuilder()
+
+                @Suppress("DEPRECATION")
+                val embedOverride = try {
+                    staticMessage.embedOverride?.let {
+                        GsonService.gson.fromJson(it, JsonObject::class.java)
+                    }
+                } catch (_: JsonSyntaxException) {
+                    null
+                }
+
+                embedOverride?.entrySet()?.forEach { entry: Map.Entry<String, JsonElement> ->
+                    embed.applyJson(
+                        entry.key,
+                        entry.value
+                    )
+                }
+
+                if(staticMessage.objectIds.isEmpty()) {
+                    embed.description = "Please assign a ticket panel to this message."
+                    embed.color = EmbedColor.Negative.color
+                }
+
+                if(embed.title.isNullOrEmpty() && embed.description.isNullOrEmpty()) {
+                    embed.description = "Open a ticket using the buttons below."
+                }
+
+                return mutableListOf(embed)
+            }
+
+            StaticMessageType.PriceMessage -> {
+                val serverConnection = DiscordServerConnection.authenticated()
+                val allCarryTiers = serverConnection.getAllCarryTiers(staticMessage.server.id) ?: emptyList()
+
+                val carryTiers = staticMessage.objectIds.mapNotNull { id -> allCarryTiers.firstOrNull { it.id == id } }
+
+                if(carryTiers.isEmpty()) {
+                    return mutableListOf(
+                        buildEmbed {
+                            title = "Price Message"
+                            description = "Please assign an object to this leaderboard."
+                            color(EmbedColor.Negative)
+                        }
+                    )
+                }
+
+                return addPriceFooterToLast(carryTiers.map { getPriceEmbed(it) }).toMutableList()
+            }
+        }
+    }
+
+    fun addPriceFooterToLast(embeds: List<EmbedBuilder>): List<EmbedBuilder> {
+        for (embed in embeds) {
+            embed.footer { text = "" }
+        }
+
+        if (embeds.isNotEmpty()) {
+            embeds[embeds.size - 1].footer { text = ApplicationService.priceFooter }
+        }
+
+        return embeds
+    }
+
+    @OptIn(ExperimentalTime::class)
+    suspend fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder {
+        val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().getAllCarryDifficulties() ?: listOf()
+
+        val title = "## " + carryTier.priceTitle + "\n"
+        val priceDescription = carryTier.priceDescription?.let { s: String -> s + "\n\n" } ?: ""
+
+        val description = title + priceDescription + if (carryDifficulties.isNotEmpty()) {
+            carryDifficulties.joinToString("\n") { carryDifficulty ->
+                val result = StringBuilder()
+                if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
+                    result.append("\n")
+                }
+
+                result.append("**")
+                    .append(carryDifficulty.priceName)
+                    .append("**: ")
+
+                val priceText = if (carryDifficulty.price != 0
+                ) FormattingService.makeNumberReadable(carryDifficulty.price.toLong()) + " coins"
+                else "Free"
+
+                result.append(priceText)
+
+                if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
+                    result.append("\n\\*")
+                        .append(FormattingService.makeNumberReadable(carryDifficulty.bulkPrice!!.toLong()))
+                        .append(" per carry if you buy ")
+                        .append(carryDifficulty.bulkAmount)
+                        .append("+ carries.")
+                }
+                result
+            }
+        } else {
+            "Please add at least one carry difficulty to the carry tier `${carryTier.displayName}`."
+        }
+
+        return buildEmbed(null) {
+            this.description = description
+            color(if (carryDifficulties.isEmpty()) EmbedColor.Negative else EmbedColor.Default)
+            carryTier.thumbnailUrl?.let { thumbnail { this.url = it } }
         }
     }
 
@@ -284,7 +458,7 @@ object StaticMessageService : StartupListener {
     private fun handleScoreLeaderboards(guildId: Long, leaderboards: List<ScoreLeaderboard>): MutableList<EmbedBuilder> {
         val embeds = mutableListOf<EmbedBuilder>()
 
-        val compactLeaderboard = ServerProperty.COMPACT_LEADERBOARD.getValue(guildId).map { it == "true" }.orElse(false)
+        val compactLeaderboard = ServerProperty.COMPACT_LEADERBOARD.getValue(guildId)?.let { it == "true" } ?: false
 
         if (compactLeaderboard) {
             embeds.addAll(LeaderboardService.generateCompactLeaderboard(leaderboards))

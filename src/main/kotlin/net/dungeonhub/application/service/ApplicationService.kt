@@ -9,11 +9,10 @@ import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.QRCodeWriter
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
-import dev.kord.core.behavior.GuildBehavior
-import dev.kord.core.behavior.ban
-import dev.kord.core.behavior.edit
+import dev.kord.core.behavior.*
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.User
+import dev.kord.core.entity.effectiveName
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -26,7 +25,6 @@ import dev.kordex.core.utils.dm
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.commands.LinkingSystem
-import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.FlaggingConnection
 import net.dungeonhub.application.enums.EmbedColor
@@ -35,10 +33,16 @@ import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.misc.FlagResponse
+import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.connection.ReputationConnection
+import net.dungeonhub.connection.ReputationConnection.Companion.ClientlessReputationConnection
+import net.dungeonhub.enums.CntRequestType
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
 import net.dungeonhub.exception.PlayerNotFoundException
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
+import net.dungeonhub.hypixel.entities.skyblock.statsoverview.StatsOverviewType
+import net.dungeonhub.hypixel.service.FormattingService
 import net.dungeonhub.model.carry.CarryModel
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
@@ -59,8 +63,6 @@ import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
-import java.text.DecimalFormat
-import java.text.DecimalFormatSymbols
 import java.util.*
 import javax.imageio.ImageIO
 import kotlin.time.*
@@ -68,6 +70,8 @@ import kotlin.time.*
 @OptIn(ExperimentalTime::class)
 object ApplicationService {
     const val MAX_MINECRAFT_USERNAME_LENGTH = 16
+    const val skyCryptUrl = "https://sky.shiiyu.moe/"
+
     private val logger: Logger = LoggerFactory.getLogger(DiscordConnection::class.java)
 
     val dungeonHubDirectory = "${System.getProperty("user.home")}${File.separator}dungeon-hub"
@@ -131,45 +135,6 @@ object ApplicationService {
         }
 
         return kord.getUser(ownerId)
-    }
-
-    //TODO move to the method by the hypixel-wrapper
-    /**
-     * This formats a decimal number as a String.
-     */
-    fun makeDoubleReadable(number: Double, maxFractionDigits: Int = 340, locale: Locale = Locale.US): String {
-        val df = DecimalFormat("0", DecimalFormatSymbols.getInstance(locale))
-        df.setMaximumFractionDigits(maxFractionDigits) //340 = DecimalFormat.DOUBLE_FRACTION_DIGITS
-
-        return df.format(number)
-    }
-
-    /**
-     * Returns a (large) number as a readable String.
-     * Numbers < 1000 are returned as is, simply formatted as a String.
-     * Numbers >= 1000 are returned with the respective extension:
-     * 1312.1852 -> "1.3121852k"
-     * 3882761 -> "3.882761m"
-     * 45544000000 -> "45.544b"
-     */
-    fun makeNumberReadable(number: Long, maxFractionDigits: Int = 340): String {
-        if (number >= 1000000000000L) {
-            return makeDoubleReadable(number / 1000000000000.0, maxFractionDigits) + "t"
-        }
-
-        if (number >= 1000000000L) {
-            return makeDoubleReadable(number / 1000000000.0, maxFractionDigits) + "b"
-        }
-
-        if (number >= 1000000L) {
-            return makeDoubleReadable(number / 1000000.0, maxFractionDigits) + "m"
-        }
-
-        if (number >= 1000L) {
-            return makeDoubleReadable(number / 1000.0, maxFractionDigits) + "k"
-        }
-
-        return number.toString()
     }
 
     val errorEmbed: EmbedBuilder
@@ -240,6 +205,13 @@ object ApplicationService {
         return embedBuilder
     }
 
+    fun loadTicketNotificationFromCarryQueue(carryQueue: CarryQueueModel): EmbedBuilder {
+        return buildEmbed {
+            description = "<@${carryQueue.carrier.id}> logged **${carryQueue.amount} ${carryQueue.carryTier.displayName} - ${carryQueue.carryDifficulty.displayName}** ${if(carryQueue.amount == 1) "carry" else "carries"} for <@${carryQueue.player.id}>, worth ${carryQueue.calculateScore()} score."
+            color(EmbedColor.Information)
+        }
+    }
+
     fun loadEmbedFromCarryQueue(carryQueue: CarryQueueModel, embedBuilder: EmbedBuilder): EmbedBuilder {
         embedBuilder.color = EmbedColor.Information.color
 
@@ -303,7 +275,7 @@ object ApplicationService {
         val embedBuilder = getEmbed(warningModel.time.toKotlinInstant())
         embedBuilder.color = EmbedColor.Information.color
         embedBuilder.title = "You were warned on server `${
-            DiscordConnection.bot!!.kordRef.getGuildOrNull(Snowflake(warningModel.server.id))?.name ?: "unknown"
+            DiscordConnection.bot.kordRef.getGuildOrNull(Snowflake(warningModel.server.id))?.name ?: "unknown"
         }`"
 
         embedBuilder.field("You") { "<@${warningModel.user.id}>" }
@@ -356,7 +328,7 @@ object ApplicationService {
         val embed = embed
 
         embed.title = if ((userToCheck.id != user.id && server != null)) {
-            server.getMember(userToCheck.id).effectiveName + "'s score${if (carryCount != null) " from $carryCount total carries" else ""}:"
+            (server.getMemberOrNull(userToCheck.id)?.effectiveName ?: userToCheck.effectiveName) + "'s score${if (carryCount != null) " from $carryCount total carries" else ""}:"
         } else {
             "Your score${if (carryCount != null) " from $carryCount total carries" else ""}:"
         }
@@ -392,7 +364,7 @@ object ApplicationService {
     // as well as the skycrypt api takes long too
     //probably first load skycrypt, then the rest?
     @Throws(FailedToLoadEmbedException::class)
-    suspend fun getPlayerDataEmbed(ign: String, discordId: Long?, cacheExpiration: Int = 60): EmbedBuilder {
+    suspend fun getPlayerDataEmbed(ign: String, discordId: Long?, cacheExpiration: Int = 60, profileOverride: UUID? = null, statsOverviewTypes: List<StatsOverviewType>? = null): EmbedBuilder {
         val embed = embed
 
         val uuid: UUID = MojangConnection.getUUIDByName(ign)
@@ -422,14 +394,16 @@ object ApplicationService {
         embed.thumbnail {
             url = "https://visage.surgeplay.com/face/$uuid"
         }
-        embed.url = ConfigProperty.SKYCRYPT_API_URL.toString() + "stats/" + ign
+        embed.url = skyCryptUrl + "stats/" + ign
         embed.title = try {
             MojangConnection.getNameByUUID(uuid)
         } catch (_: PlayerNotFoundException) {
             ign
         }
 
-        val statsOverview = HypixelApiConnection().withCacheExpiration(cacheExpiration).getStatsOverview(uuid)
+        val discordUser = DiscordUserConnection.authenticated().findUserByUuid(uuid)
+
+        val statsOverview = HypixelApiConnection().withCacheExpiration(cacheExpiration).getStatsOverview(uuid, profileOverride ?: discordUser?.primarySkyblockProfile, statsOverviewTypes)
 
         if (statsOverview == null) {
             embed.description = "No profiles found."
@@ -499,6 +473,7 @@ object ApplicationService {
     fun getCarryTypeEmbed(carryType: CarryTypeModel): EmbedBuilder {
         val embed = embed
         embed.color = EmbedColor.Default.color
+        embed.field("ID", true) { carryType.id.toString() }
         embed.field("Identifier", true) { carryType.identifier }
         embed.field("Display Name", true) { carryType.displayName }
 
@@ -515,6 +490,7 @@ object ApplicationService {
         val embed = embed
 
         embed.color = EmbedColor.Default.color
+        embed.field("ID", true) { carryTier.id.toString() }
         embed.field("Identifier", true) { carryTier.identifier }
         embed.field("Display Name", true) { carryTier.displayName }
         embed.field("Descriptive Name", true) { carryTier.descriptiveName!! }
@@ -524,12 +500,6 @@ object ApplicationService {
         ) { carryTier.carryType.displayName + " (" + carryTier.carryType.identifier + ")" }
 
         carryTier.category?.let { category: Long -> embed.field("Category", true) { "<#$category>" } }
-        carryTier.priceChannel?.let { priceChannel: Long ->
-            embed.field(
-                "Price Channel",
-                true
-            ) { "<#$priceChannel>" }
-        }
         carryTier.thumbnailUrl?.let { thumbnailUrl: String ->
             embed.field("Thumbnail URL", true) { thumbnailUrl }
         }
@@ -543,6 +513,7 @@ object ApplicationService {
         val embed = embed
         embed.color = EmbedColor.Default.color
 
+        embed.field("ID", true) { carryDifficulty.id.toString() }
         embed.field("Identifier", true) { carryDifficulty.identifier }
         embed.field("Display Name", true) { carryDifficulty.displayName }
         embed.field(
@@ -556,7 +527,7 @@ object ApplicationService {
         embed.field(
             "Price",
             true
-        ) { carryDifficulty.price.toString() + " (" + makeNumberReadable(carryDifficulty.price.toLong()) + ")" }
+        ) { carryDifficulty.price.toString() + " (" + FormattingService.makeNumberReadable(carryDifficulty.price.toLong()) + ")" }
         embed.field("Score", true) { carryDifficulty.score.toString() }
 
         carryDifficulty.bulkAmount
@@ -608,21 +579,6 @@ object ApplicationService {
         return outputStream.toByteArray()
     }
 
-    fun calculatePrice(carryDifficulty: CarryDifficultyModel, amount: Long): Long {
-        return calculatePricePerCarry(carryDifficulty, amount) * amount
-    }
-
-    fun calculatePricePerCarry(carryDifficulty: CarryDifficultyModel, amount: Long): Long {
-        val bulkPrice = carryDifficulty.bulkPrice
-        val bulkAmount = carryDifficulty.bulkAmount
-
-        if (bulkPrice != null && bulkAmount != null && bulkAmount <= amount) {
-            return bulkPrice.toLong()
-        }
-
-        return carryDifficulty.price.toLong()
-    }
-
     //TODO maybe make sure that multiple actions on roles don't override each other?
     suspend fun applyWarningActions(actions: List<WarningActionModel>, member: Member): String? {
         if (actions.isEmpty()) {
@@ -633,11 +589,10 @@ object ApplicationService {
             try {
                 member.dm {
                     val unbanForm = ServerProperty.UNBAN_FORM.getValue(member.guildId.value.toLong())
-                        .orElse(null)
 
-                    var message = ServerProperty.BAN_MESSAGE
+                    var message = (ServerProperty.BAN_MESSAGE
                         .getValue(member.guildId.value.toLong())
-                        .orElse("You got banned from `%server%` because of too many severe warnings.\nIf you think this is a mistake, contact the administrators for further information.")
+                        ?: "You got banned from `%server%` because of too many severe warnings.\nIf you think this is a mistake, contact the administrators for further information.")
                         .replace("%server%", member.guild.asGuildOrNull()?.name ?: member.guildId.toString())
 
                     unbanForm?.let {
@@ -743,6 +698,7 @@ object ApplicationService {
     }
 
     fun getCntEmbed(
+        requestType: CntRequestType,
         description: String,
         coinValue: String,
         requirement: String,
@@ -753,6 +709,7 @@ object ApplicationService {
         embed.color = EmbedColor.Default.color
         embed.description = "### Craft and Transfers"
 
+        embed.field("User supplied value") { requestType.description }
         embed.field("Request", true) { description }
         embed.field("Value", true) { coinValue }
         embed.field("Requirement", true) { requirement }
@@ -765,6 +722,7 @@ object ApplicationService {
 
     fun getCntEmbed(cntRequest: CntRequestModel): EmbedBuilder {
         val embed = getCntEmbed(
+            cntRequest.requestType,
             cntRequest.description,
             cntRequest.coinValue,
             cntRequest.requirement,
@@ -842,7 +800,7 @@ object ApplicationService {
     }
 
     suspend fun getGlobalCommandId(name: String): Snowflake? {
-        return DiscordConnection.bot?.kordRef?.getGlobalApplicationCommands()?.firstOrNull { it.name == name }?.id
+        return DiscordConnection.bot.kordRef.getGlobalApplicationCommands().firstOrNull { it.name == name }?.id
     }
 
     fun StaticMessageModel.toEmbed(locale: Locale? = null): EmbedBuilder {
@@ -859,6 +817,12 @@ object ApplicationService {
                 "None"
             } else {
                 objectIds.joinToString(", ")
+            }
+        }
+
+        if(embedOverride != null) {
+            embed.field("Embed Override") {
+                "```json\n$embedOverride\n```"
             }
         }
 
@@ -926,4 +890,12 @@ fun Extension.createEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): Em
 
 fun EmbedBuilder.color(color: EmbedColor) {
     this.color = color.color
+}
+
+suspend fun UserBehavior.getUUIDOrNull(): UUID? {
+    return DiscordUserConnection.authenticated().getById(id.value.toLong())?.minecraftId
+}
+
+operator fun ReputationConnection.Companion.get(member: MemberBehavior): ClientlessReputationConnection {
+    return get(member.guild.id.value.toLong(), member.id.value.toLong())
 }

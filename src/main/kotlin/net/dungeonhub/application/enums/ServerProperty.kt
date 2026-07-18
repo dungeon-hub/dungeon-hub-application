@@ -1,5 +1,6 @@
 package net.dungeonhub.application.enums
 
+import dev.kord.common.entity.Snowflake
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.core.i18n.toKey
 import dev.kordex.i18n.Key
@@ -32,10 +33,12 @@ enum class ServerProperty(
     STRIKES_LOGS_CHANNEL("id_strikes_logs_channel", ServerPropertyType.CHANNEL),
     LOG_APPROVING_CHANNEL("id_log_approving_channel", ServerPropertyType.CHANNEL),
     TRANSCRIPTS_CHANNEL("id_transcripts_channel", ServerPropertyType.CHANNEL),
+    TICKET_LOGS_CHANNEL("id_ticket_logs_channel", ServerPropertyType.CHANNEL),
     SERVICE_TEAM_RULES_CHANNEL("id_service_team_rules_channel", ServerPropertyType.CHANNEL),
     CNT_MESSAGES_CHANNEL("cnt_messages_channel", ServerPropertyType.CHANNEL),
     CNT_INFORMATION_CHANNEL("cnt_information_channel", ServerPropertyType.CHANNEL),
 
+    CNT_PING_ROLE("id_cnt_ping_role", ServerPropertyType.ROLE),
     SCORE_MANAGEMENT_ROLE("id_score_management_score", ServerPropertyType.ROLE),
     PURGE_IMMUNITY_ROLE("id_purge_immunity_role", ServerPropertyType.ROLE),
     CNT_ROLE_REQUIREMENT_UNDER_THREE("id_cnt_role_requirement_<3", ServerPropertyType.ROLE),
@@ -66,8 +69,12 @@ enum class ServerProperty(
         relatedProperties
     )
 
-    fun getValue(serverId: Long): Optional<String> {
+    fun getValue(serverId: Long): String? {
         return getActualServerProperty(serverId, this)
+    }
+
+    fun getValue(serverId: Snowflake): String? {
+        return getValue(serverId.value.toLong())
     }
 
     fun canAccept(value: String?): Boolean {
@@ -75,12 +82,9 @@ enum class ServerProperty(
     }
 
     fun isEnabled(serverId: Long): Boolean {
-        return (enabled
-                && Arrays.stream(relatedProperties)
-            .flatMap { serverProperty: ServerProperty -> serverProperty.getValue(serverId).stream() }
-            .allMatch { s: String? -> s.equals("true", ignoreCase = true) }
-                && Arrays.stream(relatedProperties)
-            .allMatch { serverProperty: ServerProperty -> serverProperty.isEnabled(serverId) })
+        return enabled &&
+                relatedProperties.map { it.getValue(serverId) }.all { it.equals("true", ignoreCase = true) } &&
+                relatedProperties.all { it.isEnabled(serverId) }
     }
 
     companion object {

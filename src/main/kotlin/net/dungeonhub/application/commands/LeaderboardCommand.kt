@@ -8,7 +8,7 @@ import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kordex.core.annotations.AlwaysPublicResponse
 import dev.kordex.core.commands.Arguments
-import dev.kordex.core.commands.application.slash.converters.impl.optionalEnumChoice
+import dev.kordex.core.commands.application.slash.converters.impl.optionalStringChoice
 import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.optionalString
 import dev.kordex.core.extensions.Extension
@@ -90,7 +90,7 @@ class LeaderboardCommand : Extension() {
                         CarryTypeConnection[guild?.id?.value!!.toLong()].authenticated()
                             .getByIdentifier(arguments.carryType)
 
-                    val scoreType: ScoreType = arguments.scoreType ?: ScoreType.Default
+                    val scoreType: ScoreType = arguments.scoreTypeEnum ?: ScoreType.Default
 
                     val leaderboardTitle = scoreType.getLeaderboardTitle(carryType, event.getLocale())
 
@@ -186,11 +186,14 @@ class LeaderboardCommand : Extension() {
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
-        val scoreType by optionalEnumChoice<ScoreType> {
+        val scoreType by optionalStringChoice {
             name = "score-type".toKey()
             description = "Select which type of score you want.".toKey()
-            typeName = "ScoreType".toKey()
+            choices = ScoreType.entries.associate { it.readableName to it.name }.toMutableMap()
         }
+
+        val scoreTypeEnum: ScoreType?
+            get() = scoreType?.let { ScoreType.valueOf(it) }
     }
 }
 

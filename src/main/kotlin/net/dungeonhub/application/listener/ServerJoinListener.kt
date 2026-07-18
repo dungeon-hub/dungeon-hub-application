@@ -1,6 +1,7 @@
 package net.dungeonhub.application.listener
 
 import dev.kord.core.event.guild.GuildCreateEvent
+import dev.kord.gateway.Intent
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.utils.dm
@@ -15,6 +16,7 @@ class ServerJoinListener : Extension() {
     val logger: Logger = LoggerFactory.getLogger(ServerJoinListener::class.java)
 
     override val name = "server-join-listener"
+    override val intents = mutableSetOf<Intent>(Intent.Guilds)
     override suspend fun setup() {
         event<GuildCreateEvent> {
             action {

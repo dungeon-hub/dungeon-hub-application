@@ -14,6 +14,7 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.misc.PurgeData
 import net.dungeonhub.model.discord_role.DiscordRoleModel
 import net.dungeonhub.model.purge_type.PurgeTypeModel
@@ -33,7 +34,7 @@ object PurgingService : StartupListener {
             scheduler.cancel("Application was restarted.")
         }
 
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         scheduler.schedule(6.seconds, startNow = true, name = "Purging-Schedule", repeat = true) {
             purgeWave()
@@ -83,14 +84,14 @@ object PurgingService : StartupListener {
 
         try {
             currentWave.forEach { purgeData: PurgeData ->
-                val server = DiscordConnection.bot?.kordRef?.getGuild(Snowflake(purgeData.purgeType.carryType.server.id))
+                val server = DiscordConnection.bot.kordRef.getGuildOrNull(Snowflake(purgeData.purgeType.carryType.server.id))
 
                 if (server == null) {
                     logger.error("Server isn't a valid server for purging anymore!")
                     return@forEach
                 }
 
-                val member = DiscordConnection.bot?.kordRef?.getUser(Snowflake(purgeData.userId))?.asMember(server.id)
+                val member = DiscordConnection.bot.kordRef.getUser(Snowflake(purgeData.userId))?.asMember(server.id)
 
                 if (member == null) {
                     logger.error("Member wasn't found anymore! I guess they escaped the purge.")
@@ -105,7 +106,7 @@ object PurgingService : StartupListener {
                 )
 
                 scheduler.launch {
-                    delay(5000)
+                    delay(5.seconds)
 
                     val reloadedMember =
                         member.withStrategy(EntitySupplyStrategy.cacheWithCachingRestFallback).fetchMember()

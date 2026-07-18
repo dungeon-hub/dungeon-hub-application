@@ -14,6 +14,7 @@ import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.actionRow
@@ -37,6 +38,7 @@ import kotlinx.coroutines.launch
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.exceptions.*
 import net.dungeonhub.application.loader.LoadExtension
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.service.*
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.exception.PlayerNotFoundException
@@ -56,10 +58,11 @@ import java.util.*
 @LoadExtension
 class LinkingSystem : Extension() {
     override val name = "linking-system"
+    override val intents = mutableSetOf<Intent>(Intent.GuildMembers)
     private val logger = LoggerFactory.getLogger(LinkingSystem::class.java)
 
     override suspend fun setup() {
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         publicSlashCommand(::SingleIgnArguments) {
             name = Link.name
@@ -126,6 +129,7 @@ class LinkingSystem : Extension() {
 
                         NicknameService.updateNickname(member, roles)
                     } else {
+                        // TODO dont use this. rework it, this causes too many updates
                         val user = user.asUser()
 
                         val roles = RolesService.updateRoles(user)
@@ -292,7 +296,6 @@ class LinkingSystem : Extension() {
         publicSlashCommand {
             name = Sync.name
             description = Sync.description
-            //TODO maybe rewrite to also allow usage in dms
             allowInDms = false
 
             action {
@@ -322,8 +325,8 @@ class LinkingSystem : Extension() {
                         NicknameService.updateNickname(member, userModel, roles)
                     } catch (_: NoNameSchemaWarning) {
                         nicknameChanged = false
-                    } catch (notLinkedException: NotLinkedException) {
-                        embeds = mutableListOf(ApplicationService.getErrorEmbed(notLinkedException))
+                    } catch (notLinkedWarning: NotLinkedWarning) {
+                        embeds = mutableListOf(ApplicationService.getErrorEmbed(notLinkedWarning))
                         return@respond
                     }
 
@@ -336,7 +339,16 @@ class LinkingSystem : Extension() {
             }
         }
 
-        fun respondToForceSync(target: Member): suspend FollowupMessageCreateBuilder.() -> Unit {
+        fun respondToForceSync(target: Member?): suspend FollowupMessageCreateBuilder.() -> Unit {
+            if(target == null) {
+                return {
+                    addEmbed {
+                        color(EmbedColor.Negative)
+                        description = "That user isn't a member of this server!"
+                    }
+                }
+            }
+
             return {
                 val roles = RolesService.updateRoles(target, cacheExpiration = 5)
 
@@ -347,7 +359,7 @@ class LinkingSystem : Extension() {
 
                     embed.color = EmbedColor.Positive.color
                     embed.description = "Username and roles of ${target.mention} were synced!"
-                } catch (_: NotLinkedException) {
+                } catch (_: NotLinkedWarning) {
                     embed.color = EmbedColor.Negative.color
                     embed.description = "${target.mention} is not linked, their roles were synced!"
                 }
@@ -364,7 +376,7 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val target = arguments.user.asMember(guild!!.id)
+                    val target = arguments.user.asMemberOrNull(guild!!.id)
 
                     respondToForceSync(target)()
                 }
@@ -378,7 +390,7 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val target = targetUsers.first().asMember(guild!!.id)
+                    val target = targetUsers.first().asMemberOrNull(guild!!.id)
 
                     respondToForceSync(target)()
                 }
@@ -393,10 +405,11 @@ class LinkingSystem : Extension() {
             action {
                 respond {
                     val oldUserModel = DiscordUserConnection.authenticated().getLinkedById(user.id.value.toLong())
-                        ?: throw NotLinkedException()
+                        ?: throw NotLinkedWarning()
 
                     val updateModel = oldUserModel.getUpdateModel()
                     updateModel.minecraftId = null
+                    updateModel.primarySkyblockProfile = null
 
                     DiscordUserConnection.authenticated().updateUser(user.id.value.toLong(), updateModel)
                         ?: throw CommandExecutionException("Couldn't update your user data.")
@@ -416,7 +429,7 @@ class LinkingSystem : Extension() {
 
                     try {
                         NicknameService.updateNickname(user, roles)
-                    } catch (_: NotLinkedException) {
+                    } catch (_: NotLinkedWarning) {
                         // Do nothing
                     }
                 }
@@ -557,6 +570,7 @@ class LinkingSystem : Extension() {
                 }
 
                 scheduler.launch {
+                    // TODO dont use this. this updates the user on all servers. use the member object here instead
                     val roles = RolesService.updateRoles(event.interaction.user)
 
                     NicknameService.updateNickname(event.interaction.user, roles)

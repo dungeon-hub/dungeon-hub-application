@@ -1,12 +1,11 @@
 package net.dungeonhub.application.misc
 
+import kotlinx.coroutines.launch
 import net.dungeonhub.application.config.ConfigFile
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.ServerService
 import java.io.File
-import java.util.*
-import java.util.stream.Collectors
 
 /**
  * This class holds all config properties for a server.
@@ -19,13 +18,13 @@ import java.util.stream.Collectors
  */
 class ServerData(val id: Long) : ConfigFile<ServerProperty>() {
     init {
-        reloadConfig()
+        scheduler.launch {
+            reloadConfig()
+        }
     }
 
     override val possibleProperties: Set<ServerProperty>
-        get() = Arrays.stream(ServerProperty.entries.toTypedArray())
-            .filter { obj: ServerProperty -> obj.enabled }
-            .collect(Collectors.toSet())
+        get() = ServerProperty.entries.filter { it.enabled }.toSet()
 
     override val configFile: File
         get() = File(serverFolder + File.separator + "config.properties")

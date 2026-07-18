@@ -12,8 +12,10 @@ import net.dungeonhub.application.connection.DiscordConnection.uptime
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.hypixel.service.FormattingService
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
@@ -31,15 +33,14 @@ object AppearanceService : StartupListener {
             "Handling ${DiscordUserConnection.authenticated().countLinkedUsers() ?: 0} linked users!"
         },
         AppearanceType.Watching to {
-            "carriers on ${bot?.kordRef?.guilds?.count() ?: 0} servers"
+            "carriers on ${bot.kordRef.guilds.count()} servers"
         },
         AppearanceType.Competing to {
             "score leaderboards for first place"
         },
-        //TODO uncomment once released
-        /*AppearanceType.Custom to {
+        AppearanceType.Custom to {
             "Customize me at dungeon-hub.net"
-        },*/
+        },
         AppearanceType.Custom to {
             "Running 100% in Kotlin!"
         },
@@ -71,7 +72,7 @@ object AppearanceService : StartupListener {
                 0
             }
 
-            "${ApplicationService.makeNumberReadable(amount, 3)} coins spent on Dungeon Hub!"
+            "${FormattingService.makeNumberReadable(amount, 3)} coins spent on Dungeon Hub!"
         }
     )
 
@@ -80,7 +81,7 @@ object AppearanceService : StartupListener {
             scheduler.cancel("Application was restarted.")
         }
 
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         val task = scheduler.schedule(REFRESH_SECONDS, startNow = false, name = "Appearance-Schedule", repeat = true) {
             resetBotAppearance()
@@ -97,15 +98,15 @@ object AppearanceService : StartupListener {
      * This resets the bot's appearance.
      */
     private suspend fun resetBotAppearance() {
-        bot?.kordRef?.editPresence {
+        bot.kordRef.editPresence {
             status = PresenceStatus.Online
 
             currentAppearance = if (currentAppearance >= possibleAppearances.size - 1) 0 else currentAppearance + 1
 
-            val appearance = possibleAppearances[currentAppearance]
+            val (appearanceType, appearanceFunction) = possibleAppearances[currentAppearance]
 
             try {
-                appearance.first.apply(appearance.second())()
+                appearanceType.apply(appearanceFunction())()
             } catch (exception: Exception) {
                 logger.error("Error during reset of appearance.", exception)
             }
