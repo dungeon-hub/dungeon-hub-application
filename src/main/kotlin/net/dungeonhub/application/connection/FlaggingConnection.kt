@@ -94,6 +94,8 @@ object FlaggingConnection {
             }?.body<FlaggingApi.JerryData>()?.takeIf { it.success }?.let {
                 fromJerryResponse(it)
             }
+        } catch (exception: CancellationException) {
+            throw exception
         } catch (exception: Exception) {
             logger.error("Couldn't check jerry-flagged status for uuid $uuid", exception)
             null
@@ -108,6 +110,8 @@ object FlaggingConnection {
             }?.body<FlaggingApi.JerryData>()?.takeIf { it.success }?.let {
                 fromJerryResponse(it)
             }
+        } catch (exception: CancellationException) {
+            throw exception
         } catch (exception: Exception) {
             logger.error("Couldn't check jerry-flagged status for id $id", exception)
             null

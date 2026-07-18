@@ -20,6 +20,7 @@ import dev.kord.rest.builder.message.embed
 import dev.kord.rest.request.RestRequestException
 import dev.kordex.core.utils.from
 import dev.kordex.core.utils.scheduling.Scheduler
+import io.ktor.http.*
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -140,8 +141,13 @@ object StaticMessageService : StartupListener {
             DiscordConnection.bot.kordRef
                 .getChannel(Snowflake(staticMessage.channelId))
                 ?.asChannelOfOrNull<MessageChannel>()
-        } catch (_: RestRequestException) {
-            null
+        } catch (exception: RestRequestException) {
+            if(exception.status == HttpStatusCode.Forbidden || exception.status == HttpStatusCode.NotFound) {
+                null
+            } else {
+                logger.error(null, exception)
+                null
+            }
         }
 
         if(channel == null) {

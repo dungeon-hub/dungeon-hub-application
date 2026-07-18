@@ -98,7 +98,7 @@ class TicketOpenListener : Extension() {
                 permissionOverwrites?.clear()
                 updateTicketPermissions(updatedTicket.ticketPanel, updatedTicket)
 
-                val categories = if (ticket.state in listOf(TicketState.Creating, TicketState.Open)) {
+                val categories = if (updatedTicket.state in listOf(TicketState.Creating, TicketState.Open)) {
                     updatedTicket.ticketPanel.openCategories
                 } else {
                     updatedTicket.ticketPanel.closedCategories

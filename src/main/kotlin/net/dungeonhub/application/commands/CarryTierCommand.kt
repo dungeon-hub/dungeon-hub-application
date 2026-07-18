@@ -235,7 +235,7 @@ class CarryTierCommand : Extension() {
                             CarryTierConnection[carryType].authenticated().getByIdentifier(arguments.carryTier)
                                 ?: throw InvalidOptionException("carry-tier", "Carry tier doesn't exist")
 
-                        if (!arguments.category && !arguments.priceChannel && !arguments.descriptiveName && !arguments.thumbnailUrl && !arguments.priceTitle) {
+                        if (!arguments.category && !arguments.descriptiveName && !arguments.thumbnailUrl && !arguments.priceTitle) {
                             throw CommandExecutionWarning("Please provide something you want to reset.")
                         }
 
@@ -397,11 +397,6 @@ class CarryTierCommand : Extension() {
         val category by boolean {
             name = CarryTier.Reset.Arguments.Category.name
             description = CarryTier.Reset.Arguments.Category.description
-        }
-
-        val priceChannel by boolean {
-            name = CarryTier.Reset.Arguments.PriceChannel.name
-            description = CarryTier.Reset.Arguments.PriceChannel.description
         }
 
         val thumbnailUrl by boolean {

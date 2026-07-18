@@ -6,6 +6,7 @@ import kotlinx.coroutines.sync.withLock
 class SuspendLazy<T>(private val block: suspend () -> T) {
     private object Uninitialized
 
+    @Volatile
     private var result: Any? = Uninitialized
     private val mutex = Mutex()
 
