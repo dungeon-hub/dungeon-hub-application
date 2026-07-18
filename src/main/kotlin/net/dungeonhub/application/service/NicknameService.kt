@@ -215,7 +215,7 @@ object NicknameService {
         val discordRoles = getRoleModels(member.guild)
 
         val role = (roles.firstOrNull {
-            role -> discordRoles[role.id.value.toLong()]?.nameSchema.isNullOrBlank()
+            role -> !discordRoles[role.id.value.toLong()]?.nameSchema.isNullOrBlank()
         } ?: throw NoNameSchemaWarning())
 
         return discordRoles[role.id.value.toLong()]!!

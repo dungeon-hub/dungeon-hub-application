@@ -194,6 +194,7 @@ class WarningSystem : Extension() {
 
                         getChannelProperty(addedWarning.warningModel.warningType)
                             .getValue(guild!!.id.value.toLong())
+                            ?.takeIf { it.toLongOrNull() != null }
                             ?.let {
                                 DiscordConnection.bot.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
                             }
@@ -250,8 +251,9 @@ class WarningSystem : Extension() {
 
                         getChannelProperty(removedWarning.warningType)
                             .getValue(guild!!.id.value.toLong())
+                            ?.takeIf { it.toLongOrNull() != null }
                             ?.let {
-                                DiscordConnection.bot!!.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
+                                DiscordConnection.bot.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
                             }
                             ?.let { channel ->
                                 channel.createMessage {
@@ -264,7 +266,7 @@ class WarningSystem : Extension() {
                             }
 
                         try {
-                            DiscordConnection.bot!!.kordRef.getUser(Snowflake(removedWarning.user.id))
+                            DiscordConnection.bot.kordRef.getUser(Snowflake(removedWarning.user.id))
                                 ?.dm {
                                     val dmEmbed = ApplicationService.embed
                                     dmEmbed.color = EmbedColor.Positive.color
@@ -360,6 +362,7 @@ class WarningSystem : Extension() {
 
                         getChannelProperty(warning.warningType)
                             .getValue(guild!!.id.value.toLong())
+                            ?.takeIf { it.toLongOrNull() != null }
                             ?.let {
                                 bot.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(it))
                             }

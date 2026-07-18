@@ -59,6 +59,7 @@ import net.dungeonhub.i18n.Translations
 import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.model.ticket_panel.TicketPanelModel
 import net.dungeonhub.mojang.connection.MojangConnection
+import org.slf4j.LoggerFactory
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
@@ -376,6 +377,7 @@ class TicketSystem : Extension() {
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(TicketSystem::class.java)
         lateinit var scheduler: Scheduler
         val ticketRenames = ConcurrentHashMap<Long, List<Instant>>()
         val scheduledTicketRenames = ConcurrentHashMap.newKeySet<Pair<Long, Long>>()
@@ -489,6 +491,8 @@ class TicketSystem : Extension() {
 
                             return ((recentRenames.first() + 15.minutes) - now).withNanos(0)
                         }
+                    } else {
+                        logger.error("Error while updating a ticket name.", ktorRequestException)
                     }
                 }
             }
