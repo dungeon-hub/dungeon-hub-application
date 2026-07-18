@@ -46,7 +46,7 @@ class ChannelService : Extension() {
 
         event<ChannelCreateEvent> {
             check {
-                passIf(event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel)
+                failIfNot(event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel)
             }
 
             action {
@@ -65,7 +65,7 @@ class ChannelService : Extension() {
 
         event<ChannelUpdateEvent> {
             check {
-                passIf(event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel)
+                failIfNot(event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel)
             }
 
             action {
@@ -87,7 +87,7 @@ class ChannelService : Extension() {
 
         event<ChannelDeleteEvent> {
             check {
-                passIf(event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel)
+                failIfNot(event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel)
             }
 
             action {
