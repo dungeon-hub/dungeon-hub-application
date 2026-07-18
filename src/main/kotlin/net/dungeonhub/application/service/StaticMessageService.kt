@@ -145,8 +145,8 @@ object StaticMessageService : StartupListener {
             if(exception.status == HttpStatusCode.Forbidden || exception.status == HttpStatusCode.NotFound) {
                 null
             } else {
-                logger.error(null, exception)
-                null
+                logger.error("Couldn't refresh the static message with id ${staticMessage.id}, retrying again later...", exception)
+                return
             }
         }
 
