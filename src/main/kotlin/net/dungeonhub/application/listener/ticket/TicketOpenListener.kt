@@ -62,7 +62,7 @@ class TicketOpenListener : Extension() {
                 if(!event.interaction.user.isAllowedToChangeState(ticket)) {
                     response.respond {
                         addEmbed {
-                            description = "You're not allowed to close this ticket!"
+                            description = "You're not allowed to reopen this ticket!"
                             color(EmbedColor.Negative)
                         }
                     }

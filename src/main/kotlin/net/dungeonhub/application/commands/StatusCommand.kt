@@ -43,14 +43,20 @@ class StatusCommand : Extension() {
 
                     val ignArgument = arguments.ign
 
-                    val uuid = ignArgument?.let {
+                    val uuid = if(ignArgument != null) {
                         try {
-                            MojangConnection.getUUIDByName(it)
+                            MojangConnection.getUUIDByName(ignArgument)
                         } catch (_: PlayerNotFoundException) {
-                            null
+                            addEmbed {
+                                description = "Couldn't find the user `$ignArgument`."
+                                color(EmbedColor.Negative)
+                            }
+                            return@respond
                         }
-                    } ?: ticket?.user?.minecraftId
-                    ?: discordUser?.minecraftId
+                    } else {
+                        ticket?.user?.minecraftId
+                            ?: discordUser?.minecraftId
+                    }
 
                     val ign = uuid?.let {
                         try {
@@ -128,7 +134,15 @@ class StatusCommand : Extension() {
                         return@respond
                     }
 
-                    val ign = MojangConnection.getNameByUUID(uuid)
+                    val ign = try{
+                        MojangConnection.getNameByUUID(uuid)
+                    } catch (_: PlayerNotFoundException) {
+                        addEmbed {
+                            description = "Couldn't find the IGN of the user `$uuid`. Weird."
+                            color(EmbedColor.Negative)
+                        }
+                        return@respond
+                    }
 
                     val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(2)
 
