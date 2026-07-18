@@ -4,6 +4,7 @@ import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.getChannelOfOrNull
+import dev.kord.core.entity.Guild
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
@@ -82,114 +83,122 @@ class MessageListener : Extension() {
         val approvingChannel = ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.id.value.toLong())
             ?.let { DiscordConnection.bot.kordRef.getChannelOf<TextChannel>(Snowflake(it)) }
 
-        val carryTypes: MutableList<CarryTypeModel> = mutableListOf()
-
         mutex.withLock {
-            val queueEntries = QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Transcript)?.filter {
+            val allCarryQueues = QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Transcript) ?: return
+
+            val queueEntries = allCarryQueues.filter {
                 ticket.channel?.id == it.relationId
-            } ?: HashSet()
+            }.map { queueModel ->
+                val updateModel = queueModel.getUpdateModel()
+                updateModel.attachmentLink = transcriptUrl
 
-            // TODO make sure to compact the queue entries both for checking the approval threshold and for sending in DMs and the approval channel --> make sure that timestamps are kept
-            for (queueModel in queueEntries) {
-                val firstUpdateModel = queueModel.getUpdateModel()
-                firstUpdateModel.attachmentLink = transcriptUrl
+                QueueConnection.authenticated().updateQueue(queueModel.id, updateModel) ?: queueModel
+            }
 
-                val updatedModel =
-                    QueueConnection.authenticated().updateQueue(queueModel.id, firstUpdateModel) ?: queueModel
+            val totalAmount = queueEntries.sumOf { it.amount }
+            val totalScore = queueEntries.sumOf { it.calculateScore() }
 
-                if ((updatedModel.amount >= APPROVE_AMOUNT_THRESHOLD
-                            || updatedModel.calculateScore() >= APPROVE_SCORE_THRESHOLD)
-                    && approvingChannel != null
-                ) {
-                    val createdMessage = approvingChannel.createMessage {
-                        val embed = ApplicationService.loadEmbedFromCarryQueue(updatedModel)
-                        embed.title = "Accept carry-log?"
-                        embed.color = EmbedColor.Default.color
+            val needsApproval = approvingChannel != null && (totalAmount >= APPROVE_AMOUNT_THRESHOLD || totalScore >= APPROVE_SCORE_THRESHOLD)
 
-                        embeds = mutableListOf(embed)
+            if (needsApproval) {
+                sendToApproving(queueEntries, approvingChannel)
+            } else {
+                logDirectly(queueEntries, server)
+            }
+        }
+    }
 
-                        actionRow {
-                            interactionButton(ButtonStyle.Success, "accept_log") {
-                                label = "Accept"
-                            }
+    private suspend fun sendToApproving(queueEntries: Collection<CarryQueueModel>, approvingChannel: TextChannel) {
+        for (queueModel in queueEntries) { // TODO create one message for all queues here instead, if that's fitting. split it based on the amount maybe? --> consecutive logs of just 1 carry get compacted, if the amount > 2 they stay as they are right now
+            val createdMessage = approvingChannel.createMessage {
+                val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                embed.title = "Accept carry-log?"
+                embed.color = EmbedColor.Default.color
 
-                            interactionButton(ButtonStyle.Danger, "deny") {
-                                label = "Deny"
-                            }
-                        }
+                embeds = mutableListOf(embed)
+
+                actionRow {
+                    interactionButton(ButtonStyle.Success, "accept_log") {
+                        label = "Accept"
                     }
 
-                    scheduler.launch {
-                        DiscordConnection.bot.kordRef
-                            .getUser(Snowflake(updatedModel.carrier.id))
-                            ?.dm {
-                                val embed = ApplicationService.embed
-                                embed.color(EmbedColor.Information)
-                                embed.title = "Approval needed"
-                                embed.description =
-                                    "Due to the high number of score (${updatedModel.calculateScore()}) or carries (${updatedModel.amount}), your ${updatedModel.carryTier.displayName} - ${updatedModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
-                                            "You will be notified here once it was approved or denied."
-
-                                embeds = mutableListOf(embed)
-                            }
-                    }
-
-                    val secondUpdateModel = updatedModel.getUpdateModel()
-
-                    secondUpdateModel.queueStep = QueueStep.Approving
-                    secondUpdateModel.relationId = createdMessage.id.value.toLong()
-
-                    QueueConnection.authenticated().updateQueue(updatedModel.id, secondUpdateModel)
-                } else {
-                    val loggedCarryModel = QueueConnection.authenticated().logQueue(updatedModel.id, firstUpdateModel) ?: continue
-
-                    val updatedScore = loggedCarryModel.scoreModels
-                        .firstOrNull { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
-                        ?.scoreAmount
-                        ?: (ScoreConnection[updatedModel.carryType].authenticated()
-                            .getScore(updatedModel.carrier.id)?.scoreAmount ?: 0)
-
-                    val carrier = DiscordConnection.bot.kordRef.getUser(Snowflake(updatedModel.carrier.id))
-
-                    if (carrier != null) {
-                        carrier.dm {
-                            this.content = "Your carry was logged!\n\n" +
-                                    "**Your Updated Score:** $updatedScore"
-
-                            val embed = ApplicationService.loadEmbedFromCarryQueue(updatedModel)
-                            embed.title = "Information"
-                            embed.color = EmbedColor.Default.color
-
-                            embeds = mutableListOf(embed)
-                        }
-
-                        val logChannel = updatedModel.carryTier
-                            .carryType
-                            .logChannel
-                            ?.let { id: Long ->
-                                server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
-                            }
-
-                        if (logChannel != null) {
-                            logger.debug(
-                                "Carry logged: {}",
-                                MoshiService.moshi.adapter(CarryQueueModel::class.java).toJson(updatedModel)
-                            )
-
-                            logChannel.createMessage {
-                                val embed = ApplicationService.loadEmbedFromCarry(loggedCarryModel.carryModel)
-                                embed.title = "Carry accepted."
-                                embed.color = EmbedColor.Positive.color
-                                embeds = mutableListOf(embed)
-                            }
-                        }
-
-                        QueueConnection.authenticated().deleteQueue(updatedModel.id)
-
-                        carryTypes.add(updatedModel.carryType)
+                    interactionButton(ButtonStyle.Danger, "deny") {
+                        label = "Deny"
                     }
                 }
             }
+
+            scheduler.launch {
+                DiscordConnection.bot.kordRef
+                    .getUser(Snowflake(queueModel.carrier.id))
+                    ?.dm {
+                        val embed = ApplicationService.embed
+                        embed.color(EmbedColor.Information)
+                        embed.title = "Approval needed"
+                        embed.description =
+                            "Due to the high number of score (${queueModel.calculateScore()}) or carries (${queueModel.amount}), your ${queueModel.carryTier.displayName} - ${queueModel.carryDifficulty.displayName} log request has to be manually approved by our server's staff team\n" +
+                                    "You will be notified here once it was approved or denied."
+
+                        embeds = mutableListOf(embed)
+                    }
+            }
+
+            val secondUpdateModel = queueModel.getUpdateModel()
+
+            secondUpdateModel.queueStep = QueueStep.Approving
+            secondUpdateModel.relationId = createdMessage.id.value.toLong()
+
+            QueueConnection.authenticated().updateQueue(queueModel.id, secondUpdateModel)
+        }
+    }
+
+    private suspend fun logDirectly(queueEntries: Collection<CarryQueueModel>, server: Guild) {
+        val carryTypes = mutableListOf<CarryTypeModel>()
+
+        for (queueModel in queueEntries) {
+            val loggedCarryModel = QueueConnection.authenticated().logQueue(queueModel.id, queueModel.getUpdateModel()) ?: continue
+
+            val updatedScore = loggedCarryModel.scoreModels
+                .firstOrNull { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
+                ?.scoreAmount
+                ?: (ScoreConnection[queueModel.carryType].authenticated()
+                    .getScore(queueModel.carrier.id)?.scoreAmount ?: 0)
+
+            val carrier = DiscordConnection.bot.kordRef.getUser(Snowflake(queueModel.carrier.id))
+
+            carrier?.dm {
+                this.content = "Your carry was logged!\n\n" +
+                        "**Your Updated Score:** $updatedScore"
+
+                val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                embed.title = "Information"
+                embed.color = EmbedColor.Default.color
+
+                embeds = mutableListOf(embed)
+            }
+
+            val logChannel = queueModel.carryTier
+                .carryType
+                .logChannel
+                ?.let { id: Long ->
+                    server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
+                }
+
+            if (logChannel != null) {
+                logger.debug(
+                    "Carry logged: {}",
+                    MoshiService.moshi.adapter(CarryQueueModel::class.java).toJson(queueModel)
+                )
+
+                logChannel.createMessage {
+                    val embed = ApplicationService.loadEmbedFromCarry(loggedCarryModel.carryModel)
+                    embed.title = "Carry accepted."
+                    embed.color = EmbedColor.Positive.color
+                    embeds = mutableListOf(embed)
+                }
+            }
+
+            carryTypes.add(queueModel.carryType)
         }
 
         scheduler.launch {
