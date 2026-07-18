@@ -11,12 +11,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.CompletionException
-import java.util.function.Function
+import kotlin.coroutines.cancellation.CancellationException
 
 enum class FlaggingApi(
     val displayName: String,
-    val uuidFunction: Function<UUID, FlagDetail?>?,
-    val discordIdFunction: Function<Long, FlagDetail?>?
+    val uuidFunction: (suspend (UUID) -> FlagDetail?)?,
+    val discordIdFunction: (suspend (Long) -> FlagDetail?)?
 ) {
     JERRY(
         "Jerry",
@@ -34,13 +34,6 @@ enum class FlaggingApi(
         },
         { discordId: Long ->
             FlaggingConnection.isSafetyFlagged(discordId)
-        }
-    ),
-    BLOCK_GAME(
-        "Scammer List (BlockHelper)",
-        null,
-        { discordId: Long ->
-            FlaggingConnection.isBlockGameFlagged(discordId)
         }
     );
 
@@ -69,24 +62,36 @@ enum class FlaggingApi(
         )
     }
 
-    class BlockGameResponse(val success: Boolean, val data: BlockGameData)
-
-    class BlockGameData(val results: Map<String, BlockGameResult?>)
-
-    class BlockGameResult(val tag: String, val id: String, val method: String, val scammed: String)
-
     private val logger: Logger = LoggerFactory.getLogger(FlaggingApi::class.java)
 
     suspend fun execute(uuid: UUID?, id: Long?): FlagResponse = coroutineScope {
         try {
             val uuidFlagged = if (uuidFunction != null && uuid != null) {
-                async { uuidFunction.apply(uuid) }
+                async {
+                    try {
+                        uuidFunction(uuid)
+                    } catch (exception: CancellationException) {
+                        throw exception
+                    } catch (exception: Exception) {
+                        logger.error("Couldn't load $displayName player scammer data for UUID $uuid.", exception)
+                        null
+                    }
+                }
             } else {
                 null
             }
 
             val discordIdFlagged = if (discordIdFunction != null && id != null && id != 0L) {
-                async { discordIdFunction.apply(id) }
+                async {
+                    try{
+                        discordIdFunction(id)
+                    } catch (exception: CancellationException) {
+                        throw exception
+                    } catch (exception: Exception) {
+                        logger.error("Couldn't load $displayName discord scammer for with id $id.", exception)
+                        null
+                    }
+                }
             } else {
                 null
             }

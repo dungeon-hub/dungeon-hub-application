@@ -8,8 +8,8 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.annotations.AlwaysPublicResponse
 import dev.kordex.core.checks.hasPermission
 import dev.kordex.core.commands.Arguments
-import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
-import dev.kordex.core.commands.application.slash.converters.impl.optionalEnumChoice
+import dev.kordex.core.commands.application.slash.converters.impl.optionalStringChoice
+import dev.kordex.core.commands.application.slash.converters.impl.stringChoice
 import dev.kordex.core.commands.application.slash.group
 import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.*
@@ -29,6 +29,7 @@ import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.exceptions.NoNameSchemaWarning
 import net.dungeonhub.application.exceptions.NoOptionFoundException
 import net.dungeonhub.application.loader.LoadExtension
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.service.*
 import net.dungeonhub.application.service.ApplicationService.toEmbed
 import net.dungeonhub.connection.DiscordRoleConnection
@@ -48,7 +49,7 @@ class RoleCommand : Extension() {
     private lateinit var scheduler: Scheduler
 
     override suspend fun setup() {
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         publicSlashCommand {
             name = Role.name
@@ -125,7 +126,7 @@ class RoleCommand : Extension() {
                                         arguments.role.id.value.toLong(),
                                         DiscordRoleUpdateModel(
                                             arguments.nameSchema,
-                                            arguments.roleAction
+                                            arguments.roleActionEnum
                                         )
                                     )
                             } else {
@@ -134,7 +135,7 @@ class RoleCommand : Extension() {
                                         DiscordRoleCreationModel(
                                             arguments.role.id.value.toLong(),
                                             arguments.nameSchema,
-                                            arguments.roleAction ?: RoleAction.None
+                                            arguments.roleActionEnum ?: RoleAction.None
                                         )
                                     )
                             }
@@ -226,7 +227,7 @@ class RoleCommand : Extension() {
 
                     action {
                         val roleRequirements =
-                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().allRoleRequirements
+                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().getAllRoleRequirements()
                                 ?.filter { it.discordRole.id == arguments.role.id.value.toLong() } ?: listOf()
 
                         if (roleRequirements.isEmpty()) {
@@ -261,7 +262,7 @@ class RoleCommand : Extension() {
 
                     action {
                         val roleRequirements =
-                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().allRoleRequirements
+                            RoleRequirementConnection[guild!!.id.value.toLong()].authenticated().getAllRoleRequirements()
                                 ?: listOf()
 
                         if (roleRequirements.isEmpty()) {
@@ -297,8 +298,8 @@ class RoleCommand : Extension() {
                     action {
                         val creationModel = RoleRequirementCreationModel(
                             arguments.role.id.value.toLong(),
-                            arguments.requirementType,
-                            arguments.comparison,
+                            arguments.requirementTypeEnum,
+                            arguments.comparisonEnum,
                             arguments.count,
                             arguments.extraData
                         )
@@ -333,7 +334,7 @@ class RoleCommand : Extension() {
                         val updateModel = roleRequirement.getUpdateModel()
 
                         if(arguments.comparison != null) {
-                            updateModel.comparison = arguments.comparison
+                            updateModel.comparison = arguments.comparisonEnum
                         }
 
                         if(arguments.count != null) {
@@ -396,7 +397,7 @@ class RoleCommand : Extension() {
         if ((arguments.role.guild.asGuild().ownerId != issuer.id)
             && (arguments.role.getPosition() >= (issuer.roles.map { it.getPosition() }.toList().maxOrNull() ?: 0))
         ) {
-            throw CommandExecutionException("You aren't allowed to manage roles that are higher than those that you have.")
+            throw CommandExecutionWarning("You aren't allowed to manage roles that are higher than those that you have.")
         }
 
         val target = arguments.user.asMember(issuer.guildId)
@@ -526,11 +527,14 @@ class RoleCommand : Extension() {
             description = "Set the name schema for this username".toKey()
         }
 
-        val roleAction by optionalEnumChoice<RoleAction> {
+        val roleAction by optionalStringChoice {
             name = "role-action".toKey()
             description = "Set when this role should be applied to users, based on if they're linked or not.".toKey()
-            typeName = "RoleAction".toKey()
+            choices = RoleAction.entries.associate { it.readableName to it.name }.toMutableMap()
         }
+
+        val roleActionEnum: RoleAction?
+            get() = roleAction?.let { RoleAction.valueOf(it) }
     }
 
     class RoleConfigResetArguments : Arguments() {
@@ -558,17 +562,23 @@ class RoleCommand : Extension() {
             description = "Select which role you want to add a requirement for.".toKey()
         }
 
-        val requirementType by enumChoice<RoleRequirementType> {
+        val requirementType by stringChoice {
             name = "requirement-type".toKey()
             description = "Select what you want to use as the requirement.".toKey()
-            typeName = "RoleRequirementType".toKey()
+            choices = RoleRequirementType.entries.associate { it.readableName to it.name }.toMutableMap()
         }
 
-        val comparison by enumChoice<RoleRequirementComparison> {
+        val requirementTypeEnum: RoleRequirementType
+            get() = RoleRequirementType.valueOf(requirementType)
+
+        val comparison by stringChoice {
             name = "comparison".toKey()
             description = "Select which comparison you want to use for the requirement.".toKey()
-            typeName = "RoleRequirementComparison".toKey()
+            choices = RoleRequirementComparison.entries.associate { it.readableName to it.name }.toMutableMap()
         }
+
+        val comparisonEnum: RoleRequirementComparison
+            get() = RoleRequirementComparison.valueOf(comparison)
 
         val count by int {
             name = "count".toKey()
@@ -587,11 +597,14 @@ class RoleCommand : Extension() {
             description = "Select which role requirement you want to edit.".toKey()
         }
 
-        val comparison by optionalEnumChoice<RoleRequirementComparison> {
+        val comparison by optionalStringChoice {
             name = "comparison".toKey()
             description = "Select which comparison you want to use for the requirement.".toKey()
-            typeName = "RoleRequirementComparison".toKey()
+            choices = RoleRequirementComparison.entries.associate { it.readableName to it.name }.toMutableMap()
         }
+
+        val comparisonEnum: RoleRequirementComparison?
+            get() = comparison?.let { RoleRequirementComparison.valueOf(it) }
 
         val count by optionalInt {
             name = "count".toKey()

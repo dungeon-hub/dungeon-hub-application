@@ -20,6 +20,7 @@ import dev.kord.rest.builder.message.embed
 import dev.kord.rest.request.RestRequestException
 import dev.kordex.core.utils.from
 import dev.kordex.core.utils.scheduling.Scheduler
+import io.ktor.http.*
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -33,6 +34,7 @@ import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartPriority
 import net.dungeonhub.application.loader.StartupListener
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.misc.ScoreLeaderboard
 import net.dungeonhub.application.service.ApplicationService.embed
 import net.dungeonhub.application.service.ApplicationService.footer
@@ -48,6 +50,7 @@ import net.dungeonhub.model.static_message.StaticMessageModel
 import net.dungeonhub.service.GsonService
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
@@ -57,7 +60,7 @@ import kotlin.time.Instant.Companion.fromEpochMilliseconds
 object StaticMessageService : StartupListener {
     private val logger = LoggerFactory.getLogger(StaticMessageService::class.java)
     lateinit var scheduler: Scheduler
-    val staticMessageUpdates = mutableListOf<StaticMessageModel>()
+    val staticMessageUpdates = ConcurrentLinkedDeque<StaticMessageModel>()
 
     val reputationLeaderboardDescription by lazy {
         "Check `/help topic:reputation` to see how you can gain reputation.\n" +
@@ -69,13 +72,13 @@ object StaticMessageService : StartupListener {
             scheduler.cancel("Application was restarted.")
         }
 
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         val refreshAllTask = scheduler.schedule(4.hours, startNow = false, name = "Static-Message-Schedule", repeat = true) {
             refreshAllStaticMessages()
         }
 
-        val refreshScheduleTask = scheduler.schedule(3.seconds, startNow = false, name = "Static-Message-Update-Scheduler", repeat = true) {
+        val refreshScheduleTask = scheduler.schedule(15.seconds, startNow = false, name = "Static-Message-Update-Scheduler", repeat = true) {
             staticMessageUpdateWave()
         }
 
@@ -89,15 +92,17 @@ object StaticMessageService : StartupListener {
     }
 
     private suspend fun staticMessageUpdateWave() {
-        val currentWave = staticMessageUpdates.removeFirstOrNull() ?: return
+        val currentWave = staticMessageUpdates.pollFirst() ?: return
 
         refreshStaticMessage(currentWave)
     }
 
-    fun refreshAllStaticMessages() {
+    suspend fun refreshAllStaticMessages() {
         val staticMessages = DiscordServerConnection.authenticated().findGlobalStaticMessages() ?: return
 
         for(staticMessage in staticMessages) {
+            if(!staticMessage.active) continue
+
             staticMessageUpdates.addLast(staticMessage)
         }
     }
@@ -106,7 +111,7 @@ object StaticMessageService : StartupListener {
         staticMessageUpdates.addFirst(staticMessage)
     }
 
-    fun updateScoreLeaderboard(carryTypes: List<CarryTypeModel>) {
+    suspend fun updateScoreLeaderboard(carryTypes: List<CarryTypeModel>) {
         for(carryType in carryTypes) {
             updateStaticMessages(carryType.server.id, StaticMessageType.ScoreLeaderboard, listOf(carryType.id))
         }
@@ -117,7 +122,7 @@ object StaticMessageService : StartupListener {
         }
     }
 
-    fun updateStaticMessages(server: Long, staticMessageType: StaticMessageType, objectIds: List<Long>?) {
+    suspend fun updateStaticMessages(server: Long, staticMessageType: StaticMessageType, objectIds: List<Long>?) {
         var staticMessages = StaticMessageConnection[server].authenticated().findStaticMessages(staticMessageType, null) ?: emptyList()
 
         if(objectIds != null) {
@@ -130,16 +135,28 @@ object StaticMessageService : StartupListener {
     }
 
     suspend fun refreshStaticMessage(staticMessage: StaticMessageModel) {
+        if(!staticMessage.active) return
+
         val channel = try {
             DiscordConnection.bot.kordRef
                 .getChannel(Snowflake(staticMessage.channelId))
                 ?.asChannelOfOrNull<MessageChannel>()
-        } catch (_: RestRequestException) {
-            null
+        } catch (exception: RestRequestException) {
+            if(exception.status == HttpStatusCode.Forbidden || exception.status == HttpStatusCode.NotFound) {
+                null
+            } else {
+                logger.error("Couldn't refresh the static message with id ${staticMessage.id}, retrying again later...", exception)
+                return
+            }
         }
 
         if(channel == null) {
-            logger.warn("Couldn't find channel with id ${staticMessage.channelId}.")
+            logger.warn("Couldn't find channel with id ${staticMessage.channelId}, deactivating the static message ${staticMessage.id}.")
+
+            val updateModel = staticMessage.getUpdateModel()
+            updateModel.active = false
+            StaticMessageConnection[staticMessage.server.id].authenticated().updateStaticMessage(staticMessage.id, updateModel)
+
             return
         }
 
@@ -194,7 +211,7 @@ object StaticMessageService : StartupListener {
             ?: throw CommandExecutionException("Couldn't update static message after being sent.")
     }
 
-    fun setAdditionalMessageProperties(staticMessage: StaticMessageModel): MessageBuilder.() -> Unit {
+    suspend fun setAdditionalMessageProperties(staticMessage: StaticMessageModel): MessageBuilder.() -> Unit {
         when (staticMessage.staticMessageType) {
             StaticMessageType.ScoreLeaderboard, StaticMessageType.TotalLeaderboard -> {
                 return {
@@ -248,7 +265,7 @@ object StaticMessageService : StartupListener {
         }
     }
 
-    fun getStaticMessageEmbeds(staticMessage: StaticMessageModel): MutableList<EmbedBuilder> {
+    suspend fun getStaticMessageEmbeds(staticMessage: StaticMessageModel): MutableList<EmbedBuilder> {
         when (staticMessage.staticMessageType) {
             StaticMessageType.ScoreLeaderboard -> {
                 val carryTypeConnection = CarryTypeConnection[staticMessage.server.id].authenticated()
@@ -301,7 +318,7 @@ object StaticMessageService : StartupListener {
                 val leaderboards: MutableList<ScoreLeaderboard> = mutableListOf()
 
                 for (scoreType in ScoreType.entries) {
-                    if (scoreType == ScoreType.Event && !ServerProperty.TOTAL_SCORE_EVENT.getValue(staticMessage.server.id).map { it == "true" }.orElse(false)) {
+                    if (scoreType == ScoreType.Event && !ServerProperty.TOTAL_SCORE_EVENT.getValue(staticMessage.server.id).let { it == "true" }) {
                         continue
                     }
 
@@ -394,8 +411,8 @@ object StaticMessageService : StartupListener {
     }
 
     @OptIn(ExperimentalTime::class)
-    fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder {
-        val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().allCarryDifficulties ?: listOf()
+    suspend fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder {
+        val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().getAllCarryDifficulties() ?: listOf()
 
         val title = "## " + carryTier.priceTitle + "\n"
         val priceDescription = carryTier.priceDescription?.let { s: String -> s + "\n\n" } ?: ""
@@ -441,7 +458,7 @@ object StaticMessageService : StartupListener {
     private fun handleScoreLeaderboards(guildId: Long, leaderboards: List<ScoreLeaderboard>): MutableList<EmbedBuilder> {
         val embeds = mutableListOf<EmbedBuilder>()
 
-        val compactLeaderboard = ServerProperty.COMPACT_LEADERBOARD.getValue(guildId).map { it == "true" }.orElse(false)
+        val compactLeaderboard = ServerProperty.COMPACT_LEADERBOARD.getValue(guildId)?.let { it == "true" } ?: false
 
         if (compactLeaderboard) {
             embeds.addAll(LeaderboardService.generateCompactLeaderboard(leaderboards))

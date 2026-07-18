@@ -11,13 +11,15 @@ import net.dungeonhub.application.enums.KnownStaticResource
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.connection.*
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
+import net.dungeonhub.model.carry_tier.CarryTierModel
+import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.mojang.connection.MojangConnection
 
 object AutoCompletionService {
     val carryType: AutoCompleteCallback = { event ->
         suggest(
             CarryTypeConnection[event.getGuildId()].authenticated()
-                .allCarryTypes
+                .getAllCarryTypes()
                 ?.filter { carryType ->
                     focusedOption.value.isEmpty()
                             || (carryType.identifier.contains(focusedOption.value, true)
@@ -45,7 +47,7 @@ object AutoCompletionService {
                 CarryTypeConnection[event.getGuildId()].authenticated()
                     .findCarryTypeByString(carryType)
                     ?.let { carryTypeModel ->
-                        CarryTierConnection[carryTypeModel].authenticated().allCarryTiers
+                        CarryTierConnection[carryTypeModel].authenticated().getAllCarryTiers()
                     }
                     ?.filter { carryTier ->
                         focusedOption.value.isEmpty()
@@ -85,7 +87,7 @@ object AutoCompletionService {
             if (carryTierModel != null) {
                 suggest(
                     CarryDifficultyConnection[carryTierModel].authenticated()
-                        .allCarryDifficulties
+                        .getAllCarryDifficulties()
                         ?.filter { carryDifficulty ->
                             focusedOption.value.isEmpty()
                                     || (carryDifficulty.identifier.contains(focusedOption.value, true)
@@ -101,16 +103,24 @@ object AutoCompletionService {
                 )
             }
         } else {
-            val categoryId = event.interaction.channel.asChannelOfOrNull<CategorizableChannel>()?.categoryId
+            val guildId = event.getGuildId()
 
-            val carryTierByCategory = categoryId?.let { category ->
-                DiscordServerConnection.authenticated().getCarryTierFromCategory(event.getGuildId(), category.value.toLong())
-            }
+            val ticket = DiscordServerConnection.authenticated().findTickets(guildId, channelId = channel.id.value.toLong())?.firstOrNull()
+
+            val carryTierByCategory = ticket?.let { getCarryTierFromTicket(it) }
+                ?: channel.asChannelOfOrNull<CategorizableChannel>()
+                    ?.categoryId
+                    ?.let { categoryId ->
+                        DiscordServerConnection.authenticated().getCarryTierFromCategory(
+                            guildId,
+                            categoryId.value.toLong()
+                        )
+                    }
 
             if (carryTierByCategory != null) {
                 suggest(
                     CarryDifficultyConnection[carryTierByCategory].authenticated()
-                        .allCarryDifficulties
+                        .getAllCarryDifficulties()
                         ?.filter { carryDifficulty ->
                             focusedOption.value.isEmpty()
                                     || (carryDifficulty.identifier.contains(focusedOption.value, true)
@@ -140,7 +150,7 @@ object AutoCompletionService {
                 (CarryTypeConnection[event.getGuildId()].authenticated()
                     .getByIdentifier(carryType)
                     ?.let { carryTypeModel ->
-                        PurgeTypeConnection[carryTypeModel].authenticated().allPurgeTypes
+                        PurgeTypeConnection[carryTypeModel].authenticated().getAllPurgeTypes()
                     } ?: listOf())
                     .filter { purgeType ->
                         focusedOption.value.isEmpty()
@@ -203,15 +213,19 @@ object AutoCompletionService {
             suggest(
                 HypixelApiConnection().getSkyblockProfiles(uuid)?.profiles?.map {
                     it.cuteName to it.profileId
-                }?.map {
+                }?.map { (name, uuid) ->
                     Choice.StringChoice(
-                        name = it.first ?: "Unknown (${it.second})",
-                        value = it.second.toString(),
+                        name = name ?: "Unknown ($uuid)",
+                        value = uuid.toString(),
                         nameLocalizations = Optional()
                     )
                 } ?: emptyList()
             )
         }
+    }
+
+    fun getCarryTierFromTicket(ticket: TicketModel): CarryTierModel? {
+        return ticket.ticketPanel.relatedCarryTier
     }
 }
 

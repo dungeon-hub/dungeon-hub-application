@@ -5,7 +5,10 @@ import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.publicSubCommand
-import dev.kordex.core.commands.converters.impl.*
+import dev.kordex.core.commands.converters.impl.boolean
+import dev.kordex.core.commands.converters.impl.optionalChannel
+import dev.kordex.core.commands.converters.impl.optionalString
+import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.utils.getLocale
@@ -81,7 +84,6 @@ class CarryTierCommand : Extension() {
                         val creationModel = CarryTierCreationModel(
                             identifier = identifier,
                             displayName = arguments.displayName,
-                            relatedTicketPanel = arguments.ticketPanel,
                             category = arguments.category?.id?.value?.toLong(),
                             descriptiveName = arguments.descriptiveName,
                             thumbnailUrl = arguments.thumbnailUrl,
@@ -165,7 +167,7 @@ class CarryTierCommand : Extension() {
                             CarryTierConnection[carryType].authenticated().getByIdentifier(arguments.carryTier)
                                 ?: throw InvalidOptionException("carry-tier", "That carry tier doesn't exist")
 
-                        if (arguments.displayName == null && arguments.category == null && arguments.descriptiveName == null && arguments.thumbnailUrl == null && arguments.priceTitle == null && arguments.ticketPanel == null) {
+                        if (arguments.displayName == null && arguments.category == null && arguments.descriptiveName == null && arguments.thumbnailUrl == null && arguments.priceTitle == null) {
                             throw CommandExecutionWarning("Please provide something you want to edit.")
                         }
 
@@ -207,10 +209,6 @@ class CarryTierCommand : Extension() {
                             updateModel.priceTitle = arguments.priceTitle
                         }
 
-                        if(arguments.ticketPanel != null) {
-                            updateModel.relatedTicketPanel = arguments.ticketPanel
-                        }
-
                         val updatedCarryTier =
                             CarryTierConnection[carryType].authenticated().updateCarryTier(carryTier.id, updateModel)
                                 ?: throw CommandExecutionWarning("Couldn't update carry tier.")
@@ -237,7 +235,7 @@ class CarryTierCommand : Extension() {
                             CarryTierConnection[carryType].authenticated().getByIdentifier(arguments.carryTier)
                                 ?: throw InvalidOptionException("carry-tier", "Carry tier doesn't exist")
 
-                        if (!arguments.category && !arguments.priceChannel && !arguments.descriptiveName && !arguments.thumbnailUrl && !arguments.priceTitle && !arguments.ticketPanel) {
+                        if (!arguments.category && !arguments.descriptiveName && !arguments.thumbnailUrl && !arguments.priceTitle) {
                             throw CommandExecutionWarning("Please provide something you want to reset.")
                         }
 
@@ -257,10 +255,6 @@ class CarryTierCommand : Extension() {
 
                         if (arguments.priceTitle) {
                             updateModel.priceTitle = null
-                        }
-
-                        if(arguments.ticketPanel) {
-                            updateModel.relatedTicketPanel = null
                         }
 
                         val updatedCarryTier =
@@ -320,11 +314,6 @@ class CarryTierCommand : Extension() {
             name = CarryTier.Create.Arguments.PriceTitle.name
             description = CarryTier.Create.Arguments.PriceTitle.description
         }
-
-        val ticketPanel by optionalLong {
-            name = CarryTier.Create.Arguments.TicketPanel.name
-            description = CarryTier.Create.Arguments.TicketPanel.description
-        }
     }
 
     class CarryTierArguments : Arguments() {
@@ -383,11 +372,6 @@ class CarryTierCommand : Extension() {
             name = CarryTier.Edit.Arguments.PriceTitle.name
             description = CarryTier.Edit.Arguments.PriceTitle.description
         }
-
-        val ticketPanel by optionalLong {
-            name = CarryTier.Edit.Arguments.TicketPanel.name
-            description = CarryTier.Edit.Arguments.TicketPanel.description
-        }
     }
 
     class CarryTierResetArguments : Arguments() {
@@ -415,11 +399,6 @@ class CarryTierCommand : Extension() {
             description = CarryTier.Reset.Arguments.Category.description
         }
 
-        val priceChannel by boolean {
-            name = CarryTier.Reset.Arguments.PriceChannel.name
-            description = CarryTier.Reset.Arguments.PriceChannel.description
-        }
-
         val thumbnailUrl by boolean {
             name = CarryTier.Reset.Arguments.ThumbnailUrl.name
             description = CarryTier.Reset.Arguments.ThumbnailUrl.description
@@ -428,11 +407,6 @@ class CarryTierCommand : Extension() {
         val priceTitle by boolean {
             name = CarryTier.Reset.Arguments.PriceTitle.name
             description = CarryTier.Reset.Arguments.PriceTitle.description
-        }
-
-        val ticketPanel by boolean {
-            name = CarryTier.Reset.Arguments.TicketPanel.name
-            description = CarryTier.Reset.Arguments.TicketPanel.description
         }
     }
 }

@@ -59,7 +59,7 @@ class ConfigCommand : Extension() {
                         val guildId = guild!!.id.value.toLong()
 
                         val property = arguments.getProperty(guildId)
-                        val value = ServerService.getActualServerProperty(guildId, property).orElse(null)
+                        val value = ServerService.getActualServerProperty(guildId, property)
 
                         if (value == null) {
                             val embed = ApplicationService.embed
@@ -217,17 +217,14 @@ class ConfigCommand : Extension() {
                                 throw InvalidOptionException("property", "This property is disabled on this server.")
                             }
 
-                            val oldValue = ServerService.getActualServerProperty(guildId, property)
-                                .map { property.propertyType.applyPropertyType(it) }
-                                .orElse("None was set.")
+                            val oldValue = ServerService.getActualServerProperty(guildId, property)?.let {
+                                property.propertyType.applyPropertyType(it)
+                            } ?: "None was set."
 
                             val serverData = ServerService.getServerData(guildId)
+                                ?: throw CommandExecutionException("Couldn't load the server data from storage.")
 
-                            if (serverData.isEmpty) {
-                                throw CommandExecutionException("Couldn't load the server data from storage.")
-                            }
-
-                            serverData.get().setConfig(property, null)
+                            serverData.setConfig(property, null)
 
                             val embed = ApplicationService.embed
                             embed.color = EmbedColor.Positive.color
@@ -247,7 +244,7 @@ class ConfigCommand : Extension() {
         }
     }
 
-    fun setConfig(property: ServerProperty, newValue: String, guildId: Long): EmbedBuilder {
+    suspend fun setConfig(property: ServerProperty, newValue: String, guildId: Long): EmbedBuilder {
         if (!property.isEnabled(guildId)) {
             throw InvalidOptionException("property", "This property is disabled on this server.")
         }
@@ -258,17 +255,14 @@ class ConfigCommand : Extension() {
             throw InvalidOptionException("value", "Please enter a new value.")
         }
 
-        val oldValue = ServerService.getActualServerProperty(guildId, property)
-            .map { property.propertyType.applyPropertyType(it) }
-            .orElse("None was set.")
+        val oldValue = ServerService.getActualServerProperty(guildId, property)?.let {
+            property.propertyType.applyPropertyType(it)
+        } ?: "None was set."
 
         val serverData = ServerService.getServerData(guildId)
+            ?: throw CommandExecutionException("Couldn't load the server data from storage.")
 
-        if (serverData.isEmpty) {
-            throw CommandExecutionException("Couldn't load the server data from storage.")
-        }
-
-        serverData.get().setConfig(property, value)
+        serverData.setConfig(property, value)
 
         val embed = ApplicationService.embed
         embed.color = EmbedColor.Positive.color

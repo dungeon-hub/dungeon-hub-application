@@ -95,16 +95,10 @@ class TicketOpenListener : Extension() {
             }
 
             textChannel.edit {
-                val newName = TicketSystem.buildTicketName(updatedTicket.ticketPanel, updatedTicket, member.asMember(), textChannel)
-
-                if(newName != null) {
-                    name = newName
-                }
-
                 permissionOverwrites?.clear()
                 updateTicketPermissions(updatedTicket.ticketPanel, updatedTicket)
 
-                val categories = if (ticket.state in listOf(TicketState.Creating, TicketState.Open)) {
+                val categories = if (updatedTicket.state in listOf(TicketState.Creating, TicketState.Open)) {
                     updatedTicket.ticketPanel.openCategories
                 } else {
                     updatedTicket.ticketPanel.closedCategories
@@ -112,11 +106,23 @@ class TicketOpenListener : Extension() {
                 TicketSystem.getCategory(categories)?.let { parentId = Snowflake(it) }
             }
 
+            val updateTime = TicketSystem.updateTicketName(updatedTicket, member, textChannel)
+
             textChannel.createMessage {
                 addEmbed {
-                    description = "Ticket opened by ${member.mention}."
+                    description = "Ticket opened by ${member.mention}.${
+                        if(updateTime != null) {
+                            "\n-# The ticket name will be updated in $updateTime due to ratelimits."
+                        } else {
+                            ""
+                        }
+                    }"
                     color(EmbedColor.Default)
                 }
+            }
+
+            TicketSystem.logTicketAction(member.guild, ticket) {
+                description = "Ticket #${ticket.id} opened by ${member.mention}."
             }
         }
 

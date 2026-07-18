@@ -8,17 +8,15 @@ import dev.kord.core.entity.Guild
 import dev.kord.core.entity.channel.GuildChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.VoiceChannel
-import dev.kord.core.supplier.EntitySupplyStrategy
-import dev.kord.core.supplier.RestEntitySupplier
 import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.DiscordConnection
-import net.dungeonhub.application.connection.getGuildOrNull
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.hypixel.service.FormattingService
@@ -53,7 +51,7 @@ object ServerStatsService : StartupListener {
             scheduler.cancel("Application was restarted.")
         }
 
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         val task = scheduler.schedule(2.hours, startNow = false, name = "Server-Stats-Schedule", repeat = true) {
             logger.debug("Server stat channels reloading...")
@@ -69,12 +67,10 @@ object ServerStatsService : StartupListener {
     }
 
     private suspend fun loadServerStatChannels() {
-        serverStatChannels.forEach { server ->
-            val supplier: RestEntitySupplier = DiscordConnection.bot.kordRef.with(EntitySupplyStrategy.rest)
-
-            supplier.getGuildOrNull(Snowflake(server.first), true)
+        serverStatChannels.forEach { (guild, channels) ->
+            DiscordConnection.bot.kordRef.getGuildOrNull(Snowflake(guild))
                 ?.let {
-                    updateStatChannels(it, server.second)
+                    updateStatChannels(it, channels)
                 }
         }
     }
@@ -95,14 +91,14 @@ object ServerStatsService : StartupListener {
             ZonedDateTime.now().minusDays(30).toInstant()
         ) ?: 0
 
-        channels.forEach { channel ->
-            guild.getChannelOfOrNull<GuildChannel>(Snowflake(channel.first))
+        channels.forEach { (channel, stats) ->
+            guild.getChannelOfOrNull<GuildChannel>(Snowflake(channel))
                 ?.let { guildChannel ->
-                    if (channel.second.contains("{member_count}") && guild.approximateMemberCount == null) {
+                    if (stats.contains("{member_count}") && guild.approximateMemberCount == null) {
                         return@let
                     }
 
-                    val newName = channel.second
+                    val newName = stats
                         .replace("{linked_users}", linkedUsers.toString())
                         .replace("{spent_money}", spentMoney.toString())
                         .replace("{member_count}", guild.approximateMemberCount.toString())

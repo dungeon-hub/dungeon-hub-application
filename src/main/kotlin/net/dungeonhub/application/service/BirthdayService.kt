@@ -5,6 +5,10 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.utils.scheduling.Scheduler
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -13,14 +17,15 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
-import net.dungeonhub.providers.HttpClientProvider.httpClient
+import net.dungeonhub.application.misc.DhScheduler
+import net.dungeonhub.client.DungeonHubClient
 import net.fortuna.ical4j.data.CalendarBuilder
+import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.Period
-import okhttp3.Request
 import org.slf4j.LoggerFactory
+import java.io.ByteArrayInputStream
 import java.io.IOException
-import java.io.InputStream
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -46,7 +51,7 @@ object BirthdayService : StartupListener {
             scheduler.cancel("Application was restarted.")
         }
 
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         val task = scheduler.schedule(24.hours, startNow = false, name = "Birthdays-Schedule", repeat = true) {
             updateBirthdayData()
@@ -119,32 +124,29 @@ object BirthdayService : StartupListener {
             .filter { it.isToday(today) }
     }
 
-    fun updateBirthdayData() {
-        val request = Request.Builder()
-            .url(BIRTHDAY_CALENDAR_URL)
-            .get()
-            .build()
-
+    suspend fun updateBirthdayData() {
         try {
-            httpClient.newCall(request).execute().let { response ->
-                if (response.isSuccessful && response.body != null) {
-                    response.body!!.byteStream().let { inputStream: InputStream ->
-                        CalendarBuilder().build(inputStream).let { calendar ->
-                            val birthdayList = calendar.componentList.all.mapNotNull { component ->
-                                Birthday.fromComponent(component)
-                            }
+            DungeonHubClient().executeRawRequest {
+                url(Url(BIRTHDAY_CALENDAR_URL))
+            }?.takeIf { it.status.isSuccess() }?.bodyAsBytes()?.takeIf { it.isNotEmpty() }?.let {
+                CalendarBuilder().build(ByteArrayInputStream(it))?.let { calendar ->
+                    val birthdayList = calendar.componentList.all.mapNotNull { component ->
+                        Birthday.fromComponent(component)
+                    }
 
-                            if (birthdayList.isNotEmpty()) {
-                                birthdays = birthdayList
-                            }
-                        }
+                    if (birthdayList.isNotEmpty()) {
+                        birthdays = birthdayList
                     }
                 }
             }
+        } catch (exception: CancellationException) {
+            throw exception
         } catch (exception: IOException) {
-            logger.error(null, exception)
+            logger.error("Couldn't load the birthday calendar.", exception)
         } catch (exception: NullPointerException) {
             logger.error(null, exception)
+        } catch (exception: ParserException) {
+            logger.error("Couldn't parse the birthday calendar data.", exception)
         }
     }
 

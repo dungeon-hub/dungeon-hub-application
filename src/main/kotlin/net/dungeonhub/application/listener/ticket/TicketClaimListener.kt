@@ -101,14 +101,26 @@ class TicketClaimListener : Extension() {
             }
         }
 
+        TicketSystem.logTicketAction(member.guild, ticket) {
+            description = "Ticket #${ticket.id} claimed by ${member.mention}."
+        }
+
         TicketSystem.scheduler.launch {
-            updateTicketChannel(updatedTicket, member, textChannel)
+            updateTicketChannel(updatedTicket, textChannel)
+
+            val updateTime = TicketSystem.updateTicketName(updatedTicket, member, textChannel)
 
             // TODO configurable message
             textChannel.createMessage {
                 content = "<@${ticket.user.id}>, your ticket has been claimed by ${member.mention}."
                 addEmbed {
-                    description = "Ticket claimed by ${member.mention}."
+                    description = "Ticket claimed by ${member.mention}.${
+                        if (updateTime != null) {
+                            "\n-# The ticket name will be updated in $updateTime due to ratelimits."
+                        } else {
+                            ""
+                        }
+                    }"
                     color(EmbedColor.Default)
                 }
 
@@ -143,12 +155,24 @@ class TicketClaimListener : Extension() {
             }
         }
 
+        TicketSystem.logTicketAction(member.guild, ticket) {
+            description = "Ticket #${ticket.id} unclaimed by ${member.mention}."
+        }
+
         TicketSystem.scheduler.launch {
-            updateTicketChannel(updatedTicket, member, textChannel)
+            updateTicketChannel(updatedTicket, textChannel)
+
+            val updateTime = TicketSystem.updateTicketName(updatedTicket, member, textChannel)
 
             textChannel.createMessage {
                 addEmbed {
-                    description = "Ticket unclaimed by ${member.mention}."
+                    description = "Ticket unclaimed by ${member.mention}.${
+                        if (updateTime != null) {
+                            "\n-# The ticket name will be updated in $updateTime due to ratelimits."
+                        } else {
+                            ""
+                        }
+                    }"
                     color(EmbedColor.Default)
                 }
             }
@@ -160,21 +184,15 @@ class TicketClaimListener : Extension() {
         }
     }
 
-    fun updateTicketState(ticket: TicketModel, member: Member?): TicketModel? {
+    suspend fun updateTicketState(ticket: TicketModel, member: Member?): TicketModel? {
         val updateModel = ticket.getUpdateModel()
         updateModel.claimer = member?.id?.value?.toLong()
 
         return TicketConnection[ticket.ticketPanel.discordServer, ticket.ticketPanel].authenticated().updateTicket(ticket.id, updateModel)
     }
 
-    suspend fun updateTicketChannel(ticket: TicketModel, member: Member, textChannel: TextChannel) {
+    suspend fun updateTicketChannel(ticket: TicketModel, textChannel: TextChannel) {
         textChannel.edit {
-            val newName = TicketSystem.buildTicketName(ticket.ticketPanel, ticket, member, textChannel)
-
-            if(newName != null) {
-                name = newName
-            }
-
             permissionOverwrites?.clear()
             updateTicketPermissions(ticket.ticketPanel, ticket)
 

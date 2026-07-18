@@ -1,6 +1,9 @@
 package net.dungeonhub.application.connection
 
-import com.squareup.moshi.adapter
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -12,41 +15,13 @@ import net.dungeonhub.application.misc.FlagDetail
 import net.dungeonhub.application.misc.FlagDetail.FlagDetailBuilder.builder
 import net.dungeonhub.application.misc.FlagResponse
 import net.dungeonhub.client.DungeonHubClient
-import net.dungeonhub.service.MoshiService.moshi
-import net.dungeonhub.structure.Connection
-import net.dungeonhub.structure.ExternalConnection
-import okhttp3.Dns
-import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.net.Inet4Address
-import java.net.InetAddress
-import java.net.UnknownHostException
 import java.util.*
 
-@OptIn(ExperimentalStdlibApi::class)
-object FlaggingConnection : ExternalConnection {
-    override val logger: Logger = LoggerFactory.getLogger(FlaggingConnection::class.java)
-    override val client = DungeonHubClient()
-
-    class Ipv4Dns : Dns {
-        override fun lookup(hostname: String): List<InetAddress> {
-            val all = Dns.SYSTEM.lookup(hostname)
-            val ipv4Only = all.filterIsInstance<Inet4Address>()
-            if (ipv4Only.isEmpty()) {
-                throw UnknownHostException("No IPv4 address found for $hostname")
-            }
-            return ipv4Only
-        }
-    }
-
-    val ipv4Client = OkHttpClient.Builder()
-        .dns(Ipv4Dns())
-        .build()
+object FlaggingConnection {
+    val logger: Logger = LoggerFactory.getLogger(FlaggingConnection::class.java)
+    val client = DungeonHubClient()
 
     suspend fun isFlagged(id: Long?): List<FlagResponse> {
         return isFlagged(null, id)
@@ -62,97 +37,34 @@ object FlaggingConnection : ExternalConnection {
         }.awaitAll()
     }
 
-    fun isBlockGameFlagged(id: Long): FlagDetail? {
-        val httpUrl = (ConfigProperty.BLOCK_GAME_API_URL.toString()).toHttpUrl()
-            .newBuilder()
-            .build()
-
-        val jsonBody = mapOf("ids" to listOf(id.toString()))
-
-        val requestBody = moshi.adapter<Map<String, List<String>>>().toJson(jsonBody).toRequestBody(Connection.jsonMediaType)
-
-        val request = Request.Builder()
-            .url(httpUrl)
-            .addHeader("authorization", ConfigProperty.BLOCK_GAME_API_KEY.value!!)
-            .post(requestBody)
-            .build()
-
-        return ipv4Client.newCall(request).execute().use { response ->
-            val fallback = FlagDetail.Builder().flagged(false).build()
-
-            if(!response.isSuccessful) return fallback
-
-            val body = response.body?.string()
-                ?: return fallback
-
-            fromBlockGameResponse(
-                moshi.adapter<FlaggingApi.BlockGameResponse>().fromJson(
-                    body
-                )!!, id
-            )
+    suspend fun isSafetyFlagged(uuid: UUID): FlagDetail? = try {
+        client.executeRawRequest {
+            url(Url("${ConfigProperty.SAFETY_API_URL}check/$uuid"))
+            parameter("type", "uuid")
+            header("Authorization", "Key ${ConfigProperty.SAFETY_API_KEY.value!!}")
+        }?.body<HypixelSafetyData>()?.let {
+            fromSafetyResponse(it)
         }
+    } catch (exception: CancellationException) {
+        throw exception
+    } catch (exception: Exception) {
+        logger.error("Couldn't check safety-flagged status for uuid $uuid", exception)
+        null
     }
 
-    fun fromBlockGameResponse(data: FlaggingApi.BlockGameResponse, userId: Long): FlagDetail? {
-        if(!data.success || data.data.results.isEmpty()) {
-            return null
+    suspend fun isSafetyFlagged(id: Long): FlagDetail? = try {
+        client.executeRawRequest {
+            url(Url("${ConfigProperty.SAFETY_API_URL}check/$id"))
+            parameter("type", "discord")
+            header("Authorization", "Key ${ConfigProperty.SAFETY_API_KEY.value!!}")
+        }?.body<HypixelSafetyData>()?.let {
+            fromSafetyResponse(it)
         }
-
-        val reason = StringBuilder()
-
-        val userData = data.data.results[userId.toString()]
-            ?: return builder().flagged(false).build()
-
-        reason.append("(").append(userData.scammed).append(")")
-
-        reason.append(" -> ").append(userData.method)
-
-        return builder()
-            .flagged(true)
-            .reason(reason.toString())
-            .build()
-    }
-
-    fun isSafetyFlagged(uuid: UUID): FlagDetail? {
-        val httpUrl = (ConfigProperty.SAFETY_API_URL.toString() + "check/" + uuid).toHttpUrl()
-            .newBuilder()
-            .addQueryParameter("type", "uuid")
-            .build()
-
-        val request = Request.Builder()
-            .url(httpUrl)
-            .addHeader("Authorization", "Key " + ConfigProperty.SAFETY_API_KEY.value!!)
-            .get()
-            .build()
-
-        return executeRequest(request, FlagDetail.Builder().flagged(false).build()) {
-            fromSafetyResponse(
-                moshi.adapter<HypixelSafetyData>().fromJson(
-                    it
-                )!!
-            )
-        }
-    }
-
-    fun isSafetyFlagged(id: Long): FlagDetail? {
-        val httpUrl: HttpUrl = (ConfigProperty.SAFETY_API_URL.toString() + "check/" + id).toHttpUrl()
-            .newBuilder()
-            .addQueryParameter("type", "discord")
-            .build()
-
-        val request = Request.Builder()
-            .url(httpUrl)
-            .addHeader("Authorization", "Key " + ConfigProperty.SAFETY_API_KEY.value!!)
-            .get()
-            .build()
-
-        return executeRequest(request, FlagDetail.Builder().flagged(false).build()) {
-            fromSafetyResponse(
-                moshi.adapter<HypixelSafetyData>().fromJson(
-                    it
-                )!!
-            )
-        }
+    } catch (exception: CancellationException) {
+        throw exception
+    } catch (exception: Exception) {
+        logger.error("Couldn't check safety-flagged status for id $id", exception)
+        null
     }
 
     fun fromSafetyResponse(data: HypixelSafetyData): FlagDetail {
@@ -174,38 +86,36 @@ object FlaggingConnection : ExternalConnection {
         return builder.build()
     }
 
-    fun isJerryFlagged(uuid: UUID): FlagDetail? {
-        val httpUrl: HttpUrl = (ConfigProperty.JERRY_API_URL.toString() + "v1/scammers/" + uuid).toHttpUrl()
-
-        val request = Request.Builder()
-            .url(httpUrl)
-            .addHeader("Authorization", "Bearer " + ConfigProperty.JERRY_API_KEY)
-            .get()
-            .build()
-
-        return executeRequest(request) { s: String? ->
-            moshi.adapter<FlaggingApi.JerryData>().fromJson(
-                s!!
-            )
-        }?.takeIf { it.success }
-            ?.let { rootObject -> this.fromJerryResponse(rootObject) }
+    suspend fun isJerryFlagged(uuid: UUID): FlagDetail? {
+        return try {
+            client.executeRawRequest {
+                url(Url(ConfigProperty.JERRY_API_URL.toString() + "v1/scammers/$uuid"))
+                header("Authorization", "Bearer " + ConfigProperty.JERRY_API_KEY)
+            }?.body<FlaggingApi.JerryData>()?.takeIf { it.success }?.let {
+                fromJerryResponse(it)
+            }
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            logger.error("Couldn't check jerry-flagged status for uuid $uuid", exception)
+            null
+        }
     }
 
-    fun isJerryFlagged(id: Long): FlagDetail? {
-        val httpUrl = (ConfigProperty.JERRY_API_URL.toString() + "v1/scammers/discord/" + id).toHttpUrl()
-
-        val request = Request.Builder()
-            .url(httpUrl)
-            .addHeader("Authorization", "Bearer " + ConfigProperty.JERRY_API_KEY)
-            .get()
-            .build()
-
-        return executeRequest(request) { s: String? ->
-            moshi.adapter<FlaggingApi.JerryData>().fromJson(
-                s!!
-            )
-        }?.takeIf { jsonObject -> jsonObject.success }
-            ?.let { rootObject -> this.fromJerryResponse(rootObject) }
+    suspend fun isJerryFlagged(id: Long): FlagDetail? {
+        return try {
+            client.executeRawRequest {
+                url(Url(ConfigProperty.JERRY_API_URL.toString() + "v1/scammers/discord/$id"))
+                header("Authorization", "Bearer " + ConfigProperty.JERRY_API_KEY)
+            }?.body<FlaggingApi.JerryData>()?.takeIf { it.success }?.let {
+                fromJerryResponse(it)
+            }
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            logger.error("Couldn't check jerry-flagged status for id $id", exception)
+            null
+        }
     }
 
     fun fromJerryResponse(jerryData: FlaggingApi.JerryData): FlagDetail {

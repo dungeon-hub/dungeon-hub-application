@@ -2,7 +2,7 @@ package net.dungeonhub.application.misc
 
 import dev.kord.core.entity.User
 import dev.kord.core.entity.effectiveName
-import net.dungeonhub.application.exceptions.NotLinkedException
+import net.dungeonhub.application.exceptions.NotLinkedWarning
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.model.discord_user.DiscordUserModel
 import net.dungeonhub.mojang.connection.MojangConnection
@@ -16,7 +16,7 @@ class PlayerInformation(
 
     val profiles by lazy {
         apiConnection.getSkyblockProfiles(
-            discordUserModel.minecraftId ?: throw NotLinkedException()
+            discordUserModel.minecraftId ?: throw NotLinkedWarning()
         )?.profiles
     }
 
@@ -33,7 +33,7 @@ class PlayerInformation(
             replacements["discord.name"] = { user.username }
             replacements["discord.displayname"] = { user.effectiveName }
             replacements["minecraft.name"] = {
-                MojangConnection.getNameByUUID(discordUserModel.minecraftId ?: throw NotLinkedException())
+                MojangConnection.getNameByUUID(discordUserModel.minecraftId ?: throw NotLinkedWarning())
             }
             replacements["skyblock.catacombs.level"] =
                 {
@@ -43,7 +43,7 @@ class PlayerInformation(
                 }
             replacements["skyblock.level"] = {
                 selectedProfiles?.maxOfOrNull {
-                    it.getCurrentMember(discordUserModel.minecraftId ?: throw NotLinkedException())?.leveling?.level
+                    it.getCurrentMember(discordUserModel.minecraftId ?: throw NotLinkedWarning())?.leveling?.level
                         ?: 0
                 }?.toString() ?: "?"
             }

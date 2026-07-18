@@ -17,6 +17,7 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.interaction.ActionInteractionCreateEvent
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.rest.builder.component.ActionRowBuilder
+import dev.kord.rest.builder.component.option
 import dev.kord.rest.builder.interaction.ModalBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
@@ -32,12 +33,14 @@ import net.dungeonhub.application.commands.TicketSystem.Companion.updateTicketPe
 import net.dungeonhub.application.commands.addSilentLinkButtons
 import net.dungeonhub.application.connection.applyJson
 import net.dungeonhub.application.enums.EmbedColor
+import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.misc.TicketPlaceholders
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.MessagesService
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
+import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.connection.TicketConnection
 import net.dungeonhub.connection.TicketPanelConnection
@@ -50,11 +53,14 @@ import net.dungeonhub.model.ticket.TicketFormResponseModel
 import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.model.ticket_panel.TicketPanelFormModel
 import net.dungeonhub.model.ticket_panel.TicketPanelModel
+import net.dungeonhub.mojang.connection.MojangConnection
 import net.dungeonhub.service.GsonService
+import org.slf4j.LoggerFactory
 
 @LoadExtension
 class TicketCreateListener : Extension() {
     override val name = "ticket-create-listener"
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     override suspend fun setup() {
         event<GuildButtonInteractionCreateEvent> {
@@ -77,8 +83,8 @@ class TicketCreateListener : Extension() {
                         ticketPanel.displayName ?: ticketPanel.name,
                         "ticket-form-${ticketPanel.id}"
                     ) {
-                        ticketPanel.formQuestions.forEach { formQuestion ->
-                            loadModalOption(ticketPanel, formQuestion)
+                        ticketPanel.formQuestions.forEachIndexed { index, formQuestion ->
+                            loadModalOption(event.interaction.user, ticketPanel, index, formQuestion)
                         }
                     }
                     return@action
@@ -89,18 +95,40 @@ class TicketCreateListener : Extension() {
         }
     }
 
-    fun ModalBuilder.loadModalOption(ticketPanel: TicketPanelModel, formQuestion: TicketPanelFormModel) {
-        val data = JsonParser.parseString(formQuestion.data)?.asJsonPrimitive?.asString
+    suspend fun ModalBuilder.loadModalOption(
+        member: Member,
+        ticketPanel: TicketPanelModel,
+        index: Int,
+        formQuestion: TicketPanelFormModel
+    ) {
+        val formQuestionData = JsonParser.parseString(formQuestion.data)
 
         if(formQuestion.type == FormType.Predefined) {
-            if(data == "carry-difficulty") { // TODO enum?
-                actionRow {
-                    textInput( // TODO make this a select menu once that becomes available in Kord
-                        TextInputStyle.Short,
-                        "carry-difficulty",
-                        "Enter a carry difficulty"
-                    ) {
-                        required = true
+            val data = formQuestionData?.asJsonPrimitive?.asString
+
+            if(data == "ign-display") { // TODO enum?
+                val discordUser = DiscordUserConnection.authenticated().getLinkedById(member.id.value.toLong()) ?: return
+
+                val ign = discordUser.minecraftId?.let { MojangConnection.getNameByUUID(it) } ?: return
+
+                textDisplay {
+                    content = "You're currently linked to the Minecraft account `$ign`.\n" +
+                            "-# If that seems incorrect, please unlink using `/unlink` and then `/link` to the correct account."
+                }
+            } else if(data == "carry-difficulty") { // TODO enum?
+                val carryTier = ticketPanel.relatedCarryTier ?: return
+
+                val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().getAllCarryDifficulties()
+                    ?: return
+
+                label("Carry Difficulty") {
+                    stringSelect("carry-difficulty") {
+                        carryDifficulties.forEach {
+                            option(
+                                it.displayName,
+                                it.identifier
+                            )
+                        }
                     }
                 }
             } else if(data == "carry-amount") { // TODO enum?
@@ -108,7 +136,7 @@ class TicketCreateListener : Extension() {
                     textInput( // TODO make this a select menu once that becomes available in Kord
                         TextInputStyle.Short,
                         "carry-amount",
-                        "Enter an amount"
+                        "Enter a number of carries"
                     ) {
                         placeholder = "Only enter a number here"
                         required = true
@@ -116,6 +144,66 @@ class TicketCreateListener : Extension() {
                 }
             }
         } else {
+            val data = formQuestionData?.asJsonObject ?: return
+
+            when(formQuestion.type) {
+                FormType.TextInput -> {
+                    val inputType = data.get("input-type").asString.let {
+                        when(it?.lowercase()) {
+                            "short" -> TextInputStyle.Short
+                            "paragraph" -> TextInputStyle.Paragraph
+                            else -> TextInputStyle.Short
+                        }
+                    }
+                    val label = data.get("label").asString
+                    val placeholder = data.get("placeholder").asString
+                    val required = data.get("required").asBoolean
+
+                    label(label) {
+                        textInput(inputType, "form-question-$index") {
+                            this.placeholder = placeholder
+                            this.required = required
+                        }
+                    }
+                }
+                FormType.StringSelect -> {
+                    val label = data.get("label").asString
+                    val labelDescription = data.get("description")?.asString
+                    val options = data.get("options").asJsonArray.map { it.asString }
+                    val maxValues = data.get("max-values")?.asInt ?: 1
+
+                    label(label) {
+                        description = labelDescription
+
+                        stringSelect("form-question-$index") {
+                            options.forEach { selectOption -> // TODO support requirements for the options
+                                if(selectOption.contains(":")) {
+                                    val split = selectOption.split(":", limit = 2)
+
+                                    val value = split[0]
+                                    val label = split[1]
+
+                                    option(label, value)
+                                } else {
+                                    option(selectOption, selectOption)
+                                }
+                            }
+
+                            allowedValues = 1..maxValues
+                        }
+                    }
+                }
+                FormType.TextDisplay -> {
+                    textDisplay {
+                        content = data.get("content").asString
+                    }
+                }
+
+                else -> {
+                    logger.warn("Unknown form type seen: ${formQuestion.type}")
+                }
+            }
+
             // TODO build discord form question
         }
     }
@@ -187,13 +275,20 @@ class TicketCreateListener : Extension() {
                     color(EmbedColor.Positive)
                 }
 
+                TicketSystem.logTicketAction(member.guild, ticket, addDefaultFields = false) {
+                    description = "Ticket #${ticket.id} created by ${member.mention}."
+
+                    field("Panel", true) { ticket.ticketPanel.displayName ?: ticket.ticketPanel.name }
+                    field("Channel", true) { ticketChannel.mention }
+                }
+
                 scheduler.launch {
                     sendInitialTicketMessage(ticketPanel, ticket, ticketChannel, member)
                 }
             }
         }
 
-        fun createTicketModel(panel: TicketPanelModel, user: MemberBehavior, responses: List<TicketFormResponseModel>): TicketModel? {
+        suspend fun createTicketModel(panel: TicketPanelModel, user: MemberBehavior, responses: List<TicketFormResponseModel>): TicketModel? {
             val connection = TicketConnection[user.guildId.value.toLong(), panel].authenticated()
 
             val creationModel = TicketCreationModel(
@@ -223,7 +318,7 @@ class TicketCreateListener : Extension() {
             }
         }
 
-        fun updateTicketChannel(ticket: TicketModel, ticketChannel: TextChannel): TicketModel? {
+        suspend fun updateTicketChannel(ticket: TicketModel, ticketChannel: TextChannel): TicketModel? {
             val connection = TicketConnection[ticketChannel.guildId.value.toLong(), ticket.ticketPanel].authenticated()
 
             val updateModel = ticket.getUpdateModel()
@@ -241,7 +336,7 @@ class TicketCreateListener : Extension() {
         ) {
             var content: String
             var embeds = mutableListOf<EmbedBuilder>()
-            var additionalButtons: List<(ActionRowBuilder.() -> Unit)?>
+            var additionalButtons: List<(suspend ActionRowBuilder.() -> Unit)?>
 
             @Suppress("DEPRECATION")
             val messageJson = try {
@@ -272,11 +367,11 @@ class TicketCreateListener : Extension() {
         fun parseAdditionalButton(
             additionalButton: String,
             placeholders: TicketPlaceholders
-        ): (ActionRowBuilder.() -> Unit)? {
+        ): (suspend ActionRowBuilder.() -> Unit)? {
             return when (additionalButton) {
                 "user.skycrypt" -> {
                     {
-                        placeholders.ticketUserIgn?.let {
+                        placeholders.ticketUserIgn.await()?.let {
                             linkButton("https://sky.shiiyu.moe/stats/$it") {
                                 label = "SkyCrypt"
                             }
@@ -354,18 +449,22 @@ class TicketCreateListener : Extension() {
 
         suspend fun buildCustomEmbed(type: String, placeholders: TicketPlaceholders, customData: String? = null): EmbedBuilder? {
             return when (type) {
-                "stats-overview" -> placeholders.ticketUserIgn?.let {
+                "stats-overview" -> placeholders.ticketUserIgn.await()?.let {
                     val customStats: List<StatsOverviewType>? = customData?.split(",")
                         ?.mapNotNull { statsType -> try { BuiltInStatsOverviewType.valueOf(statsType) } catch (_: IllegalArgumentException) { null } }
 
-                    ApplicationService.getPlayerDataEmbed(
-                        it,
-                        placeholders.ticketUserId,
-                        statsOverviewTypes = customStats
-                    )
+                    try {
+                        ApplicationService.getPlayerDataEmbed(
+                            it,
+                            placeholders.ticketUserId,
+                            statsOverviewTypes = customStats
+                        )
+                    } catch (e: FailedToLoadEmbedException) {
+                        e.embed
+                    }
                 }
                 "price-overview" -> placeholders.carryTier?.let { MessagesService.getPriceEmbed(it) }
-                "carry-price" -> placeholders.formCarryDifficulty?.let { carryDifficulty ->
+                "carry-price" -> placeholders.carryDifficulty.await()?.let { carryDifficulty ->
                     placeholders.formCarryAmount?.toIntOrNull()?.let { carryAmount ->
                         CalcPriceCommand.generateCalculatedPriceEmbed(carryDifficulty, carryAmount)
                     }
@@ -375,8 +474,8 @@ class TicketCreateListener : Extension() {
             }
         }
 
-        fun getDefaultButtons(claimButton: Boolean): List<ActionRowBuilder.() -> Unit> {
-            return listOf<ActionRowBuilder.() -> Unit>({
+        fun getDefaultButtons(claimButton: Boolean): List<suspend ActionRowBuilder.() -> Unit> {
+            return listOf<suspend ActionRowBuilder.() -> Unit>({
                 interactionButton(ButtonStyle.Danger, "close-ticket") {
                     label = "Close"
                 }
@@ -392,15 +491,15 @@ class TicketCreateListener : Extension() {
             ticketChannel: TextChannel,
             content: String,
             embeds: List<EmbedBuilder>,
-            additionalButtons: List<ActionRowBuilder.() -> Unit>
+            additionalButtons: List<suspend ActionRowBuilder.() -> Unit>
         ) {
-            val allButtons = getDefaultButtons(ticketPanel.claimable) + additionalButtons
+            val allButtons: List<suspend ActionRowBuilder.() -> Unit> = getDefaultButtons(ticketPanel.claimable) + additionalButtons
 
             val message = ticketChannel.createMessage {
                 this.content = content
                 this.embeds = embeds.toMutableList()
 
-                allButtons.windowed(5, 5, true) { actionRowBuilders ->
+                allButtons.windowed(5, 5, true).forEach { actionRowBuilders ->
                     actionRow {
                         actionRowBuilders.forEach { actionRowBuilder -> actionRowBuilder() }
                     }

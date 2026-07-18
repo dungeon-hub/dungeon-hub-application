@@ -12,6 +12,7 @@ import net.dungeonhub.application.connection.DiscordConnection.uptime
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartupListener
+import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.hypixel.service.FormattingService
@@ -80,7 +81,7 @@ object AppearanceService : StartupListener {
             scheduler.cancel("Application was restarted.")
         }
 
-        scheduler = Scheduler()
+        scheduler = DhScheduler()
 
         val task = scheduler.schedule(REFRESH_SECONDS, startNow = false, name = "Appearance-Schedule", repeat = true) {
             resetBotAppearance()
@@ -102,10 +103,10 @@ object AppearanceService : StartupListener {
 
             currentAppearance = if (currentAppearance >= possibleAppearances.size - 1) 0 else currentAppearance + 1
 
-            val appearance = possibleAppearances[currentAppearance]
+            val (appearanceType, appearanceFunction) = possibleAppearances[currentAppearance]
 
             try {
-                appearance.first.apply(appearance.second())()
+                appearanceType.apply(appearanceFunction())()
             } catch (exception: Exception) {
                 logger.error("Error during reset of appearance.", exception)
             }

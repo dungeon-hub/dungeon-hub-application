@@ -1,6 +1,5 @@
 package net.dungeonhub.application.commands
 
-import com.google.common.collect.Iterables
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
@@ -36,11 +35,11 @@ class SendCommand : Extension() {
             name = Send.name
             description = Send.description
             allowInDms = false
+            defaultMemberPermissions = Permissions(Permission.Administrator)
 
             publicSubCommand(::SendLinkMessageArguments) {
                 name = "link-message".toKey()
                 description = "Sends a message with buttons that help with linking.".toKey()
-                defaultMemberPermissions = Permissions(Permission.ManageMessages)
 
                 action {
                     respond {
@@ -75,15 +74,14 @@ class SendCommand : Extension() {
             publicSubCommand(::SendArguments) {
                 name = "cnt-message".toKey()
                 description = "Send the CNT message into the given channel.".toKey()
-                defaultMemberPermissions = Permissions(Permission.Administrator)
 
                 action {
                     respond {
                         val channel = arguments.channel.asChannelOfOrNull<GuildMessageChannel>()
                             ?: throw CommandExecutionException("Channel couldn't be found or isn't a message channel. Please let an administrator know.")
 
-                        val cntChannel = ServerProperty.CNT_MESSAGES_CHANNEL.getValue(guild!!.id.value.toLong()).orElse(null)
-                        val cntInfoChannel = ServerProperty.CNT_INFORMATION_CHANNEL.getValue(guild!!.id.value.toLong()).orElse(null)
+                        val cntChannel = ServerProperty.CNT_MESSAGES_CHANNEL.getValue(guild!!.id.value.toLong())
+                        val cntInfoChannel = ServerProperty.CNT_INFORMATION_CHANNEL.getValue(guild!!.id.value.toLong())
 
                         val embed = ApplicationService.embed
                         embed.color(EmbedColor.Positive)
@@ -109,7 +107,7 @@ class SendCommand : Extension() {
                                 }
                             }
 
-                            Iterables.partition(CntRequestType.entries.asIterable(), 5).forEach { requestTypes ->
+                            CntRequestType.entries.windowed(5, 5, true).forEach { requestTypes ->
                                 actionRow {
                                     requestTypes.forEach { requestType ->
                                         interactionButton(ButtonStyle.Secondary, requestType.buttonId) {

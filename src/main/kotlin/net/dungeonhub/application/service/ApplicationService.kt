@@ -9,11 +9,10 @@ import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.QRCodeWriter
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
-import dev.kord.core.behavior.GuildBehavior
-import dev.kord.core.behavior.ban
-import dev.kord.core.behavior.edit
+import dev.kord.core.behavior.*
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.User
+import dev.kord.core.entity.effectiveName
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -35,6 +34,9 @@ import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.misc.FlagResponse
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.connection.ReputationConnection
+import net.dungeonhub.connection.ReputationConnection.Companion.ClientlessReputationConnection
+import net.dungeonhub.enums.CntRequestType
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
 import net.dungeonhub.exception.PlayerNotFoundException
@@ -203,6 +205,13 @@ object ApplicationService {
         return embedBuilder
     }
 
+    fun loadTicketNotificationFromCarryQueue(carryQueue: CarryQueueModel): EmbedBuilder {
+        return buildEmbed {
+            description = "<@${carryQueue.carrier.id}> logged **${carryQueue.amount} ${carryQueue.carryTier.displayName} - ${carryQueue.carryDifficulty.displayName}** ${if(carryQueue.amount == 1) "carry" else "carries"} for <@${carryQueue.player.id}>, worth ${carryQueue.calculateScore()} score."
+            color(EmbedColor.Information)
+        }
+    }
+
     fun loadEmbedFromCarryQueue(carryQueue: CarryQueueModel, embedBuilder: EmbedBuilder): EmbedBuilder {
         embedBuilder.color = EmbedColor.Information.color
 
@@ -319,7 +328,7 @@ object ApplicationService {
         val embed = embed
 
         embed.title = if ((userToCheck.id != user.id && server != null)) {
-            server.getMember(userToCheck.id).effectiveName + "'s score${if (carryCount != null) " from $carryCount total carries" else ""}:"
+            (server.getMemberOrNull(userToCheck.id)?.effectiveName ?: userToCheck.effectiveName) + "'s score${if (carryCount != null) " from $carryCount total carries" else ""}:"
         } else {
             "Your score${if (carryCount != null) " from $carryCount total carries" else ""}:"
         }
@@ -496,9 +505,6 @@ object ApplicationService {
         }
         carryTier.priceTitle?.let { s: String -> embed.field("Price Title", true) { s } }
         carryTier.priceDescription?.let { s: String -> embed.field("Price Description", true) { s } }
-        carryTier.relatedTicketPanel?.let { ticketPanel -> embed.field("Related Ticket Panel", true) {
-            "${ticketPanel.displayName ?: ticketPanel.name} (${ticketPanel.id})"
-        } }
 
         return embed
     }
@@ -583,11 +589,10 @@ object ApplicationService {
             try {
                 member.dm {
                     val unbanForm = ServerProperty.UNBAN_FORM.getValue(member.guildId.value.toLong())
-                        .orElse(null)
 
-                    var message = ServerProperty.BAN_MESSAGE
+                    var message = (ServerProperty.BAN_MESSAGE
                         .getValue(member.guildId.value.toLong())
-                        .orElse("You got banned from `%server%` because of too many severe warnings.\nIf you think this is a mistake, contact the administrators for further information.")
+                        ?: "You got banned from `%server%` because of too many severe warnings.\nIf you think this is a mistake, contact the administrators for further information.")
                         .replace("%server%", member.guild.asGuildOrNull()?.name ?: member.guildId.toString())
 
                     unbanForm?.let {
@@ -693,6 +698,7 @@ object ApplicationService {
     }
 
     fun getCntEmbed(
+        requestType: CntRequestType,
         description: String,
         coinValue: String,
         requirement: String,
@@ -703,6 +709,7 @@ object ApplicationService {
         embed.color = EmbedColor.Default.color
         embed.description = "### Craft and Transfers"
 
+        embed.field("User supplied value") { requestType.description }
         embed.field("Request", true) { description }
         embed.field("Value", true) { coinValue }
         embed.field("Requirement", true) { requirement }
@@ -715,6 +722,7 @@ object ApplicationService {
 
     fun getCntEmbed(cntRequest: CntRequestModel): EmbedBuilder {
         val embed = getCntEmbed(
+            cntRequest.requestType,
             cntRequest.description,
             cntRequest.coinValue,
             cntRequest.requirement,
@@ -814,7 +822,7 @@ object ApplicationService {
 
         if(embedOverride != null) {
             embed.field("Embed Override") {
-                embedOverride!!
+                "```json\n$embedOverride\n```"
             }
         }
 
@@ -882,4 +890,12 @@ fun Extension.createEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): Em
 
 fun EmbedBuilder.color(color: EmbedColor) {
     this.color = color.color
+}
+
+suspend fun UserBehavior.getUUIDOrNull(): UUID? {
+    return DiscordUserConnection.authenticated().getById(id.value.toLong())?.minecraftId
+}
+
+operator fun ReputationConnection.Companion.get(member: MemberBehavior): ClientlessReputationConnection {
+    return get(member.guild.id.value.toLong(), member.id.value.toLong())
 }

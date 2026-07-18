@@ -6,11 +6,12 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
-import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import net.dungeonhub.application.connection.getMutualServers
+import net.dungeonhub.application.misc.DhScheduler
+import net.dungeonhub.application.misc.suspendLazy
 import net.dungeonhub.connection.*
 import net.dungeonhub.enums.RoleRequirementType
 import net.dungeonhub.enums.ScoreType
@@ -30,12 +31,12 @@ import kotlin.time.toJavaInstant
 
 @OptIn(ExperimentalTime::class)
 object RolesService {
-    val scheduler = Scheduler()
+    val scheduler = DhScheduler()
 
     suspend fun updateRoles(user: User, cacheExpiration: Int = 60 * 3): Map<Long, List<Role>> {
         return scheduler.async {
             user.getMutualServers().map { member ->
-                member.guildId.value.toLong() to updateRoles(member, cacheExpiration)
+                member.guildId.value.toLong() to updateRoles(member, cacheExpiration) // TODO rather think about mass-syncing
             }.toList().toMap()
         }.await()
     }
@@ -51,7 +52,7 @@ object RolesService {
     }
 
     suspend fun calculateRoles(member: Member, cacheExpiration: Int): List<Role> {
-        val serverRoles = (DiscordRoleConnection[member.guildId.value.toLong()].authenticated().allRoles ?: emptyList())
+        val serverRoles = (DiscordRoleConnection[member.guildId.value.toLong()].authenticated().getAllRoles() ?: emptyList())
             .stream()
             .collect(
                 Collectors.toMap(
@@ -103,9 +104,9 @@ object RolesService {
         return discordRoles.map { id -> member.guild.getRole(id) }
     }
 
-    fun calculateRoleRequirements(member: Member, cacheExpiration: Int): Map<RoleRequirementModel, Boolean> {
+    suspend fun calculateRoleRequirements(member: Member, cacheExpiration: Int): Map<RoleRequirementModel, Boolean> {
         val roleRequirements =
-            RoleRequirementConnection[member.guild.id.value.toLong()].authenticated().allRoleRequirements ?: emptyList()
+            RoleRequirementConnection[member.guild.id.value.toLong()].authenticated().getAllRoleRequirements() ?: emptyList()
 
         return roleRequirements.associateWith {
             checkRoleRequirement(it, member, cacheExpiration)
@@ -113,43 +114,66 @@ object RolesService {
     }
 
     //TODO maybe make profile loading lazy? -> would then only be loaded if needed
-    fun checkRoleRequirement(roleRequirement: RoleRequirementModel, member: Member, cacheExpiration: Int): Boolean {
+    suspend fun checkRoleRequirement(roleRequirement: RoleRequirementModel, member: Member, cacheExpiration: Int): Boolean {
         if (!roleRequirement.checkExtraData()) return false
 
         val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
 
-        val discordServer = DiscordServerConnection.authenticated().findServerById(member.guild.id.value.toLong())
-            ?: return false
+        val discordServer = suspendLazy {
+            DiscordServerConnection.authenticated().findServerById(member.guild.id.value.toLong())
+        }
 
-        val discordUser = DiscordUserConnection.authenticated().getLinkedById(member.id.value.toLong())
-            ?: return false
+        val discordUser = suspendLazy {
+            DiscordUserConnection.authenticated().getLinkedById(member.id.value.toLong())
+        }
 
-        val uuid = discordUser.minecraftId
-            ?: return false
+        val uuid = suspendLazy {
+            discordUser.get()?.minecraftId
+        }
 
-        val profiles = hypixelApiConnection.getSkyblockProfiles(uuid) ?: return false
+        val profiles = suspendLazy {
+            val uuid = uuid.get() ?: return@suspendLazy null
+            hypixelApiConnection.getSkyblockProfiles(uuid)
+        }
 
-        val selectedProfiles = profiles.profiles
-            .filter { discordUser.primarySkyblockProfile == null || it.profileId == discordUser.primarySkyblockProfile }
-            .takeIf { it.isNotEmpty() }
-            ?: profiles.profiles
+        val selectedProfiles = suspendLazy {
+            val discordUser = discordUser.get() ?: return@suspendLazy emptyList()
+            val profiles = profiles.get() ?: return@suspendLazy emptyList()
 
-        val profileMembers = selectedProfiles.mapNotNull { it.members.firstOrNull { member -> member.uuid == uuid } }
-            .filterIsInstance<CurrentMember>().takeIf { it.isNotEmpty() } ?: return false
+            profiles.profiles
+                .filter { discordUser.primarySkyblockProfile == null || it.profileId == discordUser.primarySkyblockProfile }
+                .takeIf { it.isNotEmpty() }
+                ?: profiles.profiles
+        }
 
-        val playerData = hypixelApiConnection.getPlayerData(uuid) ?: return false
+        val profileMembers = suspendLazy {
+            selectedProfiles.get().mapNotNull { it.members.firstOrNull { member -> member.uuid == uuid.get() } }
+                .filterIsInstance<CurrentMember>().takeIf { it.isNotEmpty() }
+        }
 
-        val guild by lazy {
+        val playerData = suspendLazy {
+            val uuid = uuid.get() ?: return@suspendLazy null
+            hypixelApiConnection.getPlayerData(uuid)
+        }
+
+        val roleRequirementGuild by lazy {
             roleRequirement.extraData?.let { HypixelApiConnection().withCacheExpiration(5).getGuild(it) }
         }
 
-        val bingoData by lazy {
+        val usersGuild = suspendLazy {
+            val uuid = uuid.get() ?: return@suspendLazy null
+            hypixelApiConnection.getPlayerGuild(uuid)
+        }
+
+        val bingoData = suspendLazy {
+            val uuid = uuid.get() ?: return@suspendLazy null
             hypixelApiConnection.getBingoData(uuid)
         }
 
         //TODO add check for legendary griffin pet
         return when (roleRequirement.requirementType) {
             RoleRequirementType.SkyblockLevel -> {
+                val profileMembers = profileMembers.get() ?: return false
                 roleRequirement.compare(
                     profileMembers.maxOf {
                         it.leveling.level
@@ -158,12 +182,14 @@ object RolesService {
             }
 
             RoleRequirementType.CatacombsLevel -> {
+                val profileMembers = profileMembers.get() ?: return false
                 roleRequirement.compare(
                     profileMembers.maxOf { it.dungeons?.catacombsLevel ?: 0 }
                 )
             }
 
             RoleRequirementType.FarmingLevel -> {
+                val profileMembers = profileMembers.get() ?: return false
                 roleRequirement.compare(
                     profileMembers.maxOf {
                         KnownSkill.Farming.calculateLevel(
@@ -176,6 +202,7 @@ object RolesService {
             }
 
             RoleRequirementType.MiningLevel -> {
+                val profileMembers = profileMembers.get() ?: return false
                 roleRequirement.compare(
                     profileMembers.maxOf {
                         KnownSkill.Mining.calculateLevel(
@@ -188,6 +215,7 @@ object RolesService {
             }
 
             RoleRequirementType.CombatLevel -> {
+                val profileMembers = profileMembers.get() ?: return false
                 roleRequirement.compare(
                     profileMembers.maxOf {
                         KnownSkill.Combat.calculateLevel(
@@ -200,6 +228,7 @@ object RolesService {
             }
 
             RoleRequirementType.FishingLevel -> {
+                val profileMembers = profileMembers.get() ?: return false
                 roleRequirement.compare(
                     profileMembers.maxOf {
                         KnownSkill.Fishing.calculateLevel(
@@ -212,12 +241,14 @@ object RolesService {
             }
 
             RoleRequirementType.SkillAverage -> {
+                val profileMembers = profileMembers.get() ?: return false
                 roleRequirement.compare(
                     profileMembers.maxOf { it.playerData.skillAverage }.toInt()
                 )
             }
 
             RoleRequirementType.HighestSkill -> {
+                val profileMembers = profileMembers.get() ?: return false
                 roleRequirement.compare(
                     profileMembers.maxOf {
                         it.playerData.nonCosmeticExperience?.maxOf { skill ->
@@ -232,7 +263,7 @@ object RolesService {
             //TODO check for carry type
             RoleRequirementType.CurrentScore -> {
                 roleRequirement.compare(
-                    DiscordServerConnection.authenticated().getScores(discordServer, discordUser.id)?.filter {
+                    DiscordServerConnection.authenticated().getScores(discordServer.get() ?: return false, member.id.value.toLong())?.filter {
                         it.scoreType == ScoreType.Default
                     }?.sumOf { it.scoreAmount ?: 0 }?.toInt() ?: 0
                 )
@@ -241,7 +272,7 @@ object RolesService {
             //TODO check for carry type
             RoleRequirementType.AlltimeScore -> {
                 roleRequirement.compare(
-                    DiscordServerConnection.authenticated().getScores(discordServer, discordUser.id)?.filter {
+                    DiscordServerConnection.authenticated().getScores(discordServer.get() ?: return false, member.id.value.toLong())?.filter {
                         it.scoreType == ScoreType.Alltime
                     }?.sumOf { it.scoreAmount ?: 0 }?.toInt() ?: 0
                 )
@@ -261,8 +292,8 @@ object RolesService {
             RoleRequirementType.MoneySpent -> {
                 roleRequirement.compare(
                     DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(
-                        discordServer.id,
-                        userId = discordUser.id
+                        member.guild.id.value.toLong(),
+                        userId = member.id.value.toLong()
                     )?.toInt() ?: 0
                 )
             }
@@ -273,15 +304,15 @@ object RolesService {
 
                 roleRequirement.compare(
                     DiscordServerConnection.authenticated().getTotalAmountOfMoneySpent(
-                        discordServer.id,
-                        userId = discordUser.id,
+                        member.guild.id.value.toLong(),
+                        userId = member.id.value.toLong(),
                         since = Clock.System.now().minus(duration).toJavaInstant()
                     )?.toInt() ?: 0
                 )
             }
 
             RoleRequirementType.HypixelRank -> {
-                val rank = playerData.rank
+                val rank = playerData.get()?.rank ?: return false
 
                 if (rank !is KnownRank) return false
 
@@ -291,22 +322,28 @@ object RolesService {
             }
 
             RoleRequirementType.GuildMembership -> {
+                val guild = usersGuild.get()?.takeIf { it.name == roleRequirement.extraData } ?: roleRequirementGuild
+
                 roleRequirement.compare(
-                    if (guild?.members?.any { it.uuid == uuid } == true) 1 else 0
+                    if (guild?.members?.any { it.uuid == uuid.get() } == true) 1 else 0
                 )
             }
 
             RoleRequirementType.GuildRank -> {
+                val guild = usersGuild.get()?.takeIf { it.name == roleRequirement.extraData } ?: roleRequirementGuild
+
                 roleRequirement.compare(
-                    guild?.members?.firstOrNull { it.uuid == uuid }?.rank?.priority ?: 0
+                    guild?.members?.firstOrNull { it.uuid == uuid.get() }?.rank?.priority ?: 0
                 )
             }
 
             RoleRequirementType.MagicalPower -> {
+                val profileMembers = profileMembers.get() ?: return false
                 roleRequirement.compare(profileMembers.maxOf { it.accessoryBag?.highestMagicalPower ?: 0 })
             }
 
             RoleRequirementType.ClassAverage -> {
+                val profileMembers = profileMembers.get() ?: return false
                 roleRequirement.compare(
                     profileMembers.maxOf {
                         it.dungeons?.classAverage ?: 0.0
@@ -315,6 +352,7 @@ object RolesService {
             }
 
             RoleRequirementType.HighestCritDamage -> {
+                val profileMembers = profileMembers.get() ?: return false
                 roleRequirement.compare(
                     profileMembers.maxOf { it.playerStats?.highestCritDamage ?: 0.0 }.roundToInt()
                 )
@@ -322,13 +360,13 @@ object RolesService {
 
             RoleRequirementType.BingoRank -> {
                 roleRequirement.compare(
-                    profiles.bingoRank?.ordinal ?: 0
+                    (profiles.get() ?: return false).bingoRank?.ordinal ?: 0
                 )
             }
 
             RoleRequirementType.TotalBingoPoints -> {
                 roleRequirement.compare(
-                    bingoData?.totalPoints ?: 0
+                    bingoData.get()?.totalPoints ?: 0
                 )
             }
 
@@ -350,19 +388,19 @@ object RolesService {
                 val carryTypeIdentifier = extraData.getOrNull(1)
 
                 val carryType = if (carryTypeIdentifier != null) {
-                    CarryTypeConnection[discordServer].authenticated().getByIdentifier(carryTypeIdentifier) ?: return false
+                    CarryTypeConnection[member.guild.id.value.toLong()].authenticated().getByIdentifier(carryTypeIdentifier) ?: return false
                 } else null
 
                 val leaderboard = if(carryType != null) {
                     ScoreConnection[carryType].authenticated().loadLeaderboard(
                         scoreType = scoreType,
-                        userId = discordUser.id
+                        userId = member.id.value.toLong()
                     )
                 } else {
                     DiscordServerConnection.authenticated().loadTotalLeaderboard(
-                        discordServer.id,
+                        member.guild.id.value.toLong(),
                         scoreType = scoreType,
-                        userId = discordUser.id
+                        userId = member.id.value.toLong()
                     )
                 }
 
@@ -375,8 +413,8 @@ object RolesService {
 
             RoleRequirementType.ReputationLeaderboardRank -> {
                 val leaderboard = DiscordServerConnection.authenticated().loadReputationLeaderboard(
-                    discordServer.id,
-                    userId = discordUser.id
+                    member.guild.id.value.toLong(),
+                    userId = member.id.value.toLong()
                 )
 
                 leaderboard?.playerPosition?.takeIf { it != -1 }?.let {
@@ -388,9 +426,9 @@ object RolesService {
         }
     }
 
-    fun applyRoleGroups(server: GuildBehavior, roles: Set<Snowflake>): MutableSet<Snowflake> {
+    suspend fun applyRoleGroups(server: GuildBehavior, roles: Set<Snowflake>): MutableSet<Snowflake> {
         var mutableRoles = roles.toMutableSet()
-        val roleGroups = DiscordRoleGroupConnection[server.id.value.toLong()].authenticated().all ?: emptyList()
+        val roleGroups = DiscordRoleGroupConnection[server.id.value.toLong()].authenticated().getAll() ?: emptyList()
 
         var lastRoles = 0
         while (lastRoles != mutableRoles.size) {
@@ -465,7 +503,7 @@ object RolesService {
     suspend fun removeRoleGroup(member: Member, roleGroupId: Long) {
         var userRoles = member.roleIds.toMutableSet()
 
-        val roleGroups = DiscordRoleGroupConnection[member.guild.id.value.toLong()].authenticated().all ?: listOf()
+        val roleGroups = DiscordRoleGroupConnection[member.guild.id.value.toLong()].authenticated().getAll() ?: listOf()
 
         var lastRoles = 0
         while (lastRoles != userRoles.size) {

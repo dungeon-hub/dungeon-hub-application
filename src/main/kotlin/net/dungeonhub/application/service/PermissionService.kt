@@ -4,7 +4,6 @@ import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
 import net.dungeonhub.application.enums.ServerProperty
-import java.util.*
 
 /**
  * This class represents a service used to manage the permissions of users within a system.
@@ -29,16 +28,10 @@ object PermissionService {
     fun mayManageServices(member: Member): Boolean {
         return ServerProperty.SCORE_MANAGEMENT_ROLE
             .getValue(member.guild.id.value.toLong())
-            .map { id ->
-                member.roleIds.contains(Snowflake(id))
-            }
-            .flatMap { bool: Boolean ->
-                if (java.lang.Boolean.TRUE == bool) Optional.of(
-                    true
-                ) else Optional.empty()
-            }
-            .orElseGet {
-                member.permissions?.contains(Permission.Administrator)
-            }
+            ?.let {
+                member.roleIds.contains(Snowflake(it))
+            }?.let {
+                if (it) true else null
+            } ?: member.permissions?.contains(Permission.Administrator) ?: false
     }
 }

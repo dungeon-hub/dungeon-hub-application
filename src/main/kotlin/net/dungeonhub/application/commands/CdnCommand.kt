@@ -11,6 +11,9 @@ import dev.kordex.core.components.linkButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralSlashCommand
 import dev.kordex.core.utils.getLocale
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.KnownStaticResource
 import net.dungeonhub.application.exceptions.CommandExecutionException
@@ -20,8 +23,6 @@ import net.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.client.DungeonHubClient
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.i18n.Translations.Command.Cdn
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Request
 import kotlin.time.ExperimentalTime
 
 /**
@@ -64,9 +65,9 @@ class CdnCommand : Extension() {
 
                 action {
                     respond {
-                        val attachmentRequest = Request.Builder().url(arguments.attachment.url.toHttpUrl()).build()
-
-                        val attachmentData: ByteArray = DungeonHubClient().executeRawRequest(attachmentRequest)?.result
+                        val attachmentData = DungeonHubClient().executeRawRequest {
+                            url(Url(arguments.attachment.url))
+                        }?.bodyAsBytes()?.takeIf { it.isNotEmpty() }
                             ?: throw CommandExecutionException("Couldn't read file data.")
 
                         val fileUrl = if (arguments.name != null) {
