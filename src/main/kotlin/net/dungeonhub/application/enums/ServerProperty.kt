@@ -51,7 +51,16 @@ enum class ServerProperty(
     CNT_ROLE_REQUIREMENT_FIFTY_TO_HUNDRED("id_cnt_role_requirement_50-100", ServerPropertyType.ROLE),
     CNT_ROLE_REQUIREMENT_HUNDRED_TO_TWOHUNDRED("id_cnt_role_requirement_100-200", ServerPropertyType.ROLE),
     CNT_ROLE_REQUIREMENT_TWOHUNDRED_TO_FOURHUNDRED("id_cnt_role_requirement_200-400", ServerPropertyType.ROLE),
-    CNT_ROLE_REQUIREMENT_OVER_FOURHUNDRED("id_cnt_role_requirement_400+", ServerPropertyType.ROLE);
+    CNT_ROLE_REQUIREMENT_OVER_FOURHUNDRED("id_cnt_role_requirement_400+", ServerPropertyType.ROLE),
+
+    VERIFIED_GROUP_ROLE("server_verified_group_role", ServerPropertyType.ROLE),
+    STAFF_GROUP_ROLE("server_staff_group_role", ServerPropertyType.ROLE),
+    ADMINISTRATION_GROUP_ROLE("server_administration_group_role", ServerPropertyType.ROLE),
+    MANAGEMENT_GROUP_ROLE("server_management_group_role", ServerPropertyType.ROLE),
+    VC_CREATE_CATEGORY("vc_create_category", ServerPropertyType.CATEGORY);
+
+
+
 
     constructor(
         readableName: String,
