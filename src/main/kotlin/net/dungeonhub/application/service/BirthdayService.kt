@@ -8,6 +8,7 @@ import dev.kordex.core.utils.scheduling.Scheduler
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -19,6 +20,7 @@ import net.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.client.DungeonHubClient
 import net.fortuna.ical4j.data.CalendarBuilder
+import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.Period
 import org.slf4j.LoggerFactory
@@ -137,12 +139,14 @@ object BirthdayService : StartupListener {
                     }
                 }
             }
+        } catch (exception: CancellationException) {
+            throw exception
         } catch (exception: IOException) {
-            logger.error(null, exception)
+            logger.error("Couldn't load the birthday calendar.", exception)
         } catch (exception: NullPointerException) {
             logger.error(null, exception)
-        } catch (exception: Exception) {
-            logger.error(null, exception)
+        } catch (exception: ParserException) {
+            logger.error("Couldn't parse the birthday calendar data.", exception)
         }
     }
 

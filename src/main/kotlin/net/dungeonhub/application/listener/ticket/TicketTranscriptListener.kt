@@ -8,7 +8,7 @@ import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
-import dev.kord.core.behavior.getChannelOf
+import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
@@ -18,9 +18,11 @@ import dev.kord.core.entity.effectiveName
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.rest.Image
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kord.rest.request.RestRequestException
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.utils.dm
+import io.ktor.utils.io.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.commands.TicketSystem
@@ -42,6 +44,7 @@ import net.dungeonhub.enums.TranscriptTarget
 import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.service.GsonService
 import net.dungeonhub.wrapper.kord.createTranscript
+import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
 
 @LoadExtension
@@ -100,21 +103,30 @@ class TicketTranscriptListener : Extension() {
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(TicketTranscriptListener::class.java)
+
         suspend fun generateTranscript(textChannel: TextChannel, requester: MemberBehavior?, ticket: TicketModel, target: TranscriptTarget, postTranscriptAction: suspend () -> Unit = {}) {
             val url = TicketSystem.scheduler.async {
-                val transcript = textChannel.createTranscript()
+                try {
+                    val transcript = textChannel.createTranscript()
 
-                val result = ContentConnection.authenticated().uploadFile(transcript.toByteArray(StandardCharsets.UTF_8))?.let {
-                    ContentConnection.authenticated().getCdnUrl(it).toString()
-                }
-
-                if(result != null) {
-                    TicketSystem.scheduler.launch {
-                        DiscordConnection.bot.send(TicketTranscriptCreatedEvent(ticket, result))
+                    val result = ContentConnection.authenticated().uploadFile(transcript.toByteArray(StandardCharsets.UTF_8))?.let {
+                        ContentConnection.authenticated().getCdnUrl(it).toString()
                     }
-                }
 
-                return@async result
+                    if(result != null) {
+                        TicketSystem.scheduler.launch {
+                            DiscordConnection.bot.send(TicketTranscriptCreatedEvent(ticket, result))
+                        }
+                    }
+
+                    return@async result
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (exception: Exception) {
+                    logger.error("Failed to generate or upload transcript for ticket ${ticket.id}", exception)
+                    return@async null
+                }
             }
 
             val userReply = if(target.sendToUser) {
@@ -178,7 +190,8 @@ class TicketTranscriptListener : Extension() {
                 url,
                 transcriptInfoMessage,
                 requester,
-                "[Transcript]($url) sent to <@${ticket.user.id}>"
+                "[Transcript]($url) sent to <@${ticket.user.id}>",
+                "<@${ticket.user.id}>"
             ) { url ->
                 val placeholders = TicketPlaceholders(
                     ticket.ticketPanel,
@@ -200,13 +213,12 @@ class TicketTranscriptListener : Extension() {
                     null
                 } ?: fallbackMessage
 
-                DiscordConnection.bot.kordRef
-                    .getUser(Snowflake(ticket.user.id))
-                    ?.let { user ->
-                        user.dm {
-                            embeds = parseTranscriptDmEmbeds(messageJson, placeholders)
-                        }
-                    }
+                val user = DiscordConnection.bot.kordRef.getUser(Snowflake(ticket.user.id))
+                    ?: return@handleTranscript false
+
+                user.dm {
+                    embeds = parseTranscriptDmEmbeds(messageJson, placeholders)
+                } != null
             }
         }
 
@@ -307,15 +319,30 @@ class TicketTranscriptListener : Extension() {
             textChannel: TextChannel,
             requester: Member
         ) {
+            val transcriptChannel = try {
+                ticket.ticketPanel.transcriptChannel?.let { transcriptChannel ->
+                    textChannel.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(transcriptChannel.id))
+                } ?: ServerProperty.TRANSCRIPTS_CHANNEL.getValue(ticket.ticketPanel.discordServer.id)?.toLongOrNull()?.let {
+                    textChannel.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(it))
+                }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                logger.error("Error while trying to load the transcript channel.", exception)
+                null
+            }
+
+            if(transcriptChannel == null) {
+                transcriptInfoMessage.delete("Unknown transcript channel.")
+                return
+            }
+
             handleTranscript(
                 url,
                 transcriptInfoMessage,
                 requester,
-                if (ticket.ticketPanel.transcriptChannel != null) {
-                    "[Transcript]($url) sent to <#${ticket.ticketPanel.transcriptChannel?.id}>"
-                } else {
-                    "[Transcript]($url) generated"
-                }
+                "[Transcript]($url) sent to <#${transcriptChannel.id}>",
+                "<#${transcriptChannel.id}>"
             ) { url ->
                 val placeholders = TicketPlaceholders(
                     ticket.ticketPanel,
@@ -325,16 +352,16 @@ class TicketTranscriptListener : Extension() {
                     url
                 )
 
-                val transcriptChannel = ticket.ticketPanel.transcriptChannel?.let { transcriptChannel ->
-                    textChannel.guild.getChannelOf<GuildMessageChannel>(Snowflake(transcriptChannel.id))
-                } ?: ServerProperty.TRANSCRIPTS_CHANNEL.getValue(ticket.ticketPanel.discordServer.id)?.toLongOrNull()?.let {
-                    textChannel.guild.getChannelOf<GuildMessageChannel>(Snowflake(it))
-                }
-
-                transcriptChannel?.let { transcriptChannel ->
+                try {
                     transcriptChannel.createMessage {
                         embeds = mutableListOf(generateTranscriptEmbed(placeholders, true))
                     }
+                    true
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (exception: RestRequestException) {
+                    logger.error("Error while sending the message to the configured transcript channel.", exception)
+                    false
                 }
             }
         }
@@ -344,22 +371,10 @@ class TicketTranscriptListener : Extension() {
             transcriptInfoMessage: Message,
             requester: MemberBehavior?,
             target: String,
-            handler: suspend (url: String) -> Unit
+            targetDisplay: String,
+            handler: suspend (url: String) -> Boolean
         ) {
-            if (url != null) {
-                handler(url)
-
-                transcriptInfoMessage.edit {
-                    embeds = mutableListOf(buildEmbed {
-                        description = if (requester != null) {
-                            "$target, requested by ${requester.mention}"
-                        } else {
-                            target
-                        }
-                        color(EmbedColor.Positive)
-                    })
-                }
-            } else {
+            if (url == null) {
                 transcriptInfoMessage.edit {
                     embeds = mutableListOf(buildEmbed {
                         description = if (requester != null) {
@@ -370,6 +385,34 @@ class TicketTranscriptListener : Extension() {
                         color(EmbedColor.Negative)
                     })
                 }
+                return
+            }
+
+            val success = handler(url)
+
+            if(!success) {
+                transcriptInfoMessage.edit {
+                    embeds = mutableListOf(buildEmbed {
+                        description = if (requester != null) {
+                            "Couldn't send the generated transcript to $targetDisplay, requested by ${requester.mention}!"
+                        } else {
+                            "Couldn't send the generated transcript to $targetDisplay!"
+                        }
+                        color(EmbedColor.Negative)
+                    })
+                }
+                return
+            }
+
+            transcriptInfoMessage.edit {
+                embeds = mutableListOf(buildEmbed {
+                    description = if (requester != null) {
+                        "$target, requested by ${requester.mention}"
+                    } else {
+                        target
+                    }
+                    color(EmbedColor.Positive)
+                })
             }
         }
     }

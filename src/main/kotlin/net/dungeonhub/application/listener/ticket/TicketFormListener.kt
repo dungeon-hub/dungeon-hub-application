@@ -39,10 +39,10 @@ class TicketFormListener : Extension() {
 
                 val responses = mutableListOf<TicketFormResponseModel>()
                 var responseCounter = 0
-                for (input in event.interaction.responseComponents) {
-                    val textInput = (input.value as? TextInputComponent)?.value
-                        ?: (input.value as? StringSelectComponent)?.values?.firstOrNull()
-                    val validationResult = validateForm(ticketPanel!!, input.key, textInput)
+                for ((key, value) in event.interaction.responseComponents) {
+                    val textInput = (value as? TextInputComponent)?.value
+                        ?: (value as? StringSelectComponent)?.values?.firstOrNull()
+                    val validationResult = validateForm(ticketPanel!!, key, textInput)
 
                     if(validationResult != null) {
                         event.interaction.deferEphemeralResponse().respond {
@@ -57,7 +57,7 @@ class TicketFormListener : Extension() {
 
                     responses += TicketFormResponseModel(
                         responseCounter++,
-                        input.key,
+                        key,
                         textInput ?: "no-input"
                     )
                 }

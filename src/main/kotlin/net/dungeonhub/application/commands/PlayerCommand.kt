@@ -122,16 +122,24 @@ class PlayerCommand : Extension() {
                 }
 
                 respond {
+                    val updateModel = discordUser.getUpdateModel()
+                    updateModel.primarySkyblockProfile = profile.profileId
+
+                    val updatedUser = DiscordUserConnection.authenticated().updateUser(discordUser.id, updateModel)
+
+                    if(updatedUser == null) {
+                        addEmbed {
+                            description = "An issue occurred while trying to save your primary profile."
+                            color(EmbedColor.Negative)
+                        }
+                        return@respond
+                    }
+
                     addEmbed {
                         description = "Your primary profile has been set to ${profile.cuteName}."
                         color(EmbedColor.Positive)
                     }
                 }
-
-                val updateModel = discordUser.getUpdateModel()
-                updateModel.primarySkyblockProfile = profile.profileId
-
-                DiscordUserConnection.authenticated().updateUser(discordUser.id, updateModel)
             }
         }
     }

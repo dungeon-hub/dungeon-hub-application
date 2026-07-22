@@ -176,16 +176,16 @@ class TicketCreateListener : Extension() {
                         description = labelDescription
 
                         stringSelect("form-question-$index") {
-                            options.forEach { option -> // TODO support requirements for the options
-                                if(option.contains(":")) {
-                                    val split = option.split(":", limit = 2)
+                            options.forEach { selectOption -> // TODO support requirements for the options
+                                if(selectOption.contains(":")) {
+                                    val split = selectOption.split(":", limit = 2)
 
                                     val value = split[0]
                                     val label = split[1]
 
                                     option(label, value)
                                 } else {
-                                    option(option, option)
+                                    option(selectOption, selectOption)
                                 }
                             }
 
@@ -268,22 +268,29 @@ class TicketCreateListener : Extension() {
                 }
 
                 val ticketChannel = createTicketChannel(ticketPanel, ticket, member)
-                updateTicketChannel(ticket, ticketChannel)
+                val updatedTicket = updateTicketChannel(ticket, ticketChannel)
+
+                if (updatedTicket == null) {
+                    addEmbed {
+                        description = "Error while persisting ticket channel creation. Please report this!"
+                        color(EmbedColor.Negative)
+                    }
+                    return@respond
+                }
 
                 addEmbed {
                     description = "Ticket created: ${ticketChannel.mention}."
                     color(EmbedColor.Positive)
                 }
 
-                TicketSystem.logTicketAction(member.guild, ticket, addDefaultFields = false) {
-                    description = "Ticket #${ticket.id} created by ${member.mention}."
+                TicketSystem.logTicketAction(member.guild, updatedTicket) {
+                    description = "Ticket #${updatedTicket.id} created by ${member.mention}."
 
-                    field("Panel", true) { ticket.ticketPanel.displayName ?: ticket.ticketPanel.name }
                     field("Channel", true) { ticketChannel.mention }
                 }
 
                 scheduler.launch {
-                    sendInitialTicketMessage(ticketPanel, ticket, ticketChannel, member)
+                    sendInitialTicketMessage(ticketPanel, updatedTicket, ticketChannel, member)
                 }
             }
         }

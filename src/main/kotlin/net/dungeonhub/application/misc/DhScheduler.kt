@@ -6,7 +6,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 class DhScheduler : Scheduler() {
-    override val coroutineContext get() = executor.asCoroutineDispatcher()
+    override val coroutineContext = executor.asCoroutineDispatcher()
 
     companion object {
         val executor: ExecutorService = Executors.newCachedThreadPool()

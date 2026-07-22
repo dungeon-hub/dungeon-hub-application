@@ -21,12 +21,10 @@ import net.dungeonhub.connection.QueueConnection
 import net.dungeonhub.enums.QueueStep
 import net.dungeonhub.model.discord_channel.DiscordChannelCreationModel
 import net.dungeonhub.model.discord_channel.DiscordChannelUpdateModel
-import org.slf4j.LoggerFactory
 import kotlin.time.Duration.Companion.seconds
 
 @LoadExtension
 class ChannelService : Extension() {
-    private val logger = LoggerFactory.getLogger(BirthdayService::class.java)
     private lateinit var scheduler: Scheduler
 
     override val name = "channel-service"
@@ -48,7 +46,7 @@ class ChannelService : Extension() {
 
         event<ChannelCreateEvent> {
             check {
-                event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel
+                failIfNot(event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel)
             }
 
             action {
@@ -67,7 +65,7 @@ class ChannelService : Extension() {
 
         event<ChannelUpdateEvent> {
             check {
-                event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel
+                failIfNot(event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel)
             }
 
             action {
@@ -89,7 +87,7 @@ class ChannelService : Extension() {
 
         event<ChannelDeleteEvent> {
             check {
-                event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel
+                failIfNot(event.channel is GuildChannel && event.channel !is Category && event.channel !is ThreadChannel)
             }
 
             action {
@@ -107,6 +105,10 @@ class ChannelService : Extension() {
         }
     }
 
+    override suspend fun unload() {
+        scheduler.cancel("Extension shutting down.")
+    }
+
     suspend fun sendUnnotifiedCarryQueues() {
         val carryQueues = QueueConnection.authenticated().getUnnotifiedQueues()?.takeIf { it.isNotEmpty() } ?: return
 
@@ -116,12 +118,10 @@ class ChannelService : Extension() {
             if(carryQueue.queueStep == QueueStep.Transcript && channelId != null) {
                 val channel = DiscordConnection.bot.kordRef.getChannelOf<TextChannel>(Snowflake(channelId))
 
-                if(channel != null) {
-                    channel.createMessage {
-                        embeds = mutableListOf(
-                            ApplicationService.loadTicketNotificationFromCarryQueue(carryQueue)
-                        )
-                    }
+                channel?.createMessage {
+                    embeds = mutableListOf(
+                        ApplicationService.loadTicketNotificationFromCarryQueue(carryQueue)
+                    )
                 }
             }
 

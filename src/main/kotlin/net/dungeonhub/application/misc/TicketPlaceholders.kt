@@ -17,6 +17,7 @@ import net.dungeonhub.model.ticket_panel.TicketPanelModel
 import net.dungeonhub.mojang.connection.MojangConnection
 
 // TODO implement more placeholders
+// TODO check if a NotLinkedWarning is thrown anywhere, that could break the placeholder evaluation
 class TicketPlaceholders(
     val ticketPanel: TicketPanelModel,
     val ticket: TicketModel,
@@ -80,7 +81,7 @@ class TicketPlaceholders(
             replacements["user.mention"] = { "<@${ticketUserId}>" }
             replacements["claimer.mention"] = {
                 if(ticket.claimer != null) {
-                    "<@${ticket.claimer?.id}"
+                    "<@${ticket.claimer?.id}>"
                 } else {
                     "unknown"
                 }
