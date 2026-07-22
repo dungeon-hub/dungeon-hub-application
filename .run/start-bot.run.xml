@@ -1,12 +1,10 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="start-bot" type="Application" factoryName="Application">
-    <option name="ALTERNATIVE_JRE_PATH" value="openjdk-17" />
-    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
-    <option name="MAIN_CLASS_NAME" value="me.taubsie.dungeonhub.application.connection.DiscordConnection" />
+    <option name="MAIN_CLASS_NAME" value="net.dungeonhub.application.connection.DiscordConnection" />
     <module name="dungeon-hub-application.main" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="me.taubsie.dungeonhub.application.start.*" />
+        <option name="PATTERN" value="net.dungeonhub.application.start.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>

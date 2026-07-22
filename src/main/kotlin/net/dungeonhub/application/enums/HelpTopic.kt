@@ -1,0 +1,259 @@
+package net.dungeonhub.application.enums
+
+import dev.kord.core.entity.Guild
+import dev.kord.core.entity.User
+import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
+import dev.kordex.core.i18n.toKey
+import dev.kordex.i18n.Key
+import net.dungeonhub.application.exceptions.MustBeServerException
+import net.dungeonhub.application.misc.HelpDisplay
+import net.dungeonhub.connection.ContentConnection
+import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.connection.RoleRequirementConnection
+import net.dungeonhub.enums.RoleRequirementType
+import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
+import net.dungeonhub.model.carry_type.CarryTypeModel
+
+enum class HelpTopic(
+    override val readableName: Key,
+    val title: String,
+    val description: DescriptionSupplier
+) : ChoiceEnum {
+    REPUTATION(
+        "reputation", "Reputation points",
+        DescriptionSupplier { _: User, guild: Guild? ->
+            if (guild == null) {
+                return@DescriptionSupplier HelpDisplay.fromException(MustBeServerException())
+            }
+
+            val reputationRequirements = (RoleRequirementConnection[guild.id.value.toLong()]
+                .authenticated()
+                .getAllRoleRequirements()
+                ?: emptyList())
+                .filter { it.requirementType == RoleRequirementType.Reputation }
+                .takeIf { it.isNotEmpty() }
+
+            val roleMessage = reputationRequirements
+                ?.groupBy { it.discordRole.id }
+                ?.toList()
+                ?.sortedBy { (_, requirements) ->
+                    requirements.minOf { it.count }
+                }
+                ?.map { (roleId, roleRequirements) ->
+                    val conditionText = roleRequirements
+                        .sortedBy { it.count }
+                        .joinToString(" and ") {
+                            "${it.comparison.readableName.translate()} ${it.count} reps"
+                        }
+
+                    "- <@&$roleId> | $conditionText"
+                }
+
+            return@DescriptionSupplier HelpDisplay.fromDescription(
+                "Reps (reputation points) are a way to easily distinguish which players have helped others the most, and subsequently, are more **trustworthy** to handle your requests.\n" +
+                        "\n" +
+                        "## **Available commands:**\n" +
+                        "- `/rep` - Give someone reputation for handling your CNT request.\n" +
+                        "- `/leaderboard reputation` - Check your current reputation and leaderboard spot.\n" +
+                        "- `/help topic:reputation` - Shows this informative message.\n" +
+                        "\n" +
+                        "## **Reputations milestones:**\n" +
+                        if (roleMessage != null) {
+                            "As you climb up in rep points, you will obtain new roles showcasing your dedication to helping other players.\n" +
+                                    "\n" +
+                                    "The roles and their requirements are as follows:\n" +
+                                    roleMessage.joinToString("\n")
+                        } else {
+                            "On this server, unfortunately no roles can be gained from reputation points.\n" +
+                                    "Tell the admins to set up some [role requirements](https://docs.dungeon-hub.net/role-management.html#role-requirements)!"
+                        } +
+                        "\n" +
+                        "\n" +
+                        "Remember that having higher rep is not a guarantee you won't be scammed, however it makes it a lot more unlikely.\n" +
+                        "If you would like to report someone for scamming, contact the staff team, e.g. through a support ticket."
+            )
+        }
+    ),
+    SCORE(
+        "score", "Carry Score",
+        DescriptionSupplier { _: User, server: Guild? ->
+            if (server == null) {
+                return@DescriptionSupplier HelpDisplay.fromException(MustBeServerException())
+            }
+
+            val fields: MutableMap<CarryTypeModel, MutableMap<String, Int>> = HashMap()
+
+            val carryDifficulties =
+                DiscordServerConnection.authenticated().getAllCarryDifficulties(server.id.value.toLong()) ?: ArrayList()
+
+            if (carryDifficulties.isEmpty()) {
+                return@DescriptionSupplier HelpDisplay.fromDescription(
+                    """
+                            You gain score based on the carries that you do.
+                            Different types of carries give you certain score.
+                            No scores have been set up yet!
+                            """.trimIndent()
+                )
+            }
+
+            val description = """
+                You gain score based on the carries that you do.
+                Different types of carries give you certain score:
+                """.trimIndent()
+
+            val carryDifficultiesByCarryType: MutableMap<CarryTypeModel, MutableList<CarryDifficultyModel>> =
+                HashMap()
+
+            for (carryDifficulty in carryDifficulties) {
+                if (carryDifficultiesByCarryType.containsKey(carryDifficulty.carryType)) {
+                    carryDifficultiesByCarryType[carryDifficulty.carryType]!!.add(carryDifficulty)
+                } else {
+                    carryDifficultiesByCarryType[carryDifficulty.carryType] = mutableListOf(carryDifficulty)
+                }
+            }
+
+            for ((key, value) in carryDifficultiesByCarryType) {
+                if (value.isEmpty()) {
+                    continue
+                }
+
+                for (carryDifficulty in value) {
+                    val hasMultipleWithSameName = value.stream()
+                        .filter { otherDifficulty: CarryDifficultyModel ->
+                            otherDifficulty.displayName.equals(carryDifficulty.displayName, ignoreCase = true)
+                        }
+                        .count() >= 2
+
+                    val sameScoreForEach = value.stream()
+                        .allMatch { otherDifficulty: CarryDifficultyModel -> otherDifficulty.score == carryDifficulty.score }
+
+                    if (sameScoreForEach) {
+                        fields[key] = mutableMapOf("Any" to carryDifficulty.score)
+                        break
+                    }
+
+                    if (hasMultipleWithSameName) {
+                        val sameScoreForName = value.stream()
+                            .filter { otherDifficulty: CarryDifficultyModel ->
+                                otherDifficulty.displayName
+                                    .equals(carryDifficulty.displayName, ignoreCase = true)
+                            }
+                            .allMatch { otherDifficulty: CarryDifficultyModel -> otherDifficulty.score == carryDifficulty.score }
+
+                        if (sameScoreForName) {
+                            if (fields.getOrDefault(key, mapOf())
+                                    .entries.stream()
+                                    .anyMatch { field: Map.Entry<String, Int> ->
+                                        field.key.equals(
+                                            carryDifficulty.displayName,
+                                            ignoreCase = true
+                                        ) && field.value == carryDifficulty.score
+                                    }
+                            ) {
+                                continue
+                            }
+
+                            if (fields.containsKey(key)) {
+                                fields[key]!![carryDifficulty.displayName] = carryDifficulty.score
+                            } else {
+                                fields[key] = HashMap(
+                                    mutableMapOf(carryDifficulty.displayName to carryDifficulty.score)
+                                )
+                            }
+                        } else {
+                            if (fields.containsKey(key)) {
+                                fields[key]!![carryDifficulty.carryTier.displayName +
+                                        " | "
+                                        + carryDifficulty.displayName] = carryDifficulty.score
+                            } else {
+                                fields[key] = HashMap(
+                                    mutableMapOf(
+                                        carryDifficulty.carryTier.displayName + " " + "| " + carryDifficulty.displayName to carryDifficulty.score
+                                    )
+                                )
+                            }
+                        }
+                    } else {
+                        if (fields.containsKey(key)) {
+                            fields[key]!![carryDifficulty.displayName] = carryDifficulty.score
+                        } else {
+                            fields[key] = HashMap(
+                                mutableMapOf(carryDifficulty.displayName to carryDifficulty.score)
+                            )
+                        }
+                    }
+                }
+            }
+
+            val embedFields: MutableMap<String, String> = HashMap()
+
+            for ((key, value1) in fields) {
+                val value = java.lang.String.join(
+                    "\n", value1
+                        .entries.stream()
+                        .sorted(
+                            java.util.Map.Entry.comparingByValue<String, Int>()
+                                .thenComparing(java.util.Map.Entry.comparingByKey())
+                        )
+                        .map { entry: Map.Entry<String, Int> -> entry.key + " - " + entry.value }
+                        .toList()
+                )
+
+                embedFields[key.displayName] = value
+            }
+
+            HelpDisplay(description, EmbedColor.Default, embedFields)
+        }),
+    VERIFICATION(
+        "verification", "How to verify",
+        DescriptionSupplier { user: User, _: Guild? ->
+            HelpDisplay.fromDescription(
+                "To link your Minecraft account to your Discord account:\n" +
+                        "## 1. On Hypixel (`mc.hypixel.net`)\n" +
+                        "- Join any lobby using `/lobby`\n" +
+                        "- Right click with the \"My Profile\" item (second hotbar slot) in your hand.\n" +
+                        "- Select \"Social Media\", to the right of your player head, then select \"Discord\".\n" +
+                        "- Paste your Discord username (**" + user.username + "**) exactly like that into the chat.\n" +
+                        "- If you get shown a book, select \"I understand\".\n" +
+                        "## 2. On Discord\n" +
+                        "- Use the `/link` command, this should complete the process.\n" +
+                        "\n" +
+                        "**It may take up to 15 minutes for your stats to update**, please wait and try again if verification doesn't work right away.\n" +
+                        "\n" +
+                        "> If you think you're linked to the wrong Minecraft account, use the `/unlink` command.\n" +
+                        "You can find a video example [here]("
+                        + ContentConnection.authenticated().getStaticUrl(KnownStaticResource.VerificationExample.path).toString()
+                        + ")."
+            )
+        });
+
+    constructor(readableName: String, title: String, description: DescriptionSupplier) : this(
+        readableName.toKey(),
+        title,
+        description
+    )
+
+    fun interface DescriptionSupplier {
+        suspend fun getDescription(user: User, server: Guild?): HelpDisplay
+    }
+
+    companion object {
+        suspend fun generateHelpEmbed(helpTopic: HelpTopic, user: User, guild: Guild?): EmbedBuilder {
+            val embed = EmbedBuilder()
+            embed.title = "**" + helpTopic.title + "**"
+
+            val helpDisplay = helpTopic.description.getDescription(
+                user,
+                guild
+            )
+
+            embed.color = helpDisplay.embedColor.color
+            embed.description = helpDisplay.description
+
+            helpDisplay.fields.forEach { embed.field(it.key, false) { it.value } }
+
+            return embed
+        }
+    }
+}

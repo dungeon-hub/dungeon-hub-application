@@ -1,17 +1,17 @@
 import dev.kordex.gradle.plugins.kordex.DataCollection
 
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "2.1.0"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0"
+    id("org.jetbrains.kotlin.jvm") version "2.2.20"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.2.20"
 
-    id("com.github.johnrengelman.shadow") version "8.1.1"
     //TODO fix errors
     //id("io.gitlab.arturbosch.detekt") version "1.23.6"
 
-    id("dev.kordex.gradle.kordex") version "1.6.2"
+    id("dev.kordex.gradle.kordex") version "1.9.0"
+    id("dev.kordex.gradle.i18n") version "1.1.1"
 }
 
-group = "me.taubsie"
+group = "net.dungeon-hub"
 version = "1.0.0"
 description = "dungeon-hub-application"
 
@@ -25,20 +25,20 @@ repositories {
 }
 
 kordEx {
-    kordExVersion = "2.3.1-SNAPSHOT"
-    jvmTarget = 17
+    kordExVersion = "2.4.1-SNAPSHOT"
+    kordVersion = "0.19.0-SNAPSHOT"
+    jvmTarget = 21
 
     bot {
         // See https://docs.kordex.dev/data-collection.html
         dataCollection(DataCollection.Extra)
 
-        mainClass = "me.taubsie.dungeonhub.application.connection.DiscordConnection"
+        mainClass = "net.dungeonhub.application.connection.DiscordConnection"
     }
+}
 
-    i18n {
-        classPackage = "net.dungeonhub.i18n"
-        translationBundle = "dhub.strings"
-    }
+i18n {
+    bundle("dhub.strings", "net.dungeonhub.i18n")
 }
 
 //TODO fix errors
@@ -62,22 +62,21 @@ dependencies {
     implementation(libs.hypixel.wrapper)
 
     //Functionality
-    implementation("net.dungeon-hub:transcripts-kord:0.1.1")
-    implementation("net.codebox:homoglyph:1.2.1")
+    implementation("net.dungeon-hub:transcripts-kord:0.2.2")
     implementation("com.google.zxing:javase:3.5.2")
-    implementation("com.google.guava:guava:33.0.0-jre")
-    implementation("org.mnode.ical4j:ical4j:4.0.5")
+    implementation("com.google.guava:guava:33.0.0-jre") // TODO use Koin and plug their dependency injection in the class loader instead of the current custom logic that uses guava
+    implementation("org.mnode.ical4j:ical4j:4.1.1")
 
     //HTTP Client
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
+    implementation("io.ktor:ktor-client-java:3.0.0")
 
     //Logging
-    implementation("org.apache.logging.log4j:log4j-core:2.20.0")
-    implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.20.0")
+    implementation("ch.qos.logback:logback-core:1.5.6")
+    implementation("ch.qos.logback:logback-classic:1.5.6")
 
     //Annotations
     annotationProcessor("org.projectlombok:lombok:1.18.28")
-    annotationProcessor("org.apache.logging.log4j:log4j-core:2.20.0")
 
     //Testing
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -85,7 +84,7 @@ dependencies {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
     compilerOptions {
         freeCompilerArgs.add("-Xjvm-default=all")
     }

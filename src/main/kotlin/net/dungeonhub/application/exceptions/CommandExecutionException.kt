@@ -1,0 +1,18 @@
+package net.dungeonhub.application.exceptions
+
+import java.io.Serial
+
+open class CommandExecutionException : ProgramException {
+    constructor() : super()
+
+    constructor(s: String?) : super(s)
+
+    constructor(message: String?, cause: Throwable?) : super(message, cause)
+
+    constructor(cause: Throwable?) : super(cause)
+
+    companion object {
+        @Serial
+        private val serialVersionUID = 6707538877645992492L
+    }
+}
