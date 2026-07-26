@@ -101,9 +101,9 @@ object BirthdayService : StartupListener {
         for (birthday in todayBirthdays) {
             val birthdayUser = DiscordConnection.bot.kordRef.getUser(Snowflake(birthday.userId))?.asMemberOrNull(birthdayChannel.guildId)
 
-            if(birthdayUser == null || birthdayChannel.permissionsForMember(birthdayUser).contains(Permission.ViewChannel)) {
+            if (birthdayUser == null || !birthdayChannel.permissionsForMember(birthdayUser).contains(Permission.ViewChannel)) {
                 logger.error("Birthday user doesn't have access to the birthday channel. Skipping ${birthday.userId}/${birthdayUser?.effectiveName} with permissions ${birthdayUser?.let { birthdayChannel.permissionsForMember(it) }}.")
-                return
+                continue
             }
 
             val embed = EmbedBuilder()
