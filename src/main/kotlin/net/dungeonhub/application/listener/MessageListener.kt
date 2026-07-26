@@ -93,11 +93,14 @@ class MessageListener : Extension() {
         mutex.withLock {
             val allCarryQueues = QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(channelId, QueueStep.Transcript) ?: return
 
-            val queueEntries = allCarryQueues.map { queueModel ->
+            val queueEntries = allCarryQueues.mapNotNull { queueModel ->
                 val updateModel = queueModel.getUpdateModel()
                 updateModel.attachmentLink = transcriptUrl
 
-                QueueConnection.authenticated().updateQueue(queueModel.id, updateModel) ?: queueModel
+                QueueConnection.authenticated().updateQueue(queueModel.id, updateModel) ?: run {
+                    logger.error("Failed to set attachment link for carry queue ${queueModel.id}")
+                    null
+                }
             }
 
             val totalAmount = queueEntries.sumOf { it.amount }
@@ -106,7 +109,7 @@ class MessageListener : Extension() {
             val needsApproval = approvingChannel != null && (totalAmount >= APPROVE_AMOUNT_THRESHOLD || totalScore >= APPROVE_SCORE_THRESHOLD)
 
             if (needsApproval) {
-                sendToApproving(queueEntries, approvingChannel)
+                sendToApproving(queueEntries, approvingChannel) // TODO this method will only show the total score / amount per log, not of all summarized together. is this fixed in the new implementation?
             } else {
                 logDirectly(queueEntries, server)
             }
@@ -161,7 +164,12 @@ class MessageListener : Extension() {
         val carryTypes = mutableListOf<CarryTypeModel>()
 
         for (queueModel in queueEntries) {
-            val loggedCarryModel = QueueConnection.authenticated().logQueue(queueModel.id, queueModel.getUpdateModel()) ?: continue
+            val loggedCarryModel = QueueConnection.authenticated().logQueue(queueModel.id, queueModel.getUpdateModel())
+
+            if (loggedCarryModel == null) {
+                logger.error("Failed to log carry queue {}", queueModel.id)
+                continue
+            }
 
             val updatedScore = loggedCarryModel.scoreModels
                 .firstOrNull { scoreModel: ScoreModel -> scoreModel.scoreType == ScoreType.Default }
