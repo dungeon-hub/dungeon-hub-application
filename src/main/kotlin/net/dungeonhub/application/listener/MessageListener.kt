@@ -83,12 +83,17 @@ class MessageListener : Extension() {
         val approvingChannel = ServerProperty.LOG_APPROVING_CHANNEL.getValue(server.id.value.toLong())
             ?.let { DiscordConnection.bot.kordRef.getChannelOf<TextChannel>(Snowflake(it)) }
 
-        mutex.withLock {
-            val allCarryQueues = QueueConnection.authenticated().getCarryQueuesByQueueStep(QueueStep.Transcript) ?: return
+        val channelId = ticket.channel?.id
 
-            val queueEntries = allCarryQueues.filter {
-                ticket.channel?.id == it.relationId
-            }.map { queueModel ->
+        if(channelId == null) {
+            logger.error("Channel ID is null for ticket #${ticket.id}")
+            return
+        }
+
+        mutex.withLock {
+            val allCarryQueues = QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(channelId, QueueStep.Transcript) ?: return
+
+            val queueEntries = allCarryQueues.map { queueModel ->
                 val updateModel = queueModel.getUpdateModel()
                 updateModel.attachmentLink = transcriptUrl
 
