@@ -211,7 +211,7 @@ object AutoCompletionService {
 
         if(uuid != null) {
             suggest(
-                HypixelApiConnection().getSkyblockProfiles(uuid)?.profiles?.map {
+                HypixelApiConnection().getSkyblockProfiles(uuid).valueOrNull?.profiles?.map {
                     it.cuteName to it.profileId
                 }?.map { (name, uuid) ->
                     Choice.StringChoice(

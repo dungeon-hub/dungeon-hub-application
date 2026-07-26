@@ -158,7 +158,7 @@ class TicketSystem : Extension() {
 
                     val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(5)
 
-                    val guild = hypixelApiConnection.getPlayerGuild(uuid)
+                    val guild = hypixelApiConnection.getPlayerGuild(uuid).valueOrNull
 
                     val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")
                         .withZone(ZoneId.systemDefault())
