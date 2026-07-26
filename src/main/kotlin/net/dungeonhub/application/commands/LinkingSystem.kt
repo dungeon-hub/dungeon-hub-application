@@ -156,7 +156,7 @@ class LinkingSystem : Extension() {
                         respond {
                             val uuid = MojangConnection.getUUIDByName(arguments.ign)
 
-                            val discordUser = HypixelApiConnection().getHypixelLinkedDiscord(uuid)
+                            val discordUser = HypixelApiConnection().getHypixelLinkedDiscord(uuid).valueOrNull
                                 ?: throw InvalidOptionWarning(
                                     "ign",
                                     "Please add the correct discord-account to your hypixel social menu.\n"
@@ -224,7 +224,7 @@ class LinkingSystem : Extension() {
                     val guildId = guild!!.id
 
                     respond {
-                        val guild = HypixelApiConnection().getGuild(arguments.guild)
+                        val guild = HypixelApiConnection().getGuild(arguments.guild).valueOrNull
 
                         if (guild == null) {
                             addEmbed {
