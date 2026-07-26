@@ -41,6 +41,9 @@
 .idea/modules.xml
 .idea/*.iml
 .idea/modules
+.idea/copyright/**
+.idea/inspectionProfiles/**
+.idea/queries/**
 *.iml
 *.ipr
 
