@@ -21,7 +21,6 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.scheduling.Scheduler
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
@@ -54,8 +53,6 @@ class LoggingSystem : Extension() {
     override val name = "logging-system"
 
     override suspend fun setup() {
-        scheduler = DhScheduler()
-
         publicSlashCommand(::LogArguments) {
             name = Log.name
             description = Log.description
@@ -198,10 +195,6 @@ class LoggingSystem : Extension() {
                 }
             }
         }
-    }
-
-    override suspend fun unload() {
-        scheduler.cancel("Extension shutting down.")
     }
 
     private suspend fun deny(event: GuildButtonInteractionCreateEvent) {
@@ -376,7 +369,7 @@ class LoggingSystem : Extension() {
 
     companion object {
         private val logger = LoggerFactory.getLogger(LoggingSystem::class.java)
-        private lateinit var scheduler: Scheduler
+        private val scheduler: Scheduler by lazy { DhScheduler() }
 
         fun compactCarryEntries(queueEntries: Collection<CarryQueueModel>): List<List<CarryQueueModel>> {
             val groups = mutableListOf<MutableList<CarryQueueModel>>()
@@ -402,6 +395,8 @@ class LoggingSystem : Extension() {
         }
 
         fun sendLoggedDms(carrierId: Long, loggedEntries: Collection<LoggedQueueEntry>) {
+            if(loggedEntries.isEmpty()) return
+
             val latestScore = loggedEntries.last().updatedScore
             val allQueues = loggedEntries.flatMap { it.queues }
 
@@ -439,7 +434,7 @@ class LoggingSystem : Extension() {
 
             if(players.size > 1) {
                 field("Players", true) {
-                    queueEntries.joinToString("\n") { "<@${it.player.id}>" }
+                    players.joinToString("\n") { "<@${it.player.id}>" }
                 }
             } else {
                 field("Player", true) {
@@ -471,7 +466,10 @@ class LoggingSystem : Extension() {
             description = queueEntries.joinToString("\n") { shownEntries ->
                 val representative = shownEntries.first()
 
-                "- ${shownEntries.sumOf { it.amount }} ${representative.carryTier.displayName} - ${representative.carryDifficulty.displayName} for <@${representative.player.id}> (${shownEntries.sumOf { it.calculateScore() }} score)"
+                val players = shownEntries.distinctBy { it.player.id }
+                    .joinToString(", ") { "<@${it.player.id}>" }
+
+                "- ${shownEntries.sumOf { it.amount }} ${representative.carryTier.displayName} - ${representative.carryDifficulty.displayName} for $players (${shownEntries.sumOf { it.calculateScore() }} score)"
             }
 
             last.attachmentLink?.let { transcriptUrl ->
