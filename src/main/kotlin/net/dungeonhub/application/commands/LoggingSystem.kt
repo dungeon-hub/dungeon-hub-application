@@ -374,7 +374,7 @@ class LoggingSystem : Extension() {
         fun compactCarryEntries(queueEntries: Collection<CarryQueueModel>): List<List<CarryQueueModel>> {
             val groups = mutableListOf<MutableList<CarryQueueModel>>()
 
-            for (queueModel in queueEntries.sortedBy { it.time?.epochSecond ?: Long.MIN_VALUE }) {
+            for (queueModel in queueEntries.sortedBy { it.time?.toKotlinInstant() }) {
                 val previousQueue = groups.lastOrNull()?.lastOrNull()
 
                 val canJoinPreviousGroup =
