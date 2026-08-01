@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.withNanos
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
+import net.dungeonhub.application.listener.ticket.TicketClaimListener
 import net.dungeonhub.application.listener.ticket.TicketCloseListener
 import net.dungeonhub.application.listener.ticket.TicketDeleteListener
 import net.dungeonhub.application.loader.LoadExtension
@@ -284,6 +285,57 @@ class TicketSystem : Extension() {
                     }
 
                     val embed = TicketCloseListener.closeTicket(member!!, event.interaction.channel.asChannelOf(), ticket)
+
+                    respond {
+                        embeds = mutableListOf(embed)
+                    }
+                }
+            }
+
+            ephemeralSubCommand {
+                name = Translations.Command.Ticket.Claim.name
+                description = Translations.Command.Ticket.Claim.description
+
+                action {
+                    val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
+
+                    val ticketChannel = channel.asChannelOfOrNull<TextChannel>()
+
+                    if(ticket == null || ticketChannel == null) {
+                        respond {
+                            addEmbed {
+                                description = "This isn't a ticket channel!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    if(!ticket.ticketPanel.claimable) {
+                        respond {
+                            addEmbed {
+                                description = "This panel doesn't allow ticket claiming!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    if(ticket.state == TicketState.Deleted) {
+                        respond {
+                            addEmbed {
+                                description = "This ticket is already deleted!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    val embed = if (ticket.claimer != null) {
+                        TicketClaimListener.unclaimTicket(member!!.asMember(), ticket, ticketChannel)
+                    } else {
+                        TicketClaimListener.claimTicket(member!!.asMember(), ticket, ticketChannel)
+                    }
 
                     respond {
                         embeds = mutableListOf(embed)
