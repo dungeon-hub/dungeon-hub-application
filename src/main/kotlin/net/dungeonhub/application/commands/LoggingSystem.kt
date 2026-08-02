@@ -2,12 +2,18 @@ package net.dungeonhub.application.commands
 
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
+import dev.kord.common.entity.TextInputStyle
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.channel.createMessage
+import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.getChannelOfOrNull
+import dev.kord.core.behavior.interaction.modal
+import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.channel.GuildMessageChannel
+import dev.kord.core.entity.component.TextInputComponent
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
+import dev.kord.core.event.interaction.GuildModalSubmitInteractionCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
 import dev.kordex.core.commands.Arguments
@@ -183,7 +189,7 @@ class LoggingSystem : Extension() {
 
         event<GuildButtonInteractionCreateEvent> {
             check {
-                failIfNot(listOf("send_log", "discard", "accept_log", "deny").contains(event.interaction.componentId))
+                failIfNot(listOf("send_log", "discard", "accept_log", "deny", "adjust_carry_amount").contains(event.interaction.componentId))
             }
 
             action {
@@ -192,6 +198,132 @@ class LoggingSystem : Extension() {
                     "discard" -> discard(event)
                     "accept_log" -> acceptLog(event)
                     "deny" -> deny(event)
+                    "adjust_carry_amount" -> adjustCarryAmount(event)
+                }
+            }
+        }
+
+        event<GuildModalSubmitInteractionCreateEvent> {
+            check {
+                failIfNot(listOf("adjust_carry_amount").contains(event.interaction.modalId))
+            }
+
+            action {
+                val value = (event.interaction.responseComponents["amount"] as? TextInputComponent)?.value?.trim()?.toIntOrNull()
+
+                if(value == null) {
+                    event.interaction.respondEphemeral {
+                        addEmbed {
+                            description = "Please enter a valid number!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                val message = event.interaction.message
+
+                if(message == null) {
+                    event.interaction.respondEphemeral {
+                        addEmbed {
+                            description = "Couldn't find a related message. Report this!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                val carryQueues = QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
+                    message.id.value.toLong(),
+                    QueueStep.Approving
+                ) ?: HashSet()
+
+                if(carryQueues.size != 1) {
+                    event.interaction.respondEphemeral {
+                        addEmbed {
+                            description = "Found less or more than 1 queued carries. Report this!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                val carryQueue = carryQueues.first()
+
+                val updateModel = carryQueue.getUpdateModel()
+                updateModel.amount = value
+                val response = QueueConnection.authenticated().updateQueue(carryQueue.id, updateModel)
+
+                if(response == null) {
+                    event.interaction.respondEphemeral {
+                        addEmbed {
+                            description = "Couldn't update the carry queue. Report this!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                event.interaction.respondEphemeral {
+                    addEmbed {
+                        description = "Queue updated!"
+                        field("Old amount", true) {
+                            "${carryQueue.amount}"
+                        }
+                        field("New amount", true) {
+                            "${response.amount}"
+                        }
+                    }
+                }
+
+                ServerProperty.SCORE_LOGS_CHANNEL
+                    .getValue(event.interaction.guild.id.value.toLong())
+                    ?.let { id: String ->
+                        event.interaction.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
+                    }
+                    ?.let { serverTextChannel ->
+                        serverTextChannel.createMessage {
+                            val embed = ApplicationService.loadEmbedFromCarryQueue(carryQueue)
+                            embed.color(EmbedColor.Default)
+                            embed.title = "Carry amount changed"
+                            embed.field("Changed by", true) { event.interaction.user.mention }
+                            embed.field("Old amount", true) { "${carryQueue.amount}" }
+                            embed.field("New amount", true) { "${response.amount}" }
+                            embeds = mutableListOf(embed)
+                        }
+                    }
+
+                message.edit {
+                    val embed = loadGroupedCarryEmbed(listOf(response))
+                    embed.title = "Accept carry-log?"
+                    embed.color = EmbedColor.Default.color
+
+                    embeds = mutableListOf(embed)
+
+                    actionRow {
+                        interactionButton(ButtonStyle.Success, "accept_log") {
+                            label = "Accept"
+                        }
+
+                        interactionButton(ButtonStyle.Primary, "adjust_carry_amount") {
+                            label = "Adjust amount"
+                        }
+
+                        interactionButton(ButtonStyle.Danger, "deny") {
+                            label = "Deny"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun adjustCarryAmount(event: GuildButtonInteractionCreateEvent) {
+        event.interaction.modal("Adjust amount", "adjust_carry_amount") {
+            label("Amount") {
+                textInput(TextInputStyle.Short, "amount") {
+                    placeholder = "Enter a new amount here"
+                    required = true
                 }
             }
         }
