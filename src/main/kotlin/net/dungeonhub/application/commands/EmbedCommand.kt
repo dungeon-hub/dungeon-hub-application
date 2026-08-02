@@ -22,8 +22,8 @@ import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.getJumpUrl
 import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.connection.loadMessageByLink
-import net.dungeonhub.application.connection.toBuilder
-import net.dungeonhub.application.connection.toModel
+import net.dungeonhub.application.service.toBuilder
+import net.dungeonhub.application.service.toModel
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.InvalidEmbedJsonWarning

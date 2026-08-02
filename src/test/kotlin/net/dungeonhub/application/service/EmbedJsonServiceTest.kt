@@ -18,6 +18,24 @@ import kotlin.time.toKotlinInstant
 @OptIn(ExperimentalTime::class)
 class EmbedJsonServiceTest {
     @Test
+    fun `copies embed builder data`() {
+        val source = EmbedBuilder().apply {
+            title = "Copied title"
+            description = "Copied description"
+            field("Copied field", true) { "Copied value" }
+        }
+        val target = EmbedBuilder()
+
+        target.copy(source)
+
+        assertEquals("Copied title", target.title)
+        assertEquals("Copied description", target.description)
+        assertEquals("Copied field", target.fields.single().name)
+        assertEquals("Copied value", target.fields.single().value)
+        assertEquals(true, target.fields.single().inline)
+    }
+
+    @Test
     fun `deserializes single embed object`() {
         val embeds = EmbedJsonService.parseEmbeds(
             """

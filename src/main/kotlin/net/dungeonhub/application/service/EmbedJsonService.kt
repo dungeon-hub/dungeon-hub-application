@@ -3,12 +3,19 @@ package net.dungeonhub.application.service
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Types
 import com.squareup.moshi.adapter
+import dev.kord.core.entity.Embed
+import dev.kord.core.entity.Embed.Author
+import dev.kord.core.entity.Embed.Field
+import dev.kord.core.entity.Embed.Footer
+import dev.kord.core.entity.Embed.Thumbnail
 import dev.kord.rest.builder.message.EmbedBuilder
 import net.dungeonhub.application.misc.EmbedModel
 import net.dungeonhub.service.MoshiService
+import net.dungeonhub.wrapper.kord.toJavaColor
 import java.awt.Color
 import java.time.Instant
 import kotlin.time.ExperimentalTime
+import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
 
 /**
@@ -173,3 +180,84 @@ object EmbedJsonService {
         return takeIf { keys.all { key -> key is String } } as? Map<String, Any?>
     }
 }
+
+@OptIn(ExperimentalTime::class)
+fun EmbedBuilder.copy(other: EmbedBuilder) {
+    description = other.description
+    title = other.title
+    footer = other.footer
+    fields = other.fields
+    color = other.color
+    timestamp = other.timestamp
+    url = other.url
+    image = other.image
+    author = other.author
+    thumbnail = other.thumbnail
+}
+
+@OptIn(ExperimentalTime::class)
+fun Embed.toBuilder(): EmbedBuilder {
+    val embed = EmbedBuilder()
+    embed.title = title
+    embed.description = description
+    embed.url = url
+    embed.timestamp = timestamp
+    embed.color = color
+    embed.image = image?.url
+    embed.footer = footer?.toBuilder()
+    embed.thumbnail = thumbnail?.toBuilder()
+    embed.author = author?.toBuilder()
+    embed.fields = fields.map { it.toBuilder() }.toMutableList()
+    return embed
+}
+
+fun Author.toBuilder(): EmbedBuilder.Author {
+    val author = EmbedBuilder.Author()
+    author.name = name
+    author.url = url
+    author.icon = iconUrl
+    return author
+}
+
+fun Field.toBuilder(): EmbedBuilder.Field {
+    val field = EmbedBuilder.Field()
+    field.name = name
+    field.inline = inline
+    field.value = value
+    return field
+}
+
+@OptIn(ExperimentalTime::class)
+fun Embed.toModel(): EmbedModel {
+    val embed = EmbedModel(
+        title,
+        description,
+        url,
+        timestamp?.toJavaInstant(),
+        color?.toJavaColor(),
+        image?.url,
+        footer?.toBuilder(),
+        thumbnail?.toBuilder(),
+        author?.toModel()
+    )
+    embed.fields = fields.map { it.toModel() }.toMutableList()
+    return embed
+}
+
+fun Footer.toBuilder(): EmbedBuilder.Footer {
+    val footer = EmbedBuilder.Footer()
+    footer.text = text
+    footer.icon = iconUrl
+    return footer
+}
+
+fun Thumbnail.toBuilder(): EmbedBuilder.Thumbnail? {
+    val thumbnailUrl = url ?: return null
+    val thumbnail = EmbedBuilder.Thumbnail()
+    thumbnail.url = thumbnailUrl
+    return thumbnail
+}
+
+fun Author.toModel(): EmbedModel.Author = EmbedModel.Author(name, url, iconUrl)
+
+fun Field.toModel(): EmbedModel.Field = EmbedModel.Field(name, inline, value)

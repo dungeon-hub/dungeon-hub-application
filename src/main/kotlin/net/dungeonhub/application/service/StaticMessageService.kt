@@ -1,8 +1,6 @@
 package net.dungeonhub.application.service
 
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import com.google.gson.JsonSyntaxException
+import com.squareup.moshi.JsonDataException
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.MessageBehavior
@@ -27,7 +25,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.commands.addLeaderboardButtons
 import net.dungeonhub.application.connection.DiscordConnection
-import net.dungeonhub.application.connection.applyJson
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
@@ -47,8 +44,8 @@ import net.dungeonhub.model.carry_type.CarryTypeModel
 import net.dungeonhub.model.reputation.ReputationLeaderboardModel
 import net.dungeonhub.model.reputation.ReputationSumModel
 import net.dungeonhub.model.static_message.StaticMessageModel
-import net.dungeonhub.service.GsonService
 import org.slf4j.LoggerFactory
+import java.io.IOException
 import java.time.Instant
 import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.time.Duration.Companion.hours
@@ -347,22 +344,15 @@ object StaticMessageService : StartupListener {
             }
 
             StaticMessageType.TicketPanel -> {
-                val embed = EmbedBuilder()
-
-                @Suppress("DEPRECATION")
-                val embedOverride = try {
-                    staticMessage.embedOverride?.let {
-                        GsonService.gson.fromJson(it, JsonObject::class.java)
-                    }
-                } catch (_: JsonSyntaxException) {
-                    null
-                }
-
-                embedOverride?.entrySet()?.forEach { entry: Map.Entry<String, JsonElement> ->
-                    embed.applyJson(
-                        entry.key,
-                        entry.value
-                    )
+                val embed = try {
+                    staticMessage.embedOverride
+                        ?.takeIf { it.trimStart().startsWith("{") }
+                        ?.let { EmbedJsonService.parseEmbeds(it).singleOrNull() }
+                        ?: EmbedBuilder()
+                } catch (_: IOException) {
+                    EmbedBuilder()
+                } catch (_: JsonDataException) {
+                    EmbedBuilder()
                 }
 
                 if(staticMessage.objectIds.isEmpty()) {

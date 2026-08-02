@@ -32,7 +32,7 @@ import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasPermission
 import kotlinx.coroutines.launch
-import net.dungeonhub.application.connection.copy
+import net.dungeonhub.application.service.copy
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.HelpTopic
 import net.dungeonhub.application.enums.ServerProperty
