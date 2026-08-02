@@ -394,7 +394,7 @@ class LoggingSystem : Extension() {
             return groups
         }
 
-        fun sendLoggedDms(carrierId: Long, loggedEntries: Collection<LoggedQueueEntry>) {
+        fun sendLoggedDms(carrierId: Long, loggedEntries: Collection<LoggedQueueEntry>, approver: Long?) {
             if(loggedEntries.isEmpty()) return
 
             val latestScore = loggedEntries.last().updatedScore
@@ -406,7 +406,7 @@ class LoggingSystem : Extension() {
                             "logged!\n\n**Your Updated Score:** $latestScore"
 
                     embeds = mutableListOf(
-                        createCarryOverview(compactCarryEntries(allQueues))
+                        createCarryOverview(compactCarryEntries(allQueues), approver)
                     )
                 }
             }
@@ -457,7 +457,7 @@ class LoggingSystem : Extension() {
             }
         }
 
-        private fun createCarryOverview(queueEntries: List<List<CarryQueueModel>>): EmbedBuilder = buildEmbed {
+        private fun createCarryOverview(queueEntries: List<List<CarryQueueModel>>, approver: Long?): EmbedBuilder = buildEmbed {
             val last = queueEntries.last().last()
             timestamp = last.time?.toKotlinInstant()
             title = "Information"
@@ -475,6 +475,12 @@ class LoggingSystem : Extension() {
             last.attachmentLink?.let { transcriptUrl ->
                 field("Transcript-Link", true) {
                     "[Click to open]($transcriptUrl)"
+                }
+            }
+
+            if(approver != null) {
+                field("Approved by", true) {
+                    "$approver"
                 }
             }
         }
@@ -540,7 +546,7 @@ class LoggingSystem : Extension() {
                     }
             }
 
-            sendLoggedDms(carrierId, loggedEntries)
+            sendLoggedDms(carrierId, loggedEntries, approver)
 
             scheduler.launch {
                 StaticMessageService.updateScoreLeaderboard(carryTypes.distinctBy { it.id })
