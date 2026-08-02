@@ -1,12 +1,17 @@
 package net.dungeonhub.application.service
 
 import com.squareup.moshi.JsonDataException
+import dev.kord.common.entity.optional.Optional
+import dev.kord.core.Kord
+import dev.kord.core.cache.data.EmbedData
+import dev.kord.core.entity.Embed
 import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.misc.EmbedModel
 import java.awt.Color
 import java.io.IOException
 import java.time.Instant
+import sun.misc.Unsafe
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -33,6 +38,59 @@ class EmbedJsonServiceTest {
         assertEquals("Copied field", target.fields.single().name)
         assertEquals("Copied value", target.fields.single().value)
         assertEquals(true, target.fields.single().inline)
+    }
+
+    @Test
+    fun `copy clears values that are absent from source`() {
+        val source = EmbedBuilder()
+        val target = EmbedBuilder().apply {
+            title = "Old title"
+            description = "Old description"
+            field("Old field") { "Old value" }
+        }
+
+        target.copy(source)
+
+        assertNull(target.title)
+        assertNull(target.description)
+        assertTrue(target.fields.isEmpty())
+    }
+
+    @Test
+    fun `converts populated discord embed to builder and model`() {
+        val embed = Embed(
+            EmbedData(
+                title = Optional("Entity title"),
+                description = Optional("Entity description"),
+                url = Optional("https://example.com")
+            ),
+            kordFixture()
+        )
+
+        val builder = embed.toBuilder()
+        val model = embed.toModel()
+
+        assertEquals("Entity title", builder.title)
+        assertEquals("Entity description", builder.description)
+        assertEquals("https://example.com", builder.url)
+        assertEquals("Entity title", model.title)
+        assertEquals("Entity description", model.description)
+        assertEquals("https://example.com", model.url)
+    }
+
+    @Test
+    fun `converts empty discord embed without inventing values`() {
+        val embed = Embed(EmbedData(), kordFixture())
+
+        val builder = embed.toBuilder()
+        val model = embed.toModel()
+
+        assertNull(builder.title)
+        assertNull(builder.description)
+        assertTrue(builder.fields.isEmpty())
+        assertNull(model.title)
+        assertNull(model.description)
+        assertTrue(model.fields.isEmpty())
     }
 
     @Test
@@ -332,5 +390,12 @@ class EmbedJsonServiceTest {
 
         assertEquals(1, embeds.size)
         assertEquals("Valid", embeds.single().title)
+    }
+
+    private fun kordFixture(): Kord {
+        val unsafeField = Unsafe::class.java.getDeclaredField("theUnsafe")
+        unsafeField.isAccessible = true
+        val unsafe = unsafeField.get(null) as Unsafe
+        return unsafe.allocateInstance(Kord::class.java) as Kord
     }
 }
