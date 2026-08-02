@@ -211,10 +211,10 @@ class LoggingSystem : Extension() {
             action {
                 val value = (event.interaction.responseComponents["amount"] as? TextInputComponent)?.value?.trim()?.toIntOrNull()
 
-                if(value == null) {
+                if(value == null || value <= 0) {
                     event.interaction.respondEphemeral {
                         addEmbed {
-                            description = "Please enter a valid number!"
+                            description = "Please enter a positive number!"
                             color(EmbedColor.Negative)
                         }
                     }

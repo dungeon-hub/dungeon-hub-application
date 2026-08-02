@@ -124,8 +124,10 @@ class MessageListener : Extension() {
                         label = "Accept"
                     }
 
-                    interactionButton(ButtonStyle.Primary, "adjust_carry_amount") {
-                        label = "Adjust amount"
+                    if(group.size == 1) {
+                        interactionButton(ButtonStyle.Primary, "adjust_carry_amount") {
+                            label = "Adjust amount"
+                        }
                     }
 
                     interactionButton(ButtonStyle.Danger, "deny") {
