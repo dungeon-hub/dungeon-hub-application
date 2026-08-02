@@ -235,7 +235,7 @@ class TicketTranscriptListener : Extension() {
                 }.toMutableList()
             } catch (exception: JsonDataException) {
                 logger.error("Failed to parse transcript DM embeds.", exception)
-                mutableListOf()
+                mutableListOf(generateTranscriptEmbed(placeholders, false))
             }
         }
 
