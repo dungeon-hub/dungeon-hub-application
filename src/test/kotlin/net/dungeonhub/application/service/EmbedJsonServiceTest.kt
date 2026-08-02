@@ -109,6 +109,46 @@ class EmbedJsonServiceTest {
     }
 
     @Test
+    fun `rejects trailing data after valid json`() {
+        assertFailsWith<IOException> {
+            EmbedJsonService.parseEmbeds("""{"title":"Valid"} trailing""")
+        }
+    }
+
+    @Test
+    fun `rejects non-object values in regular embed arrays`() {
+        assertFailsWith<JsonDataException> {
+            EmbedJsonService.parseEmbeds("""[{"title":"Valid"},42]""")
+        }
+    }
+
+    @Test
+    fun `rejects invalid color values`() {
+        val exception = assertFailsWith<JsonDataException> {
+            EmbedJsonService.parseEmbeds("""{"color":"definitely-not-a-color"}""")
+        }
+
+        assertEquals("color must be a valid color value", exception.message)
+    }
+
+    @Test
+    fun `rejects invalid timestamp values`() {
+        assertFailsWith<JsonDataException> {
+            EmbedJsonService.parseEmbeds("""{"timestamp":"yesterday"}""")
+        }
+    }
+
+    @Test
+    fun `accepts whitespace and escaped unicode input`() {
+        val embed = EmbedJsonService.parseEmbeds(
+            "  \n\t{\"title\":\"Dungeon \\u2764 Hub\",\"description\":null}\r\n  "
+        ).single()
+
+        assertEquals("Dungeon ❤ Hub", embed.title)
+        assertNull(embed.description)
+    }
+
+    @Test
     fun `serializes single embed model`() {
         val timestamp = Instant.ofEpochMilli(1710000000000)
         val color = Color(12, 34, 56)

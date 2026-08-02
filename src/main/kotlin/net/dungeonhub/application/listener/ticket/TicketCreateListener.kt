@@ -61,7 +61,6 @@ import org.slf4j.LoggerFactory
 @LoadExtension
 class TicketCreateListener : Extension() {
     override val name = "ticket-create-listener"
-    private val logger = LoggerFactory.getLogger(javaClass)
 
     override suspend fun setup() {
         event<GuildButtonInteractionCreateEvent> {
@@ -210,6 +209,7 @@ class TicketCreateListener : Extension() {
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(TicketCreateListener::class.java)
         const val DEFAULT_CONTENT = "Welcome, {user.mention}!\nPlease describe your {panel.name} request below further."
 
         suspend fun checkTicketOpen(

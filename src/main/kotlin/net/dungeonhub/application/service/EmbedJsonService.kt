@@ -101,9 +101,7 @@ object EmbedJsonService {
             "description" -> description = value.asStringOrNull()
             "author" -> setAuthor(value)
             "url" -> url = value.asStringOrNull()
-            "color" -> color = value?.let { colorAdapter.fromJsonValue(it) }?.let {
-                dev.kord.common.Color(it.red, it.green, it.blue)
-            }
+            "color" -> color = value?.let(::parseColor)
             "fields" -> setFields(value)
             "footer" -> setFooter(value)
             "timestamp" -> timestamp = value?.let { instantAdapter.fromJsonValue(it)?.toKotlinInstant() }
@@ -149,6 +147,14 @@ object EmbedJsonService {
     }
 
     private fun Any?.asStringOrNull(): String? = this as? String
+
+    private fun parseColor(value: Any): dev.kord.common.Color? {
+        return try {
+            colorAdapter.fromJsonValue(value)?.let { dev.kord.common.Color(it.red, it.green, it.blue) }
+        } catch (exception: NumberFormatException) {
+            throw JsonDataException("color must be a valid color value", exception)
+        }
+    }
 
     private fun String.requireValidCustomEmbed(): String {
         if (isBlank()) {
