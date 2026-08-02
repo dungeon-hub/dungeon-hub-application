@@ -1,9 +1,7 @@
 package net.dungeonhub.application.commands
 
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import com.google.gson.JsonSyntaxException
-import com.squareup.moshi.adapter
+import com.squareup.moshi.JsonDataException
+import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
@@ -12,7 +10,6 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.MessageChannel
-import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.converters.impl.optionalStringChoice
 import dev.kordex.core.commands.application.slash.publicSubCommand
@@ -24,7 +21,6 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.getJumpUrl
 import net.dungeonhub.application.config.ConfigProperty
-import net.dungeonhub.application.connection.applyJson
 import net.dungeonhub.application.connection.loadMessageByLink
 import net.dungeonhub.application.connection.toBuilder
 import net.dungeonhub.application.connection.toModel
@@ -35,12 +31,11 @@ import net.dungeonhub.application.exceptions.InvalidOptionException
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.misc.EmbedModel
 import net.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.application.service.EmbedJsonService
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.i18n.Translations.Command.Embed
-import net.dungeonhub.service.GsonService
-import net.dungeonhub.service.MoshiService
+import java.io.IOException
 import java.nio.charset.StandardCharsets
-import java.util.function.Consumer
 
 /**
  * This extension provides the ability to manage embeds.
@@ -95,28 +90,17 @@ class EmbedCommand : Extension() {
                         embedBuilder.color = EmbedColor.Default.color
 
                         if (beautiful && embeds.size == 1) {
-                            @Suppress("DEPRECATION")
-                            GsonService.gson.toJsonTree(embeds[0].toModel())
-                                .asJsonObject
-                                .entrySet()
-                                .forEach(Consumer { entry: Map.Entry<String, JsonElement> ->
-                                    embedBuilder.field(
-                                        entry.key,
-                                        false
-                                    )
-                                    {
-                                        if(entry.value.isJsonPrimitive) {
-                                            entry.value.asString
-                                        } else {
-                                            entry.value.toString()
-                                        }
+                            EmbedJsonService.toJsonMap(embeds[0].toModel())
+                                .forEach { (key, value) ->
+                                    embedBuilder.field(key, false) {
+                                        value as? String ?: EmbedJsonService.toJsonValue(value)
                                     }
-                                })
+                                }
                         } else {
                             val embedSource = if (embeds.size == 1) {
-                                MoshiService.moshi.adapter<EmbedModel>().toJson(embeds[0].toModel())
+                                EmbedJsonService.toJson(embeds[0].toModel())
                             } else {
-                                MoshiService.moshi.adapter<List<EmbedModel>>().toJson(embeds.map { it.toModel() })
+                                EmbedJsonService.toJson(embeds.map { it.toModel() })
                             }
 
                             val description =
@@ -157,60 +141,14 @@ class EmbedCommand : Extension() {
                                 ?: throw CommandExecutionException("Couldn't download the file correctly.")
                         }
 
-                        //TODO write tests for this; maybe also add an improved command that uses discord fields
-                        val embedBuilders: MutableList<EmbedBuilder> = ArrayList()
-
-                        try {
-                            @Suppress("DEPRECATION")
-                            val embedSource = GsonService.gson.fromJson(
-                                source,
-                                JsonElement::class.java
-                            )
-
-                            if (embedSource.isJsonObject) {
-                                val embedBuilder = EmbedBuilder()
-
-                                embedSource.asJsonObject
-                                    .entrySet()
-                                    .forEach { entry: Map.Entry<String, JsonElement> ->
-                                        embedBuilder.applyJson(
-                                            entry.key,
-                                            entry.value
-                                        )
-                                    }
-
-                                embedBuilders.add(embedBuilder)
-                            } else if (embedSource.isJsonArray) {
-                                embedSource.asJsonArray
-                                    .forEach { jsonElement: JsonElement ->
-                                        if (jsonElement.isJsonObject) {
-                                            val embedBuilder = EmbedBuilder()
-
-                                            jsonElement.asJsonObject
-                                                .entrySet()
-                                                .forEach { entry: Map.Entry<String, JsonElement> ->
-                                                    embedBuilder.applyJson(
-                                                        entry.key,
-                                                        entry.value
-                                                    )
-                                                }
-
-                                            embedBuilders.add(embedBuilder)
-                                        }
-                                    }
-                            }
-                        } catch (_: JsonSyntaxException) {
-                            throw InvalidEmbedJsonWarning()
-                        } catch (exception: Exception) {
-                            throw CommandExecutionException(exception)
-                        }
+                        val embedBuilders = parseEmbedInput(source)
 
                         if (embedBuilders.isEmpty()) {
                             throw CommandExecutionException("Please provide any embeds to send.")
                         }
 
                         channel.createMessage {
-                            embeds = embedBuilders
+                            embeds = embedBuilders.toMutableList()
                         }
 
                         val embed = ApplicationService.embed
@@ -227,52 +165,7 @@ class EmbedCommand : Extension() {
 
                 action {
                     respond {
-                        val embedBuilders: MutableList<EmbedBuilder> = mutableListOf()
-
-                        try {
-                            @Suppress("DEPRECATION")
-                            val embedSource = GsonService.gson.fromJson(
-                                arguments.embed,
-                                JsonElement::class.java
-                            )
-
-                            if (embedSource.isJsonObject) {
-                                val embedBuilder = EmbedBuilder()
-
-                                embedSource.asJsonObject
-                                    .entrySet()
-                                    .forEach {
-                                        embedBuilder.applyJson(
-                                            it.key,
-                                            it.value
-                                        )
-                                    }
-
-                                embedBuilders.add(embedBuilder)
-                            } else if (embedSource.isJsonArray) {
-                                embedSource.asJsonArray
-                                    .forEach { jsonElement: JsonElement ->
-                                        if (jsonElement.isJsonObject) {
-                                            val embedBuilder = EmbedBuilder()
-
-                                            jsonElement.asJsonObject
-                                                .entrySet()
-                                                .forEach { entry: Map.Entry<String, JsonElement> ->
-                                                    embedBuilder.applyJson(
-                                                        entry.key,
-                                                        entry.value
-                                                    )
-                                                }
-
-                                            embedBuilders.add(embedBuilder)
-                                        }
-                                    }
-                            }
-                        } catch (_: JsonSyntaxException) {
-                            throw InvalidEmbedJsonWarning()
-                        } catch (exception: java.lang.Exception) {
-                            throw CommandExecutionException(exception)
-                        }
+                        val embedBuilders = parseEmbedInput(arguments.embed)
 
                         if (embedBuilders.isEmpty()) {
                             throw CommandExecutionException("Please provide any embeds to send.")
@@ -314,27 +207,14 @@ class EmbedCommand : Extension() {
 
                 action {
                     respond {
-                        val embed = EmbedBuilder()
-                        try {
-                            @Suppress("DEPRECATION")
-                            val embedSource: JsonObject = GsonService.gson.fromJson(
-                                arguments.embed,
-                                JsonObject::class.java
-                            )
+                        val parsedEmbeds = parseEmbedInput(arguments.embed)
 
-                            embedSource.entrySet().forEach { entry: Map.Entry<String, JsonElement> ->
-                                embed.applyJson(
-                                    entry.key,
-                                    entry.value
-                                )
-                            }
-                        } catch (_: JsonSyntaxException) {
-                            throw InvalidEmbedJsonWarning()
-                        } catch (exception: Exception) {
-                            throw CommandExecutionException(exception)
+                        if (parsedEmbeds.isEmpty()) {
+                            throw CommandExecutionException("Please provide any embeds to edit.")
                         }
 
-                        val count = arguments.count ?: 0
+                        val count = arguments.count
+                        val replacesWholeMessage = count == null && arguments.embed.trimStart().startsWith("[")
 
                         val message = arguments.getMessage()
 
@@ -356,27 +236,75 @@ class EmbedCommand : Extension() {
                         }
 
                         message.edit {
-                            val embedBuilders = message.embeds.map { it.toBuilder() }.toMutableList()
-                            if (count >= embedBuilders.size) {
-                                throw InvalidOptionException(
-                                    "link",
-                                    "The given message doesn't have that many embeds."
-                                )
-                            }
+                            embeds = if (replacesWholeMessage) {
+                                parsedEmbeds.toMutableList()
+                            } else {
+                                val embedBuilders = message.embeds.map { it.toBuilder() }.toMutableList()
+                                val editIndex = count ?: 0
+                                if (editIndex >= embedBuilders.size) {
+                                    throw InvalidOptionException(
+                                        "link",
+                                        "The given message doesn't have that many embeds."
+                                    )
+                                }
 
-                            embedBuilders[count] = embed
-                            embeds = embedBuilders
+                                embedBuilders[editIndex] = parsedEmbeds.first()
+                                embedBuilders
+                            }
                         }
 
                         val response = ApplicationService.embed
                         response.color = EmbedColor.Positive.color
-                        response.description = "Embed in message ${message.getJumpUrl()} edited!"
+                        response.description = buildEditResponseDescription(
+                            message,
+                            if (replacesWholeMessage) null else count ?: 0,
+                            message.embeds.map { it.toModel() }
+                        )
 
                         embeds = mutableListOf(response)
                     }
                 }
             }
         }
+    }
+
+
+    private fun parseEmbedInput(source: String): List<EmbedBuilder> {
+        return try {
+            EmbedJsonService.parseEmbeds(source)
+        } catch (_: IOException) {
+            throw InvalidEmbedJsonWarning()
+        } catch (_: JsonDataException) {
+            throw InvalidEmbedJsonWarning()
+        } catch (exception: Exception) {
+            throw CommandExecutionException(exception)
+        }
+    }
+
+    private suspend fun buildEditResponseDescription(
+        message: Message,
+        count: Int?,
+        previousEmbeds: List<EmbedModel>
+    ): String {
+        val editedTarget = if (count == null) "all embeds" else "embed #$count"
+        val previousData = if (count == null) {
+            EmbedJsonService.toJson(previousEmbeds)
+        } else {
+            previousEmbeds.getOrNull(count)?.let { EmbedJsonService.toJson(it) }.orEmpty()
+        }
+
+        val previousReference = if (previousData.length <= PREVIOUS_DATA_INLINE_LIMIT) {
+            "Previous data:\n```\n$previousData\n```"
+        } else {
+            val previousDataUrl = ContentConnection.authenticated()
+                .uploadFile(previousData.toByteArray(StandardCharsets.UTF_8))
+                ?.let { ContentConnection.authenticated().getCdnUrl(it).toString() }
+                ?: throw CommandExecutionException("Couldn't upload the previous embed data to the CDN.")
+
+            "Previous data is too large to display inline: $previousDataUrl"
+        }
+
+        return "Edited $editedTarget in message ${message.getJumpUrl()}!\n$previousReference"
     }
 
     open inner class MessageLinkArguments : Arguments() {
@@ -439,5 +367,9 @@ class EmbedCommand : Extension() {
             minValue = 0
             maxValue = 25
         }
+    }
+
+    private companion object {
+        const val PREVIOUS_DATA_INLINE_LIMIT = 1800
     }
 }

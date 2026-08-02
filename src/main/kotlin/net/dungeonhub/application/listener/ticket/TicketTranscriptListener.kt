@@ -29,7 +29,6 @@ import net.dungeonhub.application.commands.TicketSystem
 import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedToChangeState
 import net.dungeonhub.application.commands.TicketSystem.Companion.replacePlaceholders
 import net.dungeonhub.application.connection.DiscordConnection
-import net.dungeonhub.application.connection.applyJson
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.event.TicketTranscriptCreatedEvent
@@ -38,6 +37,7 @@ import net.dungeonhub.application.misc.TicketPlaceholders
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
+import net.dungeonhub.application.service.EmbedJsonService
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.enums.TranscriptTarget
@@ -223,57 +223,19 @@ class TicketTranscriptListener : Extension() {
         }
 
         // TODO maybe merge with the method in the TicketSystem?
-        private suspend fun parseTranscriptDmEmbeds(embedData: JsonElement, placeholders: TicketPlaceholders): MutableList<EmbedBuilder> {
-            val embedBuilders: MutableList<EmbedBuilder> = mutableListOf()
-
-            try {
-                if (embedData.isJsonObject) {
-                    val embedBuilder = EmbedBuilder()
-
-                    embedData.asJsonObject
-                        .entrySet()
-                        .forEach {
-                            embedBuilder.applyJson(
-                                it.key,
-                                replacePlaceholders(it.value, placeholders)
-                            )
-                        }
-
-                    embedBuilders.add(embedBuilder)
-                } else if (embedData.isJsonArray) {
-                    embedData.asJsonArray
-                        .forEach { jsonElement: JsonElement ->
-                            if (jsonElement.isJsonObject) {
-                                val embedBuilder = EmbedBuilder()
-
-                                jsonElement.asJsonObject
-                                    .entrySet()
-                                    .forEach { entry: Map.Entry<String, JsonElement> ->
-                                        embedBuilder.applyJson(
-                                            entry.key,
-                                            replacePlaceholders(entry.value, placeholders)
-                                        )
-                                    }
-
-                                embedBuilders.add(embedBuilder)
-                            } else if (jsonElement.isJsonPrimitive) {
-                                buildCustomEmbed(jsonElement.asString, placeholders)?.let { embedBuilders.add(it) }
-                            }
-                        }
-                } else if (embedData.isJsonPrimitive) {
-                    buildCustomEmbed(embedData.asString, placeholders)?.let { embedBuilders.add(it) }
-                }
-            } catch (_: JsonSyntaxException) {
-
-            }
-
-            return embedBuilders
+        private suspend fun parseTranscriptDmEmbeds(
+            embedData: JsonElement,
+            placeholders: TicketPlaceholders
+        ): MutableList<EmbedBuilder> {
+            val resolvedEmbedData = replacePlaceholders(embedData, placeholders)
+            return EmbedJsonService.parseEmbeds(resolvedEmbedData.toString()) { type, _ ->
+                buildCustomEmbed(type, placeholders)
+            }.toMutableList()
         }
 
         private suspend fun buildCustomEmbed(type: String, placeholders: TicketPlaceholders): EmbedBuilder? {
             return when (type) {
                 "transcript" -> generateTranscriptEmbed(placeholders, false)
-
                 else -> null
             }
         }
