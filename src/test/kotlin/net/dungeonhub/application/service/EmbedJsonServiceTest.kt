@@ -4,13 +4,18 @@ import com.squareup.moshi.JsonDataException
 import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.runBlocking
 import net.dungeonhub.application.misc.EmbedModel
+import java.awt.Color
 import java.io.IOException
+import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.ExperimentalTime
+import kotlin.time.toKotlinInstant
 
+@OptIn(ExperimentalTime::class)
 class EmbedJsonServiceTest {
     @Test
     fun `deserializes single embed object`() {
@@ -61,6 +66,8 @@ class EmbedJsonServiceTest {
               "footer": {"text": "Footer", "icon": "https://example.com/footer.png"},
               "thumbnail": {"url": "https://example.com/thumbnail.png"},
               "image": "https://example.com/image.png",
+              "color": "#0C2238",
+              "timestamp": 1710000000000,
               "fields": [{"name": "Default field", "value": "Not inline"}]
             }
             """.trimIndent()
@@ -73,6 +80,8 @@ class EmbedJsonServiceTest {
         assertEquals("https://example.com/footer.png", embed.footer?.icon)
         assertEquals("https://example.com/thumbnail.png", embed.thumbnail?.url)
         assertEquals("https://example.com/image.png", embed.image)
+        assertEquals(dev.kord.common.Color(12, 34, 56), embed.color)
+        assertEquals(Instant.ofEpochMilli(1710000000000).toKotlinInstant(), embed.timestamp)
         assertEquals(false, embed.fields.single().inline)
     }
 
@@ -101,12 +110,14 @@ class EmbedJsonServiceTest {
 
     @Test
     fun `serializes single embed model`() {
+        val timestamp = Instant.ofEpochMilli(1710000000000)
+        val color = Color(12, 34, 56)
         val model = EmbedModel(
             "Serialized title",
             "Serialized description",
             null,
-            null,
-            null,
+            timestamp,
+            color,
             null,
             null,
             null,
@@ -119,6 +130,8 @@ class EmbedJsonServiceTest {
 
         assertEquals("Serialized title", parsed.title)
         assertEquals("Serialized description", parsed.description)
+        assertEquals(timestamp.toKotlinInstant(), parsed.timestamp)
+        assertEquals(dev.kord.common.Color(12, 34, 56), parsed.color)
         assertEquals("Author", parsed.author?.name)
         assertEquals("Field", parsed.fields.single().name)
         assertEquals(false, parsed.fields.single().inline)
@@ -219,6 +232,24 @@ class EmbedJsonServiceTest {
     fun `rejects blank custom embed type`() = runBlocking {
         val exception = assertFailsWith<JsonDataException> {
             EmbedJsonService.parseEmbeds("""{"customEmbed":"  "}""") { _, _ -> EmbedBuilder() }
+        }
+
+        assertEquals("customEmbed must not be blank", exception.message)
+    }
+
+    @Test
+    fun `rejects blank raw custom embed type`() = runBlocking {
+        val exception = assertFailsWith<JsonDataException> {
+            EmbedJsonService.parseEmbeds("\"  \"") { _, _ -> EmbedBuilder() }
+        }
+
+        assertEquals("customEmbed must not be blank", exception.message)
+    }
+
+    @Test
+    fun `rejects blank custom embed type in array`() = runBlocking {
+        val exception = assertFailsWith<JsonDataException> {
+            EmbedJsonService.parseEmbeds("[\"valid\",\"\"]") { _, _ -> EmbedBuilder() }
         }
 
         assertEquals("customEmbed must not be blank", exception.message)

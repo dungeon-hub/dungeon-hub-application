@@ -4,6 +4,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
+import com.squareup.moshi.JsonDataException
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.entity.TextInputStyle
@@ -409,9 +410,14 @@ class TicketCreateListener : Extension() {
             placeholders: TicketPlaceholders
         ): MutableList<EmbedBuilder> {
             val resolvedEmbedData = replacePlaceholders(embedData, placeholders)
-            return EmbedJsonService.parseEmbeds(resolvedEmbedData.toString()) { type, customData ->
-                buildCustomEmbed(type, placeholders, customData)
-            }.toMutableList()
+            return try {
+                EmbedJsonService.parseEmbeds(resolvedEmbedData.toString()) { type, customData ->
+                    buildCustomEmbed(type, placeholders, customData)
+                }.toMutableList()
+            } catch (exception: JsonDataException) {
+                logger.error("Failed to parse ticket message embeds.", exception)
+                mutableListOf()
+            }
         }
 
         suspend fun buildCustomEmbed(type: String, placeholders: TicketPlaceholders, customData: String? = null): EmbedBuilder? {

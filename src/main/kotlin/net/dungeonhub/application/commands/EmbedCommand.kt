@@ -216,12 +216,19 @@ class EmbedCommand : Extension() {
                         val count = arguments.count
                         val replacesWholeMessage = count == null && arguments.embed.trimStart().startsWith("[")
 
-                        val message = arguments.getMessage()
+                        if (count != null && parsedEmbeds.size > 1) {
+                            throw InvalidOptionException(
+                                "count",
+                                "A count can only be used when editing with a single embed."
+                            )
+                        }
+
+                        val message = arguments.getMessage() ?: throw InvalidOptionException("link")
 
                         //TODO how to handle interaction responses?
 
 
-                        if (message?.author?.isSelf != true) {
+                        if (message.author?.isSelf != true) {
                             throw InvalidOptionException(
                                 "link",
                                 "How should I edit a message that wasn't sent by myself?"

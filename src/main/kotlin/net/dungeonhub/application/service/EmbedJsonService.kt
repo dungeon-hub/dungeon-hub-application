@@ -54,11 +54,11 @@ object EmbedJsonService {
             is List<*> -> value.mapNotNull { element ->
                 when (element) {
                     is Map<*, *> -> element.toCustomOrRegularEmbed(customEmbedBuilder)
-                    is String -> customEmbedBuilder(element, null)
+                    is String -> customEmbedBuilder(element.requireValidCustomEmbed(), null)
                     else -> null
                 }
             }
-            is String -> listOfNotNull(customEmbedBuilder(value, null))
+            is String -> listOfNotNull(customEmbedBuilder(value.requireValidCustomEmbed(), null))
             else -> emptyList()
         }
     }
@@ -85,14 +85,10 @@ object EmbedJsonService {
         if (containsKey("customEmbed")) {
             val customEmbed = this["customEmbed"] as? String
                 ?: throw JsonDataException("customEmbed must be a string")
-            if (customEmbed.isBlank()) {
-                throw JsonDataException("customEmbed must not be blank")
-            }
-
             val customData = this["customData"]?.let {
                 it as? String ?: throw JsonDataException("customData must be a string")
             }
-            return customEmbedBuilder(customEmbed, customData)
+            return customEmbedBuilder(customEmbed.requireValidCustomEmbed(), customData)
         }
 
         return asStringMap()?.toEmbedBuilder()
@@ -110,7 +106,7 @@ object EmbedJsonService {
             }
             "fields" -> setFields(value)
             "footer" -> setFooter(value)
-            "timestamp" -> timestamp = value.asStringOrNull()?.let { instantAdapter.fromJson(it)?.toKotlinInstant() }
+            "timestamp" -> timestamp = value?.let { instantAdapter.fromJsonValue(it)?.toKotlinInstant() }
             "thumbnail" -> setThumbnail(value)
             "image" -> image = value.asStringOrNull()
         }
@@ -153,6 +149,13 @@ object EmbedJsonService {
     }
 
     private fun Any?.asStringOrNull(): String? = this as? String
+
+    private fun String.requireValidCustomEmbed(): String {
+        if (isBlank()) {
+            throw JsonDataException("customEmbed must not be blank")
+        }
+        return this
+    }
 
     private fun Any?.asListOrEmpty(): List<*> = this as? List<*> ?: emptyList<Any>()
 

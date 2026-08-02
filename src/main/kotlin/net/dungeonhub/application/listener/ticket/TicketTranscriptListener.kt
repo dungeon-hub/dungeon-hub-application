@@ -3,6 +3,7 @@ package net.dungeonhub.application.listener.ticket
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonSyntaxException
+import com.squareup.moshi.JsonDataException
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.channel.asChannelOf
@@ -228,9 +229,14 @@ class TicketTranscriptListener : Extension() {
             placeholders: TicketPlaceholders
         ): MutableList<EmbedBuilder> {
             val resolvedEmbedData = replacePlaceholders(embedData, placeholders)
-            return EmbedJsonService.parseEmbeds(resolvedEmbedData.toString()) { type, _ ->
-                buildCustomEmbed(type, placeholders)
-            }.toMutableList()
+            return try {
+                EmbedJsonService.parseEmbeds(resolvedEmbedData.toString()) { type, _ ->
+                    buildCustomEmbed(type, placeholders)
+                }.toMutableList()
+            } catch (exception: JsonDataException) {
+                logger.error("Failed to parse transcript DM embeds.", exception)
+                mutableListOf()
+            }
         }
 
         private suspend fun buildCustomEmbed(type: String, placeholders: TicketPlaceholders): EmbedBuilder? {
