@@ -480,7 +480,7 @@ class LoggingSystem : Extension() {
 
             if(approver != null) {
                 field("Approved by", true) {
-                    "$approver"
+                    "<@$approver>"
                 }
             }
         }
