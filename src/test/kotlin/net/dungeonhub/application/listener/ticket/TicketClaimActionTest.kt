@@ -69,4 +69,30 @@ class TicketClaimActionTest {
             ),
         )
     }
+
+    @Test
+    fun `creating ticket is rejected`() {
+        assertEquals(
+            TicketClaimAction.NotOpen,
+            resolveTicketClaimAction(
+                ticketExists = true,
+                claimable = true,
+                state = TicketState.Creating,
+                hasClaimer = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `closed ticket is rejected`() {
+        assertEquals(
+            TicketClaimAction.NotOpen,
+            resolveTicketClaimAction(
+                ticketExists = true,
+                claimable = true,
+                state = TicketState.Closed,
+                hasClaimer = false,
+            ),
+        )
+    }
 }

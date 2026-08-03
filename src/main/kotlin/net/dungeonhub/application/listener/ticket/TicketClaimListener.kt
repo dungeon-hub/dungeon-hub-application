@@ -61,6 +61,10 @@ class TicketClaimListener : Extension() {
                         description = "This ticket is already deleted!"
                         color(EmbedColor.Negative)
                     }
+                    TicketClaimAction.NotOpen -> buildEmbed {
+                        description = "This ticket isn't open!"
+                        color(EmbedColor.Negative)
+                    }
                     TicketClaimAction.Claim -> claimTicket(event.interaction.user, ticket!!, event.interaction.channel.asChannelOf())
                     TicketClaimAction.Unclaim -> unclaimTicket(event.interaction.user, ticket!!, event.interaction.channel.asChannelOf())
                 }

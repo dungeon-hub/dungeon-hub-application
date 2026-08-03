@@ -319,6 +319,10 @@ class TicketSystem : Extension() {
                             description = "This ticket is already deleted!"
                             color(EmbedColor.Negative)
                         }
+                        TicketClaimAction.NotOpen -> buildEmbed {
+                            description = "This ticket isn't open!"
+                            color(EmbedColor.Negative)
+                        }
                         TicketClaimAction.Claim -> TicketClaimListener.claimTicket(member!!.asMember(), ticket!!, ticketChannel!!)
                         TicketClaimAction.Unclaim -> TicketClaimListener.unclaimTicket(member!!.asMember(), ticket!!, ticketChannel!!)
                     }

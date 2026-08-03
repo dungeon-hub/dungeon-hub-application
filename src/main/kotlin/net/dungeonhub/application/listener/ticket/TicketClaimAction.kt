@@ -8,6 +8,7 @@ internal enum class TicketClaimAction {
     NotATicket,
     NotClaimable,
     Deleted,
+    NotOpen,
 }
 
 internal fun resolveTicketClaimAction(
@@ -19,6 +20,7 @@ internal fun resolveTicketClaimAction(
     !ticketExists -> TicketClaimAction.NotATicket
     !claimable -> TicketClaimAction.NotClaimable
     state == TicketState.Deleted -> TicketClaimAction.Deleted
+    state != TicketState.Open -> TicketClaimAction.NotOpen
     hasClaimer -> TicketClaimAction.Unclaim
     else -> TicketClaimAction.Claim
 }
