@@ -339,19 +339,19 @@ class LoggingSystem : Extension() {
             QueueStep.Approving
         ) ?: HashSet()
 
-        for (queueModel in carryQueues) {
-            val carrier = event.kord.getUser(Snowflake(queueModel.carrier.id))
+        for ((carrierId, queueEntries) in carryQueues.groupBy { it.carrier.id }) {
+            val carrier = event.kord.getUser(Snowflake(carrierId))
 
             carrier?.dm {
-                content = "Your log was denied by ${event.interaction.user.mention}."
-
-                val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                content = "Your ${if (queueEntries.size == 1) "log was" else "logs were"} denied by " +
+                        "${event.interaction.user.mention}."
+                val embed = createCarryOverview(compactCarryEntries(queueEntries), null)
                 embed.color = EmbedColor.Negative.color
-                embed.title = "Information"
-
                 embeds = mutableListOf(embed)
             }
+        }
 
+        for (queueModel in carryQueues) {
             ServerProperty.SCORE_LOGS_CHANNEL
                 .getValue(event.interaction.guild.id.value.toLong())
                 ?.let { id: String ->
