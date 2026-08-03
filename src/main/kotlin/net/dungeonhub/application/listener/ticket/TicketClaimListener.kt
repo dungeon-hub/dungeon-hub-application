@@ -41,44 +41,32 @@ class TicketClaimListener : Extension() {
 
                 val ticket = DiscordServerConnection.authenticated().findTickets(event.interaction.guildId.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
 
-                if(ticket == null) {
-                    response.respond {
-                        addEmbed {
-                            description = "This isn't a ticket channel!"
-                            color(EmbedColor.Negative)
-                        }
-                    }
-                    return@action
-                }
+                val claimAction = resolveTicketClaimAction(
+                    ticketExists = ticket != null,
+                    claimable = ticket?.ticketPanel?.claimable == true,
+                    state = ticket?.state,
+                    hasClaimer = ticket?.claimer != null,
+                )
 
-                if(!ticket.ticketPanel.claimable) {
-                    response.respond {
-                        addEmbed {
-                            description = "This panel doesn't allow ticket claiming!"
-                            color(EmbedColor.Negative)
-                        }
+                val embed = when (claimAction) {
+                    TicketClaimAction.NotATicket -> buildEmbed {
+                        description = "This isn't a ticket channel!"
+                        color(EmbedColor.Negative)
                     }
-                    return@action
-                }
-
-                if(ticket.state == TicketState.Deleted) {
-                    response.respond {
-                        addEmbed {
-                            description = "This ticket is already deleted!"
-                            color(EmbedColor.Negative)
-                        }
+                    TicketClaimAction.NotClaimable -> buildEmbed {
+                        description = "This panel doesn't allow ticket claiming!"
+                        color(EmbedColor.Negative)
                     }
-                    return@action
+                    TicketClaimAction.Deleted -> buildEmbed {
+                        description = "This ticket is already deleted!"
+                        color(EmbedColor.Negative)
+                    }
+                    TicketClaimAction.Claim -> claimTicket(event.interaction.user, ticket!!, event.interaction.channel.asChannelOf())
+                    TicketClaimAction.Unclaim -> unclaimTicket(event.interaction.user, ticket!!, event.interaction.channel.asChannelOf())
                 }
 
                 response.respond {
-                    embeds = mutableListOf(
-                        if (ticket.claimer != null) {
-                            unclaimTicket(event.interaction.user, ticket, event.interaction.channel.asChannelOf())
-                        } else {
-                            claimTicket(event.interaction.user, ticket, event.interaction.channel.asChannelOf())
-                        }
-                    )
+                    embeds = mutableListOf(embed)
                 }
             }
         }
@@ -206,5 +194,4 @@ class TicketClaimListener : Extension() {
             }
         }
     }
-
 }
