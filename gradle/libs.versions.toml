@@ -1,5 +1,5 @@
 [versions]
-dungeon-hub-api-client = "0.7.1"
+dungeon-hub-api-client = "0.7.2"
 hypixel-wrapper = "0.8.0"
 
 [libraries]
