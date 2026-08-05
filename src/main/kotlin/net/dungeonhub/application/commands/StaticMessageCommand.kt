@@ -24,7 +24,7 @@ import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
-import net.dungeonhub.application.connection.copy
+import net.dungeonhub.application.service.copy
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.CommandExecutionWarning
