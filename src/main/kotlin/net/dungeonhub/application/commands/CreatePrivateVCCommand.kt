@@ -112,7 +112,7 @@ class CreatePrivateVCCommand : Extension() {
                     logger.error("Error while while creating a private VC.", exception)
                     respond {
                         addEmbed {
-                            description = "Error while while creating a private VC."
+                            description = "Error while creating a private VC."
                             color(EmbedColor.Negative)
                         }
                     }
