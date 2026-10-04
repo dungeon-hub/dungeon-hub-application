@@ -1,29 +1,26 @@
 package net.dungeonhub.application.commands
 
-
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.createVoiceChannel
 import dev.kord.rest.builder.channel.addMemberOverwrite
 import dev.kord.rest.builder.channel.addRoleOverwrite
 import dev.kordex.core.commands.Arguments
-import dev.kordex.core.commands.converters.impl.*
+import dev.kordex.core.commands.converters.impl.string
+import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
-import net.dungeonhub.application.exceptions.CommandExecutionException
-import dev.kord.common.entity.Snowflake
 import dev.kordex.core.utils.Video
-import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
-import net.dungeonhub.application.loader.ClassLoader
+import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 
 @LoadExtension
 class CreatePrivateVCCommand : Extension() {
@@ -35,7 +32,6 @@ class CreatePrivateVCCommand : Extension() {
             description = "Creates a private voice channel for a user.".toKey()
             defaultMemberPermissions = Permissions(Permission.ManageChannels)
             allowInDms = false
-
 
             action {
                 val guild = guild
@@ -101,7 +97,6 @@ class CreatePrivateVCCommand : Extension() {
                         }
 
                         parentId = categoryId
-
                     }
 
                     respond {
@@ -109,7 +104,7 @@ class CreatePrivateVCCommand : Extension() {
                     }
 
                 } catch (exception: Exception) {
-                    logger.error("Error while while creating a private VC.", exception)
+                    logger.error("Error while creating a private VC.", exception)
                     respond {
                         addEmbed {
                             description = "Error while creating a private VC."
@@ -120,17 +115,16 @@ class CreatePrivateVCCommand : Extension() {
             }
         }
     }
-}
 
+    class CreateVCArgs : Arguments() {
+        val name by string {
+            name = "vc-name".toKey()
+            description = "Give a name to the new VC.".toKey()
+        }
 
-class CreateVCArgs : Arguments() {
-    val name by string {
-        name = "vc-name".toKey()
-        description = "Give a name to the new VC.".toKey()
-    }
-
-    val user by user {
-        name = "vc-user".toKey()
-        description = "Select the owner of the VC.".toKey()
+        val user by user {
+            name = "vc-user".toKey()
+            description = "Select the owner of the VC.".toKey()
+        }
     }
 }

@@ -59,9 +59,6 @@ enum class ServerProperty(
     MANAGEMENT_GROUP_ROLE("server_management_group_role", ServerPropertyType.ROLE),
     VC_CREATE_CATEGORY("vc_create_category", ServerPropertyType.CATEGORY);
 
-
-
-
     constructor(
         readableName: String,
         propertyType: ServerPropertyType = ServerPropertyType.STRING,
