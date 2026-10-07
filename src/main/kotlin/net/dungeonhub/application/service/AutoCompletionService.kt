@@ -63,6 +63,31 @@ object AutoCompletionService {
         }
     }
 
+    val carryTierFromTicket: AutoCompleteCallback = { event ->
+        val guildId = event.getGuildId()
+
+        val ticket = DiscordServerConnection.authenticated().findTickets(guildId, channelId = channel.id.value.toLong())?.firstOrNull()
+
+        ticket?.ticketPanel?.relatedCarryTier?.let { ticketCarryTier ->
+            suggest(
+                CarryTierConnection[ticketCarryTier.carryType].authenticated()
+                    .getAllCarryTiers()
+                    ?.filter { carryTier ->
+                        focusedOption.value.isEmpty()
+                                || (carryTier.identifier.contains(focusedOption.value, true)
+                                || carryTier.displayName.contains(focusedOption.value, true))
+                    }
+                    ?.map { carryTier ->
+                        Choice.StringChoice(
+                            name = carryTier.displayName,
+                            value = carryTier.identifier,
+                            nameLocalizations = Optional()
+                        )
+                    } ?: listOf()
+            )
+        }
+    }
+
     val carryDifficulty: AutoCompleteCallback = { event ->
         val allOptions = event.interaction.command.options
 

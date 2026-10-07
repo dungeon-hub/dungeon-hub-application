@@ -40,12 +40,14 @@ import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.misc.LoggedQueueEntry
 import net.dungeonhub.application.service.*
 import net.dungeonhub.connection.CarryDifficultyConnection
+import net.dungeonhub.connection.CarryTierConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.QueueConnection
 import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.QueueStep
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.i18n.Translations.Command.Log
+import net.dungeonhub.i18n.Translations.Command.LogOther
 import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.carry_queue.CarryQueueCreationModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
@@ -70,6 +72,138 @@ class LoggingSystem : Extension() {
 
                     val carryTier = ticket?.ticketPanel?.relatedCarryTier
                         ?: throw CommandExecutionWarning("Please use this in a ticket connected to a carry tier. If you think this is incorrect, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) about setting up the bot on [the dashboard](https://dashboard.dungeon-hub.net/).")
+
+                    val alreadyPresentQueue = QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
+                        channel.id.value.toLong(),
+                        QueueStep.Confirmation
+                    )?.firstOrNull()
+
+                    if (alreadyPresentQueue != null) {
+                        val embed = ApplicationService.embed
+                        embed.color = EmbedColor.Negative.color
+                        embed.description = " Someone is already logging this carry.\n" +
+                                "If you think this is a mistake, clear the log using the buttons below.\n" +
+                                "Otherwise, simply click dismiss to delete this message."
+
+                        embeds = mutableListOf(embed)
+
+                        components {
+                            ephemeralButton {
+                                label = "Clear log".toKey()
+                                style = ButtonStyle.Primary
+
+                                action {
+                                    respond innerrespond@{
+                                        val carryQueue =
+                                            QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
+                                                channel.id.value.toLong(),
+                                                QueueStep.Confirmation
+                                            )?.firstOrNull()
+
+                                        if (carryQueue == null) {
+                                            val innerEmbed = ApplicationService.embed
+                                            innerEmbed.color = EmbedColor.Information.color
+                                            innerEmbed.description = "That log request was already cleared."
+
+                                            embeds = mutableListOf(innerEmbed)
+
+                                            return@innerrespond
+                                        }
+
+                                        QueueConnection.authenticated().deleteQueue(carryQueue.id)
+
+                                        val innerEmbed = ApplicationService.embed
+                                        innerEmbed.color = EmbedColor.Positive.color
+                                        innerEmbed.description = "The log request was cleared, you can now log again!"
+
+                                        embeds = mutableListOf(innerEmbed)
+
+                                        message.delete()
+                                    }
+                                }
+                            }
+
+                            ephemeralButton {
+                                label = "Dismiss".toKey()
+                                style = ButtonStyle.Danger
+
+                                deferredAck = true
+
+                                action {
+                                    event.interaction.message.delete()
+                                }
+                            }
+                        }
+
+                        return@respond
+                    }
+
+                    val carryDifficulty = CarryDifficultyConnection[carryTier].authenticated()
+                        .findCarryDifficultyByString(arguments.carryDifficulty)
+
+                    if (carryDifficulty == null) {
+                        embeds = mutableListOf(
+                            ApplicationService.getErrorEmbed(
+                                InvalidOptionException(
+                                    "carry-difficulty",
+                                    "`${arguments.carryDifficulty}` is no valid type."
+                                )
+                            )
+                        )
+                        return@respond
+                    }
+
+                    val carried = ticket.user.id
+
+                    val time = Instant.now()
+
+                    val creationModel = CarryQueueCreationModel(
+                        queueStep = QueueStep.Confirmation,
+                        time = time,
+                        amount = arguments.carryAmount,
+                        player = carried,
+                        carrier = user.id.value.toLong(),
+                        relationId = channel.id.value.toLong()
+                    )
+
+                    val carryQueueModel = QueueConnection.authenticated().addNewQueue(carryDifficulty, creationModel)
+                        ?: throw CommandExecutionException(
+                            "Unable to log this. Please contact an administrator of this bot."
+                        )
+
+                    val embed = ApplicationService.loadEmbedFromCarryQueue(carryQueueModel)
+                    embed.title = "Are you sure that you want to log this?"
+
+                    embeds = mutableListOf(embed)
+
+                    actionRow {
+                        interactionButton(ButtonStyle.Success, "send_log") {
+                            label = "Confirm"
+                        }
+
+                        interactionButton(ButtonStyle.Danger, "discard") {
+                            label = "Cancel"
+                        }
+                    }
+                }
+            }
+        }
+
+        publicSlashCommand(::LogOtherArguments) {
+            name = LogOther.name
+            description = LogOther.description
+            allowInDms = false
+
+            action {
+                respond {
+                    val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = channel.id.value.toLong())?.firstOrNull()
+
+                    val ticketCarryTier = ticket?.ticketPanel?.relatedCarryTier
+                        ?: throw CommandExecutionWarning("Please use this in a ticket connected to a carry tier. If you think this is incorrect, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) about setting up the bot on [the dashboard](https://dashboard.dungeon-hub.net/).")
+
+                    val carryTier = CarryTierConnection[ticketCarryTier.carryType].authenticated()
+                        .findCarryTierByString(arguments.carryTier)
+                        ?: throw InvalidOptionException("carry-tier", "Couldn't find a carry tier under the carry type of this ticket.")
 
                     val alreadyPresentQueue = QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
                         channel.id.value.toLong(),
@@ -493,6 +627,27 @@ class LoggingSystem : Extension() {
         val carryAmount by int {
             name = Log.Arguments.Amount.name
             description = Log.Arguments.Amount.description
+            minValue = 1
+            maxValue = 200
+        }
+    }
+
+    class LogOtherArguments : Arguments() {
+        val carryTier by string {
+            name = CommonArguments.CarryTier.name
+            description = LogOther.Arguments.CarryTier.description
+            autoCompleteCallback = AutoCompletionService.carryTierFromTicket
+        }
+
+        val carryDifficulty by string {
+            name = CommonArguments.CarryDifficulty.name
+            description = LogOther.Arguments.CarryDifficulty.description
+            autoCompleteCallback = AutoCompletionService.carryDifficulty
+        }
+
+        val carryAmount by int {
+            name = LogOther.Arguments.Amount.name
+            description = LogOther.Arguments.Amount.description
             minValue = 1
             maxValue = 200
         }
