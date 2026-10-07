@@ -88,6 +88,42 @@ object AutoCompletionService {
         }
     }
 
+    val carryDifficultyFromTicketTier: AutoCompleteCallback = { event ->
+        val allOptions = event.interaction.command.options
+
+        val carryTier: String? = allOptions.filter { entry ->
+            entry.key.equals("carry-tier", ignoreCase = true)
+        }.values.firstOrNull()?.value as String?
+
+        val guildId = event.getGuildId()
+
+        val ticketCarryTier = DiscordServerConnection.authenticated().findTickets(guildId, channelId = channel.id.value.toLong())?.firstOrNull()?.ticketPanel?.relatedCarryTier
+
+        if (carryTier != null && ticketCarryTier != null) {
+            val carryTierModel = CarryTierConnection[ticketCarryTier.carryType].authenticated()
+                .findCarryTierByString(carryTier)
+
+            carryTierModel?.let {
+                suggest(
+                    CarryDifficultyConnection[it].authenticated()
+                        .getAllCarryDifficulties()
+                        ?.filter { carryDifficulty ->
+                            focusedOption.value.isEmpty()
+                                    || (carryDifficulty.identifier.contains(focusedOption.value, true)
+                                    || carryDifficulty.displayName.contains(focusedOption.value, true))
+                        }
+                        ?.map { carryDifficulty ->
+                            Choice.StringChoice(
+                                name = carryDifficulty.displayName,
+                                value = carryDifficulty.identifier,
+                                nameLocalizations = Optional()
+                            )
+                        } ?: listOf()
+                )
+            }
+        }
+    }
+
     val carryDifficulty: AutoCompleteCallback = { event ->
         val allOptions = event.interaction.command.options
 

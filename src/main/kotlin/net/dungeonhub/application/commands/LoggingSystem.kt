@@ -642,7 +642,7 @@ class LoggingSystem : Extension() {
         val carryDifficulty by string {
             name = CommonArguments.CarryDifficulty.name
             description = LogOther.Arguments.CarryDifficulty.description
-            autoCompleteCallback = AutoCompletionService.carryDifficulty
+            autoCompleteCallback = AutoCompletionService.carryDifficultyFromTicketTier
         }
 
         val carryAmount by int {
