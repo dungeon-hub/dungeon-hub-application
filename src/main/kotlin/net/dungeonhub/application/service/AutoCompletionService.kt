@@ -83,7 +83,7 @@ object AutoCompletionService {
                             value = carryTier.identifier,
                             nameLocalizations = Optional()
                         )
-                    } ?: listOf()
+                    }?.take(25) ?: listOf()
             )
         }
     }
