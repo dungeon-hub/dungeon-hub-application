@@ -14,6 +14,7 @@ import dev.kord.core.behavior.channel.edit
 import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.Member
+import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
@@ -26,6 +27,9 @@ import dev.kord.rest.request.RestRequestException
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.ephemeralSubCommand
 import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.channel
+import dev.kordex.core.commands.converters.impl.optionalBoolean
+import dev.kordex.core.commands.converters.impl.optionalChannel
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.components.components
 import dev.kordex.core.components.ephemeralButton
@@ -50,6 +54,7 @@ import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.TicketConnection
+import net.dungeonhub.enums.TranscriptTarget
 import net.dungeonhub.enums.TicketPermissionCandidate
 import net.dungeonhub.enums.TicketPermissionType
 import net.dungeonhub.enums.TicketState
@@ -333,6 +338,80 @@ class TicketSystem : Extension() {
                 }
             }
 
+            ephemeralSubCommand(::TranscriptArguments) {
+                name = Translations.Command.Ticket.Transcript.name
+                description = Translations.Command.Ticket.Transcript.description
+
+                action {
+                    val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
+
+                    val ticketChannel = channel.asChannelOfOrNull<TextChannel>()
+
+                    if(ticket == null || ticketChannel == null) {
+                        respond {
+                            addEmbed {
+                                description = "This isn't a ticket channel!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    if(ticket.state == TicketState.Closed || ticket.state == TicketState.Deleted) {
+                        respond {
+                            addEmbed {
+                                description = "This ticket is already closed!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    if(!member!!.asMember().isAllowedToChangeState(ticket)) {
+                        respond {
+                            addEmbed {
+                                description = "You're not allowed to generate a transcript here!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    val target = when {
+                        arguments.channel != null -> if(arguments.sendToUser == false) TranscriptTarget.TranscriptChannel else TranscriptTarget.Both
+                        arguments.sendToUser == false -> TranscriptTarget.TranscriptChannel
+                        else -> TranscriptTarget.User
+                    }
+
+                    val overrideChannel = arguments.channel?.asChannelOfOrNull<GuildMessageChannel>()
+
+                    if(arguments.channel != null && overrideChannel == null) {
+                        respond {
+                            addEmbed {
+                                description = "That channel isn't in this server!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    TicketTranscriptListener.generateTranscript(
+                        ticketChannel,
+                        member,
+                        ticket,
+                        target,
+                        channelOverride = overrideChannel
+                    )
+
+                    respond {
+                        addEmbed {
+                            description = "Generating transcript..."
+                            color(EmbedColor.Positive)
+                        }
+                    }
+                }
+            }
+
             publicSubCommand(::TicketAddArguments) {
                 name = Translations.Command.Ticket.Add.name
                 description = Translations.Command.Ticket.Add.description
@@ -351,7 +430,6 @@ class TicketSystem : Extension() {
                         }
                         return@action
                     }
-
                     if(ticket.state == TicketState.Closed) {
                         respond {
                             addEmbed {
@@ -411,6 +489,22 @@ class TicketSystem : Extension() {
         val target by user {
             name = "user".toKey()
             description = "The user to add to the ticket.".toKey()
+        }
+    }
+
+    class TranscriptArguments : Arguments() {
+        val sendToUser by optionalBoolean {
+            name = "dm-user".toKey()
+            description = "Whether to send a DM with the transcript to the ticket user (true by default).".toKey()
+        }
+
+        val channel by optionalChannel {
+            name = "channel".toKey()
+            description = "The channel to send the transcript into (defaults to the configured transcript channel).".toKey()
+            requiredChannelTypes = mutableSetOf(
+                ChannelType.GuildText,
+                ChannelType.PublicGuildThread
+            )
         }
     }
 
