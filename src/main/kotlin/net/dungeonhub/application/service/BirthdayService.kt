@@ -33,6 +33,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import java.util.HashSet
 
 @OnStart
 object BirthdayService : StartupListener {
@@ -45,25 +46,55 @@ object BirthdayService : StartupListener {
     private val logger = LoggerFactory.getLogger(BirthdayService::class.java)
     private lateinit var scheduler: Scheduler
     var birthdays: List<Birthday> = listOf()
+    private val scheduledTimezones = HashSet<String>()
 
     override suspend fun postStart() {
         if (::scheduler.isInitialized) {
             scheduler.cancel("Application was restarted.")
         }
 
+        scheduledTimezones.clear()
         scheduler = DhScheduler()
 
+        updateBirthdayData()
+
+        scheduleServerTimeBirthdays()
+
+        // One schedule per distinct timezone, so each fires at 9am in that timezone.
+        for (timezone in birthdays.mapNotNull { it.timezone }.distinct()) {
+            scheduleTimezoneBirthdays(timezone)
+        }
+    }
+
+    private suspend fun scheduleServerTimeBirthdays() {
         val task = scheduler.schedule(24.hours, startNow = false, name = "Birthdays-Schedule", repeat = true) {
             updateBirthdayData()
 
-            sendBirthdays()
+            sendBirthdays(TimeZone.currentSystemDefault(), null)
         }
 
-        val timeUntilExecutionTime =
-            calculateExecutionTime(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time)
+        scheduler.launch {
+            delay(calculateExecutionTime(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time))
+
+            task.callNow()
+            task.start()
+        }
+    }
+
+    private suspend fun scheduleTimezoneBirthdays(timezone: String) {
+        if (!scheduledTimezones.add(timezone)) return
+
+        val timeZone = parseTimeZone(timezone) ?: return
+
+        val task = scheduler.schedule(24.hours, startNow = false, name = "Birthdays-Schedule ($timezone)", repeat = true) {
+            updateBirthdayData()
+
+            sendBirthdays(timeZone, timezone)
+        }
 
         scheduler.launch {
-            delay(timeUntilExecutionTime)
+            delay(calculateExecutionTime(Clock.System.now().toLocalDateTime(timeZone).time))
+
             task.callNow()
             task.start()
         }
@@ -87,13 +118,19 @@ object BirthdayService : StartupListener {
         }
     }
 
-    private suspend fun sendBirthdays() {
-        val todayBirthdays = getTodayBirthdays(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()))
+    /**
+     * Announce the birthdays that are today in the given timezone.
+     * When [timezoneName] is set, only birthdays with that timezone are announced;
+     * otherwise only birthdays without a timezone (server time).
+     */
+    private suspend fun sendBirthdays(timeZone: TimeZone, timezoneName: String?) {
+        val now = Clock.System.now().toLocalDateTime(timeZone)
+        val todayBirthdays = getTodayBirthdays(now, timezoneName)
         val embeds: MutableList<EmbedBuilder> = mutableListOf()
 
         val birthdayChannel = DiscordConnection.bot.kordRef.getChannelOf<GuildMessageChannel>(Snowflake(BIRTHDAYS_CHANNEL))
 
-        if(birthdayChannel == null) {
+        if (birthdayChannel == null) {
             logger.error("Couldn't find the birthday channel.")
             return
         }
@@ -110,16 +147,19 @@ object BirthdayService : StartupListener {
             embed.color(EmbedColor.Positive)
             embed.title = birthday.eventName
             embed.description =
-                "Happy Birthday, ${birthday.username} (<@${birthday.userId}>)! \uD83C\uDF89 \uD83E\uDD73 ❤\uFE0F ${
+                "Happy Birthday, ${birthday.username} (<@${birthday.userId}>)! \uD83C\uDF89 \uD83E\uDD73 ❤\uFE0F" +
                     if (birthday.birthYear != null) {
-                        "\nToday, they are turning ${
-                            Clock.System.now()
-                                .toLocalDateTime(TimeZone.currentSystemDefault()).year - birthday.birthYear
-                        } years old!"
+                        "\nToday, they are turning ${now.year - birthday.birthYear} years old!"
                     } else {
                         ""
-                    }
-                }\nMake sure to congratulate them in <#$BIRTHDAY_CONGRATS_CHANNEL>!"
+                    } +
+                    "\nTheir birthday is on ${birthday.date.day.toString().padStart(2, '0')}.${birthday.date.month.number.toString().padStart(2, '0')}." +
+                    if (birthday.timezone != null) {
+                        "\nAnnounced at 9am in ${birthday.timezone}."
+                    } else {
+                        ""
+                    } +
+                    "\nMake sure to congratulate them in <#$BIRTHDAY_CONGRATS_CHANNEL>!"
 
             embeds += embed
         }
@@ -132,9 +172,9 @@ object BirthdayService : StartupListener {
         }
     }
 
-    fun getTodayBirthdays(today: LocalDateTime): List<Birthday> {
+    fun getTodayBirthdays(today: LocalDateTime, timezoneName: String? = null): List<Birthday> {
         return birthdays.groupBy { it.userId }.map { it.value.maxBy { birthday -> birthday.date.year } }
-            .filter { it.isToday(today) }
+            .filter { it.isToday(today) && it.timezone == timezoneName }
     }
 
     suspend fun updateBirthdayData() {
@@ -149,6 +189,11 @@ object BirthdayService : StartupListener {
 
                     if (birthdayList.isNotEmpty()) {
                         birthdays = birthdayList
+
+                        // Reconcile schedules: timezones that only appear in refreshed data need their own schedule.
+                        for (timezone in birthdays.mapNotNull { it.timezone }.distinct()) {
+                            scheduleTimezoneBirthdays(timezone)
+                        }
                     }
                 }
             }
@@ -177,12 +222,40 @@ object BirthdayService : StartupListener {
         }
     }
 
+    /**
+     * Parse a timezone string and return the corresponding DateTimeZone.
+     * Handles IANA timezone names (e.g., "Europe/Berlin") and UTC offsets (+0530, +05:30, -08:00).
+     */
+    fun parseTimeZone(tzString: String): TimeZone? {
+        val cleaned = tzString.trim()
+
+        if (cleaned.isEmpty()) return null
+
+        // kotlinx only accepts offsets with a colon, so normalize +0530 to +05:30.
+        val normalized = if (
+            cleaned.length == 5 &&
+                (cleaned[0] == '+' || cleaned[0] == '-') &&
+                cleaned.substring(1).all { it.isDigit() }
+        ) {
+            "${cleaned.take(3)}:${cleaned.drop(3)}"
+        } else {
+            cleaned
+        }
+
+        return try {
+            TimeZone.of(normalized)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     class Birthday(
         val eventName: String,
         val date: LocalDate,
         val userId: Long,
         val birthYear: Int? = null,
-        val recurrenceSet: Set<Period<java.time.LocalDate>>
+        val timezone: String? = null,
+        val recurrenceSet: Set<Period<java.time.LocalDate>> = emptySet()
     ) {
         val username: String = if (eventName.endsWith(" | Birthday")) {
             eventName.dropLast(" | Birthday".length)
@@ -213,7 +286,11 @@ object BirthdayService : StartupListener {
 
                 val description = properties.firstOrNull { it.name == "DESCRIPTION" }?.value?.split("\n")
 
+                // Line 1 = birth year, line 2 = timezone (optional)
                 val year = description?.firstOrNull()?.trim()?.toIntOrNull()
+
+                // Keep the timezone only when it actually parses, so unparseable values fall back to the server-time schedule.
+                val timezone = description?.getOrNull(1)?.trim()?.takeIf { it?.isNotEmpty() == true }?.takeIf { parseTimeZone(it) != null }
 
                 val now = java.time.LocalDate.now()
 
@@ -224,12 +301,12 @@ object BirthdayService : StartupListener {
                     )
                 )
 
-                return Birthday(name, date, userId, year, recurrenceSet)
+                return Birthday(name, date, userId, year, timezone, recurrenceSet)
             }
         }
 
         override fun toString(): String {
-            return "Birthday(eventName='$eventName', date=$date, userId=$userId, birthYear=$birthYear, username='$username')"
+            return "Birthday(eventName='$eventName', date=$date, userId=$userId, birthYear=$birthYear, timezone='$timezone', username='$username')"
         }
     }
 }

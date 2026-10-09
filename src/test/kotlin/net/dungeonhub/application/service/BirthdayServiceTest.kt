@@ -5,6 +5,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -49,6 +50,19 @@ class BirthdayServiceTest {
         assertEquals(LocalDate(2024, 12, 31), BirthdayService.parseBirthdayDate("20241231"))
 
         assertNull(BirthdayService.parseBirthdayDate("20241231abs"))
+    }
+
+    @Test
+    fun testTimeZoneParsing() {
+        assertNotNull(BirthdayService.parseTimeZone("Europe/Berlin"))
+
+        assertNotNull(BirthdayService.parseTimeZone("+0530"))
+
+        assertNotNull(BirthdayService.parseTimeZone("+05:30"))
+
+        assertNull(BirthdayService.parseTimeZone("Middle-earth"))
+
+        assertNull(BirthdayService.parseTimeZone(""))
     }
 
     @Test
