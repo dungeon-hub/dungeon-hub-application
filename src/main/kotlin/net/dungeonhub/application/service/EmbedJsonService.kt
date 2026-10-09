@@ -185,14 +185,35 @@ object EmbedJsonService {
 fun EmbedBuilder.copy(other: EmbedBuilder) {
     description = other.description
     title = other.title
-    footer = other.footer
-    fields = other.fields
+    footer = other.footer?.let { source ->
+        EmbedBuilder.Footer().apply {
+            text = source.text
+            icon = source.icon
+        }
+    }
+    fields = other.fields.map { source ->
+        EmbedBuilder.Field().apply {
+            name = source.name
+            inline = source.inline
+            value = source.value
+        }
+    }.toMutableList()
     color = other.color
     timestamp = other.timestamp
     url = other.url
     image = other.image
-    author = other.author
-    thumbnail = other.thumbnail
+    author = other.author?.let { source ->
+        EmbedBuilder.Author().apply {
+            name = source.name
+            url = source.url
+            icon = source.icon
+        }
+    }
+    thumbnail = other.thumbnail?.let { source ->
+        EmbedBuilder.Thumbnail().apply {
+            url = source.url
+        }
+    }
 }
 
 @OptIn(ExperimentalTime::class)

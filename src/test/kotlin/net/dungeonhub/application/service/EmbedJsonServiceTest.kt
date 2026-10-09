@@ -28,6 +28,15 @@ class EmbedJsonServiceTest {
             title = "Copied title"
             description = "Copied description"
             field("Copied field", true) { "Copied value" }
+            author {
+                name = "Copied author"
+            }
+            footer {
+                text = "Copied footer"
+            }
+            thumbnail {
+                url = "https://example.com/thumb.png"
+            }
         }
         val target = EmbedBuilder()
 
@@ -38,6 +47,17 @@ class EmbedJsonServiceTest {
         assertEquals("Copied field", target.fields.single().name)
         assertEquals("Copied value", target.fields.single().value)
         assertEquals(true, target.fields.single().inline)
+
+        // Mutating the copies must not touch the source's nested objects.
+        target.fields.single().value = "Mutated value"
+        target.author?.let { it.name = "Mutated author" }
+        target.footer?.let { it.text = "Mutated footer" }
+        target.thumbnail?.let { it.url = "https://example.com/mutated.png" }
+
+        assertEquals("Copied value", source.fields.single().value)
+        assertEquals("Copied author", source.author?.let { it.name })
+        assertEquals("Copied footer", source.footer?.let { it.text })
+        assertEquals("https://example.com/thumb.png", source.thumbnail?.let { it.url })
     }
 
     @Test
