@@ -17,7 +17,7 @@ import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.getLocale
-import net.dungeonhub.application.connection.copy
+import net.dungeonhub.application.service.copy
 import net.dungeonhub.application.enums.HelpTopic
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.AutoCompletionService

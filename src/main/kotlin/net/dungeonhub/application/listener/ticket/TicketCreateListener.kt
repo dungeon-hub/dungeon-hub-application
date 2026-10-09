@@ -4,6 +4,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
+import com.squareup.moshi.JsonDataException
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.entity.TextInputStyle
@@ -31,12 +32,12 @@ import net.dungeonhub.application.commands.TicketSystem.Companion.replacePlaceho
 import net.dungeonhub.application.commands.TicketSystem.Companion.scheduler
 import net.dungeonhub.application.commands.TicketSystem.Companion.updateTicketPermissions
 import net.dungeonhub.application.commands.addSilentLinkButtons
-import net.dungeonhub.application.connection.applyJson
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.misc.TicketPlaceholders
 import net.dungeonhub.application.service.ApplicationService
+import net.dungeonhub.application.service.EmbedJsonService
 import net.dungeonhub.application.service.MessagesService
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
@@ -60,7 +61,6 @@ import org.slf4j.LoggerFactory
 @LoadExtension
 class TicketCreateListener : Extension() {
     override val name = "ticket-create-listener"
-    private val logger = LoggerFactory.getLogger(javaClass)
 
     override suspend fun setup() {
         event<GuildButtonInteractionCreateEvent> {
@@ -209,6 +209,7 @@ class TicketCreateListener : Extension() {
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(TicketCreateListener::class.java)
         const val DEFAULT_CONTENT = "Welcome, {user.mention}!\nPlease describe your {panel.name} request below further."
 
         suspend fun checkTicketOpen(
@@ -404,54 +405,19 @@ class TicketCreateListener : Extension() {
             }
         }
 
-        suspend fun parseEmbeds(embedData: JsonElement, placeholders: TicketPlaceholders): MutableList<EmbedBuilder> {
-            val embedBuilders: MutableList<EmbedBuilder> = mutableListOf()
-
-            suspend fun parseJsonObjectEmbed(jsonElement: JsonElement): EmbedBuilder? {
-                val embedBuilder = EmbedBuilder()
-
-                val jsonObject = jsonElement.asJsonObject
-
-                if(jsonObject.has("customEmbed") && !jsonObject.getAsJsonPrimitive("customEmbed")?.asString.isNullOrEmpty()) {
-                    return buildCustomEmbed(
-                        jsonObject.getAsJsonPrimitive("customEmbed")?.asString!!,
-                        placeholders,
-                        jsonObject.getAsJsonPrimitive("customData")?.asString
-                    )
-                }
-
-                jsonObject
-                    .entrySet()
-                    .forEach { entry: Map.Entry<String, JsonElement> ->
-                        embedBuilder.applyJson(
-                            entry.key,
-                            replacePlaceholders(entry.value, placeholders)
-                        )
-                    }
-
-                return embedBuilder
+        suspend fun parseEmbeds(
+            embedData: JsonElement,
+            placeholders: TicketPlaceholders
+        ): MutableList<EmbedBuilder> {
+            val resolvedEmbedData = replacePlaceholders(embedData, placeholders)
+            return try {
+                EmbedJsonService.parseEmbeds(resolvedEmbedData.toString()) { type, customData ->
+                    buildCustomEmbed(type, placeholders, customData)
+                }.toMutableList()
+            } catch (exception: JsonDataException) {
+                logger.error("Failed to parse ticket message embeds.", exception)
+                mutableListOf()
             }
-
-            try {
-                if (embedData.isJsonObject) {
-                    parseJsonObjectEmbed(embedData)?.let { embedBuilders.add(it) }
-                } else if (embedData.isJsonArray) {
-                    embedData.asJsonArray
-                        .forEach { jsonElement: JsonElement ->
-                            if (jsonElement.isJsonObject) {
-                                parseJsonObjectEmbed(jsonElement)?.let { embedBuilders.add(it) }
-                            } else if (jsonElement.isJsonPrimitive) {
-                                buildCustomEmbed(jsonElement.asString, placeholders)?.let { embedBuilders.add(it) }
-                            }
-                        }
-                } else if (embedData.isJsonPrimitive) {
-                    buildCustomEmbed(embedData.asString, placeholders)?.let { embedBuilders.add(it) }
-                }
-            } catch (_: JsonSyntaxException) {
-
-            }
-
-            return embedBuilders
         }
 
         suspend fun buildCustomEmbed(type: String, placeholders: TicketPlaceholders, customData: String? = null): EmbedBuilder? {

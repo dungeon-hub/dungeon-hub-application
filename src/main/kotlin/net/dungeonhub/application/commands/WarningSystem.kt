@@ -21,7 +21,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import net.dungeonhub.application.connection.DiscordConnection
-import net.dungeonhub.application.connection.copy
+import net.dungeonhub.application.service.copy
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException

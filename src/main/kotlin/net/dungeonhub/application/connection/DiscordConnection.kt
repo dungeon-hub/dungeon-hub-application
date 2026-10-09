@@ -1,14 +1,11 @@
 package net.dungeonhub.application.connection
 
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
 import dev.kord.common.annotation.KordUnsafe
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.entity.Embed
-import dev.kord.core.entity.Embed.*
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.User
@@ -43,14 +40,10 @@ import net.dungeonhub.application.loader.ClassLoader
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartPriority
 import net.dungeonhub.application.loader.StartupListener
-import net.dungeonhub.application.misc.EmbedModel
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.color
-import net.dungeonhub.service.MoshiService
-import net.dungeonhub.wrapper.kord.toJavaColor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.awt.Color
 import java.time.Instant
 import java.util.*
 import java.util.regex.Pattern
@@ -252,20 +245,6 @@ fun User.getMutualServers(): Flow<Member> {
     }
 }
 
-@OptIn(ExperimentalTime::class)
-fun EmbedBuilder.copy(other: EmbedBuilder) {
-    this.description = other.description
-    this.title = other.title
-    this.footer = other.footer
-    this.fields = other.fields
-    this.color = other.color
-    this.timestamp = other.timestamp
-    this.url = other.url
-    this.image = other.image
-    this.author = other.author
-    this.thumbnail = other.thumbnail
-}
-
 private val messageLinkPattern = Pattern.compile(
     "(?x)                               # enable comment mode \n" +
             "(?i)                             # ignore case \n" +
@@ -287,158 +266,6 @@ suspend fun Kord.loadMessageByLink(messageLink: String): Message? {
     return getChannel(Snowflake(matcher.group("channel")))
         ?.asChannelOfOrNull<MessageChannel>()
         ?.getMessage(Snowflake(matcher.group("message")))
-}
-
-fun EmbedBuilder.setFields(value: JsonElement) {
-    value.asJsonArray.asList().stream()
-        .map { obj: JsonElement -> obj.asJsonObject }
-        .forEach { jsonObject: JsonObject ->
-            field(
-                jsonObject.getAsJsonPrimitive("name").asString,
-                jsonObject.getAsJsonPrimitive("inline")?.asBoolean ?: false
-            ) {
-                jsonObject.getAsJsonPrimitive("value").asString
-            }
-        }
-}
-
-fun EmbedBuilder.setFooter(value: JsonElement) {
-    val footer = value.asJsonObject
-
-    footer {
-        text = footer.getAsJsonPrimitive("text").asString
-        icon = footer.getAsJsonPrimitive("icon")?.asString
-    }
-}
-
-fun EmbedBuilder.setThumbnail(value: JsonElement) {
-    thumbnail {
-        url = value.asJsonObject.getAsJsonPrimitive("url").asString
-    }
-}
-
-fun EmbedBuilder.setAuthor(value: JsonElement) {
-    if (value.isJsonPrimitive) {
-        author {
-            name = value.asString
-        }
-    } else {
-        val jsonObject = value.asJsonObject
-
-        author {
-            name = jsonObject.getAsJsonPrimitive("name").asString
-            url = jsonObject.getAsJsonPrimitive("url")?.asString
-            icon = jsonObject.getAsJsonPrimitive("icon")?.asString
-        }
-    }
-}
-
-@OptIn(ExperimentalTime::class)
-fun EmbedBuilder.applyJson(key: String, value: JsonElement) {
-    when (key) {
-        "title" -> title = value.asString
-        "description" -> description = value.asString
-        "author" -> setAuthor(value)
-        "url" -> url = value.asString
-        "color" -> color = run {
-            val internalColor = MoshiService.moshi.adapter(Color::class.java).fromJsonValue(
-                value.asString
-            )!!
-            dev.kord.common.Color(internalColor.red, internalColor.green, internalColor.blue)
-        }
-
-        "fields" -> setFields(value)
-        "footer" -> setFooter(value)
-        "timestamp" -> timestamp =
-            MoshiService.moshi.adapter(Instant::class.java).fromJson(value.asString)!!.toKotlinInstant()
-
-        "thumbnail" -> setThumbnail(value)
-        "image" -> image = if(value.isJsonNull) null else value.asString
-    }
-}
-
-@OptIn(ExperimentalTime::class)
-fun Embed.toBuilder(): EmbedBuilder {
-    val embed = EmbedBuilder()
-
-    embed.title = title
-    embed.description = description
-    embed.url = url
-    embed.timestamp = timestamp
-    embed.color = color
-    embed.image = image?.url
-    embed.footer = footer?.toBuilder()
-    embed.thumbnail = thumbnail?.toBuilder()
-    embed.author = author?.toBuilder()
-    embed.fields = fields.map { it.toBuilder() }.toMutableList()
-
-    return embed
-}
-
-fun Author.toBuilder(): EmbedBuilder.Author {
-    val author = EmbedBuilder.Author()
-
-    author.name = name
-    author.url = url
-    author.icon = iconUrl
-
-    return author
-}
-
-fun Field.toBuilder(): EmbedBuilder.Field {
-    val field = EmbedBuilder.Field()
-
-    field.name = name
-    field.inline = inline
-    field.value = value
-
-    return field
-}
-
-@OptIn(ExperimentalTime::class)
-fun Embed.toModel(): EmbedModel {
-    val embed = EmbedModel(
-        title,
-        description,
-        url,
-        timestamp?.toJavaInstant(),
-        color?.toJavaColor(),
-        image?.url,
-        footer?.toBuilder(),
-        thumbnail?.toBuilder(),
-        author?.toModel()
-    )
-
-    embed.fields = fields.map { it.toModel() }.toMutableList()
-
-    return embed
-}
-
-fun Footer.toBuilder(): EmbedBuilder.Footer {
-    val footer = EmbedBuilder.Footer()
-
-    footer.text = text
-    footer.icon = iconUrl
-
-    return footer
-}
-
-fun Thumbnail.toBuilder(): EmbedBuilder.Thumbnail? {
-    val url = url ?: return null
-
-    val thumbnail = EmbedBuilder.Thumbnail()
-
-    thumbnail.url = url
-
-    return thumbnail
-}
-
-fun Author.toModel(): EmbedModel.Author {
-    return EmbedModel.Author(name, url, iconUrl)
-}
-
-fun Field.toModel(): EmbedModel.Field {
-    return EmbedModel.Field(name, inline, value)
 }
 
 fun Duration.withNanos(nanos: Int): Duration {
