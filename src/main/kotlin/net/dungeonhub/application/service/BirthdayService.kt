@@ -33,6 +33,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import java.util.HashSet
 
 @OnStart
 object BirthdayService : StartupListener {
@@ -45,12 +46,14 @@ object BirthdayService : StartupListener {
     private val logger = LoggerFactory.getLogger(BirthdayService::class.java)
     private lateinit var scheduler: Scheduler
     var birthdays: List<Birthday> = listOf()
+    private val scheduledTimezones = HashSet<String>()
 
     override suspend fun postStart() {
         if (::scheduler.isInitialized) {
             scheduler.cancel("Application was restarted.")
         }
 
+        scheduledTimezones.clear()
         scheduler = DhScheduler()
 
         updateBirthdayData()
@@ -79,6 +82,8 @@ object BirthdayService : StartupListener {
     }
 
     private suspend fun scheduleTimezoneBirthdays(timezone: String) {
+        if (!scheduledTimezones.add(timezone)) return
+
         val timeZone = parseTimeZone(timezone) ?: return
 
         val task = scheduler.schedule(24.hours, startNow = false, name = "Birthdays-Schedule ($timezone)", repeat = true) {
@@ -148,7 +153,7 @@ object BirthdayService : StartupListener {
                     } else {
                         ""
                     } +
-                    "\nTheir birthday is on ${birthday.date.day}/${birthday.date.month}." +
+                    "\nTheir birthday is on ${birthday.date.day.toString().padStart(2, '0')}.${birthday.date.month.number.toString().padStart(2, '0')}." +
                     if (birthday.timezone != null) {
                         "\nAnnounced at 9am in ${birthday.timezone}."
                     } else {
@@ -184,6 +189,11 @@ object BirthdayService : StartupListener {
 
                     if (birthdayList.isNotEmpty()) {
                         birthdays = birthdayList
+
+                        // Reconcile schedules: timezones that only appear in refreshed data need their own schedule.
+                        for (timezone in birthdays.mapNotNull { it.timezone }.distinct()) {
+                            scheduleTimezoneBirthdays(timezone)
+                        }
                     }
                 }
             }
@@ -279,7 +289,8 @@ object BirthdayService : StartupListener {
                 // Line 1 = birth year, line 2 = timezone (optional)
                 val year = description?.firstOrNull()?.trim()?.toIntOrNull()
 
-                val timezone = description?.getOrNull(1)?.trim()?.takeIf { it?.isNotEmpty() == true }
+                // Keep the timezone only when it actually parses, so unparseable values fall back to the server-time schedule.
+                val timezone = description?.getOrNull(1)?.trim()?.takeIf { it?.isNotEmpty() == true }?.takeIf { parseTimeZone(it) != null }
 
                 val now = java.time.LocalDate.now()
 
