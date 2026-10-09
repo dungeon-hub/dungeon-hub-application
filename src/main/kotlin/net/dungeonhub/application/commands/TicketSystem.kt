@@ -377,9 +377,12 @@ class TicketSystem : Extension() {
                         return@action
                     }
 
+                    val hasTranscriptChannel = ticket.ticketPanel.transcriptChannel != null
+
                     val target = when {
                         arguments.channel != null -> if(arguments.sendToUser == false) TranscriptTarget.TranscriptChannel else TranscriptTarget.Both
-                        arguments.sendToUser == false -> TranscriptTarget.TranscriptChannel
+                        arguments.sendToUser == false -> if(hasTranscriptChannel) TranscriptTarget.TranscriptChannel else TranscriptTarget.User
+                        hasTranscriptChannel -> TranscriptTarget.Both
                         else -> TranscriptTarget.User
                     }
 
