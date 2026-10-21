@@ -111,9 +111,9 @@ class MessageListener : Extension() {
     }
 
     private suspend fun sendToApproving(carrierId: Long, queueEntries: List<CarryQueueModel>, approvingChannel: TextChannel) {
-        for(group in LoggingSystem.compactCarryEntries(queueEntries)) {
+        for(group in LoggingSystem.compactQueueEntries(queueEntries)) {
             val createdMessage = approvingChannel.createMessage {
-                val embed = LoggingSystem.loadGroupedCarryEmbed(group)
+                val embed = LoggingSystem.loadGroupedCarryQueueEmbed(group, null)
                 embed.title = "Accept carry-log?"
                 embed.color = EmbedColor.Default.color
 

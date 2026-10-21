@@ -294,7 +294,7 @@ class LoggingSystem : Extension() {
                     }
 
                 message.edit {
-                    val embed = loadGroupedCarryEmbed(listOf(response))
+                    val embed = loadGroupedCarryQueueEmbed(listOf(response), null)
                     embed.title = "Accept carry-log?"
                     embed.color = EmbedColor.Default.color
 
@@ -344,7 +344,7 @@ class LoggingSystem : Extension() {
 
             carrier?.dm {
                 content = denialNotificationContent(queueEntries.size, event.interaction.user.mention)
-                val embed = createCarryOverview(compactCarryEntries(queueEntries), null)
+                val embed = createCarryOverview(compactQueueEntries(queueEntries), null)
                 embed.color = EmbedColor.Negative.color
                 embeds = mutableListOf(embed)
             }
@@ -502,7 +502,7 @@ class LoggingSystem : Extension() {
         private val logger = LoggerFactory.getLogger(LoggingSystem::class.java)
         private val scheduler: Scheduler by lazy { DhScheduler() }
 
-        fun compactCarryEntries(queueEntries: Collection<CarryQueueModel>): List<List<CarryQueueModel>> {
+        fun compactQueueEntries(queueEntries: Collection<CarryQueueModel>): List<List<CarryQueueModel>> {
             val groups = mutableListOf<MutableList<CarryQueueModel>>()
 
             for (queueModel in queueEntries.sortedBy { it.time?.toKotlinInstant() }) {
@@ -544,14 +544,15 @@ class LoggingSystem : Extension() {
                             "logged!\n\n**Your Updated Score:** $latestScore"
 
                     embeds = mutableListOf(
-                        createCarryOverview(compactCarryEntries(allQueues), approver)
+                        createCarryOverview(compactQueueEntries(allQueues), approver)
                     )
                 }
             }
         }
 
-        fun loadGroupedCarryEmbed(
-            queueEntries: Collection<CarryQueueModel>
+        fun loadGroupedCarryQueueEmbed(
+            queueEntries: Collection<CarryQueueModel>,
+            approver: Long?
         ) = buildEmbed {
             val representative = queueEntries.first()
             val last = queueEntries.last()
@@ -586,6 +587,12 @@ class LoggingSystem : Extension() {
 
             field("Gained score", true) {
                 queueEntries.sumOf { it.calculateScore() }.toString()
+            }
+
+            if(approver != null) {
+                field("Approved by", true) {
+                    "<@$approver>"
+                }
             }
 
             representative.attachmentLink?.let { transcriptUrl ->
@@ -627,7 +634,7 @@ class LoggingSystem : Extension() {
             val carryTypes = mutableListOf<CarryTypeModel>()
             val loggedEntries = mutableListOf<LoggedQueueEntry>()
 
-            for (group in compactCarryEntries(queueEntries)) {
+            for (group in compactQueueEntries(queueEntries)) {
                 val representative = group.first()
                 val successfullyLogged = mutableListOf<CarryQueueModel>()
                 var latestScore = 0L
@@ -676,7 +683,7 @@ class LoggingSystem : Extension() {
                     ?.let { id ->
                         server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
                     }?.createMessage {
-                        val embed = loadGroupedCarryEmbed(successfullyLogged)
+                        val embed = loadGroupedCarryQueueEmbed(successfullyLogged, approver)
                         embed.title = "Carry accepted."
                         embed.color(EmbedColor.Positive)
 
