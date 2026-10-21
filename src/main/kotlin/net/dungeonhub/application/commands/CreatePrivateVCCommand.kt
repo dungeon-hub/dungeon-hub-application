@@ -27,93 +27,97 @@ class CreatePrivateVCCommand : Extension() {
     private val logger: Logger = LoggerFactory.getLogger(CreatePrivateVCCommand::class.java)
     override val name = "create-vc"
     override suspend fun setup() {
-        publicSlashCommand(::CreateVCArgs) {
-            name = "create".toKey()
-            description = "Creates a private voice channel for a user.".toKey()
-            defaultMemberPermissions = Permissions(Permission.ManageChannels)
-            allowInDms = false
+        listOf(693263712626278553L, 1023684107877761196L).map { Snowflake(it) }
+            .forEach { guildId ->
+                publicSlashCommand(::CreateVCArgs) {
+                    name = "create".toKey()
+                    description = "Creates a private voice channel for a user.".toKey()
+                    guild(guildId)
+                    defaultMemberPermissions = Permissions(Permission.ManageChannels)
+                    allowInDms = false
 
-            action {
-                val guild = guild
-                val everyoneRole = guild!!.id
-                val rawVerifiedId = ServerProperty.VERIFIED_GROUP_ROLE.getValue(everyoneRole)
-                    ?: throw CommandExecutionException("VERIFIED_GROUP_ROLE has not been configured in ServerProperty")
-                val verifiedRoleId = Snowflake(rawVerifiedId)
-                val rawStaffId = ServerProperty.STAFF_GROUP_ROLE.getValue(everyoneRole)
-                    ?: throw CommandExecutionException("STAFF_GROUP_ROLE has not been configured in ServerProperty")
-                val staffRoleId = Snowflake(rawStaffId)
-                val rawAdminId = ServerProperty.ADMINISTRATION_GROUP_ROLE.getValue(everyoneRole)
-                    ?: throw CommandExecutionException("ADMINISTRATION_GROUP_ROLE has not been configured in ServerProperty")
-                val adminRoleId = Snowflake(rawAdminId)
-                val rawCategoryString: String? = ServerProperty.VC_CREATE_CATEGORY.getValue(everyoneRole)
-                val categoryId: Snowflake? = rawCategoryString?.let { Snowflake(it) }
+                    action {
+                        val guild = guild
+                        val everyoneRole = guild!!.id
+                        val rawVerifiedId = ServerProperty.VERIFIED_GROUP_ROLE.getValue(everyoneRole)
+                            ?: throw CommandExecutionException("VERIFIED_GROUP_ROLE has not been configured in ServerProperty")
+                        val verifiedRoleId = Snowflake(rawVerifiedId)
+                        val rawStaffId = ServerProperty.STAFF_GROUP_ROLE.getValue(everyoneRole)
+                            ?: throw CommandExecutionException("STAFF_GROUP_ROLE has not been configured in ServerProperty")
+                        val staffRoleId = Snowflake(rawStaffId)
+                        val rawAdminId = ServerProperty.ADMINISTRATION_GROUP_ROLE.getValue(everyoneRole)
+                            ?: throw CommandExecutionException("ADMINISTRATION_GROUP_ROLE has not been configured in ServerProperty")
+                        val adminRoleId = Snowflake(rawAdminId)
+                        val rawCategoryString: String? = ServerProperty.VC_CREATE_CATEGORY.getValue(everyoneRole)
+                        val categoryId: Snowflake? = rawCategoryString?.let { Snowflake(it) }
 
-                try {
-                    val voiceChannel = guild.createVoiceChannel(arguments.name) {
+                        try {
+                            val voiceChannel = guild.createVoiceChannel(arguments.name) {
 
-                        addRoleOverwrite(adminRoleId) {
-                            allowed += Permission.ViewChannel
-                            allowed += Permission.ManageChannels
-                            allowed += Permission.ManageRoles
+                                addRoleOverwrite(adminRoleId) {
+                                    allowed += Permission.ViewChannel
+                                    allowed += Permission.ManageChannels
+                                    allowed += Permission.ManageRoles
 
-                            allowed += Permission.MoveMembers
-                            allowed += Permission.DeafenMembers
-                            allowed += Permission.MuteMembers
+                                    allowed += Permission.MoveMembers
+                                    allowed += Permission.DeafenMembers
+                                    allowed += Permission.MuteMembers
 
-                            allowed += Permission.ViewChannel
-                            allowed += Permission.Connect
-                            allowed += Permission.SendMessages
-                        }
+                                    allowed += Permission.ViewChannel
+                                    allowed += Permission.Connect
+                                    allowed += Permission.SendMessages
+                                }
 
-                        addRoleOverwrite(staffRoleId) {
-                            allowed += Permission.MoveMembers
-                            allowed += Permission.DeafenMembers
-                            allowed += Permission.MuteMembers
+                                addRoleOverwrite(staffRoleId) {
+                                    allowed += Permission.MoveMembers
+                                    allowed += Permission.DeafenMembers
+                                    allowed += Permission.MuteMembers
 
-                            allowed += Permission.ViewChannel
-                            allowed += Permission.Connect
-                            allowed += Permission.SendMessages
-                        }
+                                    allowed += Permission.ViewChannel
+                                    allowed += Permission.Connect
+                                    allowed += Permission.SendMessages
+                                }
 
-                        addRoleOverwrite(verifiedRoleId) {
-                            allowed += Permission.ViewChannel
-                            allowed += Permission.SendMessages
-                        }
+                                addRoleOverwrite(verifiedRoleId) {
+                                    allowed += Permission.ViewChannel
+                                    allowed += Permission.SendMessages
+                                }
 
-                        addRoleOverwrite(everyoneRole) {
-                            denied += Permission.ViewChannel
-                            denied += Permission.Connect
-                            denied += Permission.SendMessages
-                        }
+                                addRoleOverwrite(everyoneRole) {
+                                    denied += Permission.ViewChannel
+                                    denied += Permission.Connect
+                                    denied += Permission.SendMessages
+                                }
 
-                        addMemberOverwrite(arguments.user.id) {
-                            allowed += Permission.ViewChannel
-                            allowed += Permission.Connect
-                            allowed += Permission.ManageChannels
-                            allowed += Permission.SendMessages
-                            allowed += Permission.Speak
-                            allowed += Permission.Video
-                            allowed += Permission.MoveMembers
-                        }
+                                addMemberOverwrite(arguments.user.id) {
+                                    allowed += Permission.ViewChannel
+                                    allowed += Permission.Connect
+                                    allowed += Permission.ManageChannels
+                                    allowed += Permission.SendMessages
+                                    allowed += Permission.Speak
+                                    allowed += Permission.Video
+                                    allowed += Permission.MoveMembers
+                                }
 
-                        parentId = categoryId
-                    }
+                                parentId = categoryId
+                            }
 
-                    respond {
-                        content = "${voiceChannel.mention} has been created successfully!"
-                    }
+                            respond {
+                                content = "${voiceChannel.mention} has been created successfully!"
+                            }
 
-                } catch (exception: Exception) {
-                    logger.error("Error while creating a private VC.", exception)
-                    respond {
-                        addEmbed {
-                            description = "Error while creating a private VC."
-                            color(EmbedColor.Negative)
+                        } catch (exception: Exception) {
+                            logger.error("Error while creating a private VC.", exception)
+                            respond {
+                                addEmbed {
+                                    description = "Error while creating a private VC."
+                                    color(EmbedColor.Negative)
+                                }
+                            }
                         }
                     }
                 }
             }
-        }
     }
 
     class CreateVCArgs : Arguments() {
