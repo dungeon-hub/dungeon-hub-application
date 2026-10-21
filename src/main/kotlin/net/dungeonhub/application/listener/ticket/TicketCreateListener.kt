@@ -60,7 +60,6 @@ import org.slf4j.LoggerFactory
 @LoadExtension
 class TicketCreateListener : Extension() {
     override val name = "ticket-create-listener"
-    private val logger = LoggerFactory.getLogger(javaClass)
 
     override suspend fun setup() {
         event<GuildButtonInteractionCreateEvent> {
@@ -209,6 +208,7 @@ class TicketCreateListener : Extension() {
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(TicketCreateListener::class.java)
         const val DEFAULT_CONTENT = "Welcome, {user.mention}!\nPlease describe your {panel.name} request below further."
 
         suspend fun checkTicketOpen(
@@ -267,7 +267,15 @@ class TicketCreateListener : Extension() {
                     return@respond
                 }
 
-                val ticketChannel = createTicketChannel(ticketPanel, ticket, member)
+                val ticketChannel = try {
+                    createTicketChannel(ticketPanel, ticket, member)
+                } catch (_: Exception) {
+                    addEmbed {
+                        description = "Couldn't create the ticket channel."
+                        color(EmbedColor.Negative)
+                    }
+                    return@respond
+                }
                 val updatedTicket = updateTicketChannel(ticket, ticketChannel)
 
                 if (updatedTicket == null) {
@@ -312,16 +320,21 @@ class TicketCreateListener : Extension() {
         suspend fun createTicketChannel(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member): TextChannel {
             val name = TicketSystem.buildTicketName(ticketPanel, ticket, member, null)
 
-            return member.guild.createTextChannel(name ?: ticketPanel.name) {
-                permissionOverwrites.clear()
-                updateTicketPermissions(ticketPanel, ticket)
+            try {
+                return member.guild.createTextChannel(name ?: ticketPanel.name) {
+                    permissionOverwrites.clear()
+                    updateTicketPermissions(ticketPanel, ticket)
 
-                val categories = if (ticket.state in listOf(TicketState.Creating, TicketState.Open)) {
-                    ticketPanel.openCategories
-                } else {
-                    ticketPanel.closedCategories
+                    val categories = if (ticket.state in listOf(TicketState.Creating, TicketState.Open)) {
+                        ticketPanel.openCategories
+                    } else {
+                        ticketPanel.closedCategories
+                    }
+                    getCategory(categories)?.let { parentId = Snowflake(it) }
                 }
-                getCategory(categories)?.let { parentId = Snowflake(it) }
+            } catch (exception: Exception) {
+                logger.error("Couldn't create ticket channel with name '$name'", exception)
+                throw exception
             }
         }
 

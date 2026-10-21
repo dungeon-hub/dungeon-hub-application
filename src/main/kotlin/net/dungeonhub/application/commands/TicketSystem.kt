@@ -66,12 +66,10 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 import kotlin.time.toKotlinInstant
 
 // TODO command: /ticket escalate --> this should move the ticket to a different panel and then update the ticket status
-@OptIn(ExperimentalTime::class)
 @LoadExtension
 class TicketSystem : Extension() {
     override val name = "ticket-system"
