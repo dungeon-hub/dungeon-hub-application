@@ -105,7 +105,14 @@ class TicketTranscriptListener : Extension() {
     companion object {
         private val logger = LoggerFactory.getLogger(TicketTranscriptListener::class.java)
 
-        suspend fun generateTranscript(textChannel: TextChannel, requester: MemberBehavior?, ticket: TicketModel, target: TranscriptTarget, postTranscriptAction: suspend () -> Unit = {}) {
+        suspend fun generateTranscript(
+            textChannel: TextChannel,
+            requester: MemberBehavior?,
+            ticket: TicketModel,
+            target: TranscriptTarget,
+            channelOverride: GuildMessageChannel? = null,
+            postTranscriptAction: suspend () -> Unit = {}
+        ) {
             val url = TicketSystem.scheduler.async {
                 try {
                     val transcript = textChannel.createTranscript()
@@ -154,7 +161,8 @@ class TicketTranscriptListener : Extension() {
                         ticket,
                         textChannel,
                         requester?.asMemberOrNull()
-                            ?: DiscordConnection.bot.kordRef.getSelf().asMember(textChannel.guildId)
+                            ?: DiscordConnection.bot.kordRef.getSelf().asMember(textChannel.guildId),
+                        channelOverride
                     )
                 }
             } else null
@@ -317,9 +325,10 @@ class TicketTranscriptListener : Extension() {
             transcriptInfoMessage: Message,
             ticket: TicketModel,
             textChannel: TextChannel,
-            requester: Member
+            requester: Member,
+            channelOverride: GuildMessageChannel? = null
         ) {
-            val transcriptChannel = try {
+            val transcriptChannel = channelOverride ?: try {
                 ticket.ticketPanel.transcriptChannel?.let { transcriptChannel ->
                     textChannel.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(transcriptChannel.id))
                 } ?: ServerProperty.TRANSCRIPTS_CHANNEL.getValue(ticket.ticketPanel.discordServer.id)?.toLongOrNull()?.let {
