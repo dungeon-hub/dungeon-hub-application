@@ -119,7 +119,8 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
                     temporaryFile, target,
                     StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING
                 )
-            } catch (_: AtomicMoveNotSupportedException) {
+            } catch (atomicMoveNotSupported: AtomicMoveNotSupportedException) {
+                logger.debug("Atomic move not supported for {}, falling back to a regular move.", file.name, atomicMoveNotSupported)
                 Files.move(temporaryFile, target, StandardCopyOption.REPLACE_EXISTING)
             }
         } catch (ioException: IOException) {
