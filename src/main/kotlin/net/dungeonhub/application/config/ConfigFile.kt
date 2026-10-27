@@ -1,6 +1,8 @@
 package net.dungeonhub.application.config
 
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartPriority
@@ -31,6 +33,11 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
     @Volatile
     private var hasUnsavedChanges = false
 
+    /**
+     * Saves of the same file share the temporary file, so they must not run at the same time.
+     */
+    private val writeMutex = Mutex()
+
     protected abstract val possibleProperties: Set<T>
 
     protected abstract val configFile: File
@@ -51,8 +58,10 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
 
     suspend fun saveProperties() {
         try {
-            withContext(scheduler.coroutineContext) {
-                writeProperties(configFile, properties)
+            writeMutex.withLock {
+                withContext(scheduler.coroutineContext) {
+                    writeProperties(configFile, properties)
+                }
             }
             hasUnsavedChanges = false
         } catch (ioException: IOException) {
@@ -105,8 +114,10 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
         }
 
         try {
-            withContext(scheduler.coroutineContext) {
-                writeProperties(file, properties)
+            writeMutex.withLock {
+                withContext(scheduler.coroutineContext) {
+                    writeProperties(file, properties)
+                }
             }
             hasUnsavedChanges = false
         } catch (ioException: IOException) {

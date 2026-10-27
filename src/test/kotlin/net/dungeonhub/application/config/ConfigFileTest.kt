@@ -3,6 +3,8 @@ package net.dungeonhub.application.config
 import dev.kordex.core.commands.application.slash.converters.ChoiceEnum
 import dev.kordex.core.i18n.toKey
 import dev.kordex.i18n.Key
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.IOException
@@ -204,6 +206,25 @@ class ConfigFileTest {
         config.reload()
 
         assertEquals("secret-token", readConfig().getProperty(TestProperty.TOKEN.readableName.key))
+    }
+
+    @Test
+    fun `concurrent saves do not corrupt the config file`() = runBlocking {
+        val config = TestConfigFile(file)
+        config.reload()
+
+        val jobs = (1..50).map { index ->
+            launch(Dispatchers.Default) {
+                config.setConfig(TestProperty.URL, "https://example.com/$index")
+            }
+        }
+        jobs.forEach { it.join() }
+        config.setConfig(TestProperty.TOKEN, "secret-token")
+
+        val properties = readConfig()
+        assertEquals("secret-token", properties.getProperty(TestProperty.TOKEN.readableName.key))
+        assertEquals(config.getConfig(TestProperty.URL), properties.getProperty(TestProperty.URL.readableName.key))
+        assertNoTemporaryFilesLeft()
     }
 
     @Test
