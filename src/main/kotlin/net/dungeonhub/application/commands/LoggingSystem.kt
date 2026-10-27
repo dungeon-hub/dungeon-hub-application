@@ -24,7 +24,6 @@ import dev.kordex.core.components.ephemeralButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.launch
@@ -87,7 +86,7 @@ class LoggingSystem : Extension() {
 
                         components {
                             ephemeralButton {
-                                label = "Clear log".toKey()
+                                label = Log.Response.Buttons.ClearLog.label
                                 style = ButtonStyle.Primary
 
                                 action {
@@ -122,7 +121,7 @@ class LoggingSystem : Extension() {
                             }
 
                             ephemeralButton {
-                                label = "Dismiss".toKey()
+                                label = Log.Response.Buttons.Dismiss.label
                                 style = ButtonStyle.Danger
 
                                 deferredAck = true
