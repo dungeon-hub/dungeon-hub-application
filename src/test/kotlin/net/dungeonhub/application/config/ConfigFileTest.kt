@@ -80,10 +80,10 @@ class ConfigFileTest {
     @Test
     fun `config file survives a full disk while saving`() = runBlocking {
         writeConfig(TestProperty.TOKEN to "secret-token", TestProperty.URL to "https://dungeon-hub.net")
-        val originalContent = file.readBytes()
 
         val config = TestConfigFile(file)
         config.reload()
+        val originalContent = file.readBytes()
 
         config.diskFull = true
         config.setConfig(TestProperty.URL, "https://example.com")

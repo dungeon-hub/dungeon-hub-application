@@ -24,6 +24,13 @@ import java.util.*
 abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
     private val properties = Properties()
 
+    /**
+     * Set when the in-memory properties could not be written to disk, e.g. because the disk is full.
+     * As long as this is set, the in-memory properties are newer than the file and must not be overwritten by it.
+     */
+    @Volatile
+    private var hasUnsavedChanges = false
+
     protected abstract val possibleProperties: Set<T>
 
     protected abstract val configFile: File
@@ -47,7 +54,9 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
             withContext(scheduler.coroutineContext) {
                 writeProperties(configFile, properties)
             }
+            hasUnsavedChanges = false
         } catch (ioException: IOException) {
+            hasUnsavedChanges = true
             logger.error("Error when trying to save properties of file {}.", configFile.name, ioException)
         }
     }
@@ -76,9 +85,12 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
             }
         }
 
-        // Values that are only known in memory (e.g. because the file got lost or truncated) are kept.
-        for ((key, value) in fileProperties) {
-            properties[key] = value
+        // Changes that could not be saved yet are newer than the file, so the file must not overwrite them.
+        // Otherwise the file wins, but values only known in memory (e.g. because the file got lost) are kept.
+        if (!hasUnsavedChanges) {
+            for ((key, value) in fileProperties) {
+                properties[key] = value
+            }
         }
 
         for (property in possibleProperties) {
@@ -96,7 +108,9 @@ abstract class ConfigFile<T : ChoiceEnum> : StartupListener {
             withContext(scheduler.coroutineContext) {
                 writeProperties(file, properties)
             }
+            hasUnsavedChanges = false
         } catch (ioException: IOException) {
+            hasUnsavedChanges = true
             logger.error("Error when writing properties to file {}.", file.name, ioException)
         }
     }
