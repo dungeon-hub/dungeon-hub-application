@@ -18,6 +18,7 @@ import net.dungeonhub.connection.CarryTierConnection
 import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.i18n.Translations.Command.CarryDifficulty
 import net.dungeonhub.i18n.Translations.CommonArguments
+import net.dungeonhub.model.carry_difficulty.BulkPriceModel
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyCreationModel
 import java.util.*
 
@@ -66,8 +67,6 @@ class CarryDifficultyCommand : Extension() {
                             displayName = arguments.displayName,
                             price = arguments.price,
                             score = arguments.score,
-                            bulkAmount = null,
-                            bulkPrice = null,
                             thumbnailUrl = null,
                             priceName = null
                         )
@@ -175,6 +174,10 @@ class CarryDifficultyCommand : Extension() {
                             throw CommandExecutionWarning("Please provide something you want to edit.")
                         }
 
+                        if ((arguments.bulkAmount == null) != (arguments.bulkPrice == null)) {
+                            throw CommandExecutionWarning("Please provide both the bulk amount and the bulk price.")
+                        }
+
                         val updateModel = carryDifficulty.getUpdateModel()
 
                         if (arguments.displayName != null) {
@@ -189,12 +192,12 @@ class CarryDifficultyCommand : Extension() {
                             updateModel.score = arguments.score
                         }
 
-                        if (arguments.bulkAmount != null) {
-                            updateModel.bulkAmount = arguments.bulkAmount
-                        }
+                        val bulkAmount = arguments.bulkAmount
+                        val bulkPrice = arguments.bulkPrice
 
-                        if (arguments.bulkPrice != null) {
-                            updateModel.bulkPrice = arguments.bulkPrice
+                        if (bulkAmount != null && bulkPrice != null) {
+                            updateModel.bulkPrices = carryDifficulty.bulkPrices
+                                .filter { it.amount != bulkAmount } + BulkPriceModel(bulkAmount, bulkPrice)
                         }
 
                         if (arguments.thumbnailUrl != null) {
@@ -236,7 +239,7 @@ class CarryDifficultyCommand : Extension() {
                                     "That carry difficulty doesn't exist"
                                 )
 
-                        if (!arguments.thumbnailUrl && !arguments.bulkAmount && !arguments.bulkPrice && !arguments.priceName) {
+                        if (!arguments.thumbnailUrl && !arguments.bulkPrices && arguments.bulkAmount == null && !arguments.priceName) {
                             throw CommandExecutionWarning("Please provide something you want to reset.")
                         }
 
@@ -246,12 +249,17 @@ class CarryDifficultyCommand : Extension() {
                             updateModel.thumbnailUrl = null
                         }
 
-                        if (arguments.bulkAmount) {
-                            updateModel.bulkAmount = null
-                        }
+                        if (arguments.bulkPrices) {
+                            updateModel.bulkPrices = emptyList()
+                        } else if (arguments.bulkAmount != null) {
+                            if (carryDifficulty.bulkPrices.none { it.amount == arguments.bulkAmount }) {
+                                throw InvalidOptionException(
+                                    "bulk-amount",
+                                    "This carry difficulty has no bulk price for that amount."
+                                )
+                            }
 
-                        if (arguments.bulkPrice) {
-                            updateModel.bulkPrice = null
+                            updateModel.bulkPrices = carryDifficulty.bulkPrices.filter { it.amount != arguments.bulkAmount }
                         }
 
                         if (arguments.priceName) {
@@ -259,7 +267,7 @@ class CarryDifficultyCommand : Extension() {
                         }
 
                         val updatedCarryDifficulty =
-                            CarryDifficultyConnection[carryTier].authenticated().updateCarryDifficulty(carryTier.id, updateModel)
+                            CarryDifficultyConnection[carryTier].authenticated().updateCarryDifficulty(carryDifficulty.id, updateModel)
                                 ?: throw CommandExecutionWarning("Couldn't update carry difficulty.")
 
                         val embed = ApplicationService.getCarryDifficultyEmbed(updatedCarryDifficulty)
@@ -424,19 +432,20 @@ class CarryDifficultyCommand : Extension() {
             description = CarryDifficulty.Reset.Arguments.ThumbnailUrl.description
         }
 
-        val bulkPrice by boolean {
-            name = CarryDifficulty.Reset.Arguments.BulkPrice.name
-            description = CarryDifficulty.Reset.Arguments.BulkPrice.description
-        }
-
-        val bulkAmount by boolean {
-            name = CarryDifficulty.Reset.Arguments.BulkAmount.name
-            description = CarryDifficulty.Reset.Arguments.BulkAmount.description
+        val bulkPrices by boolean {
+            name = CarryDifficulty.Reset.Arguments.BulkPrices.name
+            description = CarryDifficulty.Reset.Arguments.BulkPrices.description
         }
 
         val priceName by boolean {
             name = CarryDifficulty.Reset.Arguments.PriceName.name
             description = CarryDifficulty.Reset.Arguments.PriceName.description
+        }
+
+        val bulkAmount by optionalInt {
+            name = CarryDifficulty.Reset.Arguments.BulkAmount.name
+            description = CarryDifficulty.Reset.Arguments.BulkAmount.description
+            minValue = 1
         }
     }
 }
