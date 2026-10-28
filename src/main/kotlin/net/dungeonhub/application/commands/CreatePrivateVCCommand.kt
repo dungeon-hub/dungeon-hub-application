@@ -13,6 +13,7 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.Video
+import kotlinx.coroutines.CancellationException
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
@@ -37,23 +38,25 @@ class CreatePrivateVCCommand : Extension() {
                     allowInDms = false
 
                     action {
-                        val guild = guild
-                        val everyoneRole = guild!!.id
-                        val rawVerifiedId = ServerProperty.VERIFIED_GROUP_ROLE.getValue(everyoneRole)
-                            ?: throw CommandExecutionException("VERIFIED_GROUP_ROLE has not been configured in ServerProperty")
-                        val verifiedRoleId = Snowflake(rawVerifiedId)
-                        val rawStaffId = ServerProperty.STAFF_GROUP_ROLE.getValue(everyoneRole)
-                            ?: throw CommandExecutionException("STAFF_GROUP_ROLE has not been configured in ServerProperty")
-                        val staffRoleId = Snowflake(rawStaffId)
-                        val rawAdminId = ServerProperty.ADMINISTRATION_GROUP_ROLE.getValue(everyoneRole)
-                            ?: throw CommandExecutionException("ADMINISTRATION_GROUP_ROLE has not been configured in ServerProperty")
-                        val adminRoleId = Snowflake(rawAdminId)
-                        val rawCategoryString: String? = ServerProperty.VC_CREATE_CATEGORY.getValue(everyoneRole)
-                        val categoryId: Snowflake? = rawCategoryString?.let { Snowflake(it) }
-
                         try {
-                            val voiceChannel = guild.createVoiceChannel(arguments.name) {
+                            val everyoneRole = guild!!.id
 
+                            val rawVerifiedId = ServerProperty.VERIFIED_GROUP_ROLE.getValue(guild!!.id)
+                                ?: throw CommandExecutionException("VERIFIED_GROUP_ROLE has not been configured in ServerProperty")
+                            val verifiedRoleId = Snowflake(rawVerifiedId)
+
+                            val rawStaffId = ServerProperty.STAFF_GROUP_ROLE.getValue(guild!!.id)
+                                ?: throw CommandExecutionException("STAFF_GROUP_ROLE has not been configured in ServerProperty")
+                            val staffRoleId = Snowflake(rawStaffId)
+
+                            val rawAdminId = ServerProperty.ADMINISTRATION_GROUP_ROLE.getValue(guild!!.id)
+                                ?: throw CommandExecutionException("ADMINISTRATION_GROUP_ROLE has not been configured in ServerProperty")
+                            val adminRoleId = Snowflake(rawAdminId)
+
+                            val rawCategoryId = ServerProperty.VC_CREATE_CATEGORY.getValue(guild!!.id)
+                            val categoryId = rawCategoryId?.let { Snowflake(it) }
+
+                            val voiceChannel = guild!!.createVoiceChannel(arguments.name) {
                                 addRoleOverwrite(adminRoleId) {
                                     allowed += Permission.ViewChannel
                                     allowed += Permission.ManageChannels
@@ -105,7 +108,8 @@ class CreatePrivateVCCommand : Extension() {
                             respond {
                                 content = "${voiceChannel.mention} has been created successfully!"
                             }
-
+                        } catch (cancellationException: CancellationException) {
+                            throw cancellationException
                         } catch (exception: Exception) {
                             logger.error("Error while creating a private VC.", exception)
                             respond {
