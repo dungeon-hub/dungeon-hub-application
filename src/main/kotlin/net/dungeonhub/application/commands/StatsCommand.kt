@@ -17,7 +17,7 @@ import java.time.ZonedDateTime
 import kotlin.time.toKotlinDuration
 
 @LoadExtension
-class StatsCommand : Extension() {
+class StatsCommand : Extension() { // TODO maybe rework with the new global stats?
     override val name = "stats-command"
 
     override suspend fun setup() {
