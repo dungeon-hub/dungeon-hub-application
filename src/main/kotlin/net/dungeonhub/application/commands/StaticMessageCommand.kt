@@ -26,6 +26,7 @@ import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.EmbedColor
+import net.dungeonhub.application.enums.readableName
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.loader.LoadExtension
