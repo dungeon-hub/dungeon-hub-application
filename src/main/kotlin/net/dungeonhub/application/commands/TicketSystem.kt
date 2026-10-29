@@ -391,11 +391,19 @@ class TicketSystem : Extension() {
                         TicketPermissionCandidate.TicketClaimer
                     )
 
-                    if (claimerPermissions.isNotEmpty()) {
-                        ticketChannel.edit {
-                            keepOverwrites(ticketChannel)
-                            addChannelPermissions(arguments.target.id.value.toLong(), OverwriteType.Member, claimerPermissions)
+                    if (claimerPermissions.isEmpty()) {
+                        respond {
+                            addEmbed {
+                                description = "This ticket panel doesn't give the claimer any channel permissions, which added users would get as well."
+                                color(EmbedColor.Negative)
+                            }
                         }
+                        return@action
+                    }
+
+                    ticketChannel.edit {
+                        keepOverwrites(ticketChannel)
+                        addChannelPermissions(arguments.target.id.value.toLong(), OverwriteType.Member, claimerPermissions)
                     }
 
                     logTicketAction(guild!!, ticket) {

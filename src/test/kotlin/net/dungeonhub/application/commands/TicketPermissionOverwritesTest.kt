@@ -34,6 +34,7 @@ class TicketPermissionOverwritesTest {
     private val claimer = DiscordUserModel(200, null, null)
 
     private val standard = Permissions(listOf(Permission.ViewChannel, Permission.SendMessages, Permission.ReadMessageHistory))
+    private val hidden = Permissions(listOf(Permission.ViewChannel))
 
     @Test
     fun testOpenTicket() {
@@ -43,7 +44,7 @@ class TicketPermissionOverwritesTest {
         assertOverwrite(overwrites.getValue(10), OverwriteType.Role, standard)
         assertOverwrite(overwrites.getValue(20), OverwriteType.Role, standard)
         assertOverwrite(overwrites.getValue(100), OverwriteType.Member, standard)
-        assertOverwrite(overwrites.getValue(1), OverwriteType.Role, Permissions(), Permissions(listOf(Permission.ViewChannel)))
+        assertOverwrite(overwrites.getValue(1), OverwriteType.Role, Permissions(), hidden)
     }
 
     @Test
@@ -54,6 +55,7 @@ class TicketPermissionOverwritesTest {
         assertOverwrite(overwrites.getValue(20), OverwriteType.Role, standard)
         assertOverwrite(overwrites.getValue(100), OverwriteType.Member, standard)
         assertOverwrite(overwrites.getValue(200), OverwriteType.Member, standard)
+        assertOverwrite(overwrites.getValue(1), OverwriteType.Role, Permissions(), hidden)
     }
 
     @Test
@@ -62,12 +64,37 @@ class TicketPermissionOverwritesTest {
 
         assertFalse(100L in unclaimed)
         assertOverwrite(unclaimed.getValue(10), OverwriteType.Role, standard)
+        assertOverwrite(unclaimed.getValue(1), OverwriteType.Role, Permissions(), hidden)
 
         val claimed = overwrites(TicketState.Closed, claimer)
 
         assertFalse(10L in claimed)
         assertFalse(100L in claimed)
         assertOverwrite(claimed.getValue(200), OverwriteType.Member, standard)
+        assertOverwrite(claimed.getValue(1), OverwriteType.Role, Permissions(), hidden)
+    }
+
+    @Test
+    fun testClosedTicketUsesTheConfiguredCreatorPermissions() {
+        val permissions = TicketPanelPermissionsModel(
+            closed = mapOf(
+                TicketPermissionCandidate.TicketCreator to TicketCandidatePermissionsModel(
+                    channel = mapOf(
+                        DiscordChannelPermission.ViewChannel to true,
+                        DiscordChannelPermission.SendMessages to false
+                    )
+                )
+            )
+        ).resolved()
+
+        val overwrites = overwrites(TicketState.Closed, null, permissions)
+
+        assertOverwrite(
+            overwrites.getValue(100),
+            OverwriteType.Member,
+            Permissions(listOf(Permission.ViewChannel)),
+            Permissions(listOf(Permission.SendMessages))
+        )
     }
 
     @Test
