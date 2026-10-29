@@ -7,6 +7,7 @@ import com.google.gson.JsonPrimitive
 import dev.kord.common.entity.*
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.MemberBehavior
+import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
@@ -229,6 +230,13 @@ class TicketSystem : Extension() {
                     if(!ticket.ticketPanel.closeable) {
                         respond {
                             embeds = mutableListOf(TicketDeleteListener.deleteTicket(ticket, member!!.asMember(), event.interaction.channel.asChannelOf<TextChannel>()))
+                        }
+                        return@action
+                    }
+
+                    checkClosedTicketLimit(member!!, ticket)?.let { embed ->
+                        respond {
+                            embeds = mutableListOf(embed)
                         }
                         return@action
                     }
@@ -640,14 +648,63 @@ class TicketSystem : Extension() {
 
         // TODO check
         suspend fun Member.isAllowedToClaim(ticket: TicketModel): Boolean {
+            return isTicketStaff(ticket.ticketPanel)
+        }
+
+        suspend fun Member.isTicketStaff(ticketPanel: TicketPanelModel): Boolean {
             if (hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)) return true
 
-            if (ticket.ticketPanel.supportRoles.any { roleIds.contains(Snowflake(it.id)) }
-                || ticket.ticketPanel.additionalRoles.any { roleIds.contains(Snowflake(it.id)) }) {
-                return true
-            }
+            return ticketPanel.supportRoles.any { roleIds.contains(Snowflake(it.id)) }
+                    || ticketPanel.additionalRoles.any { roleIds.contains(Snowflake(it.id)) }
+        }
 
-            return false
+        /**
+         * Checks whether the user is allowed to open another ticket in the given panel, staff members are excluded from the limit.
+         * @return an embed explaining why the user can't open a ticket, or null if the user is allowed to.
+         */
+        suspend fun checkOpenTicketLimit(user: UserBehavior, ticketPanel: TicketPanelModel): EmbedBuilder? {
+            val limit = ticketPanel.openTicketLimit ?: return null
+
+            val member = user.asMember(Snowflake(ticketPanel.discordServer.id))
+
+            if (member.isTicketStaff(ticketPanel)) return null
+
+            val openTickets = TicketConnection[member.guildId.value.toLong(), ticketPanel].authenticated()
+                .countTicketsByUser(member.id.value.toLong(), TicketState.Open) ?: return null
+
+            if (openTickets < limit) return null
+
+            return buildEmbed {
+                description = "You already have $openTickets open ${ticketPanel.displayName ?: ticketPanel.name} " +
+                        "ticket${if (openTickets == 1L) "" else "s"}, which is the limit for this panel.\n" +
+                        "Please use your existing ticket instead."
+                color(EmbedColor.Negative)
+            }
+        }
+
+        /**
+         * Checks whether the member is allowed to close the given ticket.
+         * The limit is applied to the closed tickets of the ticket creator, staff members are excluded from it.
+         * @return an embed explaining why the ticket can't be closed, or null if the member is allowed to close it.
+         */
+        suspend fun checkClosedTicketLimit(member: MemberBehavior, ticket: TicketModel): EmbedBuilder? {
+            val ticketPanel = ticket.ticketPanel
+            val limit = ticketPanel.closedTicketLimit ?: return null
+
+            if (member.asMember().isTicketStaff(ticketPanel)) return null
+
+            val closedTickets = TicketConnection[member.guildId.value.toLong(), ticketPanel].authenticated()
+                .countTicketsByUser(ticket.user.id, TicketState.Closed) ?: return null
+
+            if (closedTickets < limit) return null
+
+            return buildEmbed {
+                description = "This ticket can't be closed, as <@${ticket.user.id}> already has $closedTickets closed " +
+                        "${ticketPanel.displayName ?: ticketPanel.name} ticket${if (closedTickets == 1L) "" else "s"}, " +
+                        "which is the limit for this panel.\n" +
+                        "Please wait for a staff member to handle this ticket."
+                color(EmbedColor.Negative)
+            }
         }
 
         // TODO check
