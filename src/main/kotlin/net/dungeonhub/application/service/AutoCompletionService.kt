@@ -9,7 +9,6 @@ import net.dungeonhub.application.enums.KnownStaticResource
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.connection.*
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
-import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.carry_tier.CarryTierModel
 import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.mojang.connection.MojangConnection
@@ -61,67 +60,6 @@ object AutoCompletionService {
                         )
                     } ?: listOf()
             )
-        }
-    }
-
-    val carryTierFromTicket: AutoCompleteCallback = { event ->
-        val guildId = event.getGuildId()
-
-        val ticket = DiscordServerConnection.authenticated().findTickets(guildId, channelId = channel.id.value.toLong())?.firstOrNull()
-
-        ticket?.let { getCarryTierFromTicket(it) }?.let { ticketCarryTier ->
-            suggest(
-                CarryTierConnection[ticketCarryTier.carryType].authenticated()
-                    .getAllCarryTiers()
-                    ?.filter { carryTier ->
-                        focusedOption.value.isEmpty()
-                                || (carryTier.identifier.contains(focusedOption.value, true)
-                                || carryTier.displayName.contains(focusedOption.value, true))
-                    }
-                    ?.map { carryTier ->
-                        Choice.StringChoice(
-                            name = carryTier.displayName,
-                            value = carryTier.identifier,
-                            nameLocalizations = Optional()
-                        )
-                    }?.take(25) ?: listOf()
-            )
-        }
-    }
-
-    val carryDifficultyFromTicketTier: AutoCompleteCallback = { event ->
-        val allOptions = event.interaction.command.options
-
-        val carryTier: String? = allOptions.filter { entry ->
-            entry.key.equals(CommonArguments.CarryTier.name.translate(), ignoreCase = true)
-        }.values.firstOrNull()?.value as String?
-
-        val guildId = event.getGuildId()
-
-        val ticketCarryTier = DiscordServerConnection.authenticated().findTickets(guildId, channelId = channel.id.value.toLong())?.firstOrNull()?.let { getCarryTierFromTicket(it) }
-
-        if (carryTier != null && ticketCarryTier != null) {
-            val carryTierModel = CarryTierConnection[ticketCarryTier.carryType].authenticated()
-                .findCarryTierByString(carryTier)
-
-            carryTierModel?.let {
-                suggest(
-                    CarryDifficultyConnection[it].authenticated()
-                        .getAllCarryDifficulties()
-                        ?.filter { carryDifficulty ->
-                            focusedOption.value.isEmpty()
-                                    || (carryDifficulty.identifier.contains(focusedOption.value, true)
-                                    || carryDifficulty.displayName.contains(focusedOption.value, true))
-                        }
-                        ?.map { carryDifficulty ->
-                            Choice.StringChoice(
-                                name = carryDifficulty.displayName,
-                                value = carryDifficulty.identifier,
-                                nameLocalizations = Optional()
-                            )
-                        } ?: listOf()
-                )
-            }
         }
     }
 

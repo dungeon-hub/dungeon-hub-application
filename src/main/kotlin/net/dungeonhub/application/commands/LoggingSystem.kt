@@ -41,6 +41,7 @@ import net.dungeonhub.application.misc.LoggedQueueEntry
 import net.dungeonhub.application.service.*
 import net.dungeonhub.connection.CarryDifficultyConnection
 import net.dungeonhub.connection.CarryTierConnection
+import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.QueueConnection
 import net.dungeonhub.connection.ScoreConnection
@@ -198,12 +199,17 @@ class LoggingSystem : Extension() {
                 respond {
                     val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = channel.id.value.toLong())?.firstOrNull()
 
-                    val ticketCarryTier = ticket?.ticketPanel?.relatedCarryTier
-                        ?: throw CommandExecutionWarning("Please use this in a ticket connected to a carry tier. If you think this is incorrect, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) about setting up the bot on [the dashboard](https://dashboard.dungeon-hub.net/).")
+                    if (ticket == null) {
+                        throw CommandExecutionWarning("Please use this in a ticket.")
+                    }
 
-                    val carryTier = CarryTierConnection[ticketCarryTier.carryType].authenticated()
+                    val carryType = CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                        .findCarryTypeByString(arguments.carryType)
+                        ?: throw InvalidOptionException("carry-type", "Couldn't find this carry type.")
+
+                    val carryTier = CarryTierConnection[carryType].authenticated()
                         .findCarryTierByString(arguments.carryTier)
-                        ?: throw InvalidOptionException("carry-tier", "Couldn't find a carry tier under the carry type of this ticket.")
+                        ?: throw InvalidOptionException("carry-tier", "Couldn't find a carry tier under this carry type.")
 
                     val alreadyPresentQueue = QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
                         channel.id.value.toLong(),
@@ -633,16 +639,23 @@ class LoggingSystem : Extension() {
     }
 
     class LogOtherArguments : Arguments() {
+        val carryType by string {
+            name = CommonArguments.CarryType.name
+            description = LogOther.Arguments.CarryType.description
+            maxLength = 30
+            autoCompleteCallback = AutoCompletionService.carryType
+        }
+
         val carryTier by string {
             name = CommonArguments.CarryTier.name
             description = LogOther.Arguments.CarryTier.description
-            autoCompleteCallback = AutoCompletionService.carryTierFromTicket
+            autoCompleteCallback = AutoCompletionService.carryTier
         }
 
         val carryDifficulty by string {
             name = CommonArguments.CarryDifficulty.name
             description = LogOther.Arguments.CarryDifficulty.description
-            autoCompleteCallback = AutoCompletionService.carryDifficultyFromTicketTier
+            autoCompleteCallback = AutoCompletionService.carryDifficulty
         }
 
         val carryAmount by int {
