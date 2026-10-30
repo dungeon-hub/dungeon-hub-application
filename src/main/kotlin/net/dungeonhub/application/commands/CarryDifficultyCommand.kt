@@ -18,7 +18,6 @@ import net.dungeonhub.connection.CarryTierConnection
 import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.i18n.Translations.Command.CarryDifficulty
 import net.dungeonhub.i18n.Translations.CommonArguments
-import net.dungeonhub.model.carry_difficulty.BulkPriceModel
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyCreationModel
 import java.util.*
 
@@ -170,12 +169,8 @@ class CarryDifficultyCommand : Extension() {
                                     "That carry difficulty doesn't exist"
                                 )
 
-                        if (arguments.displayName == null && arguments.price == null && arguments.score == null && arguments.bulkAmount == null && arguments.bulkPrice == null && arguments.thumbnailUrl == null && arguments.priceName == null) {
+                        if (arguments.displayName == null && arguments.price == null && arguments.score == null && arguments.thumbnailUrl == null && arguments.priceName == null) {
                             throw CommandExecutionWarning("Please provide something you want to edit.")
-                        }
-
-                        if ((arguments.bulkAmount == null) != (arguments.bulkPrice == null)) {
-                            throw CommandExecutionWarning("Please provide both the bulk amount and the bulk price.")
                         }
 
                         val updateModel = carryDifficulty.getUpdateModel()
@@ -190,14 +185,6 @@ class CarryDifficultyCommand : Extension() {
 
                         if (arguments.score != null) {
                             updateModel.score = arguments.score
-                        }
-
-                        val bulkAmount = arguments.bulkAmount
-                        val bulkPrice = arguments.bulkPrice
-
-                        if (bulkAmount != null && bulkPrice != null) {
-                            updateModel.bulkPrices = carryDifficulty.bulkPrices
-                                .filter { it.amount != bulkAmount } + BulkPriceModel(bulkAmount, bulkPrice)
                         }
 
                         if (arguments.thumbnailUrl != null) {
@@ -239,7 +226,7 @@ class CarryDifficultyCommand : Extension() {
                                     "That carry difficulty doesn't exist"
                                 )
 
-                        if (!arguments.thumbnailUrl && !arguments.bulkPrices && arguments.bulkAmount == null && !arguments.priceName) {
+                        if (!arguments.thumbnailUrl && !arguments.priceName) {
                             throw CommandExecutionWarning("Please provide something you want to reset.")
                         }
 
@@ -247,19 +234,6 @@ class CarryDifficultyCommand : Extension() {
 
                         if (arguments.thumbnailUrl) {
                             updateModel.thumbnailUrl = null
-                        }
-
-                        if (arguments.bulkPrices) {
-                            updateModel.bulkPrices = emptyList()
-                        } else if (arguments.bulkAmount != null) {
-                            if (carryDifficulty.bulkPrices.none { it.amount == arguments.bulkAmount }) {
-                                throw InvalidOptionException(
-                                    "bulk-amount",
-                                    "This carry difficulty has no bulk price for that amount."
-                                )
-                            }
-
-                            updateModel.bulkPrices = carryDifficulty.bulkPrices.filter { it.amount != arguments.bulkAmount }
                         }
 
                         if (arguments.priceName) {
@@ -381,19 +355,6 @@ class CarryDifficultyCommand : Extension() {
             maxValue = 500
         }
 
-        val bulkAmount by optionalInt {
-            name = CarryDifficulty.Edit.Arguments.BulkAmount.name
-            description = CarryDifficulty.Edit.Arguments.BulkAmount.description
-            minValue = 1
-            maxValue = 500
-        }
-
-        val bulkPrice by optionalInt {
-            name = CarryDifficulty.Edit.Arguments.BulkPrice.name
-            description = CarryDifficulty.Edit.Arguments.BulkPrice.description
-            minValue = 1
-        }
-
         val thumbnailUrl by optionalString {
             name = CarryDifficulty.Edit.Arguments.ThumbnailUrl.name
             description = CarryDifficulty.Edit.Arguments.ThumbnailUrl.description
@@ -432,20 +393,9 @@ class CarryDifficultyCommand : Extension() {
             description = CarryDifficulty.Reset.Arguments.ThumbnailUrl.description
         }
 
-        val bulkPrices by boolean {
-            name = CarryDifficulty.Reset.Arguments.BulkPrices.name
-            description = CarryDifficulty.Reset.Arguments.BulkPrices.description
-        }
-
         val priceName by boolean {
             name = CarryDifficulty.Reset.Arguments.PriceName.name
             description = CarryDifficulty.Reset.Arguments.PriceName.description
-        }
-
-        val bulkAmount by optionalInt {
-            name = CarryDifficulty.Reset.Arguments.BulkAmount.name
-            description = CarryDifficulty.Reset.Arguments.BulkAmount.description
-            minValue = 1
         }
     }
 }
