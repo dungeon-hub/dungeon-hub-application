@@ -66,8 +66,6 @@ class CarryDifficultyCommand : Extension() {
                             displayName = arguments.displayName,
                             price = arguments.price,
                             score = arguments.score,
-                            bulkAmount = null,
-                            bulkPrice = null,
                             thumbnailUrl = null,
                             priceName = null
                         )
@@ -171,7 +169,7 @@ class CarryDifficultyCommand : Extension() {
                                     "That carry difficulty doesn't exist"
                                 )
 
-                        if (arguments.displayName == null && arguments.price == null && arguments.score == null && arguments.bulkAmount == null && arguments.bulkPrice == null && arguments.thumbnailUrl == null && arguments.priceName == null) {
+                        if (arguments.displayName == null && arguments.price == null && arguments.score == null && arguments.thumbnailUrl == null && arguments.priceName == null) {
                             throw CommandExecutionWarning("Please provide something you want to edit.")
                         }
 
@@ -187,14 +185,6 @@ class CarryDifficultyCommand : Extension() {
 
                         if (arguments.score != null) {
                             updateModel.score = arguments.score
-                        }
-
-                        if (arguments.bulkAmount != null) {
-                            updateModel.bulkAmount = arguments.bulkAmount
-                        }
-
-                        if (arguments.bulkPrice != null) {
-                            updateModel.bulkPrice = arguments.bulkPrice
                         }
 
                         if (arguments.thumbnailUrl != null) {
@@ -236,7 +226,7 @@ class CarryDifficultyCommand : Extension() {
                                     "That carry difficulty doesn't exist"
                                 )
 
-                        if (!arguments.thumbnailUrl && !arguments.bulkAmount && !arguments.bulkPrice && !arguments.priceName) {
+                        if (!arguments.thumbnailUrl && !arguments.priceName) {
                             throw CommandExecutionWarning("Please provide something you want to reset.")
                         }
 
@@ -246,20 +236,12 @@ class CarryDifficultyCommand : Extension() {
                             updateModel.thumbnailUrl = null
                         }
 
-                        if (arguments.bulkAmount) {
-                            updateModel.bulkAmount = null
-                        }
-
-                        if (arguments.bulkPrice) {
-                            updateModel.bulkPrice = null
-                        }
-
                         if (arguments.priceName) {
                             updateModel.priceName = null
                         }
 
                         val updatedCarryDifficulty =
-                            CarryDifficultyConnection[carryTier].authenticated().updateCarryDifficulty(carryTier.id, updateModel)
+                            CarryDifficultyConnection[carryTier].authenticated().updateCarryDifficulty(carryDifficulty.id, updateModel)
                                 ?: throw CommandExecutionWarning("Couldn't update carry difficulty.")
 
                         val embed = ApplicationService.getCarryDifficultyEmbed(updatedCarryDifficulty)
@@ -373,19 +355,6 @@ class CarryDifficultyCommand : Extension() {
             maxValue = 500
         }
 
-        val bulkAmount by optionalInt {
-            name = CarryDifficulty.Edit.Arguments.BulkAmount.name
-            description = CarryDifficulty.Edit.Arguments.BulkAmount.description
-            minValue = 1
-            maxValue = 500
-        }
-
-        val bulkPrice by optionalInt {
-            name = CarryDifficulty.Edit.Arguments.BulkPrice.name
-            description = CarryDifficulty.Edit.Arguments.BulkPrice.description
-            minValue = 1
-        }
-
         val thumbnailUrl by optionalString {
             name = CarryDifficulty.Edit.Arguments.ThumbnailUrl.name
             description = CarryDifficulty.Edit.Arguments.ThumbnailUrl.description
@@ -422,16 +391,6 @@ class CarryDifficultyCommand : Extension() {
         val thumbnailUrl by boolean {
             name = CarryDifficulty.Reset.Arguments.ThumbnailUrl.name
             description = CarryDifficulty.Reset.Arguments.ThumbnailUrl.description
-        }
-
-        val bulkPrice by boolean {
-            name = CarryDifficulty.Reset.Arguments.BulkPrice.name
-            description = CarryDifficulty.Reset.Arguments.BulkPrice.description
-        }
-
-        val bulkAmount by boolean {
-            name = CarryDifficulty.Reset.Arguments.BulkAmount.name
-            description = CarryDifficulty.Reset.Arguments.BulkAmount.description
         }
 
         val priceName by boolean {

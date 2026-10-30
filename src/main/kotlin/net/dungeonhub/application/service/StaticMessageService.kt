@@ -418,7 +418,7 @@ object StaticMessageService : StartupListener {
         val description = title + priceDescription + if (carryDifficulties.isNotEmpty()) {
             carryDifficulties.joinToString("\n") { carryDifficulty ->
                 val result = StringBuilder()
-                if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
+                if (carryDifficulty.bulkPrices.isNotEmpty()) {
                     result.append("\n")
                 }
 
@@ -432,11 +432,11 @@ object StaticMessageService : StartupListener {
 
                 result.append(priceText)
 
-                if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
+                for (bulkPrice in carryDifficulty.bulkPrices) {
                     result.append("\n\\*")
-                        .append(FormattingService.makeNumberReadable(carryDifficulty.bulkPrice!!.toLong()))
+                        .append(FormattingService.makeNumberReadable(bulkPrice.price.toLong()))
                         .append(" per carry if you buy ")
-                        .append(carryDifficulty.bulkAmount)
+                        .append(bulkPrice.amount)
                         .append("+ carries.")
                 }
                 result
