@@ -23,7 +23,6 @@ import net.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.client.DungeonHubClient
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.i18n.Translations.Command.Cdn
-import kotlin.time.ExperimentalTime
 
 /**
  * A command to access the CDN using the slash command /cdn.
@@ -33,7 +32,6 @@ import kotlin.time.ExperimentalTime
  * - `static`: Get a static file from the CDN.
  */
 @LoadExtension
-@OptIn(ExperimentalTime::class)
 class CdnCommand : Extension() {
     override val name = "cdn-command"
     private val allowedUsers = listOf(
