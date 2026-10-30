@@ -9,6 +9,7 @@ import net.dungeonhub.application.enums.KnownStaticResource
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.connection.*
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
+import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.carry_tier.CarryTierModel
 import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.mojang.connection.MojangConnection
@@ -68,7 +69,7 @@ object AutoCompletionService {
 
         val ticket = DiscordServerConnection.authenticated().findTickets(guildId, channelId = channel.id.value.toLong())?.firstOrNull()
 
-        ticket?.ticketPanel?.relatedCarryTier?.let { ticketCarryTier ->
+        ticket?.let { getCarryTierFromTicket(it) }?.let { ticketCarryTier ->
             suggest(
                 CarryTierConnection[ticketCarryTier.carryType].authenticated()
                     .getAllCarryTiers()
@@ -92,12 +93,12 @@ object AutoCompletionService {
         val allOptions = event.interaction.command.options
 
         val carryTier: String? = allOptions.filter { entry ->
-            entry.key.equals("carry-tier", ignoreCase = true)
+            entry.key.equals(CommonArguments.CarryTier.name.translate(), ignoreCase = true)
         }.values.firstOrNull()?.value as String?
 
         val guildId = event.getGuildId()
 
-        val ticketCarryTier = DiscordServerConnection.authenticated().findTickets(guildId, channelId = channel.id.value.toLong())?.firstOrNull()?.ticketPanel?.relatedCarryTier
+        val ticketCarryTier = DiscordServerConnection.authenticated().findTickets(guildId, channelId = channel.id.value.toLong())?.firstOrNull()?.let { getCarryTierFromTicket(it) }
 
         if (carryTier != null && ticketCarryTier != null) {
             val carryTierModel = CarryTierConnection[ticketCarryTier.carryType].authenticated()
