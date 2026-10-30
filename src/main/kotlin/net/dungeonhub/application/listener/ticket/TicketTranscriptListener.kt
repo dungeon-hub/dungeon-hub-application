@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonSyntaxException
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
@@ -26,7 +27,7 @@ import io.ktor.utils.io.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.commands.TicketSystem
-import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedToChangeState
+import net.dungeonhub.application.commands.TicketSystem.Companion.ticketActionError
 import net.dungeonhub.application.commands.TicketSystem.Companion.replacePlaceholders
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.applyJson
@@ -40,6 +41,7 @@ import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.enums.TicketState
 import net.dungeonhub.enums.TranscriptTarget
 import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.service.GsonService
@@ -61,25 +63,19 @@ class TicketTranscriptListener : Extension() {
 
                 val ticket = DiscordServerConnection.authenticated().findTickets(event.interaction.guildId.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
 
-                if(ticket == null) {
+                val error = event.interaction.user.ticketActionError(ticket, setOf(TicketState.Deleted), "You're not allowed to generate a transcript here!")
+
+                if(error != null) {
                     response.respond {
                         addEmbed {
-                            description = "This isn't a ticket channel!"
+                            description = error
                             color(EmbedColor.Negative)
                         }
                     }
                     return@action
                 }
 
-                if(!event.interaction.user.isAllowedToChangeState(ticket)) {
-                    response.respond {
-                        addEmbed {
-                            description = "You're not allowed to generate a transcript here!"
-                            color(EmbedColor.Negative)
-                        }
-                    }
-                    return@action
-                }
+                ticket!!
 
                 generateTranscript(
                     event.interaction.channel.asChannelOf<TextChannel>(),
@@ -320,6 +316,22 @@ class TicketTranscriptListener : Extension() {
             }
         }
 
+        /**
+         * The panel's transcript channel, falling back to the server-wide transcripts channel.
+         */
+        suspend fun resolveTranscriptChannel(ticket: TicketModel, guild: GuildBehavior): GuildMessageChannel? = try {
+            ticket.ticketPanel.transcriptChannel?.let { transcriptChannel ->
+                guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(transcriptChannel.id))
+            } ?: ServerProperty.TRANSCRIPTS_CHANNEL.getValue(ticket.ticketPanel.discordServer.id)?.toLongOrNull()?.let {
+                guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(it))
+            }
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            logger.error("Error while trying to load the transcript channel.", exception)
+            null
+        }
+
         private suspend fun sendChannelTranscript(
             url: String?,
             transcriptInfoMessage: Message,
@@ -328,18 +340,7 @@ class TicketTranscriptListener : Extension() {
             requester: Member,
             channelOverride: GuildMessageChannel? = null
         ) {
-            val transcriptChannel = channelOverride ?: try {
-                ticket.ticketPanel.transcriptChannel?.let { transcriptChannel ->
-                    textChannel.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(transcriptChannel.id))
-                } ?: ServerProperty.TRANSCRIPTS_CHANNEL.getValue(ticket.ticketPanel.discordServer.id)?.toLongOrNull()?.let {
-                    textChannel.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(it))
-                }
-            } catch (exception: CancellationException) {
-                throw exception
-            } catch (exception: Exception) {
-                logger.error("Error while trying to load the transcript channel.", exception)
-                null
-            }
+            val transcriptChannel = channelOverride ?: resolveTranscriptChannel(ticket, textChannel.guild)
 
             if(transcriptChannel == null) {
                 transcriptInfoMessage.delete("Unknown transcript channel.")
