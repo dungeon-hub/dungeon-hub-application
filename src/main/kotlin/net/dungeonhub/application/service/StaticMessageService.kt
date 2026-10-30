@@ -53,7 +53,6 @@ import java.time.Instant
 import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
 @OnStart(priority = StartPriority.POST_BOT)
@@ -410,7 +409,6 @@ object StaticMessageService : StartupListener {
         return embeds
     }
 
-    @OptIn(ExperimentalTime::class)
     suspend fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder {
         val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().getAllCarryDifficulties() ?: listOf()
 
@@ -454,7 +452,6 @@ object StaticMessageService : StartupListener {
         }
     }
 
-    @OptIn(ExperimentalTime::class)
     private fun handleScoreLeaderboards(guildId: Long, leaderboards: List<ScoreLeaderboard>): MutableList<EmbedBuilder> {
         val embeds = mutableListOf<EmbedBuilder>()
 

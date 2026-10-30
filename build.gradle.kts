@@ -30,7 +30,7 @@ kordEx {
     jvmTarget = 25
 
     bot {
-        // See https://docs.kordex.dev/data-collection.html
+        // See https://docs.kordex.dev/bots/about/data-collection/
         dataCollection(DataCollection.Extra)
 
         mainClass = "net.dungeonhub.application.connection.DiscordConnection"
