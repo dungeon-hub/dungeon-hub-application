@@ -152,10 +152,6 @@ class StaticMessageCommand: Extension() {
                             color(EmbedColor.Positive)
                         }
                     }
-
-                    updatedStaticMessage?.let {
-                        StaticMessageService.updateStaticMessage(it)
-                    }
                 }
             }
 
@@ -180,10 +176,6 @@ class StaticMessageCommand: Extension() {
                             title = "Updated Static Message #${updatedStaticMessage?.id}"
                             color(EmbedColor.Positive)
                         }
-                    }
-
-                    updatedStaticMessage?.let {
-                        StaticMessageService.updateStaticMessage(it)
                     }
                 }
             }
@@ -219,10 +211,7 @@ class StaticMessageCommand: Extension() {
                             title = "Edited Static Message #${updatedStaticMessage.id}"
                             color(EmbedColor.Positive)
                         }
-                    }
-
-                    StaticMessageService.updateStaticMessage(updatedStaticMessage)
-                }
+                    }                }
             }
 
             ephemeralMessageCommand {

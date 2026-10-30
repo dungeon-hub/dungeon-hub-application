@@ -39,19 +39,25 @@ import net.dungeonhub.application.misc.ScoreLeaderboard
 import net.dungeonhub.application.service.ApplicationService.embed
 import net.dungeonhub.application.service.ApplicationService.footer
 import net.dungeonhub.connection.*
+import net.dungeonhub.enums.ChangeAction
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.StaticMessageType
 import net.dungeonhub.hypixel.service.FormattingService
+import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_tier.CarryTierModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
+import net.dungeonhub.model.change.ChangeEventModel
 import net.dungeonhub.model.reputation.ReputationLeaderboardModel
+import net.dungeonhub.model.reputation.ReputationModel
 import net.dungeonhub.model.reputation.ReputationSumModel
+import net.dungeonhub.model.score.ScoreModel
 import net.dungeonhub.model.static_message.StaticMessageModel
+import net.dungeonhub.model.ticket_panel.TicketPanelModel
 import net.dungeonhub.service.GsonService
+import net.dungeonhub.structure.model.Model
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.ConcurrentLinkedDeque
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
@@ -73,19 +79,14 @@ object StaticMessageService : StartupListener {
 
         scheduler = DhScheduler()
 
-        val refreshAllTask = scheduler.schedule(4.hours, startNow = false, name = "Static-Message-Schedule", repeat = true) {
-            refreshAllStaticMessages()
-        }
-
+        // all static messages are refreshed by the ChangeListenerService whenever it connects to the change stream
         val refreshScheduleTask = scheduler.schedule(15.seconds, startNow = false, name = "Static-Message-Update-Scheduler", repeat = true) {
             staticMessageUpdateWave()
         }
 
         scheduler.launch {
             delay(20.seconds)
-            refreshAllTask.callNow()
             refreshScheduleTask.callNow()
-            refreshAllTask.start()
             refreshScheduleTask.start()
         }
     }
@@ -102,12 +103,32 @@ object StaticMessageService : StartupListener {
         for(staticMessage in staticMessages) {
             if(!staticMessage.active) continue
 
+            // a pending update of the same message is replaced, as it would only refresh the message twice
+            staticMessageUpdates.removeIf { it.id == staticMessage.id }
             staticMessageUpdates.addLast(staticMessage)
         }
     }
 
     fun updateStaticMessage(staticMessage: StaticMessageModel) {
+        staticMessageUpdates.removeIf { it.id == staticMessage.id }
         staticMessageUpdates.addFirst(staticMessage)
+    }
+
+    /**
+     * Updates all static messages that are affected by the given change.
+     */
+    suspend fun onChange(change: ChangeEventModel<out Model>) {
+        val server = change.serverId ?: return
+
+        when (val data = change.data) {
+            is StaticMessageModel -> if (change.action != ChangeAction.Deleted) updateStaticMessage(data)
+            is CarryTypeModel -> updateScoreLeaderboard(listOf(data))
+            is ScoreModel -> data.carryType?.let { updateScoreLeaderboard(listOf(it)) }
+            is CarryTierModel -> updateStaticMessages(server, StaticMessageType.PriceMessage, listOf(data.id))
+            is CarryDifficultyModel -> updateStaticMessages(server, StaticMessageType.PriceMessage, listOf(data.carryTier.id))
+            is TicketPanelModel -> updateStaticMessages(server, StaticMessageType.TicketPanel, listOf(data.id))
+            is ReputationModel -> updateStaticMessages(server, StaticMessageType.ReputationLeaderboard, null)
+        }
     }
 
     suspend fun updateScoreLeaderboard(carryTypes: List<CarryTypeModel>) {

@@ -1,10 +1,8 @@
 package net.dungeonhub.application.service
 
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.channel.Category
 import dev.kord.core.entity.channel.GuildChannel
-import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.event.channel.ChannelCreateEvent
 import dev.kord.core.event.channel.ChannelDeleteEvent
@@ -17,8 +15,6 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.connection.DiscordChannelConnection
-import net.dungeonhub.connection.QueueConnection
-import net.dungeonhub.enums.QueueStep
 import net.dungeonhub.model.discord_channel.DiscordChannelCreationModel
 import net.dungeonhub.model.discord_channel.DiscordChannelUpdateModel
 import kotlin.time.Duration.Companion.seconds
@@ -35,10 +31,6 @@ class ChannelService : Extension() {
         }
 
         scheduler = DhScheduler()
-
-        scheduler.schedule(30.seconds, startNow = true, name = "Send-Carry-Queue-Schedule", repeat = true) {
-            sendUnnotifiedCarryQueues()
-        }
 
         scheduler.schedule(30.seconds, startNow = true, name = "Update-Channel-State-Schedule", repeat = false) {
             syncChannelNames()
@@ -107,28 +99,6 @@ class ChannelService : Extension() {
 
     override suspend fun unload() {
         scheduler.cancel("Extension shutting down.")
-    }
-
-    suspend fun sendUnnotifiedCarryQueues() {
-        val carryQueues = QueueConnection.authenticated().getUnnotifiedQueues()?.takeIf { it.isNotEmpty() } ?: return
-
-        for(carryQueue in carryQueues) {
-            val channelId = carryQueue.relationId
-
-            if(carryQueue.queueStep == QueueStep.Transcript && channelId != null) {
-                val channel = DiscordConnection.bot.kordRef.getChannelOf<TextChannel>(Snowflake(channelId))
-
-                channel?.createMessage {
-                    embeds = mutableListOf(
-                        ApplicationService.loadTicketNotificationFromCarryQueue(carryQueue)
-                    )
-                }
-            }
-
-            val updateModel = carryQueue.getUpdateModel()
-            updateModel.notified = true
-            QueueConnection.authenticated().updateQueue(carryQueue.id, updateModel)
-        }
     }
 
     suspend fun syncChannelNames() {
