@@ -31,7 +31,6 @@ import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasPermission
-import kotlinx.coroutines.launch
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.HelpTopic
@@ -46,7 +45,6 @@ import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.connection.ReputationConnection
 import net.dungeonhub.enums.CntRequestType
-import net.dungeonhub.enums.StaticMessageType
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.model.cnt_request.CntRequestCreationModel
 import net.dungeonhub.model.cnt_request.CntRequestModel
@@ -569,14 +567,6 @@ class CntSystem : Extension() {
 
                     val reputation = reputationConnection.addReputation(repCreationModel)
 
-                    StaticMessageService.scheduler.launch {
-                        StaticMessageService.updateStaticMessages(
-                            guild!!.id.value.toLong(),
-                            StaticMessageType.ReputationLeaderboard,
-                            null
-                        )
-                    }
-
                     val totalReputation = reputationConnection.calculateReputation()
 
                     addEmbed {
@@ -743,14 +733,6 @@ class CntSystem : Extension() {
         )
 
         val reputation = reputationConnection.addReputation(repCreationModel)
-
-        StaticMessageService.scheduler.launch {
-            StaticMessageService.updateStaticMessages(
-                guild.id.value.toLong(),
-                StaticMessageType.ReputationLeaderboard,
-                null
-            )
-        }
 
         val totalReputation = reputationConnection.calculateReputation()
 

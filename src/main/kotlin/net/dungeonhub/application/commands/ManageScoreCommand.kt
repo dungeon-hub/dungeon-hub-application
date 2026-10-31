@@ -19,20 +19,15 @@ import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.i18n.toKey
-import dev.kordex.core.utils.scheduling.Scheduler
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.InvalidOptionException
 import net.dungeonhub.application.exceptions.MissingPermissionException
 import net.dungeonhub.application.loader.LoadExtension
-import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.application.service.PermissionService
-import net.dungeonhub.application.service.StaticMessageService
 import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.ScoreResetType
@@ -43,13 +38,9 @@ import net.dungeonhub.model.score.ScoreUpdateModel
 
 @LoadExtension
 class ManageScoreCommand : Extension() {
-    private lateinit var scheduler: Scheduler
-
     override val name = "manage-score-command"
 
     override suspend fun setup() {
-        scheduler = DhScheduler()
-
         publicSlashCommand {
             name = ManageScore.name
             description = ManageScore.description
@@ -118,10 +109,6 @@ class ManageScoreCommand : Extension() {
         }
     }
 
-    override suspend fun unload() {
-        scheduler.cancel("Extension shutting down.")
-    }
-
     private fun addRemove(
         event: ChatInputCommandInteractionCreateEvent,
         guild: GuildBehavior?,
@@ -160,10 +147,6 @@ class ManageScoreCommand : Extension() {
                 "${event.interaction.user.mention} edited the ${carryType.displayName}-score of ${arguments.user.mention}.\nThey ${(if (remove) "removed" else "added")} ${arguments.amount} score, the user now has $updatedScore score."
 
             embeds = mutableListOf(embed)
-        }
-
-        scheduler.launch {
-            StaticMessageService.updateScoreLeaderboard(listOf(carryType))
         }
 
         val embed = ApplicationService.embed

@@ -49,7 +49,6 @@ import net.dungeonhub.i18n.Translations.Command.Log
 import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.carry_queue.CarryQueueCreationModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
-import net.dungeonhub.model.carry_type.CarryTypeModel
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import kotlin.time.toKotlinInstant
@@ -631,7 +630,6 @@ class LoggingSystem : Extension() {
         }
 
         suspend fun logDirectly(carrierId: Long, queueEntries: List<CarryQueueModel>, server: GuildBehavior, approver: Long?) {
-            val carryTypes = mutableListOf<CarryTypeModel>()
             val loggedEntries = mutableListOf<LoggedQueueEntry>()
 
             for (group in compactQueueEntries(queueEntries)) {
@@ -654,7 +652,6 @@ class LoggingSystem : Extension() {
                     }
 
                     successfullyLogged.add(queueModel)
-                    carryTypes.add(queueModel.carryType)
 
                     latestScore = loggedCarryModel.scoreModels
                         .firstOrNull { it.scoreType == ScoreType.Default }
@@ -692,10 +689,6 @@ class LoggingSystem : Extension() {
             }
 
             sendLoggedDms(carrierId, loggedEntries, approver)
-
-            scheduler.launch {
-                StaticMessageService.updateScoreLeaderboard(carryTypes.distinctBy { it.id })
-            }
         }
     }
 }

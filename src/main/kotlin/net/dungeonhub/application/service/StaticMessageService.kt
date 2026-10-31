@@ -39,19 +39,26 @@ import net.dungeonhub.application.misc.ScoreLeaderboard
 import net.dungeonhub.application.service.ApplicationService.embed
 import net.dungeonhub.application.service.ApplicationService.footer
 import net.dungeonhub.connection.*
+import net.dungeonhub.enums.ChangeAction
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.StaticMessageType
 import net.dungeonhub.hypixel.service.FormattingService
+import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_tier.CarryTierModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
+import net.dungeonhub.model.change.ChangeEventModel
 import net.dungeonhub.model.reputation.ReputationLeaderboardModel
+import net.dungeonhub.model.reputation.ReputationModel
 import net.dungeonhub.model.reputation.ReputationSumModel
+import net.dungeonhub.model.score.ScoreModel
 import net.dungeonhub.model.static_message.StaticMessageModel
+import net.dungeonhub.model.ticket_panel.TicketPanelModel
 import net.dungeonhub.service.GsonService
+import net.dungeonhub.structure.model.Model
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
@@ -60,6 +67,12 @@ object StaticMessageService : StartupListener {
     private val logger = LoggerFactory.getLogger(StaticMessageService::class.java)
     lateinit var scheduler: Scheduler
     val staticMessageUpdates = ConcurrentLinkedDeque<StaticMessageModel>()
+
+    /**
+     * All static messages by their id. They are loaded whenever the change stream (re)connects without resuming,
+     * and kept up to date through the changes of the stream in the meantime.
+     */
+    private val knownStaticMessages = ConcurrentHashMap<Long, StaticMessageModel>()
 
     val reputationLeaderboardDescription by lazy {
         "Check `/help topic:reputation` to see how you can gain reputation.\n" +
@@ -73,19 +86,14 @@ object StaticMessageService : StartupListener {
 
         scheduler = DhScheduler()
 
-        val refreshAllTask = scheduler.schedule(4.hours, startNow = false, name = "Static-Message-Schedule", repeat = true) {
-            refreshAllStaticMessages()
-        }
-
+        // all static messages are refreshed by the ChangeListenerService whenever it connects to the change stream
         val refreshScheduleTask = scheduler.schedule(15.seconds, startNow = false, name = "Static-Message-Update-Scheduler", repeat = true) {
             staticMessageUpdateWave()
         }
 
         scheduler.launch {
             delay(20.seconds)
-            refreshAllTask.callNow()
             refreshScheduleTask.callNow()
-            refreshAllTask.start()
             refreshScheduleTask.start()
         }
     }
@@ -96,21 +104,57 @@ object StaticMessageService : StartupListener {
         refreshStaticMessage(currentWave)
     }
 
+    /**
+     * Reloads all static messages and refreshes the active ones.
+     */
     suspend fun refreshAllStaticMessages() {
-        val staticMessages = DiscordServerConnection.authenticated().findGlobalStaticMessages() ?: return
+        val loadedStaticMessages = DiscordServerConnection.authenticated().findGlobalStaticMessages() ?: return
 
-        for(staticMessage in staticMessages) {
+        knownStaticMessages.clear()
+        loadedStaticMessages.associateByTo(knownStaticMessages) { it.id }
+
+        for(staticMessage in loadedStaticMessages) {
             if(!staticMessage.active) continue
 
+            // a pending update of the same message is replaced, as it would only refresh the message twice
+            staticMessageUpdates.removeIf { it.id == staticMessage.id }
             staticMessageUpdates.addLast(staticMessage)
         }
     }
 
     fun updateStaticMessage(staticMessage: StaticMessageModel) {
+        staticMessageUpdates.removeIf { it.id == staticMessage.id }
         staticMessageUpdates.addFirst(staticMessage)
     }
 
-    suspend fun updateScoreLeaderboard(carryTypes: List<CarryTypeModel>) {
+    /**
+     * Updates all static messages that are affected by the given change.
+     */
+    fun onChange(change: ChangeEventModel<out Model>) {
+        val server = change.serverId ?: return
+
+        when (val data = change.data) {
+            is StaticMessageModel -> onStaticMessageChange(change.action, data)
+            is CarryTypeModel -> updateScoreLeaderboard(listOf(data))
+            is ScoreModel -> data.carryType?.let { updateScoreLeaderboard(listOf(it)) }
+            is CarryTierModel -> updateStaticMessages(server, StaticMessageType.PriceMessage, listOf(data.id))
+            is CarryDifficultyModel -> updateStaticMessages(server, StaticMessageType.PriceMessage, listOf(data.carryTier.id))
+            is TicketPanelModel -> updateStaticMessages(server, StaticMessageType.TicketPanel, listOf(data.id))
+            is ReputationModel -> updateStaticMessages(server, StaticMessageType.ReputationLeaderboard, null)
+        }
+    }
+
+    private fun onStaticMessageChange(action: ChangeAction, staticMessage: StaticMessageModel) {
+        if (action == ChangeAction.Deleted) {
+            knownStaticMessages.remove(staticMessage.id)
+            staticMessageUpdates.removeIf { it.id == staticMessage.id }
+        } else {
+            knownStaticMessages[staticMessage.id] = staticMessage
+            updateStaticMessage(staticMessage)
+        }
+    }
+
+    fun updateScoreLeaderboard(carryTypes: List<CarryTypeModel>) {
         for(carryType in carryTypes) {
             updateStaticMessages(carryType.server.id, StaticMessageType.ScoreLeaderboard, listOf(carryType.id))
         }
@@ -121,12 +165,10 @@ object StaticMessageService : StartupListener {
         }
     }
 
-    suspend fun updateStaticMessages(server: Long, staticMessageType: StaticMessageType, objectIds: List<Long>?) {
-        var staticMessages = StaticMessageConnection[server].authenticated().findStaticMessages(staticMessageType, null) ?: emptyList()
-
-        if(objectIds != null) {
-            staticMessages = staticMessages.filter { staticMessage -> staticMessage.objectIds.any { objectIds.contains(it) } }
-        }
+    fun updateStaticMessages(server: Long, staticMessageType: StaticMessageType, objectIds: List<Long>?) {
+        val staticMessages = knownStaticMessages.values
+            .filter { it.server.id == server && it.staticMessageType == staticMessageType }
+            .filter { staticMessage -> objectIds == null || staticMessage.objectIds.any { objectIds.contains(it) } }
 
         for(staticMessage in staticMessages) {
             updateStaticMessage(staticMessage)
