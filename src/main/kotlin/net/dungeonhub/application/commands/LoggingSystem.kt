@@ -46,6 +46,7 @@ import net.dungeonhub.connection.QueueConnection
 import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.QueueStep
 import net.dungeonhub.enums.ScoreType
+import net.dungeonhub.enums.TicketState
 import net.dungeonhub.i18n.Translations.Command.Log
 import net.dungeonhub.i18n.Translations.Command.LogOther
 import net.dungeonhub.i18n.Translations.CommonArguments
@@ -72,6 +73,10 @@ class LoggingSystem : Extension() {
 
                     val carryTier = ticket?.ticketPanel?.relatedCarryTier
                         ?: throw CommandExecutionWarning("Please use this in a ticket connected to a carry tier. If you think this is incorrect, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) about setting up the bot on [the dashboard](https://dashboard.dungeon-hub.net/).")
+
+                    if (ticket.state == TicketState.Closed || ticket.state == TicketState.Deleted) {
+                        throw CommandExecutionWarning("This ticket is already closed.")
+                    }
 
                     val alreadyPresentQueue = QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
                         channel.id.value.toLong(),
@@ -106,6 +111,12 @@ class LoggingSystem : Extension() {
                                             innerEmbed.description = "That log request was already cleared."
 
                                             embeds = mutableListOf(innerEmbed)
+
+                                            return@innerrespond
+                                        }
+
+                                        if (!PermissionService.mayManageServices(member!!.asMember()) && carryQueue.carrier.id != user.id.value.toLong()) {
+                                            embeds = mutableListOf(ApplicationService.getErrorEmbed(MissingPermissionException()))
 
                                             return@innerrespond
                                         }
@@ -202,6 +213,10 @@ class LoggingSystem : Extension() {
                         throw CommandExecutionWarning("Please use this in a ticket.")
                     }
 
+                    if (ticket.state == TicketState.Closed || ticket.state == TicketState.Deleted) {
+                        throw CommandExecutionWarning("This ticket is already closed.")
+                    }
+
                     val carryType = CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
                         .findCarryTypeByString(arguments.carryType)
                         ?: throw InvalidOptionException("carry-type", "Couldn't find this carry type.")
@@ -243,6 +258,12 @@ class LoggingSystem : Extension() {
                                             innerEmbed.description = "That log request was already cleared."
 
                                             embeds = mutableListOf(innerEmbed)
+
+                                            return@innerrespond
+                                        }
+
+                                        if (!PermissionService.mayManageServices(member!!.asMember()) && carryQueue.carrier.id != user.id.value.toLong()) {
+                                            embeds = mutableListOf(ApplicationService.getErrorEmbed(MissingPermissionException()))
 
                                             return@innerrespond
                                         }
