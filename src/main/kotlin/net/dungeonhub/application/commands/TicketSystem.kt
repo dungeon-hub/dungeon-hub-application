@@ -372,6 +372,33 @@ class TicketSystem : Extension() {
                         return@action
                     } }
 
+                    val transcriptChannel = overrideChannel ?: TicketTranscriptListener.resolveTranscriptChannel(ticket, ticketChannel!!.guild)
+                    val sendToUser = arguments.sendToUser != false
+
+                    val destination = resolveTranscriptDestination(
+                        channelRequested = arguments.channel != null,
+                        isStaff = requester.isTicketStaff(ticket),
+                        hasTranscriptChannel = transcriptChannel != null,
+                        sendToUser = sendToUser,
+                    )
+
+                    val target = when(destination) {
+                        is TranscriptDestination.Send -> destination.target
+                        TranscriptDestination.ChannelNotAllowed, TranscriptDestination.NoDestination -> {
+                            respond {
+                                addEmbed {
+                                    description = if(destination == TranscriptDestination.NoDestination) {
+                                        "There's no transcript channel configured. Choose a channel or allow sending the transcript to the ticket user."
+                                    } else {
+                                        "Only staff members can send a transcript to a specific channel!"
+                                    }
+                                    color(EmbedColor.Negative)
+                                }
+                            }
+                            return@action
+                        }
+                    }
+
                     if(overrideChannel != null && !requester.canPostIn(overrideChannel)) {
                         respond {
                             addEmbed {
@@ -382,22 +409,14 @@ class TicketSystem : Extension() {
                         return@action
                     }
 
-                    val transcriptChannel = overrideChannel ?: TicketTranscriptListener.resolveTranscriptChannel(ticket, ticketChannel!!.guild)
-                    val sendToUser = arguments.sendToUser != false
-
-                    val target = when {
-                        transcriptChannel == null && !sendToUser -> {
-                            respond {
-                                addEmbed {
-                                    description = "There's no transcript channel configured. Choose a channel or allow sending the transcript to the ticket user."
-                                    color(EmbedColor.Negative)
-                                }
+                    TicketTranscriptListener.transcriptCooldownError(requester, ticket)?.let { cooldownError ->
+                        respond {
+                            addEmbed {
+                                description = cooldownError
+                                color(EmbedColor.Negative)
                             }
-                            return@action
                         }
-                        transcriptChannel == null -> TranscriptTarget.User
-                        sendToUser -> TranscriptTarget.Both
-                        else -> TranscriptTarget.TranscriptChannel
+                        return@action
                     }
 
                     TicketTranscriptListener.generateTranscript(
@@ -408,9 +427,13 @@ class TicketSystem : Extension() {
                         channelOverride = transcriptChannel
                     )
 
+                    val destinationDescription = listOfNotNull(
+                        transcriptChannel?.mention?.takeIf { target.sendToTranscriptChannel },
+                        "DM to the ticket user".takeIf { target.sendToUser }
+                    ).joinToString(" and ")
+
                     logTicketAction(guild!!, ticket) {
-                        description = "Transcript for ticket #${ticket.id} requested by ${requester.mention} via command" +
-                                (transcriptChannel?.let { " (channel: ${it.mention}" + (if(sendToUser) ", DM to user)" else ")") } ?: " (DM to user)") + "."
+                        description = "Transcript for ticket #${ticket.id} requested by ${requester.mention} via command ($destinationDescription)."
                     }
 
                     respond {
@@ -719,6 +742,16 @@ class TicketSystem : Extension() {
             else -> null
         }
 
+        /**
+         * Admins, members who can manage channels, and the panel's support and additional roles.
+         */
+        suspend fun Member.isTicketStaff(ticket: TicketModel): Boolean {
+            if (hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)) return true
+
+            return ticket.ticketPanel.supportRoles.any { roleIds.contains(Snowflake(it.id)) }
+                || ticket.ticketPanel.additionalRoles.any { roleIds.contains(Snowflake(it.id)) }
+        }
+
         suspend fun Member.canPostIn(channel: GuildMessageChannel): Boolean {
             val (permissionChannel, sendPermission) = when(channel) {
                 is ThreadChannel -> channel.getParent() to Permission.SendMessagesInThreads
@@ -733,12 +766,7 @@ class TicketSystem : Extension() {
         // TODO this was initially just for closing the ticket - does that also count for reopening the ticket etc?
         // TODO is there any other situation in which some user might be allowed / disallowed to close a ticket?
         suspend fun Member.isAllowedToChangeState(ticket: TicketModel): Boolean {
-            if (hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)) return true
-
-            if (ticket.ticketPanel.supportRoles.any { roleIds.contains(Snowflake(it.id)) }
-                || ticket.ticketPanel.additionalRoles.any { roleIds.contains(Snowflake(it.id)) }) {
-                return true
-            }
+            if (isTicketStaff(ticket)) return true
 
             // TODO here, we assume that the ticket creator is allowed to close the ticket - that should be a setting
             return ticket.user.id == id.value.toLong()

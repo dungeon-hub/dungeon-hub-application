@@ -6,6 +6,7 @@ import com.google.gson.JsonSyntaxException
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.MemberBehavior
+import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
@@ -48,6 +49,7 @@ import net.dungeonhub.service.GsonService
 import net.dungeonhub.wrapper.kord.createTranscript
 import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
+import kotlin.time.Duration.Companion.minutes
 
 @LoadExtension
 class TicketTranscriptListener : Extension() {
@@ -77,6 +79,18 @@ class TicketTranscriptListener : Extension() {
 
                 ticket!!
 
+                val cooldownError = transcriptCooldownError(event.interaction.user, ticket)
+
+                if(cooldownError != null) {
+                    response.respond {
+                        addEmbed {
+                            description = cooldownError
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
                 generateTranscript(
                     event.interaction.channel.asChannelOf<TextChannel>(),
                     event.interaction.user,
@@ -100,6 +114,17 @@ class TicketTranscriptListener : Extension() {
 
     companion object {
         private val logger = LoggerFactory.getLogger(TicketTranscriptListener::class.java)
+        private val transcriptCooldown = TranscriptCooldown(1.minutes)
+
+        /**
+         * Applies the per-user, per-ticket cooldown for manual transcript requests.
+         * Returns the error to show, or null if the request may go ahead.
+         */
+        fun transcriptCooldownError(requester: UserBehavior, ticket: TicketModel): String? {
+            val remaining = transcriptCooldown.tryAcquire(requester.id.value.toLong(), ticket.id) ?: return null
+
+            return "You've already requested a transcript of this ticket. Please wait ${remaining.inWholeSeconds + 1} seconds."
+        }
 
         suspend fun generateTranscript(
             textChannel: TextChannel,
