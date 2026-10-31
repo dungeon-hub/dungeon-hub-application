@@ -18,7 +18,7 @@ import dev.kordex.core.extensions.event
 import dev.kordex.i18n.toKey
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.commands.TicketSystem
-import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedToChangeState
+import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedTo
 import net.dungeonhub.application.commands.TicketSystem.Companion.updateTicketPermissions
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.LoadExtension
@@ -27,6 +27,7 @@ import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.TicketConnection
+import net.dungeonhub.enums.TicketAction
 import net.dungeonhub.enums.TicketState
 import net.dungeonhub.model.ticket.TicketModel
 
@@ -71,7 +72,10 @@ class TicketCloseListener : Extension() {
                     return@action
                 }
 
-                if(!event.interaction.user.isAllowedToChangeState(ticket)) {
+                // without closing, the ticket is deleted directly
+                val closeAction = if (ticket.ticketPanel.closeable) TicketAction.Close else TicketAction.Delete
+
+                if(!event.interaction.user.isAllowedTo(closeAction, ticket)) {
                     response.respond {
                         addEmbed {
                             description = "You're not allowed to close this ticket!"

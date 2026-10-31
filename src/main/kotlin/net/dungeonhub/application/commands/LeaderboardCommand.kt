@@ -19,6 +19,8 @@ import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.getLocale
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.HelpTopic
+import net.dungeonhub.application.enums.getLeaderboardTitle
+import net.dungeonhub.application.enums.readableName
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.application.service.LeaderboardService
