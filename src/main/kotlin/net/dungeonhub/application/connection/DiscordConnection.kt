@@ -91,7 +91,7 @@ object DiscordConnection : StartupListener {
      * Method by the {@link StartupListener} interface, this is automatically executed on program launch.
      * This implementation starts the discord-bot.
      */
-    @OptIn(KordUnsafe::class, ExperimentalTime::class)
+    @OptIn(KordUnsafe::class)
     override suspend fun preStart() {
         bot = ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value!!) {
             dataCollectionMode = DataCollection.Extra
@@ -148,7 +148,6 @@ object DiscordConnection : StartupListener {
                                     "- [Mojang API](https://minecraft.wiki/w/Mojang_API)\n" +
                                     "- [Hypixel API](https://api.hypixel.net/)\n" +
                                     "- [Hypixel Safety API (by SBM)](https://hs.sbm.gg/)\n" +
-                                    "- [Scammer List (BlockHelper)](https://list.lenny.ie/)\n" +
                                     "-# We are not affiliated with any of the above services/companies"
                         }
                     }
@@ -252,7 +251,6 @@ fun User.getMutualServers(): Flow<Member> {
     }
 }
 
-@OptIn(ExperimentalTime::class)
 fun EmbedBuilder.copy(other: EmbedBuilder) {
     this.description = other.description
     this.title = other.title
@@ -333,7 +331,6 @@ fun EmbedBuilder.setAuthor(value: JsonElement) {
     }
 }
 
-@OptIn(ExperimentalTime::class)
 fun EmbedBuilder.applyJson(key: String, value: JsonElement) {
     when (key) {
         "title" -> title = value.asString
@@ -357,7 +354,6 @@ fun EmbedBuilder.applyJson(key: String, value: JsonElement) {
     }
 }
 
-@OptIn(ExperimentalTime::class)
 fun Embed.toBuilder(): EmbedBuilder {
     val embed = EmbedBuilder()
 
@@ -395,7 +391,6 @@ fun Field.toBuilder(): EmbedBuilder.Field {
     return field
 }
 
-@OptIn(ExperimentalTime::class)
 fun Embed.toModel(): EmbedModel {
     val embed = EmbedModel(
         title,

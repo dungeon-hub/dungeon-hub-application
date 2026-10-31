@@ -23,7 +23,7 @@ class LoggingSystemTest {
         val second = queue(id = 2, playerId = 102, time = Instant.parse("2026-01-01T10:01:00Z"))
         val third = queue(id = 3, playerId = 103, time = Instant.parse("2026-01-01T10:02:00Z"))
 
-        val groups = LoggingSystem.compactCarryEntries(listOf(first, second, third))
+        val groups = LoggingSystem.compactQueueEntries(listOf(first, second, third))
 
         assertEquals(1, groups.size)
         assertEquals(listOf(first, second, third), groups.single())
@@ -35,7 +35,7 @@ class LoggingSystemTest {
         val second = queue(id = 2, time = Instant.parse("2026-01-01T10:01:00Z"))
         val third = queue(id = 3, time = Instant.parse("2026-01-01T10:02:00Z"))
 
-        val groups = LoggingSystem.compactCarryEntries(listOf(third, first, second))
+        val groups = LoggingSystem.compactQueueEntries(listOf(third, first, second))
 
         assertEquals(listOf(first, second, third), groups.single())
     }
@@ -45,7 +45,7 @@ class LoggingSystemTest {
         val first = queue(id = 1, carrierId = 10)
         val second = queue(id = 2, carrierId = 11)
 
-        assertEquals(listOf(listOf(first), listOf(second)), LoggingSystem.compactCarryEntries(listOf(first, second)))
+        assertEquals(listOf(listOf(first), listOf(second)), LoggingSystem.compactQueueEntries(listOf(first, second)))
     }
 
     @Test
@@ -53,7 +53,7 @@ class LoggingSystemTest {
         val first = queue(id = 1, difficulty = difficulty(id = 1, displayName = "Floor One"))
         val second = queue(id = 2, difficulty = difficulty(id = 2, displayName = "Floor Two"))
 
-        assertEquals(listOf(listOf(first), listOf(second)), LoggingSystem.compactCarryEntries(listOf(first, second)))
+        assertEquals(listOf(listOf(first), listOf(second)), LoggingSystem.compactQueueEntries(listOf(first, second)))
     }
 
     @Test
@@ -64,13 +64,13 @@ class LoggingSystemTest {
 
         assertEquals(
             listOf(listOf(first), listOf(bulk), listOf(last)),
-            LoggingSystem.compactCarryEntries(listOf(first, bulk, last))
+            LoggingSystem.compactQueueEntries(listOf(first, bulk, last))
         )
     }
 
     @Test
     fun `an empty carry collection produces no groups`() {
-        assertEquals(emptyList(), LoggingSystem.compactCarryEntries(emptyList()))
+        assertEquals(emptyList(), LoggingSystem.compactQueueEntries(emptyList()))
     }
 
     @Test
@@ -87,7 +87,7 @@ class LoggingSystemTest {
             time = Instant.parse("2026-01-01T10:01:00Z")
         )
 
-        val embed = LoggingSystem.loadGroupedCarryEmbed(listOf(first, second))
+        val embed = LoggingSystem.loadGroupedCarryQueueEmbed(listOf(first, second), 42)
 
         assertEquals(Instant.parse("2026-01-01T10:01:00Z").toKotlinInstant(), embed.timestamp)
         assertEquals(EmbedColor.Information.color, embed.color)
@@ -96,6 +96,7 @@ class LoggingSystemTest {
         assertEquals("<@101>\n<@102>", embed.fields.single { it.name == "Players" }.value)
         assertEquals("<@10>", embed.fields.single { it.name == "Carrier" }.value)
         assertEquals("10", embed.fields.single { it.name == "Gained score" }.value)
+        assertEquals("<@42>", embed.fields.single { it.name == "Approved by" }.value)
         assertEquals(
             "[Click to open](https://example.test/transcript)",
             embed.fields.single { it.name == "Transcript-Link" }.value
@@ -106,12 +107,13 @@ class LoggingSystemTest {
     fun `grouped carry message uses singular player label and omits absent transcript`() {
         val carry = queue(id = 1, playerId = 101, amount = 3, attachmentLink = null)
 
-        val embed = LoggingSystem.loadGroupedCarryEmbed(listOf(carry))
+        val embed = LoggingSystem.loadGroupedCarryQueueEmbed(listOf(carry), null)
 
         assertEquals("<@101>", embed.fields.single { it.name == "Player" }.value)
         assertEquals("3", embed.fields.single { it.name == "Number of carries" }.value)
         assertEquals("15", embed.fields.single { it.name == "Gained score" }.value)
         assertNull(embed.fields.singleOrNull { it.name == "Players" })
+        assertNull(embed.fields.singleOrNull { it.name == "Approved by" })
         assertNull(embed.fields.singleOrNull { it.name == "Transcript-Link" })
     }
 
@@ -119,7 +121,7 @@ class LoggingSystemTest {
     fun `compaction retains the original queue model instances`() {
         val carry = queue(id = 1)
 
-        assertSame(carry, LoggingSystem.compactCarryEntries(listOf(carry)).single().single())
+        assertSame(carry, LoggingSystem.compactQueueEntries(listOf(carry)).single().single())
     }
 
     @Test
@@ -128,7 +130,7 @@ class LoggingSystemTest {
         val interruption = queue(id = 2, carrierId = 11, time = Instant.parse("2026-01-01T10:01:00Z"))
         val last = queue(id = 3, carrierId = 10, time = Instant.parse("2026-01-01T10:02:00Z"))
 
-        assertEquals(listOf(listOf(first), listOf(interruption), listOf(last)), LoggingSystem.compactCarryEntries(listOf(first, interruption, last)))
+        assertEquals(listOf(listOf(first), listOf(interruption), listOf(last)), LoggingSystem.compactQueueEntries(listOf(first, interruption, last)))
     }
 
     @Test
@@ -138,7 +140,7 @@ class LoggingSystemTest {
         val interruption = queue(id = 2, difficulty = difficulty(id = 2), time = Instant.parse("2026-01-01T10:01:00Z"))
         val last = queue(id = 3, difficulty = floorOne, time = Instant.parse("2026-01-01T10:02:00Z"))
 
-        assertEquals(3, LoggingSystem.compactCarryEntries(listOf(first, interruption, last)).size)
+        assertEquals(3, LoggingSystem.compactQueueEntries(listOf(first, interruption, last)).size)
     }
 
     @Test
@@ -147,7 +149,7 @@ class LoggingSystemTest {
         val first = queue(id = 2, time = Instant.parse("2026-01-01T10:01:00Z"))
         val second = queue(id = 3, time = Instant.parse("2026-01-01T10:02:00Z"))
 
-        assertEquals(listOf(listOf(bulk), listOf(first, second)), LoggingSystem.compactCarryEntries(listOf(bulk, first, second)))
+        assertEquals(listOf(listOf(bulk), listOf(first, second)), LoggingSystem.compactQueueEntries(listOf(bulk, first, second)))
     }
 
     @Test
@@ -156,7 +158,7 @@ class LoggingSystemTest {
         val second = queue(id = 2, time = Instant.parse("2026-01-01T10:01:00Z"))
         val bulk = queue(id = 3, amount = 4, time = Instant.parse("2026-01-01T10:02:00Z"))
 
-        assertEquals(listOf(listOf(first, second), listOf(bulk)), LoggingSystem.compactCarryEntries(listOf(first, second, bulk)))
+        assertEquals(listOf(listOf(first, second), listOf(bulk)), LoggingSystem.compactQueueEntries(listOf(first, second, bulk)))
     }
 
     @Test
@@ -164,7 +166,7 @@ class LoggingSystemTest {
         val first = queue(id = 1, amount = 2)
         val second = queue(id = 2, amount = 2)
 
-        assertEquals(listOf(listOf(first), listOf(second)), LoggingSystem.compactCarryEntries(listOf(first, second)))
+        assertEquals(listOf(listOf(first), listOf(second)), LoggingSystem.compactQueueEntries(listOf(first, second)))
     }
 
     @Test
@@ -172,7 +174,7 @@ class LoggingSystemTest {
         val first = queue(id = 1, difficulty = difficulty(id = 7, displayName = "One"))
         val second = queue(id = 2, difficulty = difficulty(id = 7, displayName = "Two"))
 
-        assertEquals(1, LoggingSystem.compactCarryEntries(listOf(first, second)).size)
+        assertEquals(1, LoggingSystem.compactQueueEntries(listOf(first, second)).size)
     }
 
     @Test
@@ -180,7 +182,7 @@ class LoggingSystemTest {
         val first = queue(id = 1, carrierId = 77)
         val second = queue(id = 2, carrierId = 77)
 
-        assertEquals(2, LoggingSystem.compactCarryEntries(listOf(first, second)).single().size)
+        assertEquals(2, LoggingSystem.compactQueueEntries(listOf(first, second)).single().size)
     }
 
     @Test
@@ -188,7 +190,7 @@ class LoggingSystemTest {
         val first = queue(id = 1)
         val second = queue(id = 2, carrierId = 11)
 
-        assertEquals(listOf(listOf(second), listOf(first)), LoggingSystem.compactCarryEntries(listOf(second, first)))
+        assertEquals(listOf(listOf(second), listOf(first)), LoggingSystem.compactQueueEntries(listOf(second, first)))
     }
 
     @Test
@@ -196,7 +198,7 @@ class LoggingSystemTest {
         val undated = queue(id = 1, time = null)
         val dated = queue(id = 2)
 
-        assertEquals(listOf(undated, dated), LoggingSystem.compactCarryEntries(listOf(dated, undated)).single())
+        assertEquals(listOf(undated, dated), LoggingSystem.compactQueueEntries(listOf(dated, undated)).single())
     }
 
     @Test
@@ -205,7 +207,7 @@ class LoggingSystemTest {
         val early = queue(id = 1)
         val input = mutableListOf(late, early)
 
-        LoggingSystem.compactCarryEntries(input)
+        LoggingSystem.compactQueueEntries(input)
 
         assertEquals(listOf(late, early), input)
     }
@@ -247,7 +249,7 @@ class LoggingSystemTest {
         val first = queue(id = 1, playerId = 101)
         val second = queue(id = 2, playerId = 101)
 
-        val embed = LoggingSystem.loadGroupedCarryEmbed(listOf(first, second))
+        val embed = LoggingSystem.loadGroupedCarryQueueEmbed(listOf(first, second), null)
 
         assertEquals("<@101>", embed.fields.single { it.name == "Player" }.value)
         assertNull(embed.fields.singleOrNull { it.name == "Players" })
@@ -258,7 +260,7 @@ class LoggingSystemTest {
         val first = queue(id = 1, carrierId = 10, difficulty = difficulty(id = 1, displayName = "First"))
         val second = queue(id = 2, carrierId = 20, difficulty = difficulty(id = 2, displayName = "Second"))
 
-        val embed = LoggingSystem.loadGroupedCarryEmbed(listOf(first, second))
+        val embed = LoggingSystem.loadGroupedCarryQueueEmbed(listOf(first, second), null)
 
         assertEquals("Dungeon - First", embed.fields.single { it.name == "Type of carry" }.value)
         assertEquals("<@10>", embed.fields.single { it.name == "Carrier" }.value)
@@ -269,7 +271,7 @@ class LoggingSystemTest {
         val first = queue(id = 1, time = Instant.parse("2026-01-01T10:02:00Z"))
         val second = queue(id = 2, time = Instant.parse("2026-01-01T10:00:00Z"))
 
-        assertEquals(second.time?.toKotlinInstant(), LoggingSystem.loadGroupedCarryEmbed(listOf(first, second)).timestamp)
+        assertEquals(second.time?.toKotlinInstant(), LoggingSystem.loadGroupedCarryQueueEmbed(listOf(first, second), null).timestamp)
     }
 
     @Test
@@ -277,7 +279,7 @@ class LoggingSystemTest {
         val first = queue(id = 1, amount = 2)
         val second = queue(id = 2, amount = 3)
 
-        val embed = LoggingSystem.loadGroupedCarryEmbed(listOf(first, second))
+        val embed = LoggingSystem.loadGroupedCarryQueueEmbed(listOf(first, second), null)
 
         assertEquals("5", embed.fields.single { it.name == "Number of carries" }.value)
         assertEquals("25", embed.fields.single { it.name == "Gained score" }.value)
@@ -288,7 +290,7 @@ class LoggingSystemTest {
         val first = queue(id = 1, attachmentLink = null)
         val second = queue(id = 2, attachmentLink = "https://example.test/second")
 
-        assertNull(LoggingSystem.loadGroupedCarryEmbed(listOf(first, second)).fields.singleOrNull { it.name == "Transcript-Link" })
+        assertNull(LoggingSystem.loadGroupedCarryQueueEmbed(listOf(first, second), null).fields.singleOrNull { it.name == "Transcript-Link" })
     }
 
     @Test
@@ -309,7 +311,7 @@ class LoggingSystemTest {
     fun `overview describes compacted carries as one line`() {
         val first = queue(id = 1, playerId = 101)
         val second = queue(id = 2, playerId = 102)
-        val compacted = LoggingSystem.compactCarryEntries(listOf(first, second))
+        val compacted = LoggingSystem.compactQueueEntries(listOf(first, second))
 
         val embed = LoggingSystem.createCarryOverview(compacted, 42)
 
@@ -320,7 +322,7 @@ class LoggingSystemTest {
     fun `overview gives separate lines to non-compactable carries`() {
         val first = queue(id = 1, carrierId = 10)
         val second = queue(id = 2, carrierId = 11)
-        val compacted = LoggingSystem.compactCarryEntries(listOf(first, second))
+        val compacted = LoggingSystem.compactQueueEntries(listOf(first, second))
 
         assertEquals(2, LoggingSystem.createCarryOverview(compacted, null).description?.lines()?.size)
     }
