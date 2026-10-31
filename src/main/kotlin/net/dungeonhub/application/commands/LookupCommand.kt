@@ -10,7 +10,6 @@ import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.extensions.publicUserCommand
-import dev.kordex.core.i18n.toKey
 import net.dungeonhub.application.connection.FlaggingConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.LoadExtension
@@ -157,15 +156,15 @@ class LookupCommand : Extension() {
 
     class LookupUserArguments : Arguments() {
         val user by user {
-            name = "user".toKey()
-            description = "The discord user to lookup.".toKey()
+            name = Lookup.User.Arguments.User.name
+            description = Lookup.User.Arguments.User.description
         }
     }
 
     class LookupPlayerArguments : Arguments() {
         val ign by string {
-            name = "ign".toKey()
-            description = "Minecraft Ingame-Name to check.".toKey()
+            name = Lookup.Player.Arguments.Ign.name
+            description = Lookup.Player.Arguments.Ign.description
             minLength = 2
         }
     }

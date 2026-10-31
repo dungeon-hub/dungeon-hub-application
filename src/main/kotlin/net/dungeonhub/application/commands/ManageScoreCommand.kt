@@ -18,7 +18,6 @@ import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -38,6 +37,7 @@ import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.ScoreResetType
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.i18n.Translations.Command.ManageScore
+import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.score.ScoreModel
 import net.dungeonhub.model.score.ScoreUpdateModel
 
@@ -57,8 +57,8 @@ class ManageScoreCommand : Extension() {
             allowInDms = false
 
             publicSubCommand(::ManageScoreArguments) {
-                name = "add".toKey()
-                description = "Add score.".toKey()
+                name = ManageScore.Add.name
+                description = ManageScore.Add.description
 
                 action {
                     respond {
@@ -68,8 +68,8 @@ class ManageScoreCommand : Extension() {
             }
 
             publicSubCommand(::ManageScoreArguments) {
-                name = "remove".toKey()
-                description = "Remove score.".toKey()
+                name = ManageScore.Remove.name
+                description = ManageScore.Remove.description
 
                 action {
                     respond {
@@ -79,8 +79,8 @@ class ManageScoreCommand : Extension() {
             }
 
             publicSubCommand(::ResetScoreArguments) {
-                name = "reset".toKey()
-                description = "Reset score for a given carry type.".toKey()
+                name = ManageScore.Reset.name
+                description = ManageScore.Reset.description
 
                 check {
                     hasPermission(Permission.Administrator)
@@ -177,20 +177,20 @@ class ManageScoreCommand : Extension() {
 
     class ManageScoreArguments : Arguments() {
         val user by user {
-            name = "user".toKey()
-            description = "The user to manage score.".toKey()
+            name = ManageScore.Arguments.User.name
+            description = ManageScore.Arguments.User.description
         }
 
         val carryType by string {
-            name = "carry-type".toKey()
-            description = "The identifier of the carry type".toKey()
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val amount by long {
-            name = "amount".toKey()
-            description = "The amount of score to add/remove.".toKey()
+            name = ManageScore.Arguments.Amount.name
+            description = ManageScore.Arguments.Amount.description
             maxValue = 10000
             minValue = 0
         }
@@ -198,15 +198,15 @@ class ManageScoreCommand : Extension() {
 
     class ResetScoreArguments : Arguments() {
         val carryType by string {
-            name = "carry-type".toKey()
-            description = "The identifier of the carry type".toKey()
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val resetType by stringChoice {
-            name = "reset-type".toKey()
-            description = "Choose which score should be reset".toKey()
+            name = ManageScore.Reset.Arguments.ResetType.name
+            description = ManageScore.Reset.Arguments.ResetType.description
             choices = ScoreResetType.entries.associate { it.readableName to it.name }.toMutableMap()
         }
 

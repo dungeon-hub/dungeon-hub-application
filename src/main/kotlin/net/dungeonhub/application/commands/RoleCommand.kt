@@ -15,7 +15,6 @@ import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.*
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -58,8 +57,8 @@ class RoleCommand : Extension() {
             allowInDms = false
 
             publicSubCommand(::RoleArguments) {
-                name = "add".toKey()
-                description = "Give a role to a user.".toKey()
+                name = Role.Add.name
+                description = Role.Add.description
 
                 action {
                     respond {
@@ -69,8 +68,8 @@ class RoleCommand : Extension() {
             }
 
             publicSubCommand(::RoleArguments) {
-                name = "remove".toKey()
-                description = "Remove a role from a user.".toKey()
+                name = Role.Remove.name
+                description = Role.Remove.description
 
                 action {
                     respond {
@@ -80,8 +79,8 @@ class RoleCommand : Extension() {
             }
 
             publicSubCommand(::RoleGroupRemoveArguments) {
-                name = "remove-group".toKey()
-                description = "Remove an entire role group from a user.".toKey()
+                name = Role.RemoveGroup.name
+                description = Role.RemoveGroup.description
 
                 action {
                     respond {
@@ -90,12 +89,12 @@ class RoleCommand : Extension() {
                 }
             }
 
-            group("config".toKey()) {
-                description = "Change the settings of a role.".toKey()
+            group(Role.Config.name) {
+                description = Role.Config.description
 
                 publicSubCommand(::RoleConfigSetArguments) {
-                    name = "set".toKey()
-                    description = "Set a role config value".toKey()
+                    name = Role.Config.Set.name
+                    description = Role.Config.Set.description
 
                     check {
                         hasPermission(Permission.Administrator)
@@ -158,8 +157,8 @@ class RoleCommand : Extension() {
                 }
 
                 publicSubCommand(::RoleConfigResetArguments) {
-                    name = "reset".toKey()
-                    description = "Reset a role config value".toKey()
+                    name = Role.Config.Reset.name
+                    description = Role.Config.Reset.description
 
                     check {
                         hasPermission(Permission.Administrator)
@@ -494,42 +493,42 @@ class RoleCommand : Extension() {
 
     class RoleArguments : Arguments() {
         val user by user {
-            name = "user".toKey()
-            description = "Select which user to modify the role of.".toKey()
+            name = Role.Arguments.User.name
+            description = Role.Arguments.User.description
         }
 
         val role by role {
-            name = "role".toKey()
-            description = "Select which role you mean.".toKey()
+            name = Role.Arguments.Role.name
+            description = Role.Arguments.Role.description
         }
     }
 
     class RoleGroupRemoveArguments : Arguments() {
         val target by user {
-            name = "user".toKey()
-            description = "Select which user to remove the role group of.".toKey()
+            name = Role.RemoveGroup.Arguments.User.name
+            description = Role.RemoveGroup.Arguments.User.description
         }
 
         val role by role {
-            name = "role-group".toKey()
-            description = "The role group to remove from the given user.".toKey()
+            name = Role.RemoveGroup.Arguments.RoleGroup.name
+            description = Role.RemoveGroup.Arguments.RoleGroup.description
         }
     }
 
     class RoleConfigSetArguments : Arguments() {
         val role by role {
-            name = "role".toKey()
-            description = "Select which role you want to configure.".toKey()
+            name = Role.Config.Set.Arguments.Role.name
+            description = Role.Config.Set.Arguments.Role.description
         }
 
         val nameSchema by optionalString {
-            name = "name-schema".toKey()
-            description = "Set the name schema for this username".toKey()
+            name = Role.Config.Set.Arguments.NameSchema.name
+            description = Role.Config.Set.Arguments.NameSchema.description
         }
 
         val roleAction by optionalStringChoice {
-            name = "role-action".toKey()
-            description = "Set when this role should be applied to users, based on if they're linked or not.".toKey()
+            name = Role.Config.Set.Arguments.RoleAction.name
+            description = Role.Config.Set.Arguments.RoleAction.description
             choices = RoleAction.entries.associate { it.readableName to it.name }.toMutableMap()
         }
 
@@ -539,32 +538,32 @@ class RoleCommand : Extension() {
 
     class RoleConfigResetArguments : Arguments() {
         val role by role {
-            name = "role".toKey()
-            description = "Select which role you want to configure.".toKey()
+            name = Role.Config.Reset.Arguments.Role.name
+            description = Role.Config.Reset.Arguments.Role.description
         }
 
         val resetNameSchema by boolean {
-            name = "name-schema".toKey()
-            description = "Reset the name schema for this role.".toKey()
+            name = Role.Config.Reset.Arguments.NameSchema.name
+            description = Role.Config.Reset.Arguments.NameSchema.description
         }
     }
 
     class RoleRequirementsGetArguments : Arguments() {
         val role by role {
-            name = "role".toKey()
-            description = "Select which role you want to get the role requirements for.".toKey()
+            name = Role.Requirements.Get.Arguments.Role.name
+            description = Role.Requirements.Get.Arguments.Role.description
         }
     }
 
     class RoleRequirementsAddArguments : Arguments() {
         val role by role {
-            name = "role".toKey()
-            description = "Select which role you want to add a requirement for.".toKey()
+            name = Role.Requirements.Add.Arguments.Role.name
+            description = Role.Requirements.Add.Arguments.Role.description
         }
 
         val requirementType by stringChoice {
-            name = "requirement-type".toKey()
-            description = "Select what you want to use as the requirement.".toKey()
+            name = Role.Requirements.Add.Arguments.RequirementType.name
+            description = Role.Requirements.Add.Arguments.RequirementType.description
             choices = RoleRequirementType.entries.associate { it.readableName to it.name }.toMutableMap()
         }
 
@@ -572,8 +571,8 @@ class RoleCommand : Extension() {
             get() = RoleRequirementType.valueOf(requirementType)
 
         val comparison by stringChoice {
-            name = "comparison".toKey()
-            description = "Select which comparison you want to use for the requirement.".toKey()
+            name = Role.Requirements.Add.Arguments.Comparison.name
+            description = Role.Requirements.Add.Arguments.Comparison.description
             choices = RoleRequirementComparison.entries.associate { it.readableName to it.name }.toMutableMap()
         }
 
@@ -581,25 +580,25 @@ class RoleCommand : Extension() {
             get() = RoleRequirementComparison.valueOf(comparison)
 
         val count by int {
-            name = "count".toKey()
-            description = "Select the required amount.".toKey()
+            name = Role.Requirements.Add.Arguments.Count.name
+            description = Role.Requirements.Add.Arguments.Count.description
         }
 
         val extraData by optionalString {
-            name = "extra-data".toKey()
-            description = "Enter some extra data, if applicable.".toKey()
+            name = Role.Requirements.Add.Arguments.ExtraData.name
+            description = Role.Requirements.Add.Arguments.ExtraData.description
         }
     }
 
     class RoleRequirementsEditArguments : Arguments() {
         val roleRequirement by long {
-            name = "role-requirement".toKey()
-            description = "Select which role requirement you want to edit.".toKey()
+            name = Role.Requirements.Edit.Arguments.RoleRequirement.name
+            description = Role.Requirements.Edit.Arguments.RoleRequirement.description
         }
 
         val comparison by optionalStringChoice {
-            name = "comparison".toKey()
-            description = "Select which comparison you want to use for the requirement.".toKey()
+            name = Role.Requirements.Edit.Arguments.Comparison.name
+            description = Role.Requirements.Edit.Arguments.Comparison.description
             choices = RoleRequirementComparison.entries.associate { it.readableName to it.name }.toMutableMap()
         }
 
@@ -607,25 +606,25 @@ class RoleCommand : Extension() {
             get() = comparison?.let { RoleRequirementComparison.valueOf(it) }
 
         val count by optionalInt {
-            name = "count".toKey()
-            description = "Select the required amount.".toKey()
+            name = Role.Requirements.Edit.Arguments.Count.name
+            description = Role.Requirements.Edit.Arguments.Count.description
         }
 
         val extraData by optionalString {
-            name = "extra-data".toKey()
-            description = "Enter some extra data, if applicable.".toKey()
+            name = Role.Requirements.Edit.Arguments.ExtraData.name
+            description = Role.Requirements.Edit.Arguments.ExtraData.description
         }
 
         val resetExtraData by optionalBoolean {
-            name = "reset-extra-data".toKey()
-            description = "Reset the extra data for this role requirement.".toKey()
+            name = Role.Requirements.Edit.Arguments.ResetExtraData.name
+            description = Role.Requirements.Edit.Arguments.ResetExtraData.description
         }
     }
 
     class RoleRequirementsDeleteArguments : Arguments() {
         val id by long {
-            name = "id".toKey()
-            description = "The id of the role requirement.".toKey()
+            name = Role.Requirements.Delete.Arguments.Id.name
+            description = Role.Requirements.Delete.Arguments.Id.description
         }
     }
 }

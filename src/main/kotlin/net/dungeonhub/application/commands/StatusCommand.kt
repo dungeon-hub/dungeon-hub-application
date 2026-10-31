@@ -18,6 +18,7 @@ import net.dungeonhub.exception.PlayerNotFoundException
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.hypixel.entities.player.HypixelPlayer
 import net.dungeonhub.hypixel.entities.status.PlayerSession
+import net.dungeonhub.i18n.Translations
 import net.dungeonhub.mojang.connection.MojangConnection
 import java.time.Duration
 import kotlin.time.toKotlinDuration
@@ -28,8 +29,8 @@ class StatusCommand : Extension() {
 
     override suspend fun setup() {
         ephemeralSlashCommand(::StatusArguments) {
-            name = "status".toKey()
-            description = "Check the status of the given user".toKey()
+            name = Translations.Command.Status.name
+            description = Translations.Command.Status.description
 
             action {
                 respond {
@@ -213,8 +214,8 @@ class StatusCommand : Extension() {
 
     class StatusArguments : Arguments() {
         val ign by optionalString {
-            name = "ign".toKey()
-            description = "The user to get the status of.".toKey()
+            name = Translations.Command.Status.Arguments.Ign.name
+            description = Translations.Command.Status.Arguments.Ign.description
             minLength = 2
         }
     }

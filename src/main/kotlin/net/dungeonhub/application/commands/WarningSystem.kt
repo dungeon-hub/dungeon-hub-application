@@ -137,8 +137,8 @@ class WarningSystem : Extension() {
             defaultMemberPermissions = Permissions(Permission.ModerateMembers)
 
             publicSubCommand(::WarnAddArguments) {
-                name = "add".toKey()
-                description = "Add a warning to the given user.".toKey()
+                name = Warn.Add.name
+                description = Warn.Add.description
 
                 action {
                     respond {
@@ -234,8 +234,8 @@ class WarningSystem : Extension() {
             }
 
             publicSubCommand(::WarnRemoveArguments) {
-                name = "deactivate".toKey()
-                description = "Deactivate a given warning.".toKey()
+                name = Warn.Deactivate.name
+                description = Warn.Deactivate.description
 
                 action {
                     respond {
@@ -282,8 +282,8 @@ class WarningSystem : Extension() {
             }
 
             publicSubCommand(::WarnListAllArguments) {
-                name = "list-all".toKey()
-                description = "List all warnings of a user, active or not.".toKey()
+                name = Warn.ListAll.name
+                description = Warn.ListAll.description
 
                 action {
                     val warns =
@@ -320,8 +320,8 @@ class WarningSystem : Extension() {
             }
 
             publicSubCommand(::WarnAddEvidenceArguments) {
-                name = "add-evidence".toKey()
-                description = "Adds evidence to a warning.".toKey()
+                name = Warn.AddEvidence.name
+                description = Warn.AddEvidence.description
 
                 action {
                     respond {
@@ -384,66 +384,66 @@ class WarningSystem : Extension() {
 
     class WarnsArguments : Arguments() {
         val target by optionalMember {
-            name = "user".toKey()
-            description = "The user to get the warns of.".toKey()
+            name = Warns.Arguments.User.name
+            description = Warns.Arguments.User.description
         }
     }
 
     class WarnAddArguments : Arguments() {
         val user by user {
-            name = "user".toKey()
-            description = "The user to warn.".toKey()
+            name = Warn.Add.Arguments.User.name
+            description = Warn.Add.Arguments.User.description
         }
 
         val type by stringChoice {
-            name = "severity".toKey()
-            description = "The severity of the warning.".toKey()
+            name = Warn.Add.Arguments.Severity.name
+            description = Warn.Add.Arguments.Severity.description
 
             WarningType.entries.forEach { choice(it.name.toKey(), it.name) }
         }
 
         val reason by optionalString {
-            name = "reason".toKey()
-            description = "The reason for the warning.".toKey()
+            name = Warn.Add.Arguments.Reason.name
+            description = Warn.Add.Arguments.Reason.description
             maxLength = 200
         }
 
         val dmUser by optionalBoolean {
-            name = "dm-user".toKey()
-            description = "Whether to send a DM to the user about the warning (true by default).".toKey()
+            name = Warn.Add.Arguments.DmUser.name
+            description = Warn.Add.Arguments.DmUser.description
         }
     }
 
     class WarnRemoveArguments : Arguments() {
         val id by long {
-            name = "id".toKey()
-            description = "The id of the warning.".toKey()
+            name = Warn.Deactivate.Arguments.Id.name
+            description = Warn.Deactivate.Arguments.Id.description
             minValue = 1
         }
     }
 
     class WarnListAllArguments : Arguments() {
         val user by user {
-            name = "user".toKey()
-            description = "The user to see the warnings of.".toKey()
+            name = Warn.ListAll.Arguments.User.name
+            description = Warn.ListAll.Arguments.User.description
         }
     }
 
     class WarnAddEvidenceArguments : Arguments() {
         val id by long {
-            name = "id".toKey()
-            description = "The id of the warning.".toKey()
+            name = Warn.AddEvidence.Arguments.Id.name
+            description = Warn.AddEvidence.Arguments.Id.description
             minValue = 1
         }
 
         val attachment by optionalAttachment {
-            name = "attachment".toKey()
-            description = "Add an attachment (image or similar) as evidence.".toKey()
+            name = Warn.AddEvidence.Arguments.Attachment.name
+            description = Warn.AddEvidence.Arguments.Attachment.description
         }
 
         val text by optionalString {
-            name = "text".toKey()
-            description = "Add a text (or link) as evidence.".toKey()
+            name = Warn.AddEvidence.Arguments.Text.name
+            description = Warn.AddEvidence.Arguments.Text.description
         }
     }
 

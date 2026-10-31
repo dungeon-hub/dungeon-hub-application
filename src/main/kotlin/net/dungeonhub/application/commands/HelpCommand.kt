@@ -10,7 +10,6 @@ import dev.kordex.core.commands.application.slash.converters.impl.optionalEnumCh
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.HelpTopic
 import net.dungeonhub.application.loader.LoadExtension
@@ -102,9 +101,9 @@ class HelpCommand : Extension() {
 
     class HelpArguments : Arguments() {
         val helpTopic by optionalEnumChoice<HelpTopic> {
-            name = "topic".toKey()
-            description = "Select what topic you need help with.".toKey()
-            typeName = "HelpTopic".toKey()
+            name = Help.Arguments.Topic.name
+            description = Help.Arguments.Topic.description
+            typeName = Help.Arguments.Topic.typeName
         }
     }
 }

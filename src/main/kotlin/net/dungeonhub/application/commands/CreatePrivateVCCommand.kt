@@ -11,7 +11,6 @@ import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.Video
 import kotlinx.coroutines.CancellationException
 import net.dungeonhub.application.enums.EmbedColor
@@ -20,6 +19,7 @@ import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
+import net.dungeonhub.i18n.Translations.Command.CreateVc
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -31,8 +31,8 @@ class CreatePrivateVCCommand : Extension() {
         listOf(693263712626278553L, 1023684107877761196L).map { Snowflake(it) }
             .forEach { guildId ->
                 publicSlashCommand(::CreateVCArgs) {
-                    name = "create".toKey()
-                    description = "Creates a private voice channel for a user.".toKey()
+                    name = CreateVc.name
+                    description = CreateVc.description
                     guild(guildId)
                     defaultMemberPermissions = Permissions(Permission.ManageChannels)
                     allowInDms = false
@@ -126,13 +126,13 @@ class CreatePrivateVCCommand : Extension() {
 
     class CreateVCArgs : Arguments() {
         val name by string {
-            name = "vc-name".toKey()
-            description = "Give a name to the new VC.".toKey()
+            name = CreateVc.Arguments.VcName.name
+            description = CreateVc.Arguments.VcName.description
         }
 
         val user by user {
-            name = "vc-user".toKey()
-            description = "Select the owner of the VC.".toKey()
+            name = CreateVc.Arguments.VcUser.name
+            description = CreateVc.Arguments.VcUser.description
         }
     }
 }
