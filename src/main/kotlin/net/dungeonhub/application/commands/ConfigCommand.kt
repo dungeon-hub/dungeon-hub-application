@@ -51,8 +51,8 @@ class ConfigCommand : Extension() {
             allowInDms = false
 
             publicSubCommand(::GetArguments) {
-                name = "get".toKey()
-                description = "Shows you the current config for the server.".toKey()
+                name = Config.Get.name
+                description = Config.Get.description
 
                 action {
                     respond {
@@ -92,12 +92,12 @@ class ConfigCommand : Extension() {
                 }
             }
 
-            group("set".toKey()) {
-                description = "Sets a new config property".toKey()
+            group(Config.Set.name) {
+                description = Config.Set.description
 
                 publicSubCommand(::SetStringArguments) {
-                    name = "string".toKey()
-                    description = "Sets a config value.".toKey()
+                    name = Config.Set.StringProperty.name
+                    description = Config.Set.StringProperty.description
 
                     action {
                         respond {
@@ -109,8 +109,8 @@ class ConfigCommand : Extension() {
                 }
 
                 publicSubCommand(::SetNumberArguments) {
-                    name = "number".toKey()
-                    description = "Sets a config value.".toKey()
+                    name = Config.Set.NumberProperty.name
+                    description = Config.Set.NumberProperty.description
 
                     action {
                         respond {
@@ -128,8 +128,8 @@ class ConfigCommand : Extension() {
                 }
 
                 publicSubCommand(::SetBooleanArguments) {
-                    name = "boolean".toKey()
-                    description = "Sets a config value.".toKey()
+                    name = Config.Set.BooleanProperty.name
+                    description = Config.Set.BooleanProperty.description
 
                     action {
                         respond {
@@ -147,8 +147,8 @@ class ConfigCommand : Extension() {
                 }
 
                 publicSubCommand(::SetChannelArguments) {
-                    name = "channel".toKey()
-                    description = "Sets a config value.".toKey()
+                    name = Config.Set.Channel.name
+                    description = Config.Set.Channel.description
 
                     action {
                         respond {
@@ -166,8 +166,8 @@ class ConfigCommand : Extension() {
                 }
 
                 publicSubCommand(::SetCategoryArguments) {
-                    name = "category".toKey()
-                    description = "Sets a config value.".toKey()
+                    name = Config.Set.Category.name
+                    description = Config.Set.Category.description
 
                     action {
                         respond {
@@ -185,8 +185,8 @@ class ConfigCommand : Extension() {
                 }
 
                 publicSubCommand(::SetRoleArguments) {
-                    name = "role".toKey()
-                    description = "Sets a config value.".toKey()
+                    name = Config.Set.Role.name
+                    description = Config.Set.Role.description
 
                     action {
                         respond {
@@ -204,8 +204,8 @@ class ConfigCommand : Extension() {
                 }
 
                 publicSubCommand(::GetArguments) {
-                    name = "null".toKey()
-                    description = "Sets a property to null (resetting it).".toKey()
+                    name = Config.Set.NullProperty.name
+                    description = Config.Set.NullProperty.description
 
                     action {
                         respond {
@@ -279,8 +279,8 @@ class ConfigCommand : Extension() {
 
     class GetArguments : Arguments() {
         val property by string {
-            name = "property".toKey()
-            description = "The property to choose.".toKey()
+            name = Config.Arguments.Property.name
+            description = Config.Arguments.Property.description
             autoCompleteCallback = AutoCompletionService.allConfigs
         }
 
@@ -302,8 +302,8 @@ class ConfigCommand : Extension() {
 
     class SetStringArguments : Arguments() {
         val property by stringChoice {
-            name = "property".toKey()
-            description = "The string property to choose.".toKey()
+            name = Config.Arguments.Property.name
+            description = Config.Set.StringProperty.Arguments.Property.description
             choices = ServerProperty.entries
                 .filter { it.propertyType == ServerPropertyType.STRING }
                 .associate { it.name.toKey() to it.name }
@@ -311,8 +311,8 @@ class ConfigCommand : Extension() {
         }
 
         val value by string {
-            name = "value".toKey()
-            description = "What you want to set the property to.".toKey()
+            name = Config.Arguments.Value.name
+            description = Config.Arguments.Value.description
         }
 
         fun getProperty(serverId: Long): ServerProperty {
@@ -333,8 +333,8 @@ class ConfigCommand : Extension() {
 
     class SetNumberArguments : Arguments() {
         val property by stringChoice {
-            name = "property".toKey()
-            description = "The number property to choose.".toKey()
+            name = Config.Arguments.Property.name
+            description = Config.Set.NumberProperty.Arguments.Property.description
             choices = ServerProperty.entries
                 .filter { it.propertyType == ServerPropertyType.NUMBER }
                 .associate { it.name.toKey() to it.name }
@@ -342,8 +342,8 @@ class ConfigCommand : Extension() {
         }
 
         val value by long {
-            name = "value".toKey()
-            description = "What you want to set the property to.".toKey()
+            name = Config.Arguments.Value.name
+            description = Config.Arguments.Value.description
         }
 
         fun getProperty(serverId: Long): ServerProperty {
@@ -364,8 +364,8 @@ class ConfigCommand : Extension() {
 
     class SetBooleanArguments : Arguments() {
         val property by stringChoice {
-            name = "property".toKey()
-            description = "The boolean property to choose.".toKey()
+            name = Config.Arguments.Property.name
+            description = Config.Set.BooleanProperty.Arguments.Property.description
             choices = ServerProperty.entries
                 .filter { it.propertyType == ServerPropertyType.BOOLEAN }
                 .associate { it.name.toKey() to it.name }
@@ -373,8 +373,8 @@ class ConfigCommand : Extension() {
         }
 
         val value by boolean {
-            name = "value".toKey()
-            description = "What you want to set the property to.".toKey()
+            name = Config.Arguments.Value.name
+            description = Config.Arguments.Value.description
         }
 
         fun getProperty(serverId: Long): ServerProperty {
@@ -395,8 +395,8 @@ class ConfigCommand : Extension() {
 
     class SetChannelArguments : Arguments() {
         val property by stringChoice {
-            name = "property".toKey()
-            description = "The channel property to choose.".toKey()
+            name = Config.Arguments.Property.name
+            description = Config.Set.Channel.Arguments.Property.description
             choices = ServerProperty.entries
                 .filter { it.propertyType == ServerPropertyType.CHANNEL }
                 .associate { it.name.toKey() to it.name }
@@ -404,8 +404,8 @@ class ConfigCommand : Extension() {
         }
 
         val value by channel {
-            name = "value".toKey()
-            description = "What you want to set the property to.".toKey()
+            name = Config.Arguments.Value.name
+            description = Config.Arguments.Value.description
             requiredChannelTypes = mutableSetOf(
                 ChannelType.GuildText
             )
@@ -429,8 +429,8 @@ class ConfigCommand : Extension() {
 
     class SetCategoryArguments : Arguments() {
         val property by stringChoice {
-            name = "property".toKey()
-            description = "The category property to choose.".toKey()
+            name = Config.Arguments.Property.name
+            description = Config.Set.Category.Arguments.Property.description
             choices = ServerProperty.entries
                 .filter { it.propertyType == ServerPropertyType.CATEGORY }
                 .associate { it.name.toKey() to it.name }
@@ -438,8 +438,8 @@ class ConfigCommand : Extension() {
         }
 
         val value by channel {
-            name = "value".toKey()
-            description = "What you want to set the property to.".toKey()
+            name = Config.Arguments.Value.name
+            description = Config.Arguments.Value.description
             requiredChannelTypes = mutableSetOf(
                 ChannelType.GuildCategory
             )
@@ -463,8 +463,8 @@ class ConfigCommand : Extension() {
 
     class SetRoleArguments : Arguments() {
         val property by stringChoice {
-            name = "property".toKey()
-            description = "The role property to choose.".toKey()
+            name = Config.Arguments.Property.name
+            description = Config.Set.Role.Arguments.Property.description
             choices = ServerProperty.entries
                 .filter { it.propertyType == ServerPropertyType.ROLE }
                 .associate { it.name.toKey() to it.name }
@@ -472,8 +472,8 @@ class ConfigCommand : Extension() {
         }
 
         val value by role {
-            name = "value".toKey()
-            description = "What you want to set the property to.".toKey()
+            name = Config.Arguments.Value.name
+            description = Config.Arguments.Value.description
         }
 
         fun getProperty(serverId: Long): ServerProperty {
