@@ -46,7 +46,7 @@ object ChangeListenerService : StartupListener {
             ChangeStreamConnection.authenticated().changes(listenedTypes).collect { event ->
                 try {
                     when (event) {
-                        ChangeStreamEvent.Connected -> onConnected()
+                        is ChangeStreamEvent.Connected -> if (!event.resumed) onResyncRequired()
                         is ChangeStreamEvent.Change -> onChange(event.change)
                     }
                 } catch (exception: CancellationException) {
@@ -58,8 +58,10 @@ object ChangeListenerService : StartupListener {
         }
     }
 
-    private suspend fun onConnected() {
-        // changes that happened while the stream was disconnected aren't replayed, so everything is reloaded once
+    /**
+     * Called when changes might have been missed, e.g. on the first connect or after a longer disconnect.
+     */
+    private suspend fun onResyncRequired() {
         StaticMessageService.refreshAllStaticMessages()
         CarryQueueNotificationService.notifyUnnotifiedQueues()
     }
