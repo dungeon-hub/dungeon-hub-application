@@ -14,7 +14,10 @@ import dev.kord.core.behavior.channel.edit
 import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.Member
+import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
+import dev.kord.core.entity.channel.TopGuildChannel
+import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.channel.*
@@ -26,6 +29,8 @@ import dev.kord.rest.request.RestRequestException
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.application.slash.ephemeralSubCommand
 import dev.kordex.core.commands.application.slash.publicSubCommand
+import dev.kordex.core.commands.converters.impl.optionalBoolean
+import dev.kordex.core.commands.converters.impl.optionalChannel
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.components.components
 import dev.kordex.core.components.ephemeralButton
@@ -50,6 +55,7 @@ import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.TicketConnection
+import net.dungeonhub.enums.TranscriptTarget
 import net.dungeonhub.enums.TicketPermissionCandidate
 import net.dungeonhub.enums.TicketPermissionType
 import net.dungeonhub.enums.TicketState
@@ -331,6 +337,114 @@ class TicketSystem : Extension() {
                 }
             }
 
+            ephemeralSubCommand(::TranscriptArguments) {
+                name = Translations.Command.Ticket.Transcript.name
+                description = Translations.Command.Ticket.Transcript.description
+
+                action {
+                    val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = event.interaction.channelId.value.toLong())?.firstOrNull()
+
+                    val ticketChannel = channel.asChannelOfOrNull<TextChannel>()
+                    val requester = member!!.asMember()
+
+                    val error = if(ticketChannel == null) "This isn't a ticket channel!"
+                        else requester.ticketActionError(ticket, setOf(TicketState.Deleted), "You're not allowed to generate a transcript here!")
+
+                    if(error != null) {
+                        respond {
+                            addEmbed {
+                                description = error
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    ticket!!
+
+                    val overrideChannel = arguments.channel?.let { it.asChannelOfOrNull<GuildMessageChannel>() ?: run {
+                        respond {
+                            addEmbed {
+                                description = "Couldn't load that channel!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    } }
+
+                    val transcriptChannel = overrideChannel ?: TicketTranscriptListener.resolveTranscriptChannel(ticket, ticketChannel!!.guild)
+                    val sendToUser = arguments.sendToUser != false
+
+                    val destination = resolveTranscriptDestination(
+                        channelRequested = arguments.channel != null,
+                        isStaff = requester.isTicketStaff(ticket),
+                        hasTranscriptChannel = transcriptChannel != null,
+                        sendToUser = sendToUser,
+                    )
+
+                    val target = when(destination) {
+                        is TranscriptDestination.Send -> destination.target
+                        TranscriptDestination.ChannelNotAllowed, TranscriptDestination.NoDestination -> {
+                            respond {
+                                addEmbed {
+                                    description = if(destination == TranscriptDestination.NoDestination) {
+                                        "There's no transcript channel configured. Choose a channel or allow sending the transcript to the ticket user."
+                                    } else {
+                                        "Only staff members can send a transcript to a specific channel!"
+                                    }
+                                    color(EmbedColor.Negative)
+                                }
+                            }
+                            return@action
+                        }
+                    }
+
+                    if(overrideChannel != null && !requester.canPostIn(overrideChannel)) {
+                        respond {
+                            addEmbed {
+                                description = "You're not allowed to send messages in ${overrideChannel.mention}!"
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    TicketTranscriptListener.transcriptCooldownError(requester, ticket)?.let { cooldownError ->
+                        respond {
+                            addEmbed {
+                                description = cooldownError
+                                color(EmbedColor.Negative)
+                            }
+                        }
+                        return@action
+                    }
+
+                    TicketTranscriptListener.generateTranscript(
+                        ticketChannel!!,
+                        requester,
+                        ticket,
+                        target,
+                        channelOverride = transcriptChannel
+                    )
+
+                    val destinationDescription = listOfNotNull(
+                        transcriptChannel?.mention?.takeIf { target.sendToTranscriptChannel },
+                        "DM to the ticket user".takeIf { target.sendToUser }
+                    ).joinToString(" and ")
+
+                    logTicketAction(guild!!, ticket) {
+                        description = "Transcript for ticket #${ticket.id} requested by ${requester.mention} via command ($destinationDescription)."
+                    }
+
+                    respond {
+                        addEmbed {
+                            description = "Generating transcript..."
+                            color(EmbedColor.Positive)
+                        }
+                    }
+                }
+            }
+
             publicSubCommand(::TicketAddArguments) {
                 name = Translations.Command.Ticket.Add.name
                 description = Translations.Command.Ticket.Add.description
@@ -340,45 +454,21 @@ class TicketSystem : Extension() {
 
                     val ticketChannel = channel.asChannelOfOrNull<TextChannel>()
 
-                    if(ticket == null || ticketChannel == null) {
+                    val error = if(ticketChannel == null) "This isn't a ticket channel!"
+                        else member!!.asMember().ticketActionError(ticket, setOf(TicketState.Closed, TicketState.Deleted), "You're not allowed to add users to this ticket!") // TODO should this be a separate check?
+
+                    if(error != null) {
                         respond {
                             addEmbed {
-                                description = "This isn't a ticket channel!"
+                                description = error
                                 color(EmbedColor.Negative)
                             }
                         }
                         return@action
                     }
 
-                    if(ticket.state == TicketState.Closed) {
-                        respond {
-                            addEmbed {
-                                description = "This ticket is already closed!"
-                                color(EmbedColor.Negative)
-                            }
-                        }
-                        return@action
-                    }
-
-                    if(ticket.state == TicketState.Deleted) {
-                        respond {
-                            addEmbed {
-                                description = "This ticket is already deleted!"
-                                color(EmbedColor.Negative)
-                            }
-                        }
-                        return@action
-                    }
-
-                    if(!member!!.asMember().isAllowedToChangeState(ticket)) { // TODO should this be a separate check?
-                        respond {
-                            addEmbed {
-                                description = "You're not allowed to add users to this ticket!"
-                                color(EmbedColor.Negative)
-                            }
-                        }
-                        return@action
-                    }
+                    ticket!!
+                    ticketChannel!!
 
                     ticket.ticketPanel.permissions[TicketPermissionCandidate.TicketClaimer]?.let { permissions ->
                         ticketChannel.edit {
@@ -409,6 +499,22 @@ class TicketSystem : Extension() {
         val target by user {
             name = "user".toKey()
             description = "The user to add to the ticket.".toKey()
+        }
+    }
+
+    class TranscriptArguments : Arguments() {
+        val sendToUser by optionalBoolean {
+            name = Translations.Command.Ticket.Transcript.Arguments.DmUser.name
+            description = Translations.Command.Ticket.Transcript.Arguments.DmUser.description
+        }
+
+        val channel by optionalChannel {
+            name = Translations.Command.Ticket.Transcript.Arguments.Channel.name
+            description = Translations.Command.Ticket.Transcript.Arguments.Channel.description
+            requiredChannelTypes = mutableSetOf(
+                ChannelType.GuildText,
+                ChannelType.PublicGuildThread
+            )
         }
     }
 
@@ -624,15 +730,43 @@ class TicketSystem : Extension() {
             return categories.getOrNull(0)
         }
 
+        /**
+         * Shared checks for commands and buttons acting on a ticket.
+         * Returns the error to show, or null if the member may act on the ticket.
+         */
+        suspend fun Member.ticketActionError(ticket: TicketModel?, rejectedStates: Set<TicketState>, notAllowedMessage: String): String? = when {
+            ticket == null -> "This isn't a ticket channel!"
+            ticket.state == TicketState.Deleted && TicketState.Deleted in rejectedStates -> "This ticket is already deleted!"
+            ticket.state in rejectedStates -> "This ticket is already closed!"
+            !isAllowedToChangeState(ticket) -> notAllowedMessage
+            else -> null
+        }
+
+        /**
+         * Admins, members who can manage channels, and the panel's support and additional roles.
+         */
+        suspend fun Member.isTicketStaff(ticket: TicketModel): Boolean {
+            if (hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)) return true
+
+            return ticket.ticketPanel.supportRoles.any { roleIds.contains(Snowflake(it.id)) }
+                || ticket.ticketPanel.additionalRoles.any { roleIds.contains(Snowflake(it.id)) }
+        }
+
+        suspend fun Member.canPostIn(channel: GuildMessageChannel): Boolean {
+            val (permissionChannel, sendPermission) = when(channel) {
+                is ThreadChannel -> channel.getParent() to Permission.SendMessagesInThreads
+                is TopGuildChannel -> channel to Permission.SendMessages
+                else -> return false
+            }
+
+            val permissions = permissionChannel.getEffectivePermissions(id)
+            return Permission.ViewChannel in permissions && sendPermission in permissions
+        }
+
         // TODO this was initially just for closing the ticket - does that also count for reopening the ticket etc?
         // TODO is there any other situation in which some user might be allowed / disallowed to close a ticket?
         suspend fun Member.isAllowedToChangeState(ticket: TicketModel): Boolean {
-            if (hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)) return true
-
-            if (ticket.ticketPanel.supportRoles.any { roleIds.contains(Snowflake(it.id)) }
-                || ticket.ticketPanel.additionalRoles.any { roleIds.contains(Snowflake(it.id)) }) {
-                return true
-            }
+            if (isTicketStaff(ticket)) return true
 
             // TODO here, we assume that the ticket creator is allowed to close the ticket - that should be a setting
             return ticket.user.id == id.value.toLong()
