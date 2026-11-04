@@ -25,6 +25,7 @@ import net.fortuna.ical4j.model.Period
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Instant
@@ -40,8 +41,9 @@ object BirthdayService : StartupListener {
     private const val TIMEZONE_EXECUTION_HOUR = 0
     private val logger = LoggerFactory.getLogger(BirthdayService::class.java)
     private lateinit var scheduler: Scheduler
+    @Volatile
     var birthdays: List<Birthday> = listOf()
-    private val scheduledTimezones = HashSet<String>()
+    private val scheduledTimezones: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     override suspend fun postStart() {
         if (::scheduler.isInitialized) {
