@@ -21,6 +21,7 @@ import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.hypixel.client.responses.ValueResponse
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
+import net.dungeonhub.i18n.Translations
 import net.dungeonhub.i18n.Translations.Command.Player
 import net.dungeonhub.mojang.entity.toUUID
 import org.slf4j.LoggerFactory
@@ -83,8 +84,8 @@ class PlayerCommand : Extension() {
         }
 
         ephemeralSlashCommand(::SetProfileArguments) {
-            name = "set-primary-profile".toKey()
-            description = "Set your primary skyblock profile.".toKey()
+            name = Translations.Command.SetPrimaryProfile.name
+            description = Translations.Command.SetPrimaryProfile.description
 
             // TODO replace with something like /settings - this should only be temporary
             action {
@@ -173,7 +174,7 @@ class PlayerCommand : Extension() {
     class SetProfileArguments : Arguments() {
         val profile by string {
             name = Player.Arguments.Profile.name
-            description = "Select your main profile, which will then be used to display your stats across multiple features.".toKey()
+            description = Translations.Command.SetPrimaryProfile.Arguments.Profile.description
             autoCompleteCallback = AutoCompletionService.skyblockProfile
         }
     }

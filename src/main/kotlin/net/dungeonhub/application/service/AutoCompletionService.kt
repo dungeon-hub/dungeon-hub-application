@@ -29,7 +29,7 @@ object AutoCompletionService {
                         value = carryType.identifier,
                         nameLocalizations = Optional()
                     )
-                } ?: listOf()
+                }?.take(25) ?: listOf()
         )
     }
 
@@ -58,7 +58,7 @@ object AutoCompletionService {
                             value = carryTier.identifier,
                             nameLocalizations = Optional()
                         )
-                    } ?: listOf()
+                    }?.take(25) ?: listOf()
             )
         }
     }
@@ -97,7 +97,7 @@ object AutoCompletionService {
                                 value = carryDifficulty.identifier,
                                 nameLocalizations = Optional()
                             )
-                        } ?: listOf()
+                        }?.take(25) ?: listOf()
                 )
             }
         } else {
@@ -122,7 +122,7 @@ object AutoCompletionService {
                                 value = carryDifficulty.identifier,
                                 nameLocalizations = Optional()
                             )
-                        } ?: listOf()
+                        }?.take(25) ?: listOf()
                 )
             }
         }

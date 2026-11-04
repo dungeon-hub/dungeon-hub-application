@@ -16,7 +16,6 @@ import dev.kordex.core.commands.converters.impl.channel
 import dev.kordex.core.commands.converters.impl.optionalBoolean
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
@@ -38,8 +37,8 @@ class SendCommand : Extension() {
             defaultMemberPermissions = Permissions(Permission.Administrator)
 
             publicSubCommand(::SendLinkMessageArguments) {
-                name = "link-message".toKey()
-                description = "Sends a message with buttons that help with linking.".toKey()
+                name = Send.LinkMessage.name
+                description = Send.LinkMessage.description
 
                 action {
                     respond {
@@ -72,8 +71,8 @@ class SendCommand : Extension() {
             }
 
             publicSubCommand(::SendArguments) {
-                name = "cnt-message".toKey()
-                description = "Send the CNT message into the given channel.".toKey()
+                name = Send.CntMessage.name
+                description = Send.CntMessage.description
 
                 action {
                     respond {
@@ -125,8 +124,8 @@ class SendCommand : Extension() {
 
     open class SendArguments : Arguments() {
         val channel by channel {
-            name = "channel".toKey()
-            description = "The channel to send the message into.".toKey()
+            name = Send.Arguments.Channel.name
+            description = Send.Arguments.Channel.description
             requiredChannelTypes = mutableSetOf(
                 ChannelType.GuildText,
                 ChannelType.GuildVoice,
@@ -137,8 +136,8 @@ class SendCommand : Extension() {
 
     class SendLinkMessageArguments : SendArguments() {
         val silent by optionalBoolean {
-            name = "silent".toKey()
-            description = "If the bot should reply silently (using ephemeral messages)".toKey()
+            name = Send.LinkMessage.Arguments.Silent.name
+            description = Send.LinkMessage.Arguments.Silent.description
         }
     }
 }
