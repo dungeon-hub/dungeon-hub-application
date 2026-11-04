@@ -247,7 +247,7 @@ class TicketSystem : Extension() {
 
                             components {
                                 ephemeralButton {
-                                    label = "Confirm".toKey()
+                                    label = Translations.Buttons.Confirm.label
                                     style = ButtonStyle.Success
 
                                     action {
@@ -424,8 +424,8 @@ class TicketSystem : Extension() {
 
     class TicketAddArguments : Arguments() {
         val target by user {
-            name = "user".toKey()
-            description = "The user to add to the ticket.".toKey()
+            name = Translations.Command.Ticket.Add.Arguments.User.name
+            description = Translations.Command.Ticket.Add.Arguments.User.description
         }
     }
 

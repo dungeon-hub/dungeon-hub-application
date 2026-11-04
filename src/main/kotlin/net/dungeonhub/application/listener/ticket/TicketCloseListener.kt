@@ -29,6 +29,7 @@ import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.TicketConnection
 import net.dungeonhub.enums.TicketAction
 import net.dungeonhub.enums.TicketState
+import net.dungeonhub.i18n.Translations
 import net.dungeonhub.model.ticket.TicketModel
 
 @LoadExtension
@@ -101,7 +102,7 @@ class TicketCloseListener : Extension() {
 
                         components {
                             ephemeralButton {
-                                label = "Confirm".toKey()
+                                label = Translations.Buttons.Confirm.label
                                 style = ButtonStyle.Success
 
                                 action {

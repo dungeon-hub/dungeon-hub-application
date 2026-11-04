@@ -22,7 +22,6 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralMessageCommand
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.EmbedColor
@@ -36,6 +35,7 @@ import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.StaticMessageConnection
 import net.dungeonhub.enums.StaticMessageType
+import net.dungeonhub.i18n.Translations
 import net.dungeonhub.i18n.Translations.Command.StaticMessage
 import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.static_message.StaticMessageCreationModel
@@ -190,8 +190,8 @@ class StaticMessageCommand: Extension() {
             }
 
             publicSubCommand(::StaticMessageEditArguments) {
-                name = "edit".toKey() // TODO add translation
-                description = "Edit the properties of a static message.".toKey() // TODO add translation
+                name = StaticMessage.Edit.name
+                description = StaticMessage.Edit.description
 
                 action {
                     val connection = StaticMessageConnection[guild!!.id.value.toLong()].authenticated()
@@ -227,7 +227,7 @@ class StaticMessageCommand: Extension() {
             }
 
             ephemeralMessageCommand {
-                name = "Static Message Info".toKey() // TODO add translation
+                name = Translations.MessageCommand.StaticMessageInfo.name
 
                 action {
                     val connection = StaticMessageConnection[guild!!.id.value.toLong()].authenticated()
