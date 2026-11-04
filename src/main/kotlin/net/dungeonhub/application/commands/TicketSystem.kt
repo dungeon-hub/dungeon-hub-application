@@ -7,6 +7,7 @@ import com.google.gson.JsonPrimitive
 import dev.kord.common.entity.*
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.MemberBehavior
+import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
@@ -17,7 +18,9 @@ import dev.kord.core.entity.Member
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
-import dev.kord.rest.builder.channel.*
+import dev.kord.rest.builder.channel.PermissionOverwriteBuilder
+import dev.kord.rest.builder.channel.PermissionOverwritesBuilder
+import dev.kord.rest.builder.channel.TextChannelModifyBuilder
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
@@ -34,7 +37,6 @@ import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.utils.hasPermission
 import dev.kordex.core.utils.scheduling.Scheduler
-import dev.kordex.i18n.toKey
 import io.ktor.http.*
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -50,11 +52,7 @@ import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.TicketConnection
-import net.dungeonhub.enums.DiscordChannelPermission
-import net.dungeonhub.enums.TicketAction
-import net.dungeonhub.enums.TicketPermissionCandidate
-import net.dungeonhub.enums.TicketPhase
-import net.dungeonhub.enums.TicketState
+import net.dungeonhub.enums.*
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.model.ticket.TicketModel
@@ -234,6 +232,13 @@ class TicketSystem : Extension() {
                     if(!ticket.ticketPanel.closeable) {
                         respond {
                             embeds = mutableListOf(TicketDeleteListener.deleteTicket(ticket, member!!.asMember(), event.interaction.channel.asChannelOf<TextChannel>()))
+                        }
+                        return@action
+                    }
+
+                    checkClosedTicketLimit(member!!, ticket)?.let { embed ->
+                        respond {
+                            embeds = mutableListOf(embed)
                         }
                         return@action
                     }
@@ -644,8 +649,20 @@ class TicketSystem : Extension() {
             return categories.getOrNull(0)
         }
 
+        /**
+         * Members with these server permissions bypass all ticket rules, both the panel permissions and the ticket limits.
+         */
+        private suspend fun Member.bypassesTicketRules(): Boolean =
+            hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)
+
+        private fun Member.hasSupportRole(ticketPanel: TicketPanelModel): Boolean =
+            ticketPanel.supportRoles.any { roleIds.contains(Snowflake(it.id)) }
+
+        private fun Member.hasAdditionalRole(ticketPanel: TicketPanelModel): Boolean =
+            ticketPanel.additionalRoles.any { roleIds.contains(Snowflake(it.id)) }
+
         suspend fun Member.isAllowedTo(action: TicketAction, ticket: TicketModel): Boolean {
-            if (hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)) return true
+            if (bypassesTicketRules()) return true
 
             return ticket.ticketPanel.permissions.isAllowed(TicketPhase.of(ticket.state), getTicketPermissionCandidates(ticket), action)
         }
@@ -653,11 +670,11 @@ class TicketSystem : Extension() {
         fun Member.getTicketPermissionCandidates(ticket: TicketModel): Set<TicketPermissionCandidate> = buildSet {
             add(TicketPermissionCandidate.Everyone)
 
-            if (ticket.ticketPanel.supportRoles.any { roleIds.contains(Snowflake(it.id)) }) {
+            if (hasSupportRole(ticket.ticketPanel)) {
                 add(TicketPermissionCandidate.SupportTeam)
             }
 
-            if (ticket.ticketPanel.additionalRoles.any { roleIds.contains(Snowflake(it.id)) }) {
+            if (hasAdditionalRole(ticket.ticketPanel)) {
                 add(TicketPermissionCandidate.AdditionalRoles)
             }
 
@@ -667,6 +684,68 @@ class TicketSystem : Extension() {
 
             if (ticket.claimer?.id == id.value.toLong()) {
                 add(TicketPermissionCandidate.TicketClaimer)
+            }
+        }
+
+        /**
+         * Whether the member is part of the staff of the given panel, which excludes them from the ticket limits.
+         * This is independent of a ticket, as the open ticket limit is checked before a ticket exists.
+         */
+        suspend fun Member.isTicketStaff(ticketPanel: TicketPanelModel): Boolean {
+            return bypassesTicketRules() || hasSupportRole(ticketPanel) || hasAdditionalRole(ticketPanel)
+        }
+
+        /**
+         * Checks whether the user is allowed to open another ticket in the given panel, staff members are excluded from the limit.
+         * @return an embed explaining why the user can't open a ticket, or null if the user is allowed to.
+         */
+        suspend fun checkOpenTicketLimit(user: UserBehavior, ticketPanel: TicketPanelModel): EmbedBuilder? {
+            val limit = ticketPanel.openTicketLimit ?: return null
+
+            val member = user.asMember(Snowflake(ticketPanel.discordServer.id))
+
+            if (member.isTicketStaff(ticketPanel)) return null
+
+            val openTickets = TicketConnection[member.guildId.value.toLong(), ticketPanel].authenticated()
+                .countTicketsByUser(member.id.value.toLong(), TicketState.Open) ?: return null
+
+            if (openTickets < limit) return null
+
+            val plural = if (openTickets == 1L) "" else "s"
+
+            return buildEmbed {
+                description = "You already have $openTickets open ${ticketPanel.displayName ?: ticketPanel.name} " +
+                        "ticket$plural, which is the limit for this panel.\n" +
+                        "Please use your existing ticket$plural instead."
+                color(EmbedColor.Negative)
+            }
+        }
+
+        /**
+         * Checks whether the member is allowed to close the given ticket.
+         * The limit is applied to the closed tickets of the ticket creator, staff members are excluded from it.
+         * @return an embed explaining why the ticket can't be closed, or null if the member is allowed to close it.
+         */
+        suspend fun checkClosedTicketLimit(member: MemberBehavior, ticket: TicketModel): EmbedBuilder? {
+            val ticketPanel = ticket.ticketPanel
+            val limit = ticketPanel.closedTicketLimit ?: return null
+
+            if (member.asMember().isTicketStaff(ticketPanel)) return null
+
+            val closedTickets = TicketConnection[member.guildId.value.toLong(), ticketPanel].authenticated()
+                .countTicketsByUser(ticket.user.id, TicketState.Closed) ?: return null
+
+            if (closedTickets < limit) return null
+
+            // the ticket creator is addressed directly, anyone else closing the ticket gets the creator mentioned
+            val owner = if (member.id.value.toLong() == ticket.user.id) "you already have" else "<@${ticket.user.id}> already has"
+
+            return buildEmbed {
+                description = "This ticket can't be closed, as $owner $closedTickets closed " +
+                        "${ticketPanel.displayName ?: ticketPanel.name} ticket${if (closedTickets == 1L) "" else "s"}, " +
+                        "which is the limit for this panel.\n" +
+                        "Please wait for a staff member to handle this ticket."
+                color(EmbedColor.Negative)
             }
         }
 

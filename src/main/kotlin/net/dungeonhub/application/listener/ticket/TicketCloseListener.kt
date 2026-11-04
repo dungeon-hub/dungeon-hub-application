@@ -93,6 +93,13 @@ class TicketCloseListener : Extension() {
                     return@action
                 }
 
+                TicketSystem.checkClosedTicketLimit(event.interaction.user, ticket)?.let { embed ->
+                    response.respond {
+                        embeds = mutableListOf(embed)
+                    }
+                    return@action
+                }
+
                 if(ticket.ticketPanel.closeConfirmation) {
                     response.respond {
                         addEmbed {
@@ -150,7 +157,9 @@ class TicketCloseListener : Extension() {
     }
 
     companion object {
-        fun closeTicket(member: MemberBehavior, textChannel: TextChannel, ticket: TicketModel): EmbedBuilder {
+        suspend fun closeTicket(member: MemberBehavior, textChannel: TextChannel, ticket: TicketModel): EmbedBuilder {
+            TicketSystem.checkClosedTicketLimit(member, ticket)?.let { return it }
+
             TicketSystem.scheduler.launch {
                 val updateModel = ticket.getUpdateModel()
                 updateModel.state = TicketState.Closed

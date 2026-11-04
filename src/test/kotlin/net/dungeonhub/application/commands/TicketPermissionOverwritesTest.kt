@@ -191,7 +191,9 @@ class TicketPermissionOverwritesTest {
             additionalRoles = listOf(additionalRole),
             openCategories = emptyList(),
             closedCategories = emptyList(),
-            permissions = permissions
+            permissions = permissions,
+            openTicketLimit = null,
+            closedTicketLimit = null
         )
     }
 }

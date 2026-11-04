@@ -242,6 +242,13 @@ class TicketCreateListener : Extension() {
                 return false
             }
 
+            TicketSystem.checkOpenTicketLimit(event.interaction.user, ticketPanel)?.let { embed ->
+                event.interaction.deferEphemeralResponse().respond {
+                    embeds = mutableListOf(embed)
+                }
+                return false
+            }
+
             return true
         }
 
@@ -253,8 +260,6 @@ class TicketCreateListener : Extension() {
             val response = event.interaction.deferEphemeralResponse()
 
             response.respond {
-                // TODO check for ticket limit
-
                 val member = event.interaction.user.asMember(Snowflake(ticketPanel.discordServer.id))
 
                 val ticket = createTicketModel(ticketPanel, member, responses)
