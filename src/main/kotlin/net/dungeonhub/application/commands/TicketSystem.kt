@@ -711,10 +711,12 @@ class TicketSystem : Extension() {
 
             if (openTickets < limit) return null
 
+            val plural = if (openTickets == 1L) "" else "s"
+
             return buildEmbed {
                 description = "You already have $openTickets open ${ticketPanel.displayName ?: ticketPanel.name} " +
-                        "ticket${if (openTickets == 1L) "" else "s"}, which is the limit for this panel.\n" +
-                        "Please use your existing ticket instead."
+                        "ticket$plural, which is the limit for this panel.\n" +
+                        "Please use your existing ticket$plural instead."
                 color(EmbedColor.Negative)
             }
         }
@@ -735,8 +737,11 @@ class TicketSystem : Extension() {
 
             if (closedTickets < limit) return null
 
+            // the ticket creator is addressed directly, anyone else closing the ticket gets the creator mentioned
+            val owner = if (member.id.value.toLong() == ticket.user.id) "you already have" else "<@${ticket.user.id}> already has"
+
             return buildEmbed {
-                description = "This ticket can't be closed, as <@${ticket.user.id}> already has $closedTickets closed " +
+                description = "This ticket can't be closed, as $owner $closedTickets closed " +
                         "${ticketPanel.displayName ?: ticketPanel.name} ticket${if (closedTickets == 1L) "" else "s"}, " +
                         "which is the limit for this panel.\n" +
                         "Please wait for a staff member to handle this ticket."
