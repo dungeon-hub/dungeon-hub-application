@@ -354,7 +354,7 @@ object ApplicationService {
             var description = carryType?.displayName + ": " + scoreModel.scoreAmount
             // carry counts are lifetime values, so they're only shown next to the alltime score
             if (scoreModel.scoreType == ScoreType.Alltime && carryCounts != null && carryType != null) {
-                description += " (${carryCounts.byType[carryType.id] ?: 0})"
+                description += " (from ${carryCounts.byType[carryType.id] ?: 0} carries)"
             }
             if (scoreDescriptions.containsKey(scoreModel.scoreType)) {
                 scoreDescriptions[scoreModel.scoreType]!!.add(description)
