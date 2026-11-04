@@ -25,7 +25,6 @@ import dev.kordex.core.ExtensibleBot
 import dev.kordex.core.components.components
 import dev.kordex.core.components.linkButton
 import dev.kordex.core.i18n.SupportedLocales
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.dm
 import dev.kordex.data.api.DataCollection
 import io.ktor.client.*
@@ -46,6 +45,7 @@ import net.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.application.misc.EmbedModel
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.color
+import net.dungeonhub.i18n.Translations
 import net.dungeonhub.service.MoshiService
 import net.dungeonhub.wrapper.kord.toJavaColor
 import org.slf4j.Logger
@@ -91,7 +91,7 @@ object DiscordConnection : StartupListener {
      * Method by the {@link StartupListener} interface, this is automatically executed on program launch.
      * This implementation starts the discord-bot.
      */
-    @OptIn(KordUnsafe::class, ExperimentalTime::class)
+    @OptIn(KordUnsafe::class)
     override suspend fun preStart() {
         bot = ExtensibleBot(ConfigProperty.DISCORD_BOT_TOKEN.value!!) {
             dataCollectionMode = DataCollection.Extra
@@ -128,12 +128,12 @@ object DiscordConnection : StartupListener {
 
                         components {
                             linkButton {
-                                label = "Documentation".toKey()
+                                label = Translations.Buttons.Documentation.label
                                 url = "https://docs.dungeon-hub.net/"
                             }
 
                             linkButton {
-                                label = "Discord".toKey()
+                                label = Translations.Buttons.Discord.label
                                 url = "https://discord.dungeon-hub.net/"
                             }
                         }
@@ -148,7 +148,6 @@ object DiscordConnection : StartupListener {
                                     "- [Mojang API](https://minecraft.wiki/w/Mojang_API)\n" +
                                     "- [Hypixel API](https://api.hypixel.net/)\n" +
                                     "- [Hypixel Safety API (by SBM)](https://hs.sbm.gg/)\n" +
-                                    "- [Scammer List (BlockHelper)](https://list.lenny.ie/)\n" +
                                     "-# We are not affiliated with any of the above services/companies"
                         }
                     }
@@ -252,7 +251,6 @@ fun User.getMutualServers(): Flow<Member> {
     }
 }
 
-@OptIn(ExperimentalTime::class)
 fun EmbedBuilder.copy(other: EmbedBuilder) {
     this.description = other.description
     this.title = other.title
@@ -333,7 +331,6 @@ fun EmbedBuilder.setAuthor(value: JsonElement) {
     }
 }
 
-@OptIn(ExperimentalTime::class)
 fun EmbedBuilder.applyJson(key: String, value: JsonElement) {
     when (key) {
         "title" -> title = value.asString
@@ -357,7 +354,6 @@ fun EmbedBuilder.applyJson(key: String, value: JsonElement) {
     }
 }
 
-@OptIn(ExperimentalTime::class)
 fun Embed.toBuilder(): EmbedBuilder {
     val embed = EmbedBuilder()
 
@@ -395,7 +391,6 @@ fun Field.toBuilder(): EmbedBuilder.Field {
     return field
 }
 
-@OptIn(ExperimentalTime::class)
 fun Embed.toModel(): EmbedModel {
     val embed = EmbedModel(
         title,

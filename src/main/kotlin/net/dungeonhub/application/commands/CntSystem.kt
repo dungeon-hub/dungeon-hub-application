@@ -27,7 +27,6 @@ import dev.kordex.core.components.components
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.dm
 import dev.kordex.core.utils.hasPermission
@@ -57,12 +56,10 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
-import kotlin.time.ExperimentalTime
 import kotlin.time.toKotlinDuration
 import kotlin.time.toKotlinInstant
 
 @LoadExtension
-@OptIn(ExperimentalTime::class)
 class CntSystem : Extension() {
     private val logger = LoggerFactory.getLogger(CntSystem::class.java)
     override val name = "cnt-system"
@@ -880,28 +877,28 @@ class CntSystem : Extension() {
 
     private class RepArguments : Arguments() {
         val user by user {
-            name = "user".toKey()
-            description = "The discord user to rep.".toKey()
+            name = Translations.Command.Rep.Arguments.User.name
+            description = Translations.Command.Rep.Arguments.User.description
         }
 
         val reason by optionalString {
-            name = "reason".toKey()
+            name = Translations.Command.Rep.Arguments.Reason.name
             description =
-                "You can provide an additional reason for the rep, e.g. a certain service they helped you with.".toKey()
+                Translations.Command.Rep.Arguments.Reason.description
         }
     }
 
     private class RepListArguments : Arguments() {
         val user by optionalUser {
-            name = "user".toKey()
-            description = "The discord user to list reputations for.".toKey()
+            name = Translations.Command.ManageReps.List.Arguments.User.name
+            description = Translations.Command.ManageReps.List.Arguments.User.description
         }
     }
 
     private class RepDeactivateArguments : Arguments() {
         val id by long {
-            name = "id".toKey()
-            description = "The id of the reputation to deactivate.".toKey()
+            name = Translations.Command.ManageReps.Deactivate.Arguments.Id.name
+            description = Translations.Command.ManageReps.Deactivate.Arguments.Id.description
         }
     }
 

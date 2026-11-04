@@ -18,7 +18,7 @@ import dev.kordex.core.extensions.event
 import dev.kordex.i18n.toKey
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.commands.TicketSystem
-import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedToChangeState
+import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedTo
 import net.dungeonhub.application.commands.TicketSystem.Companion.updateTicketPermissions
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.LoadExtension
@@ -27,7 +27,9 @@ import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.TicketConnection
+import net.dungeonhub.enums.TicketAction
 import net.dungeonhub.enums.TicketState
+import net.dungeonhub.i18n.Translations
 import net.dungeonhub.model.ticket.TicketModel
 
 @LoadExtension
@@ -71,7 +73,10 @@ class TicketCloseListener : Extension() {
                     return@action
                 }
 
-                if(!event.interaction.user.isAllowedToChangeState(ticket)) {
+                // without closing, the ticket is deleted directly
+                val closeAction = if (ticket.ticketPanel.closeable) TicketAction.Close else TicketAction.Delete
+
+                if(!event.interaction.user.isAllowedTo(closeAction, ticket)) {
                     response.respond {
                         addEmbed {
                             description = "You're not allowed to close this ticket!"
@@ -88,6 +93,13 @@ class TicketCloseListener : Extension() {
                     return@action
                 }
 
+                TicketSystem.checkClosedTicketLimit(event.interaction.user, ticket)?.let { embed ->
+                    response.respond {
+                        embeds = mutableListOf(embed)
+                    }
+                    return@action
+                }
+
                 if(ticket.ticketPanel.closeConfirmation) {
                     response.respond {
                         addEmbed {
@@ -97,7 +109,7 @@ class TicketCloseListener : Extension() {
 
                         components {
                             ephemeralButton {
-                                label = "Confirm".toKey()
+                                label = Translations.Buttons.Confirm.label
                                 style = ButtonStyle.Success
 
                                 action {
@@ -145,7 +157,9 @@ class TicketCloseListener : Extension() {
     }
 
     companion object {
-        fun closeTicket(member: MemberBehavior, textChannel: TextChannel, ticket: TicketModel): EmbedBuilder {
+        suspend fun closeTicket(member: MemberBehavior, textChannel: TextChannel, ticket: TicketModel): EmbedBuilder {
+            TicketSystem.checkClosedTicketLimit(member, ticket)?.let { return it }
+
             TicketSystem.scheduler.launch {
                 val updateModel = ticket.getUpdateModel()
                 updateModel.state = TicketState.Closed

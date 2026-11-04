@@ -10,10 +10,8 @@ import net.dungeonhub.application.misc.ScoreLeaderboard
 import net.dungeonhub.application.service.ApplicationService.embed
 import net.dungeonhub.model.score.ScoreLeaderboardModel
 import net.dungeonhub.model.score.ScoreModel
-import kotlin.time.ExperimentalTime
 
 @OnStart(priority = StartPriority.POST_BOT)
-@OptIn(ExperimentalTime::class)
 object LeaderboardService : StartupListener {
     val LEADERBOARD_DESCRIPTION by lazy {
         "To see how score is calculated, use `/help topic:score`.\n" +

@@ -30,6 +30,7 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.applyJson
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
+import net.dungeonhub.application.enums.getLeaderboardTitle
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartPriority
@@ -53,7 +54,6 @@ import java.time.Instant
 import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
 @OnStart(priority = StartPriority.POST_BOT)
@@ -410,7 +410,6 @@ object StaticMessageService : StartupListener {
         return embeds
     }
 
-    @OptIn(ExperimentalTime::class)
     suspend fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder {
         val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().getAllCarryDifficulties() ?: listOf()
 
@@ -420,7 +419,7 @@ object StaticMessageService : StartupListener {
         val description = title + priceDescription + if (carryDifficulties.isNotEmpty()) {
             carryDifficulties.joinToString("\n") { carryDifficulty ->
                 val result = StringBuilder()
-                if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
+                if (carryDifficulty.bulkPrices.isNotEmpty()) {
                     result.append("\n")
                 }
 
@@ -434,11 +433,11 @@ object StaticMessageService : StartupListener {
 
                 result.append(priceText)
 
-                if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
+                for (bulkPrice in carryDifficulty.bulkPrices) {
                     result.append("\n\\*")
-                        .append(FormattingService.makeNumberReadable(carryDifficulty.bulkPrice!!.toLong()))
+                        .append(FormattingService.makeNumberReadable(bulkPrice.price.toLong()))
                         .append(" per carry if you buy ")
-                        .append(carryDifficulty.bulkAmount)
+                        .append(bulkPrice.amount)
                         .append("+ carries.")
                 }
                 result
@@ -454,7 +453,6 @@ object StaticMessageService : StartupListener {
         }
     }
 
-    @OptIn(ExperimentalTime::class)
     private fun handleScoreLeaderboards(guildId: Long, leaderboards: List<ScoreLeaderboard>): MutableList<EmbedBuilder> {
         val embeds = mutableListOf<EmbedBuilder>()
 

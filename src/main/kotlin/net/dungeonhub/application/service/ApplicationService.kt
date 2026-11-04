@@ -29,6 +29,7 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.FlaggingConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
+import net.dungeonhub.application.enums.readableName
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
@@ -45,6 +46,7 @@ import net.dungeonhub.hypixel.client.responses.ValueResponse
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.hypixel.entities.skyblock.statsoverview.StatsOverviewType
 import net.dungeonhub.hypixel.service.FormattingService
+import net.dungeonhub.model.carry.CarryCountsModel
 import net.dungeonhub.model.carry.CarryModel
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
@@ -67,9 +69,11 @@ import java.io.File
 import java.io.IOException
 import java.util.*
 import javax.imageio.ImageIO
-import kotlin.time.*
+import kotlin.time.Clock
+import kotlin.time.Duration
+import kotlin.time.Instant
+import kotlin.time.toKotlinInstant
 
-@OptIn(ExperimentalTime::class)
 object ApplicationService {
     const val MAX_MINECRAFT_USERNAME_LENGTH = 16
     const val skyCryptUrl = "https://sky.shiiyu.moe/"
@@ -320,7 +324,7 @@ object ApplicationService {
         user: User,
         server: GuildBehavior?,
         scoreCount: List<ScoreModel>,
-        carryCount: Int? = null,
+        carryCounts: CarryCountsModel? = null,
         locale: Locale? = null
     ): EmbedBuilder {
         if (scoreCount.isEmpty()) {
@@ -328,6 +332,8 @@ object ApplicationService {
         }
 
         val embed = embed
+
+        val carryCount = carryCounts?.carryCount
 
         embed.title = if ((userToCheck.id != user.id && server != null)) {
             (server.getMemberOrNull(userToCheck.id)?.effectiveName ?: userToCheck.effectiveName) + "'s score${if (carryCount != null) " from $carryCount total carries" else ""}:"
@@ -344,7 +350,12 @@ object ApplicationService {
             if (scoreModel.scoreType == ScoreType.Event && !scoreModel.carryType?.isEventActive!!) {
                 return@forEach
             }
-            val description = scoreModel.carryType?.displayName + ": " + scoreModel.scoreAmount
+            val carryType = scoreModel.carryType
+            var description = carryType?.displayName + ": " + scoreModel.scoreAmount
+            // carry counts are lifetime values, so they're only shown next to the alltime score
+            if (scoreModel.scoreType == ScoreType.Alltime && carryCounts != null && carryType != null) {
+                description += " (${carryCounts.byType[carryType.id] ?: 0})"
+            }
             if (scoreDescriptions.containsKey(scoreModel.scoreType)) {
                 scoreDescriptions[scoreModel.scoreType]!!.add(description)
             } else {
@@ -540,10 +551,13 @@ object ApplicationService {
         ) { carryDifficulty.price.toString() + " (" + FormattingService.makeNumberReadable(carryDifficulty.price.toLong()) + ")" }
         embed.field("Score", true) { carryDifficulty.score.toString() }
 
-        carryDifficulty.bulkAmount
-            ?.let { integer: Int -> embed.field("Bulk Amount", true) { integer.toString() } }
-        carryDifficulty.bulkPrice
-            ?.let { integer: Int -> embed.field("Bulk Price", true) { integer.toString() } }
+        if (carryDifficulty.bulkPrices.isNotEmpty()) {
+            embed.field("Bulk Prices", true) {
+                carryDifficulty.bulkPrices.joinToString("\n") { bulkPrice ->
+                    bulkPrice.amount.toString() + "+: " + bulkPrice.price + " (" + FormattingService.makeNumberReadable(bulkPrice.price.toLong()) + ")"
+                }
+            }
+        }
         carryDifficulty.thumbnailUrl?.let { s: String -> embed.field("Thumbnail URL", true) { s } }
         carryDifficulty.thumbnailUrl?.let { s: String -> embed.field("Price Title", true) { s } }
 
@@ -840,58 +854,48 @@ object ApplicationService {
     }
 }
 
-@OptIn(ExperimentalTime::class)
 fun Extension.getEmbed(): EmbedBuilder {
     return ApplicationService.getEmbed(Clock.System.now())
 }
 
-@OptIn(ExperimentalTime::class)
 fun Extension.getEmbed(time: Instant?): EmbedBuilder {
     return ApplicationService.getEmbed(time)
 }
 
-@OptIn(ExperimentalTime::class)
 fun AbstractMessageCreateBuilder.addEmbed(function: EmbedBuilder.() -> Unit) {
     this.addEmbed(Clock.System.now(), function)
 }
 
-@OptIn(ExperimentalTime::class)
 fun AbstractMessageCreateBuilder.addEmbed(time: Instant?, function: EmbedBuilder.() -> Unit) {
     val embed = ApplicationService.getEmbed(time)
     function(embed)
     embeds = ((embeds ?: mutableListOf()) + embed).toMutableList()
 }
 
-@OptIn(ExperimentalTime::class)
 fun InteractionResponseModifyBuilder.addEmbed(function: EmbedBuilder.() -> Unit) {
     this.addEmbed(Clock.System.now(), function)
 }
 
-@OptIn(ExperimentalTime::class)
 fun InteractionResponseModifyBuilder.addEmbed(time: Instant?, function: EmbedBuilder.() -> Unit) {
     val embed = ApplicationService.getEmbed(time)
     function(embed)
     embeds = ((embeds ?: mutableListOf()) + embed).toMutableList()
 }
 
-@OptIn(ExperimentalTime::class)
 fun buildEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {
     return buildEmbed(Clock.System.now(), function)
 }
 
-@OptIn(ExperimentalTime::class)
 fun buildEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): EmbedBuilder {
     val embed = ApplicationService.getEmbed(time)
     function(embed)
     return embed
 }
 
-@OptIn(ExperimentalTime::class)
 fun Extension.createEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {
     return this.createEmbed(Clock.System.now(), function)
 }
 
-@OptIn(ExperimentalTime::class)
 fun Extension.createEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): EmbedBuilder {
     val embed = getEmbed(time)
     function(embed)

@@ -14,11 +14,12 @@ import dev.kordex.core.commands.converters.impl.optionalString
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.getLocale
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.HelpTopic
+import net.dungeonhub.application.enums.getLeaderboardTitle
+import net.dungeonhub.application.enums.readableName
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.application.service.LeaderboardService
@@ -187,8 +188,8 @@ class LeaderboardCommand : Extension() {
         }
 
         val scoreType by optionalStringChoice {
-            name = "score-type".toKey()
-            description = "Select which type of score you want.".toKey()
+            name = Leaderboard.Score.Arguments.ScoreType.name
+            description = Leaderboard.Score.Arguments.ScoreType.description
             choices = ScoreType.entries.associate { it.readableName to it.name }.toMutableMap()
         }
 

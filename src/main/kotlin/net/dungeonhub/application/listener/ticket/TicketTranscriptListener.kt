@@ -26,7 +26,7 @@ import io.ktor.utils.io.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.commands.TicketSystem
-import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedToChangeState
+import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedTo
 import net.dungeonhub.application.commands.TicketSystem.Companion.replacePlaceholders
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.applyJson
@@ -40,6 +40,7 @@ import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.ContentConnection
 import net.dungeonhub.connection.DiscordServerConnection
+import net.dungeonhub.enums.TicketAction
 import net.dungeonhub.enums.TranscriptTarget
 import net.dungeonhub.model.ticket.TicketModel
 import net.dungeonhub.service.GsonService
@@ -71,7 +72,7 @@ class TicketTranscriptListener : Extension() {
                     return@action
                 }
 
-                if(!event.interaction.user.isAllowedToChangeState(ticket)) {
+                if(!event.interaction.user.isAllowedTo(TicketAction.GenerateTranscript, ticket)) {
                     response.respond {
                         addEmbed {
                             description = "You're not allowed to generate a transcript here!"
