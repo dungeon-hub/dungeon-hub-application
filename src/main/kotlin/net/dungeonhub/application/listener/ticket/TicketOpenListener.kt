@@ -13,7 +13,7 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.commands.TicketSystem
-import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedToChangeState
+import net.dungeonhub.application.commands.TicketSystem.Companion.isAllowedTo
 import net.dungeonhub.application.commands.TicketSystem.Companion.updateTicketPermissions
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.loader.LoadExtension
@@ -22,6 +22,7 @@ import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.TicketConnection
+import net.dungeonhub.enums.TicketAction
 import net.dungeonhub.enums.TicketState
 import net.dungeonhub.model.ticket.TicketModel
 
@@ -59,7 +60,7 @@ class TicketOpenListener : Extension() {
                     return@action
                 }
 
-                if(!event.interaction.user.isAllowedToChangeState(ticket)) {
+                if(!event.interaction.user.isAllowedTo(TicketAction.Reopen, ticket)) {
                     response.respond {
                         addEmbed {
                             description = "You're not allowed to reopen this ticket!"

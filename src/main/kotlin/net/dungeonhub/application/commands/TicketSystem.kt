@@ -51,8 +51,10 @@ import net.dungeonhub.application.service.buildEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.TicketConnection
+import net.dungeonhub.enums.DiscordChannelPermission
+import net.dungeonhub.enums.TicketAction
 import net.dungeonhub.enums.TicketPermissionCandidate
-import net.dungeonhub.enums.TicketPermissionType
+import net.dungeonhub.enums.TicketPhase
 import net.dungeonhub.enums.TicketState
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.i18n.Translations
@@ -217,7 +219,10 @@ class TicketSystem : Extension() {
                         return@action
                     }
 
-                    if(!member!!.asMember().isAllowedToChangeState(ticket)) {
+                    // without closing, the ticket is deleted directly
+                    val closeAction = if (ticket.ticketPanel.closeable) TicketAction.Close else TicketAction.Delete
+
+                    if(!member!!.asMember().isAllowedTo(closeAction, ticket)) {
                         respond {
                             addEmbed {
                                 description = "You're not allowed to close this ticket!"
@@ -378,7 +383,7 @@ class TicketSystem : Extension() {
                         return@action
                     }
 
-                    if(!member!!.asMember().isAllowedToChangeState(ticket)) { // TODO should this be a separate check?
+                    if(!member!!.asMember().isAllowedTo(TicketAction.AddUser, ticket)) {
                         respond {
                             addEmbed {
                                 description = "You're not allowed to add users to this ticket!"
@@ -388,13 +393,25 @@ class TicketSystem : Extension() {
                         return@action
                     }
 
-                    ticket.ticketPanel.permissions[TicketPermissionCandidate.TicketClaimer]?.let { permissions ->
-                        ticketChannel.edit {
-                            keepOverwrites(ticketChannel)
-                            addMemberOverwrite(arguments.target.id) {
-                                addOverwritePermissions(permissions.entries)
+                    // added users get the same channel permissions as the claimer
+                    val claimerPermissions = ticket.ticketPanel.permissions.channelPermissions(
+                        TicketPhase.of(ticket.state),
+                        TicketPermissionCandidate.TicketClaimer
+                    )
+
+                    if (claimerPermissions.isEmpty()) {
+                        respond {
+                            addEmbed {
+                                description = "This ticket panel doesn't give the claimer any channel permissions, which added users would get as well."
+                                color(EmbedColor.Negative)
                             }
                         }
+                        return@action
+                    }
+
+                    ticketChannel.edit {
+                        keepOverwrites(ticketChannel)
+                        addChannelPermissions(arguments.target.id.value.toLong(), OverwriteType.Member, claimerPermissions)
                     }
 
                     logTicketAction(guild!!, ticket) {
@@ -564,58 +581,61 @@ class TicketSystem : Extension() {
         }
 
         fun PermissionOverwritesBuilder.updateTicketPermissions(ticketPanel: TicketPanelModel, ticket: TicketModel) {
-            for (entry in ticketPanel.permissions.entries) {
-                when (entry.key) {
-                    TicketPermissionCandidate.SupportTeam -> {
-                        for (supportRole in ticketPanel.supportRoles) {
-                            if (ticket.claimer == null) {
-                                addRoleOverwrite(Snowflake(supportRole.id)) {
-                                    addOverwritePermissions(entry.value.entries)
-                                }
-                            }
-                        }
-                    }
+            val phase = TicketPhase.of(ticket.state)
+            val permissions = ticketPanel.permissions
 
-                    TicketPermissionCandidate.AdditionalRoles -> {
-                        for (additionalRole in ticketPanel.additionalRoles) {
-                            addRoleOverwrite(Snowflake(additionalRole.id)) {
-                                addOverwritePermissions(entry.value.entries)
-                            }
-                        }
-                    }
-
-                    TicketPermissionCandidate.TicketCreator -> {
-                        if (ticket.state != TicketState.Closed) { // TODO add a config for this
-                            addMemberOverwrite(Snowflake(ticket.user.id)) {
-                                addOverwritePermissions(entry.value.entries)
-                            }
-                        }
-                    }
-
-                    TicketPermissionCandidate.TicketClaimer -> {
-                        if (ticket.claimer != null) {
-                            addMemberOverwrite(Snowflake(ticket.claimer!!.id)) {
-                                addOverwritePermissions(entry.value.entries)
-                            }
-                        }
-                    }
-
-                    TicketPermissionCandidate.Everyone -> {
-                        addRoleOverwrite(Snowflake(ticketPanel.discordServer.id)) {
-                            addOverwritePermissions(entry.value.entries)
-                        }
-                    }
+            // while a ticket is claimed, the support team doesn't get its overwrite
+            if (ticket.claimer == null) {
+                for (supportRole in ticketPanel.supportRoles) {
+                    addChannelPermissions(supportRole.id, OverwriteType.Role, permissions.channelPermissions(phase, TicketPermissionCandidate.SupportTeam))
                 }
+            }
+
+            for (additionalRole in ticketPanel.additionalRoles) {
+                addChannelPermissions(additionalRole.id, OverwriteType.Role, permissions.channelPermissions(phase, TicketPermissionCandidate.AdditionalRoles))
+            }
+
+            // the creator and the claimer can be the same member, so their permissions are merged
+            val memberPermissions = mutableMapOf<Long, MutableMap<DiscordChannelPermission, Boolean>>()
+
+            memberPermissions.getOrPut(ticket.user.id) { mutableMapOf() }
+                .mergeChannelPermissions(permissions.channelPermissions(phase, TicketPermissionCandidate.TicketCreator))
+
+            ticket.claimer?.let { claimer ->
+                memberPermissions.getOrPut(claimer.id) { mutableMapOf() }
+                    .mergeChannelPermissions(permissions.channelPermissions(phase, TicketPermissionCandidate.TicketClaimer))
+            }
+
+            for ((memberId, channelPermissions) in memberPermissions) {
+                addChannelPermissions(memberId, OverwriteType.Member, channelPermissions)
+            }
+
+            addChannelPermissions(ticketPanel.discordServer.id, OverwriteType.Role, permissions.channelPermissions(phase, TicketPermissionCandidate.Everyone))
+        }
+
+        private fun MutableMap<DiscordChannelPermission, Boolean>.mergeChannelPermissions(channelPermissions: Map<DiscordChannelPermission, Boolean>) {
+            for ((permission, allowed) in channelPermissions) {
+                merge(permission, allowed) { existing, new -> existing || new }
             }
         }
 
-        fun PermissionOverwriteBuilder.addOverwritePermissions(entries: Set<Map.Entry<TicketPermissionType, Permissions>>) {
-            for (permissionEntry in entries) {
-                when (permissionEntry.key) {
-                    TicketPermissionType.Allowed -> allowed = permissionEntry.value
-                    TicketPermissionType.Denied -> denied = permissionEntry.value
-                }
-            }
+        fun PermissionOverwritesBuilder.addChannelPermissions(target: Long, type: OverwriteType, channelPermissions: Map<DiscordChannelPermission, Boolean>) {
+            if (channelPermissions.isEmpty()) return
+
+            val overwrite = PermissionOverwriteBuilder(type, Snowflake(target))
+            overwrite.allowed = Permissions(channelPermissions.filterValues { it }.keys.map { it.toKordPermission() })
+            overwrite.denied = Permissions(channelPermissions.filterValues { !it }.keys.map { it.toKordPermission() })
+            addOverwrite(overwrite.toOverwrite())
+        }
+
+        fun DiscordChannelPermission.toKordPermission(): Permission = when (this) {
+            DiscordChannelPermission.ViewChannel -> Permission.ViewChannel
+            DiscordChannelPermission.SendMessages -> Permission.SendMessages
+            DiscordChannelPermission.ManageMessages -> Permission.ManageMessages
+            DiscordChannelPermission.EmbedLinks -> Permission.EmbedLinks
+            DiscordChannelPermission.AttachFiles -> Permission.AttachFiles
+            DiscordChannelPermission.ReadMessageHistory -> Permission.ReadMessageHistory
+            DiscordChannelPermission.MentionEveryone -> Permission.MentionEveryone
         }
 
         fun TextChannelModifyBuilder.keepOverwrites(textChannel: TextChannel) {
@@ -632,25 +652,36 @@ class TicketSystem : Extension() {
             return categories.getOrNull(0)
         }
 
-        // TODO this was initially just for closing the ticket - does that also count for reopening the ticket etc?
-        // TODO is there any other situation in which some user might be allowed / disallowed to close a ticket?
-        suspend fun Member.isAllowedToChangeState(ticket: TicketModel): Boolean {
+        suspend fun Member.isAllowedTo(action: TicketAction, ticket: TicketModel): Boolean {
             if (hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)) return true
 
-            if (ticket.ticketPanel.supportRoles.any { roleIds.contains(Snowflake(it.id)) }
-                || ticket.ticketPanel.additionalRoles.any { roleIds.contains(Snowflake(it.id)) }) {
-                return true
+            return ticket.ticketPanel.permissions.isAllowed(TicketPhase.of(ticket.state), getTicketPermissionCandidates(ticket), action)
+        }
+
+        fun Member.getTicketPermissionCandidates(ticket: TicketModel): Set<TicketPermissionCandidate> = buildSet {
+            add(TicketPermissionCandidate.Everyone)
+
+            if (ticket.ticketPanel.supportRoles.any { roleIds.contains(Snowflake(it.id)) }) {
+                add(TicketPermissionCandidate.SupportTeam)
             }
 
-            // TODO here, we assume that the ticket creator is allowed to close the ticket - that should be a setting
-            return ticket.user.id == id.value.toLong()
+            if (ticket.ticketPanel.additionalRoles.any { roleIds.contains(Snowflake(it.id)) }) {
+                add(TicketPermissionCandidate.AdditionalRoles)
+            }
+
+            if (ticket.user.id == id.value.toLong()) {
+                add(TicketPermissionCandidate.TicketCreator)
+            }
+
+            if (ticket.claimer?.id == id.value.toLong()) {
+                add(TicketPermissionCandidate.TicketClaimer)
+            }
         }
 
-        // TODO check
-        suspend fun Member.isAllowedToClaim(ticket: TicketModel): Boolean {
-            return isTicketStaff(ticket.ticketPanel)
-        }
-
+        /**
+         * Whether the member is part of the staff of the given panel, which excludes them from the ticket limits.
+         * This is independent of a ticket, as the open ticket limit is checked before a ticket exists.
+         */
         suspend fun Member.isTicketStaff(ticketPanel: TicketPanelModel): Boolean {
             if (hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)) return true
 
@@ -705,13 +736,6 @@ class TicketSystem : Extension() {
                         "Please wait for a staff member to handle this ticket."
                 color(EmbedColor.Negative)
             }
-        }
-
-        // TODO check
-        suspend fun Member.isAllowedToUnclaim(ticket: TicketModel): Boolean {
-            if (hasPermission(Permission.Administrator) || hasPermission(Permission.ManageChannels)) return true
-
-            return ticket.claimer?.id == id.value.toLong()
         }
 
         fun logTicketAction(guild: GuildBehavior, ticket: TicketModel, addDefaultFields: Boolean = true, builder: suspend EmbedBuilder.() -> Unit) {
