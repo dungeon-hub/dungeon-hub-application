@@ -542,10 +542,13 @@ object ApplicationService {
         ) { carryDifficulty.price.toString() + " (" + FormattingService.makeNumberReadable(carryDifficulty.price.toLong()) + ")" }
         embed.field("Score", true) { carryDifficulty.score.toString() }
 
-        carryDifficulty.bulkAmount
-            ?.let { integer: Int -> embed.field("Bulk Amount", true) { integer.toString() } }
-        carryDifficulty.bulkPrice
-            ?.let { integer: Int -> embed.field("Bulk Price", true) { integer.toString() } }
+        if (carryDifficulty.bulkPrices.isNotEmpty()) {
+            embed.field("Bulk Prices", true) {
+                carryDifficulty.bulkPrices.joinToString("\n") { bulkPrice ->
+                    bulkPrice.amount.toString() + "+: " + bulkPrice.price + " (" + FormattingService.makeNumberReadable(bulkPrice.price.toLong()) + ")"
+                }
+            }
+        }
         carryDifficulty.thumbnailUrl?.let { s: String -> embed.field("Thumbnail URL", true) { s } }
         carryDifficulty.thumbnailUrl?.let { s: String -> embed.field("Price Title", true) { s } }
 
