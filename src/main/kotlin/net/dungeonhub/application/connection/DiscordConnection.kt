@@ -25,7 +25,6 @@ import dev.kordex.core.ExtensibleBot
 import dev.kordex.core.components.components
 import dev.kordex.core.components.linkButton
 import dev.kordex.core.i18n.SupportedLocales
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.dm
 import dev.kordex.data.api.DataCollection
 import io.ktor.client.*
@@ -46,6 +45,7 @@ import net.dungeonhub.application.loader.StartupListener
 import net.dungeonhub.application.misc.EmbedModel
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.color
+import net.dungeonhub.i18n.Translations
 import net.dungeonhub.service.MoshiService
 import net.dungeonhub.wrapper.kord.toJavaColor
 import org.slf4j.Logger
@@ -128,12 +128,12 @@ object DiscordConnection : StartupListener {
 
                         components {
                             linkButton {
-                                label = "Documentation".toKey()
+                                label = Translations.Buttons.Documentation.label
                                 url = "https://docs.dungeon-hub.net/"
                             }
 
                             linkButton {
-                                label = "Discord".toKey()
+                                label = Translations.Buttons.Discord.label
                                 url = "https://discord.dungeon-hub.net/"
                             }
                         }
