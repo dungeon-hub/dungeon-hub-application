@@ -10,10 +10,7 @@ import dev.kordex.core.utils.scheduling.Scheduler
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.ktor.utils.io.*
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.datetime.*
 import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
@@ -30,10 +27,7 @@ import java.io.ByteArrayInputStream
 import java.io.IOException
 import kotlin.time.Clock
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
-import java.util.HashSet
+import kotlin.time.Instant
 
 @OnStart
 object BirthdayService : StartupListener {
@@ -43,6 +37,7 @@ object BirthdayService : StartupListener {
     private const val BIRTHDAYS_CHANNEL = 1362024376974839908
     private const val BIRTHDAY_CONGRATS_CHANNEL = 1082583379226148874
     private const val EXECUTION_HOUR = 9
+    private const val TIMEZONE_EXECUTION_HOUR = 0
     private val logger = LoggerFactory.getLogger(BirthdayService::class.java)
     private lateinit var scheduler: Scheduler
     var birthdays: List<Birthday> = listOf()
@@ -53,69 +48,102 @@ object BirthdayService : StartupListener {
             scheduler.cancel("Application was restarted.")
         }
 
-        scheduledTimezones.clear()
+        resetScheduledTimezones()
         scheduler = DhScheduler()
 
         updateBirthdayData()
 
         scheduleServerTimeBirthdays()
 
-        // One schedule per distinct timezone, so each fires at 9am in that timezone.
-        for (timezone in birthdays.mapNotNull { it.timezone }.distinct()) {
-            scheduleTimezoneBirthdays(timezone)
+        scheduleNewTimezones()
+    }
+
+    private fun scheduleServerTimeBirthdays() {
+        launchDailyAt(TimeZone.currentSystemDefault(), EXECUTION_HOUR, null)
+    }
+
+    /**
+     * One schedule per distinct timezone, so each fires at midnight (start of the day) in that timezone.
+     * Timezones that already have a schedule are skipped.
+     */
+    private fun scheduleNewTimezones() {
+        for ((name, timeZone) in claimNewTimezones()) {
+            launchDailyAt(timeZone, TIMEZONE_EXECUTION_HOUR, name)
         }
     }
 
-    private suspend fun scheduleServerTimeBirthdays() {
-        val task = scheduler.schedule(24.hours, startNow = false, name = "Birthdays-Schedule", repeat = true) {
-            updateBirthdayData()
+    /**
+     * Returns the timezones of the current [birthdays] that don't have a schedule yet and marks them as scheduled.
+     * Timezones that can't be parsed are never returned.
+     */
+    internal fun claimNewTimezones(): List<Pair<String, TimeZone>> {
+        return birthdays.mapNotNull { it.timezone }.distinct().mapNotNull { name ->
+            if (!scheduledTimezones.add(name)) return@mapNotNull null
 
-            sendBirthdays(TimeZone.currentSystemDefault(), null)
+            parseTimeZone(name)?.let { name to it }
         }
+    }
 
+    internal fun resetScheduledTimezones() = scheduledTimezones.clear()
+
+    /**
+     * Announces the birthdays every day at [hour] o'clock in [timeZone].
+     * The delay is recalculated after every run (instead of repeating a fixed 24 hours),
+     * so daylight saving changes can't move the announcement to the wrong day.
+     */
+    private fun launchDailyAt(timeZone: TimeZone, hour: Int, timezoneName: String?) {
         scheduler.launch {
-            delay(calculateExecutionTime(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time))
+            runDaily(timeZone, hour, timezoneName ?: "server time") {
+                updateBirthdayData()
 
-            task.callNow()
-            task.start()
+                sendBirthdays(timeZone, timezoneName)
+            }
         }
     }
 
-    private suspend fun scheduleTimezoneBirthdays(timezone: String) {
-        if (!scheduledTimezones.add(timezone)) return
+    /**
+     * Runs [action] every day at [hour] o'clock in [timeZone] until the coroutine is cancelled.
+     * A failing [action] is logged and doesn't stop the loop.
+     * [now] and [sleep] can be replaced to test the loop without waiting.
+     */
+    internal suspend fun runDaily(
+        timeZone: TimeZone,
+        hour: Int,
+        name: String,
+        now: () -> Instant = { Clock.System.now() },
+        sleep: suspend (Duration) -> Unit = { delay(it) },
+        onError: (Exception) -> Unit = { logger.error("Birthday announcement failed for $name.", it) },
+        action: suspend () -> Unit
+    ) {
+        var first = true
 
-        val timeZone = parseTimeZone(timezone) ?: return
+        while (currentCoroutineContext().isActive) {
+            sleep(calculateDelayUntil(now(), timeZone, hour, allowImmediate = first))
+            first = false
 
-        val task = scheduler.schedule(24.hours, startNow = false, name = "Birthdays-Schedule ($timezone)", repeat = true) {
-            updateBirthdayData()
-
-            sendBirthdays(timeZone, timezone)
-        }
-
-        scheduler.launch {
-            delay(calculateExecutionTime(Clock.System.now().toLocalDateTime(timeZone).time))
-
-            task.callNow()
-            task.start()
+            try {
+                action()
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                onError(exception)
+            }
         }
     }
 
-    fun calculateExecutionTime(localTime: LocalTime): Duration {
-        return if (localTime.hour <= EXECUTION_HOUR) {
-            val hDifference = EXECUTION_HOUR - localTime.hour
-            val mDifference = 0 - localTime.minute
-            val sDifference = 0 - localTime.second
+    /**
+     * Time from [now] until the next [hour]:00 in [timeZone].
+     * Works on real instants, so days with a daylight saving change (23 or 25 hours) are handled.
+     */
+    fun calculateDelayUntil(now: Instant, timeZone: TimeZone, hour: Int, allowImmediate: Boolean = true): Duration {
+        val today = now.toLocalDateTime(timeZone).date
+        var target = LocalDateTime(today, LocalTime(hour, 0)).toInstant(timeZone)
 
-            hDifference.hours + mDifference.minutes + sDifference.seconds
-        } else {
-            val hDifference = localTime.hour - EXECUTION_HOUR
-            val mDifference = localTime.minute
-            val sDifference = localTime.second
-
-            val totalDifference = hDifference * 60 * 60 + mDifference * 60 + sDifference
-
-            24.hours.minus(totalDifference.seconds)
+        if (target < now || (target == now && !allowImmediate)) {
+            target = LocalDateTime(today.plus(1, DateTimeUnit.DAY), LocalTime(hour, 0)).toInstant(timeZone)
         }
+
+        return target - now
     }
 
     /**
@@ -146,20 +174,7 @@ object BirthdayService : StartupListener {
             val embed = EmbedBuilder()
             embed.color(EmbedColor.Positive)
             embed.title = birthday.eventName
-            embed.description =
-                "Happy Birthday, ${birthday.username} (<@${birthday.userId}>)! \uD83C\uDF89 \uD83E\uDD73 ❤\uFE0F" +
-                    if (birthday.birthYear != null) {
-                        "\nToday, they are turning ${now.year - birthday.birthYear} years old!"
-                    } else {
-                        ""
-                    } +
-                    "\nTheir birthday is on ${birthday.date.day.toString().padStart(2, '0')}.${birthday.date.month.number.toString().padStart(2, '0')}." +
-                    if (birthday.timezone != null) {
-                        "\nAnnounced at 9am in ${birthday.timezone}."
-                    } else {
-                        ""
-                    } +
-                    "\nMake sure to congratulate them in <#$BIRTHDAY_CONGRATS_CHANNEL>!"
+            embed.description = buildDescription(birthday, now)
 
             embeds += embed
         }
@@ -170,6 +185,19 @@ object BirthdayService : StartupListener {
                 this.embeds = embeds
             }
         }
+    }
+
+    internal fun buildDescription(birthday: Birthday, now: LocalDateTime): String {
+        val age = birthday.birthYear?.let { "\nToday, they are turning ${now.year - it} years old!" } ?: ""
+        val day = birthday.date.day.toString().padStart(2, '0')
+        val month = birthday.date.month.number.toString().padStart(2, '0')
+        val timezone = birthday.timezone?.let { "\nAnnounced at midnight in $it." } ?: ""
+
+        return "Happy Birthday, ${birthday.username} (<@${birthday.userId}>)! \uD83C\uDF89 \uD83E\uDD73 ❤\uFE0F" +
+                age +
+                "\nTheir birthday is on $day.$month." +
+                timezone +
+                "\nMake sure to congratulate them in <#$BIRTHDAY_CONGRATS_CHANNEL>!"
     }
 
     fun getTodayBirthdays(today: LocalDateTime, timezoneName: String? = null): List<Birthday> {
@@ -191,9 +219,7 @@ object BirthdayService : StartupListener {
                         birthdays = birthdayList
 
                         // Reconcile schedules: timezones that only appear in refreshed data need their own schedule.
-                        for (timezone in birthdays.mapNotNull { it.timezone }.distinct()) {
-                            scheduleTimezoneBirthdays(timezone)
-                        }
+                        scheduleNewTimezones()
                     }
                 }
             }
@@ -290,7 +316,7 @@ object BirthdayService : StartupListener {
                 val year = description?.firstOrNull()?.trim()?.toIntOrNull()
 
                 // Keep the timezone only when it actually parses, so unparseable values fall back to the server-time schedule.
-                val timezone = description?.getOrNull(1)?.trim()?.takeIf { it?.isNotEmpty() == true }?.takeIf { parseTimeZone(it) != null }
+                val timezone = description?.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }?.takeIf { parseTimeZone(it) != null }
 
                 val now = java.time.LocalDate.now()
 
