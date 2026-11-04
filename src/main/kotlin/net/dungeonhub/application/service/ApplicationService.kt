@@ -45,6 +45,7 @@ import net.dungeonhub.hypixel.client.responses.ValueResponse
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.hypixel.entities.skyblock.statsoverview.StatsOverviewType
 import net.dungeonhub.hypixel.service.FormattingService
+import net.dungeonhub.model.carry.CarryCountsModel
 import net.dungeonhub.model.carry.CarryModel
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
@@ -322,7 +323,7 @@ object ApplicationService {
         user: User,
         server: GuildBehavior?,
         scoreCount: List<ScoreModel>,
-        carryCount: Int? = null,
+        carryCounts: CarryCountsModel? = null,
         locale: Locale? = null
     ): EmbedBuilder {
         if (scoreCount.isEmpty()) {
@@ -330,6 +331,8 @@ object ApplicationService {
         }
 
         val embed = embed
+
+        val carryCount = carryCounts?.carryCount
 
         embed.title = if ((userToCheck.id != user.id && server != null)) {
             (server.getMemberOrNull(userToCheck.id)?.effectiveName ?: userToCheck.effectiveName) + "'s score${if (carryCount != null) " from $carryCount total carries" else ""}:"
@@ -346,7 +349,12 @@ object ApplicationService {
             if (scoreModel.scoreType == ScoreType.Event && !scoreModel.carryType?.isEventActive!!) {
                 return@forEach
             }
-            val description = scoreModel.carryType?.displayName + ": " + scoreModel.scoreAmount
+            val carryType = scoreModel.carryType
+            var description = carryType?.displayName + ": " + scoreModel.scoreAmount
+            // carry counts are lifetime values, so they're only shown next to the alltime score
+            if (scoreModel.scoreType == ScoreType.Alltime && carryCounts != null && carryType != null) {
+                description += " (${carryCounts.byType[carryType.id] ?: 0})"
+            }
             if (scoreDescriptions.containsKey(scoreModel.scoreType)) {
                 scoreDescriptions[scoreModel.scoreType]!!.add(description)
             } else {
