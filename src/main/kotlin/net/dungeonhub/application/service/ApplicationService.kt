@@ -29,6 +29,7 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.FlaggingConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
+import net.dungeonhub.application.enums.readableName
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.exceptions.FailedToLoadEmbedException

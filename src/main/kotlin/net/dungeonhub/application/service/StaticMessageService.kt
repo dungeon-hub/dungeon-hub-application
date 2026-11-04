@@ -30,6 +30,7 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.applyJson
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
+import net.dungeonhub.application.enums.getLeaderboardTitle
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartPriority
