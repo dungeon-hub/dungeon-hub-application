@@ -44,6 +44,7 @@ object BirthdayService : StartupListener {
     @Volatile
     var birthdays: List<Birthday> = listOf()
     private val scheduledTimezones: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    private val timezoneJobs = ConcurrentHashMap<String, Job>()
 
     override suspend fun postStart() {
         if (::scheduler.isInitialized) {
@@ -70,7 +71,22 @@ object BirthdayService : StartupListener {
      */
     private fun scheduleNewTimezones() {
         for ((name, timeZone) in claimNewTimezones()) {
-            launchDailyAt(timeZone, TIMEZONE_EXECUTION_HOUR, name)
+            timezoneJobs[name] = launchDailyAt(timeZone, TIMEZONE_EXECUTION_HOUR, name)
+        }
+    }
+
+    /**
+     * Cancels the schedules of timezones that no longer appear in the current [birthdays].
+     * Schedules for timezones that are still present are kept.
+     */
+    internal fun cancelStaleTimezones() {
+        val current = birthdays.mapNotNull { it.timezone }.toSet()
+
+        for (name in scheduledTimezones.toList()) {
+            if (name in current) continue
+
+            scheduledTimezones.remove(name)
+            timezoneJobs.remove(name)?.cancel("Timezone $name is no longer used by any birthday.")
         }
     }
 
@@ -86,15 +102,18 @@ object BirthdayService : StartupListener {
         }
     }
 
-    internal fun resetScheduledTimezones() = scheduledTimezones.clear()
+    internal fun resetScheduledTimezones() {
+        scheduledTimezones.clear()
+        timezoneJobs.clear()
+    }
 
     /**
      * Announces the birthdays every day at [hour] o'clock in [timeZone].
      * The delay is recalculated after every run (instead of repeating a fixed 24 hours),
      * so daylight saving changes can't move the announcement to the wrong day.
      */
-    private fun launchDailyAt(timeZone: TimeZone, hour: Int, timezoneName: String?) {
-        scheduler.launch {
+    private fun launchDailyAt(timeZone: TimeZone, hour: Int, timezoneName: String?): Job {
+        return scheduler.launch {
             runDaily(timeZone, hour, timezoneName ?: "server time") {
                 updateBirthdayData()
 
@@ -220,7 +239,8 @@ object BirthdayService : StartupListener {
                     if (birthdayList.isNotEmpty()) {
                         birthdays = birthdayList
 
-                        // Reconcile schedules: timezones that only appear in refreshed data need their own schedule.
+                        // Reconcile schedules: drop timezones that disappeared, add ones that only appear in refreshed data.
+                        cancelStaleTimezones()
                         scheduleNewTimezones()
                     }
                 }
