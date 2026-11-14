@@ -9,11 +9,10 @@ import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.QRCodeWriter
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
-import dev.kord.core.behavior.GuildBehavior
-import dev.kord.core.behavior.ban
-import dev.kord.core.behavior.edit
+import dev.kord.core.behavior.*
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.User
+import dev.kord.core.entity.effectiveName
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -30,18 +29,24 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.FlaggingConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
+import net.dungeonhub.application.enums.readableName
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.exceptions.FailedToLoadEmbedException
 import net.dungeonhub.application.misc.FlagResponse
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.connection.ReputationConnection
+import net.dungeonhub.connection.ReputationConnection.Companion.ClientlessReputationConnection
 import net.dungeonhub.enums.CntRequestType
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.enums.WarningAction
 import net.dungeonhub.exception.PlayerNotFoundException
+import net.dungeonhub.hypixel.client.responses.Stale
+import net.dungeonhub.hypixel.client.responses.ValueResponse
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.hypixel.entities.skyblock.statsoverview.StatsOverviewType
 import net.dungeonhub.hypixel.service.FormattingService
+import net.dungeonhub.model.carry.CarryCountsModel
 import net.dungeonhub.model.carry.CarryModel
 import net.dungeonhub.model.carry_difficulty.CarryDifficultyModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
@@ -64,9 +69,11 @@ import java.io.File
 import java.io.IOException
 import java.util.*
 import javax.imageio.ImageIO
-import kotlin.time.*
+import kotlin.time.Clock
+import kotlin.time.Duration
+import kotlin.time.Instant
+import kotlin.time.toKotlinInstant
 
-@OptIn(ExperimentalTime::class)
 object ApplicationService {
     const val MAX_MINECRAFT_USERNAME_LENGTH = 16
     const val skyCryptUrl = "https://sky.shiiyu.moe/"
@@ -204,6 +211,13 @@ object ApplicationService {
         return embedBuilder
     }
 
+    fun loadTicketNotificationFromCarryQueue(carryQueue: CarryQueueModel): EmbedBuilder {
+        return buildEmbed {
+            description = "<@${carryQueue.carrier.id}> logged **${carryQueue.amount} ${carryQueue.carryTier.displayName} - ${carryQueue.carryDifficulty.displayName}** ${if(carryQueue.amount == 1) "carry" else "carries"} for <@${carryQueue.player.id}>, worth ${carryQueue.calculateScore()} score."
+            color(EmbedColor.Information)
+        }
+    }
+
     fun loadEmbedFromCarryQueue(carryQueue: CarryQueueModel, embedBuilder: EmbedBuilder): EmbedBuilder {
         embedBuilder.color = EmbedColor.Information.color
 
@@ -310,7 +324,7 @@ object ApplicationService {
         user: User,
         server: GuildBehavior?,
         scoreCount: List<ScoreModel>,
-        carryCount: Int? = null,
+        carryCounts: CarryCountsModel? = null,
         locale: Locale? = null
     ): EmbedBuilder {
         if (scoreCount.isEmpty()) {
@@ -319,8 +333,10 @@ object ApplicationService {
 
         val embed = embed
 
+        val carryCount = carryCounts?.carryCount
+
         embed.title = if ((userToCheck.id != user.id && server != null)) {
-            server.getMember(userToCheck.id).effectiveName + "'s score${if (carryCount != null) " from $carryCount total carries" else ""}:"
+            (server.getMemberOrNull(userToCheck.id)?.effectiveName ?: userToCheck.effectiveName) + "'s score${if (carryCount != null) " from $carryCount total carries" else ""}:"
         } else {
             "Your score${if (carryCount != null) " from $carryCount total carries" else ""}:"
         }
@@ -334,7 +350,12 @@ object ApplicationService {
             if (scoreModel.scoreType == ScoreType.Event && !scoreModel.carryType?.isEventActive!!) {
                 return@forEach
             }
-            val description = scoreModel.carryType?.displayName + ": " + scoreModel.scoreAmount
+            val carryType = scoreModel.carryType
+            var description = carryType?.displayName + ": " + scoreModel.scoreAmount
+            // carry counts are lifetime values, so they're only shown next to the alltime score
+            if (scoreModel.scoreType == ScoreType.Alltime && carryCounts != null && carryType != null) {
+                description += " (from ${carryCounts.byType[carryType.id] ?: 0} carries)"
+            }
             if (scoreDescriptions.containsKey(scoreModel.scoreType)) {
                 scoreDescriptions[scoreModel.scoreType]!!.add(description)
             } else {
@@ -395,9 +416,11 @@ object ApplicationService {
 
         val discordUser = DiscordUserConnection.authenticated().findUserByUuid(uuid)
 
-        val statsOverview = HypixelApiConnection().withCacheExpiration(cacheExpiration).getStatsOverview(uuid, profileOverride ?: discordUser?.primarySkyblockProfile, statsOverviewTypes)
+        val statsOverviewResponse = HypixelApiConnection().withCacheExpiration(cacheExpiration).getStatsOverview(uuid, profileOverride ?: discordUser?.primarySkyblockProfile, statsOverviewTypes)
 
-        if (statsOverview == null) {
+        val statsOverview = statsOverviewResponse.valueOrNull
+
+        if (statsOverviewResponse !is ValueResponse || statsOverview == null) {
             embed.description = "No profiles found."
             throw FailedToLoadEmbedException(embed)
         }
@@ -410,6 +433,12 @@ object ApplicationService {
                 ign
             }
         } (${statsOverview.profileName})"
+        embed.timestamp = statsOverviewResponse.timestamp
+        if(statsOverviewResponse is Stale) {
+            embed.footer {
+                text = "Error connecting to Hypixel API, serving stale cache data"
+            }
+        }
 
         return embed
     }
@@ -497,9 +526,6 @@ object ApplicationService {
         }
         carryTier.priceTitle?.let { s: String -> embed.field("Price Title", true) { s } }
         carryTier.priceDescription?.let { s: String -> embed.field("Price Description", true) { s } }
-        carryTier.relatedTicketPanel?.let { ticketPanel -> embed.field("Related Ticket Panel", true) {
-            "${ticketPanel.displayName ?: ticketPanel.name} (${ticketPanel.id})"
-        } }
 
         return embed
     }
@@ -525,10 +551,13 @@ object ApplicationService {
         ) { carryDifficulty.price.toString() + " (" + FormattingService.makeNumberReadable(carryDifficulty.price.toLong()) + ")" }
         embed.field("Score", true) { carryDifficulty.score.toString() }
 
-        carryDifficulty.bulkAmount
-            ?.let { integer: Int -> embed.field("Bulk Amount", true) { integer.toString() } }
-        carryDifficulty.bulkPrice
-            ?.let { integer: Int -> embed.field("Bulk Price", true) { integer.toString() } }
+        if (carryDifficulty.bulkPrices.isNotEmpty()) {
+            embed.field("Bulk Prices", true) {
+                carryDifficulty.bulkPrices.joinToString("\n") { bulkPrice ->
+                    bulkPrice.amount.toString() + "+: " + bulkPrice.price + " (" + FormattingService.makeNumberReadable(bulkPrice.price.toLong()) + ")"
+                }
+            }
+        }
         carryDifficulty.thumbnailUrl?.let { s: String -> embed.field("Thumbnail URL", true) { s } }
         carryDifficulty.thumbnailUrl?.let { s: String -> embed.field("Price Title", true) { s } }
 
@@ -825,58 +854,48 @@ object ApplicationService {
     }
 }
 
-@OptIn(ExperimentalTime::class)
 fun Extension.getEmbed(): EmbedBuilder {
     return ApplicationService.getEmbed(Clock.System.now())
 }
 
-@OptIn(ExperimentalTime::class)
 fun Extension.getEmbed(time: Instant?): EmbedBuilder {
     return ApplicationService.getEmbed(time)
 }
 
-@OptIn(ExperimentalTime::class)
 fun AbstractMessageCreateBuilder.addEmbed(function: EmbedBuilder.() -> Unit) {
     this.addEmbed(Clock.System.now(), function)
 }
 
-@OptIn(ExperimentalTime::class)
 fun AbstractMessageCreateBuilder.addEmbed(time: Instant?, function: EmbedBuilder.() -> Unit) {
     val embed = ApplicationService.getEmbed(time)
     function(embed)
     embeds = ((embeds ?: mutableListOf()) + embed).toMutableList()
 }
 
-@OptIn(ExperimentalTime::class)
 fun InteractionResponseModifyBuilder.addEmbed(function: EmbedBuilder.() -> Unit) {
     this.addEmbed(Clock.System.now(), function)
 }
 
-@OptIn(ExperimentalTime::class)
 fun InteractionResponseModifyBuilder.addEmbed(time: Instant?, function: EmbedBuilder.() -> Unit) {
     val embed = ApplicationService.getEmbed(time)
     function(embed)
     embeds = ((embeds ?: mutableListOf()) + embed).toMutableList()
 }
 
-@OptIn(ExperimentalTime::class)
 fun buildEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {
     return buildEmbed(Clock.System.now(), function)
 }
 
-@OptIn(ExperimentalTime::class)
 fun buildEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): EmbedBuilder {
     val embed = ApplicationService.getEmbed(time)
     function(embed)
     return embed
 }
 
-@OptIn(ExperimentalTime::class)
 fun Extension.createEmbed(function: EmbedBuilder.() -> Unit): EmbedBuilder {
     return this.createEmbed(Clock.System.now(), function)
 }
 
-@OptIn(ExperimentalTime::class)
 fun Extension.createEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): EmbedBuilder {
     val embed = getEmbed(time)
     function(embed)
@@ -885,4 +904,12 @@ fun Extension.createEmbed(time: Instant?, function: EmbedBuilder.() -> Unit): Em
 
 fun EmbedBuilder.color(color: EmbedColor) {
     this.color = color.color
+}
+
+suspend fun UserBehavior.getUUIDOrNull(): UUID? {
+    return DiscordUserConnection.authenticated().getById(id.value.toLong())?.minecraftId
+}
+
+operator fun ReputationConnection.Companion.get(member: MemberBehavior): ClientlessReputationConnection {
+    return get(member.guild.id.value.toLong(), member.id.value.toLong())
 }

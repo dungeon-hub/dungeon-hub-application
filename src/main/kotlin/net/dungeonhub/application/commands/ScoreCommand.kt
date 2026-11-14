@@ -50,8 +50,8 @@ class ScoreCommand : Extension() {
                 userToCheck.id.value.toLong()
             ) ?: listOf()
 
-            val carryCount =
-                DiscordUserConnection.authenticated().getCarryCount(userToCheck.id.value.toLong(), guild.id.value.toLong())
+            val carryCounts =
+                DiscordUserConnection.authenticated().getCarryCounts(userToCheck.id.value.toLong(), guild.id.value.toLong())
 
             return mutableListOf(
                 ApplicationService.getScoreCountMessage(
@@ -59,7 +59,7 @@ class ScoreCommand : Extension() {
                     issuer,
                     guild,
                     scores,
-                    carryCount,
+                    carryCounts,
                     locale = locale
                 )
             )

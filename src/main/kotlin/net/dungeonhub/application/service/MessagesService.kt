@@ -28,7 +28,7 @@ object MessagesService {
             title + (priceDescription?.let { s: String -> s + "\n\n" } ?: "") + carryDifficulties.stream()
                 .map { carryDifficulty: CarryDifficultyModel ->
                     val result = StringBuilder()
-                    if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
+                    if (carryDifficulty.bulkPrices.isNotEmpty()) {
                         result.append("\n")
                     }
 
@@ -42,11 +42,11 @@ object MessagesService {
 
                     result.append(priceText)
 
-                    if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
+                    for (bulkPrice in carryDifficulty.bulkPrices) {
                         result.append("\n\\*")
-                            .append(FormattingService.makeNumberReadable(carryDifficulty.bulkPrice!!.toLong()))
+                            .append(FormattingService.makeNumberReadable(bulkPrice.price.toLong()))
                             .append(" per carry if you buy ")
-                            .append(carryDifficulty.bulkAmount)
+                            .append(bulkPrice.amount)
                             .append("+ carries.")
                     }
                     result

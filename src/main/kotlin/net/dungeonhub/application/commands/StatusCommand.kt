@@ -18,6 +18,7 @@ import net.dungeonhub.exception.PlayerNotFoundException
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.hypixel.entities.player.HypixelPlayer
 import net.dungeonhub.hypixel.entities.status.PlayerSession
+import net.dungeonhub.i18n.Translations
 import net.dungeonhub.mojang.connection.MojangConnection
 import java.time.Duration
 import kotlin.time.toKotlinDuration
@@ -28,8 +29,8 @@ class StatusCommand : Extension() {
 
     override suspend fun setup() {
         ephemeralSlashCommand(::StatusArguments) {
-            name = "status".toKey()
-            description = "Check the status of the given user".toKey()
+            name = Translations.Command.Status.name
+            description = Translations.Command.Status.description
 
             action {
                 respond {
@@ -43,14 +44,20 @@ class StatusCommand : Extension() {
 
                     val ignArgument = arguments.ign
 
-                    val uuid = ignArgument?.let {
+                    val uuid = if(ignArgument != null) {
                         try {
-                            MojangConnection.getUUIDByName(it)
+                            MojangConnection.getUUIDByName(ignArgument)
                         } catch (_: PlayerNotFoundException) {
-                            null
+                            addEmbed {
+                                description = "Couldn't find the user `$ignArgument`."
+                                color(EmbedColor.Negative)
+                            }
+                            return@respond
                         }
-                    } ?: ticket?.user?.minecraftId
-                    ?: discordUser?.minecraftId
+                    } else {
+                        ticket?.user?.minecraftId
+                            ?: discordUser?.minecraftId
+                    }
 
                     val ign = uuid?.let {
                         try {
@@ -70,8 +77,8 @@ class StatusCommand : Extension() {
 
                     val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(2)
 
-                    val session = hypixelApiConnection.getSession(uuid)
-                    val playerData by lazy { hypixelApiConnection.getPlayerData(uuid) }
+                    val session = hypixelApiConnection.getSession(uuid).valueOrNull
+                    val playerData by lazy { hypixelApiConnection.getPlayerData(uuid).valueOrNull }
 
                     if(session == null) {
                         addEmbed {
@@ -128,12 +135,20 @@ class StatusCommand : Extension() {
                         return@respond
                     }
 
-                    val ign = MojangConnection.getNameByUUID(uuid)
+                    val ign = try{
+                        MojangConnection.getNameByUUID(uuid)
+                    } catch (_: PlayerNotFoundException) {
+                        addEmbed {
+                            description = "Couldn't find the IGN of the user `$uuid`. Weird."
+                            color(EmbedColor.Negative)
+                        }
+                        return@respond
+                    }
 
                     val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(2)
 
-                    val session = hypixelApiConnection.getSession(uuid)
-                    val playerData by lazy { hypixelApiConnection.getPlayerData(uuid) }
+                    val session = hypixelApiConnection.getSession(uuid).valueOrNull
+                    val playerData by lazy { hypixelApiConnection.getPlayerData(uuid).valueOrNull }
 
                     if(session == null) {
                         addEmbed {
@@ -199,8 +214,8 @@ class StatusCommand : Extension() {
 
     class StatusArguments : Arguments() {
         val ign by optionalString {
-            name = "ign".toKey()
-            description = "The user to get the status of.".toKey()
+            name = Translations.Command.Status.Arguments.Ign.name
+            description = Translations.Command.Status.Arguments.Ign.description
             minLength = 2
         }
     }

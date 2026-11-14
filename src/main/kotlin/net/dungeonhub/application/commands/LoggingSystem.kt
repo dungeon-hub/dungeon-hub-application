@@ -2,14 +2,19 @@ package net.dungeonhub.application.commands
 
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.channel.asChannelOfOrNull
+import dev.kord.common.entity.TextInputStyle
+import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.channel.createMessage
+import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.getChannelOfOrNull
+import dev.kord.core.behavior.interaction.modal
+import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.response.respond
-import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kord.core.entity.channel.GuildMessageChannel
+import dev.kord.core.entity.component.TextInputComponent
 import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
-import dev.kord.core.supplier.EntitySupplyStrategy
+import dev.kord.core.event.interaction.GuildModalSubmitInteractionCreateEvent
+import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.actionRow
 import dev.kordex.core.commands.Arguments
 import dev.kordex.core.commands.converters.impl.int
@@ -19,45 +24,41 @@ import dev.kordex.core.components.ephemeralButton
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.dm
-import kotlinx.coroutines.flow.count
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.reduce
-import kotlinx.coroutines.flow.takeWhile
+import dev.kordex.core.utils.scheduling.Scheduler
+import kotlinx.coroutines.launch
+import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
 import net.dungeonhub.application.exceptions.CommandExecutionException
+import net.dungeonhub.application.exceptions.CommandExecutionWarning
 import net.dungeonhub.application.exceptions.InvalidOptionException
 import net.dungeonhub.application.exceptions.MissingPermissionException
 import net.dungeonhub.application.loader.LoadExtension
-import net.dungeonhub.application.service.ApplicationService
-import net.dungeonhub.application.service.AutoCompletionService
-import net.dungeonhub.application.service.PermissionService
-import net.dungeonhub.application.service.StaticMessageService
+import net.dungeonhub.application.misc.DhScheduler
+import net.dungeonhub.application.misc.LoggedQueueEntry
+import net.dungeonhub.application.service.*
 import net.dungeonhub.connection.CarryDifficultyConnection
+import net.dungeonhub.connection.CarryTierConnection
+import net.dungeonhub.connection.CarryTypeConnection
 import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.QueueConnection
 import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.QueueStep
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.i18n.Translations.Command.Log
+import net.dungeonhub.i18n.Translations.Command.LogOther
 import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.carry_queue.CarryQueueCreationModel
 import net.dungeonhub.model.carry_queue.CarryQueueModel
-import net.dungeonhub.model.carry_tier.CarryTierModel
 import net.dungeonhub.model.carry_type.CarryTypeModel
-import net.dungeonhub.model.score.ScoreModel
-import net.dungeonhub.model.ticket.TicketModel
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import kotlin.time.ExperimentalTime
+import kotlin.time.toKotlinInstant
 
 @LoadExtension
-@OptIn(ExperimentalTime::class)
 class LoggingSystem : Extension() {
     override val name = "logging-system"
-    private val logger = LoggerFactory.getLogger(LoggingSystem::class.java)
 
     override suspend fun setup() {
         publicSlashCommand(::LogArguments) {
@@ -69,25 +70,15 @@ class LoggingSystem : Extension() {
                 respond {
                     val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = channel.id.value.toLong())?.firstOrNull()
 
-                    val carryTier = ticket?.let { getCarryTierFromTicket(guild!!.id.value.toLong(), it) }
-                        ?: channel.asChannelOfOrNull<CategorizableChannel>()
-                            ?.categoryId
-                            ?.let { categoryId ->
-                                DiscordServerConnection.authenticated().getCarryTierFromCategory(
-                                    guild!!.id.value.toLong(),
-                                    categoryId.value.toLong()
-                                )
-                            }
+                    val carryTier = ticket?.ticketPanel?.relatedCarryTier
+                        ?: throw CommandExecutionWarning("Please use this in a ticket connected to a carry tier. If you think this is incorrect, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) about setting up the bot on [the dashboard](https://dashboard.dungeon-hub.net/).")
 
-                    if (carryTier == null) {
-                        throw CommandExecutionException("Please use this in a carry-ticket. If this is one, tell the administrators to check [the documentation](https://docs.dungeon-hub.net/) to setup the bot correctly!")
-                    }
+                    val alreadyPresentQueue = QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
+                        channel.id.value.toLong(),
+                        QueueStep.Confirmation
+                    )?.firstOrNull()
 
-                    if (QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
-                            channel.id.value.toLong(),
-                            QueueStep.Confirmation
-                        )?.firstOrNull() != null
-                    ) {
+                    if (alreadyPresentQueue != null) {
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.Negative.color
                         embed.description = " Someone is already logging this carry.\n" +
@@ -98,7 +89,7 @@ class LoggingSystem : Extension() {
 
                         components {
                             ephemeralButton {
-                                label = "Clear log".toKey()
+                                label = Log.Response.Buttons.ClearLog.label
                                 style = ButtonStyle.Primary
 
                                 action {
@@ -133,7 +124,7 @@ class LoggingSystem : Extension() {
                             }
 
                             ephemeralButton {
-                                label = "Dismiss".toKey()
+                                label = Log.Response.Buttons.Dismiss.label
                                 style = ButtonStyle.Danger
 
                                 deferredAck = true
@@ -162,35 +153,144 @@ class LoggingSystem : Extension() {
                         return@respond
                     }
 
-                    val carried = if(ticket != null) {
-                        ticket.user.id
-                    } else {
-                        val interactionId = event.interaction.id
-                        val messageCount = channel.getMessagesBefore(interactionId, null).count()
+                    val carried = ticket.user.id
 
-                        val firstMessage = try {
-                            channel.withStrategy(EntitySupplyStrategy.cachingRest)
-                                .getMessagesBefore(event.interaction.id, null)
-                                .takeWhile { true }
-                                .reduce { message1, message2 -> if (message1.timestamp < message2.timestamp) message1 else message2 }
-                        } catch (_: ArrayIndexOutOfBoundsException) {
-                            null
-                        } catch (_: NoSuchElementException) {
-                            null
+                    val time = Instant.now()
+
+                    val creationModel = CarryQueueCreationModel(
+                        queueStep = QueueStep.Confirmation,
+                        time = time,
+                        amount = arguments.carryAmount,
+                        player = carried,
+                        carrier = user.id.value.toLong(),
+                        relationId = channel.id.value.toLong()
+                    )
+
+                    val carryQueueModel = QueueConnection.authenticated().addNewQueue(carryDifficulty, creationModel)
+                        ?: throw CommandExecutionException(
+                            "Unable to log this. Please contact an administrator of this bot."
+                        )
+
+                    val embed = ApplicationService.loadEmbedFromCarryQueue(carryQueueModel)
+                    embed.title = "Are you sure that you want to log this?"
+
+                    embeds = mutableListOf(embed)
+
+                    actionRow {
+                        interactionButton(ButtonStyle.Success, "send_log") {
+                            label = "Confirm"
                         }
 
-                        if (firstMessage == null || try {
-                                firstMessage.mentionedUsers.count() != 1
-                            } catch (_: ArrayIndexOutOfBoundsException) {
-                                false
-                            }
-                        ) {
-                            logger.error("Couldn't load bot message, I only found the message '${firstMessage?.content}' by ${firstMessage?.author?.id} when searching through $messageCount messages that were sent before $interactionId.")
-                            throw CommandExecutionException("Couldn't retrieve bot message, so this ticket can't be logged - please retry this.\nIf you still have issues, please report this.")
+                        interactionButton(ButtonStyle.Danger, "discard") {
+                            label = "Cancel"
                         }
-
-                        firstMessage.mentionedUsers.first().id.value.toLong()
                     }
+                }
+            }
+        }
+
+        publicSlashCommand(::LogOtherArguments) {
+            name = LogOther.name
+            description = LogOther.description
+            allowInDms = false
+
+            action {
+                respond {
+                    val ticket = DiscordServerConnection.authenticated().findTickets(guild!!.id.value.toLong(), channelId = channel.id.value.toLong())?.firstOrNull()
+
+                    if (ticket == null) {
+                        throw CommandExecutionWarning("Please use this in a ticket.")
+                    }
+
+                    val carryType = CarryTypeConnection[guild!!.id.value.toLong()].authenticated()
+                        .findCarryTypeByString(arguments.carryType)
+                        ?: throw InvalidOptionException("carry-type", "Couldn't find this carry type.")
+
+                    val carryTier = CarryTierConnection[carryType].authenticated()
+                        .findCarryTierByString(arguments.carryTier)
+                        ?: throw InvalidOptionException("carry-tier", "Couldn't find a carry tier under this carry type.")
+
+                    val alreadyPresentQueue = QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
+                        channel.id.value.toLong(),
+                        QueueStep.Confirmation
+                    )?.firstOrNull()
+
+                    if (alreadyPresentQueue != null) {
+                        val embed = ApplicationService.embed
+                        embed.color = EmbedColor.Negative.color
+                        embed.description = " Someone is already logging this carry.\n" +
+                                "If you think this is a mistake, clear the log using the buttons below.\n" +
+                                "Otherwise, simply click dismiss to delete this message."
+
+                        embeds = mutableListOf(embed)
+
+                        components {
+                            ephemeralButton {
+                                label = Log.Response.Buttons.ClearLog.label
+                                style = ButtonStyle.Primary
+
+                                action {
+                                    respond innerrespond@{
+                                        val carryQueue =
+                                            QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
+                                                channel.id.value.toLong(),
+                                                QueueStep.Confirmation
+                                            )?.firstOrNull()
+
+                                        if (carryQueue == null) {
+                                            val innerEmbed = ApplicationService.embed
+                                            innerEmbed.color = EmbedColor.Information.color
+                                            innerEmbed.description = "That log request was already cleared."
+
+                                            embeds = mutableListOf(innerEmbed)
+
+                                            return@innerrespond
+                                        }
+
+                                        QueueConnection.authenticated().deleteQueue(carryQueue.id)
+
+                                        val innerEmbed = ApplicationService.embed
+                                        innerEmbed.color = EmbedColor.Positive.color
+                                        innerEmbed.description = "The log request was cleared, you can now log again!"
+
+                                        embeds = mutableListOf(innerEmbed)
+
+                                        message.delete()
+                                    }
+                                }
+                            }
+
+                            ephemeralButton {
+                                label = Log.Response.Buttons.Dismiss.label
+                                style = ButtonStyle.Danger
+
+                                deferredAck = true
+
+                                action {
+                                    event.interaction.message.delete()
+                                }
+                            }
+                        }
+
+                        return@respond
+                    }
+
+                    val carryDifficulty = CarryDifficultyConnection[carryTier].authenticated()
+                        .findCarryDifficultyByString(arguments.carryDifficulty)
+
+                    if (carryDifficulty == null) {
+                        embeds = mutableListOf(
+                            ApplicationService.getErrorEmbed(
+                                InvalidOptionException(
+                                    "carry-difficulty",
+                                    "`${arguments.carryDifficulty}` is no valid type."
+                                )
+                            )
+                        )
+                        return@respond
+                    }
+
+                    val carried = ticket.user.id
 
                     val time = Instant.now()
 
@@ -228,7 +328,7 @@ class LoggingSystem : Extension() {
 
         event<GuildButtonInteractionCreateEvent> {
             check {
-                failIfNot(listOf("send_log", "discard", "accept_log", "deny").contains(event.interaction.componentId))
+                failIfNot(listOf("send_log", "discard", "accept_log", "deny", "adjust_carry_amount").contains(event.interaction.componentId))
             }
 
             action {
@@ -237,15 +337,134 @@ class LoggingSystem : Extension() {
                     "discard" -> discard(event)
                     "accept_log" -> acceptLog(event)
                     "deny" -> deny(event)
+                    "adjust_carry_amount" -> adjustCarryAmount(event)
+                }
+            }
+        }
+
+        event<GuildModalSubmitInteractionCreateEvent> {
+            check {
+                failIfNot(listOf("adjust_carry_amount").contains(event.interaction.modalId))
+            }
+
+            action {
+                val value = (event.interaction.responseComponents["amount"] as? TextInputComponent)?.value?.trim()?.toIntOrNull()
+
+                if(value == null || value <= 0) {
+                    event.interaction.respondEphemeral {
+                        addEmbed {
+                            description = "Please enter a positive number!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                val message = event.interaction.message
+
+                if(message == null) {
+                    event.interaction.respondEphemeral {
+                        addEmbed {
+                            description = "Couldn't find a related message. Report this!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                val carryQueues = QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
+                    message.id.value.toLong(),
+                    QueueStep.Approving
+                ) ?: HashSet()
+
+                if(carryQueues.size != 1) {
+                    event.interaction.respondEphemeral {
+                        addEmbed {
+                            description = "Found less or more than 1 queued carries. Report this!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                val carryQueue = carryQueues.first()
+
+                val updateModel = carryQueue.getUpdateModel()
+                updateModel.amount = value
+                val response = QueueConnection.authenticated().updateQueue(carryQueue.id, updateModel)
+
+                if(response == null) {
+                    event.interaction.respondEphemeral {
+                        addEmbed {
+                            description = "Couldn't update the carry queue. Report this!"
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                event.interaction.respondEphemeral {
+                    addEmbed {
+                        description = "Queue updated!"
+                        field("Old amount", true) {
+                            "${carryQueue.amount}"
+                        }
+                        field("New amount", true) {
+                            "${response.amount}"
+                        }
+                    }
+                }
+
+                ServerProperty.SCORE_LOGS_CHANNEL
+                    .getValue(event.interaction.guild.id.value.toLong())
+                    ?.let { id: String ->
+                        event.interaction.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
+                    }
+                    ?.let { serverTextChannel ->
+                        serverTextChannel.createMessage {
+                            val embed = ApplicationService.loadEmbedFromCarryQueue(carryQueue)
+                            embed.color(EmbedColor.Default)
+                            embed.title = "Carry amount changed"
+                            embed.field("Changed by", true) { event.interaction.user.mention }
+                            embed.field("Old amount", true) { "${carryQueue.amount}" }
+                            embed.field("New amount", true) { "${response.amount}" }
+                            embeds = mutableListOf(embed)
+                        }
+                    }
+
+                message.edit {
+                    val embed = loadGroupedCarryQueueEmbed(listOf(response), null)
+                    embed.title = "Accept carry-log?"
+                    embed.color = EmbedColor.Default.color
+
+                    embeds = mutableListOf(embed)
+
+                    actionRow {
+                        interactionButton(ButtonStyle.Success, "accept_log") {
+                            label = "Accept"
+                        }
+
+                        interactionButton(ButtonStyle.Primary, "adjust_carry_amount") {
+                            label = "Adjust amount"
+                        }
+
+                        interactionButton(ButtonStyle.Danger, "deny") {
+                            label = "Deny"
+                        }
+                    }
                 }
             }
         }
     }
 
-    suspend fun getCarryTierFromTicket(guildId: Long, ticket: TicketModel): CarryTierModel? {
-        // TODO dedicated endpoint
-        return DiscordServerConnection.authenticated().getAllCarryTiers(guildId)?.firstOrNull { carryTier ->
-            carryTier.relatedTicketPanel?.id == ticket.ticketPanel.id
+    private suspend fun adjustCarryAmount(event: GuildButtonInteractionCreateEvent) {
+        event.interaction.modal("Adjust amount", "adjust_carry_amount") {
+            label("Amount") {
+                textInput(TextInputStyle.Short, "amount") {
+                    placeholder = "Enter a new amount here"
+                    required = true
+                }
+            }
         }
     }
 
@@ -254,22 +473,23 @@ class LoggingSystem : Extension() {
 
         val message = event.interaction.message
 
-        for (queueModel in QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
+        val carryQueues = QueueConnection.authenticated().getCarryQueueByRelatedIdAndQueueStep(
             message.id.value.toLong(),
             QueueStep.Approving
-        ) ?: HashSet()) {
-            val carrier = event.kord.getUser(Snowflake(queueModel.carrier.id))
+        ) ?: HashSet()
+
+        for ((carrierId, queueEntries) in groupCarryEntriesByCarrier(carryQueues)) {
+            val carrier = event.kord.getUser(Snowflake(carrierId))
 
             carrier?.dm {
-                content = "Your log was denied by ${event.interaction.user.mention}."
-
-                val embed = ApplicationService.loadEmbedFromCarryQueue(queueModel)
+                content = denialNotificationContent(queueEntries.size, event.interaction.user.mention)
+                val embed = createCarryOverview(compactQueueEntries(queueEntries), null)
                 embed.color = EmbedColor.Negative.color
-                embed.title = "Information"
-
                 embeds = mutableListOf(embed)
             }
+        }
 
+        for (queueModel in carryQueues) {
             ServerProperty.SCORE_LOGS_CHANNEL
                 .getValue(event.interaction.guild.id.value.toLong())
                 ?.let { id: String ->
@@ -299,59 +519,14 @@ class LoggingSystem : Extension() {
 
         val message = event.interaction.message
 
-        val carryTypes: MutableList<CarryTypeModel> = mutableListOf()
+        val carryQueues = QueueConnection.authenticated()
+            .getCarryQueueByRelatedIdAndQueueStep(message.id.value.toLong(), QueueStep.Approving) ?: HashSet()
 
-        for (queueModel: CarryQueueModel in QueueConnection.authenticated()
-            .getCarryQueueByRelatedIdAndQueueStep(message.id.value.toLong(), QueueStep.Approving) ?: HashSet()) {
-            val updateModel = queueModel.getUpdateModel()
-            updateModel.approver = event.interaction.user.id.value.toLong()
+        val approver = event.interaction.user.id.value.toLong()
 
-            val loggedCarryModel = QueueConnection.authenticated().logQueue(queueModel.id, updateModel)
-                ?: return
-
-            carryTypes.add(loggedCarryModel.carryModel.carryType)
-
-            val updatedScore = loggedCarryModel.scoreModels
-                .firstOrNull { scoreModel: ScoreModel -> (scoreModel.scoreType == ScoreType.Default) }
-                ?.scoreAmount
-                ?: (ScoreConnection[loggedCarryModel.carryModel.carryType].authenticated()
-                    .getScore(loggedCarryModel.carryModel.carrier.id)?.scoreAmount ?: 0)
-
-            val carrier = event.kord.getUser(Snowflake(loggedCarryModel.carryModel.carrier.id))
-
-            carrier?.dm {
-                content = "Your carry was logged!\n\n**Your Updated Score:** $updatedScore"
-
-                val embed = ApplicationService.loadEmbedFromCarry(loggedCarryModel.carryModel)
-                embed.title = "Information"
-                embed.color = EmbedColor.Default.color
-
-                embeds = mutableListOf(embed)
-            }
-
-            try {
-                loggedCarryModel.carryModel
-                    .carryType
-                    .logChannel
-                    ?.let { id: Long ->
-                        event.interaction.guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
-                    }
-                    ?.let { serverTextChannel ->
-                        serverTextChannel.createMessage {
-                            val embed = ApplicationService.loadEmbedFromCarry(loggedCarryModel.carryModel)
-                            embed.title = "Carry accepted."
-                            embed.color = EmbedColor.Positive.color
-
-                            embeds = mutableListOf(embed)
-                        }
-                    }
-            } catch (_: NullPointerException) {
-            }
-
-            logger.debug("Carry logged: {}", loggedCarryModel.carryModel)
+        for((carrierId, queueEntries) in groupCarryEntriesByCarrier(carryQueues)) {
+            logDirectly(carrierId, queueEntries, event.interaction.guild, approver)
         }
-
-        StaticMessageService.updateScoreLeaderboard(carryTypes.distinctBy { it.id })
 
         message.delete()
     }
@@ -400,15 +575,13 @@ class LoggingSystem : Extension() {
         response.respond {
             content =
                 "**Thank you for your service. Your carry will be sent to the staff team for review once the ticket is closed.**\n" +
-                        "**You will be notified once it has been reviewed.**"
+                        "**You will be notified once it has been reviewed.**\n" +
+                        "If the client doesn't want any more carries, please delete this ticket."
 
             channel.createMessage {
-                val embed = ApplicationService.loadEmbedFromCarryQueue(carryQueueModel)
-                embed.description = "This will get sent when the ticket is deleted.\n" +
-                        "If the client doesn't want any more carries, please delete this ticket."
-                embed.title = "Carry logged"
-
-                embeds = mutableListOf(embed)
+                embeds = mutableListOf(
+                    ApplicationService.loadTicketNotificationFromCarryQueue(carryQueueModel)
+                )
             }
 
             event.interaction.message.delete()
@@ -450,17 +623,246 @@ class LoggingSystem : Extension() {
     }
 
     class LogArguments : Arguments() {
+        val carryDifficulty by string {
+            name = CommonArguments.CarryDifficulty.name
+            description = Log.Arguments.CarryDifficulty.description
+            autoCompleteCallback = AutoCompletionService.carryDifficulty
+        }
+
         val carryAmount by int {
             name = Log.Arguments.Amount.name
             description = Log.Arguments.Amount.description
             minValue = 1
             maxValue = 200
         }
+    }
+
+    class LogOtherArguments : Arguments() {
+        val carryType by string {
+            name = CommonArguments.CarryType.name
+            description = LogOther.Arguments.CarryType.description
+            maxLength = 30
+            autoCompleteCallback = AutoCompletionService.carryType
+        }
+
+        val carryTier by string {
+            name = CommonArguments.CarryTier.name
+            description = LogOther.Arguments.CarryTier.description
+            autoCompleteCallback = AutoCompletionService.carryTier
+        }
 
         val carryDifficulty by string {
             name = CommonArguments.CarryDifficulty.name
-            description = Log.Arguments.CarryDifficulty.description
+            description = LogOther.Arguments.CarryDifficulty.description
             autoCompleteCallback = AutoCompletionService.carryDifficulty
+        }
+
+        val carryAmount by int {
+            name = LogOther.Arguments.Amount.name
+            description = LogOther.Arguments.Amount.description
+            minValue = 1
+            maxValue = 200
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(LoggingSystem::class.java)
+        private val scheduler: Scheduler by lazy { DhScheduler() }
+
+        fun compactQueueEntries(queueEntries: Collection<CarryQueueModel>): List<List<CarryQueueModel>> {
+            val groups = mutableListOf<MutableList<CarryQueueModel>>()
+
+            for (queueModel in queueEntries.sortedBy { it.time?.toKotlinInstant() }) {
+                val previousQueue = groups.lastOrNull()?.lastOrNull()
+
+                val canJoinPreviousGroup =
+                    previousQueue != null &&
+                            previousQueue.amount == 1 &&
+                            queueModel.amount == 1 &&
+                            previousQueue.carrier.id == queueModel.carrier.id &&
+                            previousQueue.carryDifficulty.id == queueModel.carryDifficulty.id
+
+                if (canJoinPreviousGroup) {
+                    groups.last().add(queueModel)
+                } else {
+                    groups.add(mutableListOf(queueModel))
+                }
+            }
+
+            return groups
+        }
+
+        fun groupCarryEntriesByCarrier(
+            queueEntries: Collection<CarryQueueModel>
+        ): Map<Long, List<CarryQueueModel>> = queueEntries.groupBy { it.carrier.id }
+
+        fun denialNotificationContent(queueCount: Int, approverMention: String): String =
+            "Your ${if (queueCount == 1) "log was" else "logs were"} denied by $approverMention."
+
+        fun sendLoggedDms(carrierId: Long, loggedEntries: Collection<LoggedQueueEntry>, approver: Long?) {
+            if(loggedEntries.isEmpty()) return
+
+            val latestScore = loggedEntries.last().updatedScore
+            val allQueues = loggedEntries.flatMap { it.queues }
+
+            scheduler.launch {
+                DiscordConnection.bot.kordRef.getUser(Snowflake(carrierId))?.dm {
+                    content = "Your ${if (allQueues.size == 1) "carry was" else "carries were"} " +
+                            "logged!\n\n**Your Updated Score:** $latestScore"
+
+                    embeds = mutableListOf(
+                        createCarryOverview(compactQueueEntries(allQueues), approver)
+                    )
+                }
+            }
+        }
+
+        fun loadGroupedCarryQueueEmbed(
+            queueEntries: Collection<CarryQueueModel>,
+            approver: Long?
+        ) = buildEmbed {
+            val representative = queueEntries.first()
+            val last = queueEntries.last()
+
+            timestamp = last.time?.toKotlinInstant()
+            color = EmbedColor.Information.color
+
+            field("Number of carries", true) {
+                queueEntries.sumOf { it.amount }.toString()
+            }
+
+            field("Type of carry", true) {
+                "${representative.carryTier.displayName} - " +
+                        representative.carryDifficulty.displayName
+            }
+
+            val players = queueEntries.distinctBy { it.player.id }
+
+            if(players.size > 1) {
+                field("Players", true) {
+                    players.joinToString("\n") { "<@${it.player.id}>" }
+                }
+            } else {
+                field("Player", true) {
+                    "<@${players[0].player.id}>"
+                }
+            }
+
+            field("Carrier", true) {
+                "<@${representative.carrier.id}>"
+            }
+
+            field("Gained score", true) {
+                queueEntries.sumOf { it.calculateScore() }.toString()
+            }
+
+            if(approver != null) {
+                field("Approved by", true) {
+                    "<@$approver>"
+                }
+            }
+
+            representative.attachmentLink?.let { transcriptUrl ->
+                field("Transcript-Link", true) {
+                    "[Click to open]($transcriptUrl)"
+                }
+            }
+        }
+
+        fun createCarryOverview(queueEntries: List<List<CarryQueueModel>>, approver: Long?): EmbedBuilder = buildEmbed {
+            val last = queueEntries.last().last()
+            timestamp = last.time?.toKotlinInstant()
+            title = "Information"
+            color(EmbedColor.Default)
+
+            description = queueEntries.joinToString("\n") { shownEntries ->
+                val representative = shownEntries.first()
+
+                val players = shownEntries.distinctBy { it.player.id }
+                    .joinToString(", ") { "<@${it.player.id}>" }
+
+                "- ${shownEntries.sumOf { it.amount }} ${representative.carryTier.displayName} - ${representative.carryDifficulty.displayName} for $players (${shownEntries.sumOf { it.calculateScore() }} score)"
+            }
+
+            last.attachmentLink?.let { transcriptUrl ->
+                field("Transcript-Link", true) {
+                    "[Click to open]($transcriptUrl)"
+                }
+            }
+
+            if(approver != null) {
+                field("Approved by", true) {
+                    "<@$approver>"
+                }
+            }
+        }
+
+        suspend fun logDirectly(carrierId: Long, queueEntries: List<CarryQueueModel>, server: GuildBehavior, approver: Long?) {
+            val carryTypes = mutableListOf<CarryTypeModel>()
+            val loggedEntries = mutableListOf<LoggedQueueEntry>()
+
+            for (group in compactQueueEntries(queueEntries)) {
+                val representative = group.first()
+                val successfullyLogged = mutableListOf<CarryQueueModel>()
+                var latestScore = 0L
+
+                for (queueModel in group) {
+                    val updateModel = queueModel.getUpdateModel()
+                    if(approver != null) {
+                        updateModel.approver = approver
+                    }
+
+                    val loggedCarryModel = QueueConnection.authenticated()
+                        .logQueue(queueModel.id, updateModel)
+
+                    if (loggedCarryModel == null) {
+                        logger.error("Failed to log carry queue {}", queueModel.id)
+                        continue
+                    }
+
+                    successfullyLogged.add(queueModel)
+                    carryTypes.add(queueModel.carryType)
+
+                    latestScore = loggedCarryModel.scoreModels
+                        .firstOrNull { it.scoreType == ScoreType.Default }
+                        ?.scoreAmount
+                        ?: ScoreConnection[queueModel.carryType]
+                            .authenticated()
+                            .getScore(queueModel.carrier.id)
+                            ?.scoreAmount
+                                ?: 0
+                }
+
+                if (successfullyLogged.isEmpty()) {
+                    continue
+                }
+
+                loggedEntries.add(
+                    LoggedQueueEntry(
+                        queues = successfullyLogged,
+                        updatedScore = latestScore
+                    )
+                )
+
+                representative.carryTier
+                    .carryType
+                    .logChannel
+                    ?.let { id ->
+                        server.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id))
+                    }?.createMessage {
+                        val embed = loadGroupedCarryQueueEmbed(successfullyLogged, approver)
+                        embed.title = "Carry accepted."
+                        embed.color(EmbedColor.Positive)
+
+                        embeds = mutableListOf(embed)
+                    }
+            }
+
+            sendLoggedDms(carrierId, loggedEntries, approver)
+
+            scheduler.launch {
+                StaticMessageService.updateScoreLeaderboard(carryTypes.distinctBy { it.id })
+            }
         }
     }
 }

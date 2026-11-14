@@ -20,6 +20,7 @@ import dev.kord.rest.builder.message.embed
 import dev.kord.rest.request.RestRequestException
 import dev.kordex.core.utils.from
 import dev.kordex.core.utils.scheduling.Scheduler
+import io.ktor.http.*
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -29,6 +30,7 @@ import net.dungeonhub.application.connection.DiscordConnection
 import net.dungeonhub.application.connection.applyJson
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
+import net.dungeonhub.application.enums.getLeaderboardTitle
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.loader.OnStart
 import net.dungeonhub.application.loader.StartPriority
@@ -49,16 +51,16 @@ import net.dungeonhub.model.static_message.StaticMessageModel
 import net.dungeonhub.service.GsonService
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
 @OnStart(priority = StartPriority.POST_BOT)
 object StaticMessageService : StartupListener {
     private val logger = LoggerFactory.getLogger(StaticMessageService::class.java)
     lateinit var scheduler: Scheduler
-    val staticMessageUpdates = mutableListOf<StaticMessageModel>()
+    val staticMessageUpdates = ConcurrentLinkedDeque<StaticMessageModel>()
 
     val reputationLeaderboardDescription by lazy {
         "Check `/help topic:reputation` to see how you can gain reputation.\n" +
@@ -90,7 +92,7 @@ object StaticMessageService : StartupListener {
     }
 
     private suspend fun staticMessageUpdateWave() {
-        val currentWave = staticMessageUpdates.removeFirstOrNull() ?: return
+        val currentWave = staticMessageUpdates.pollFirst() ?: return
 
         refreshStaticMessage(currentWave)
     }
@@ -99,6 +101,8 @@ object StaticMessageService : StartupListener {
         val staticMessages = DiscordServerConnection.authenticated().findGlobalStaticMessages() ?: return
 
         for(staticMessage in staticMessages) {
+            if(!staticMessage.active) continue
+
             staticMessageUpdates.addLast(staticMessage)
         }
     }
@@ -131,16 +135,28 @@ object StaticMessageService : StartupListener {
     }
 
     suspend fun refreshStaticMessage(staticMessage: StaticMessageModel) {
+        if(!staticMessage.active) return
+
         val channel = try {
             DiscordConnection.bot.kordRef
                 .getChannel(Snowflake(staticMessage.channelId))
                 ?.asChannelOfOrNull<MessageChannel>()
-        } catch (_: RestRequestException) {
-            null
+        } catch (exception: RestRequestException) {
+            if(exception.status == HttpStatusCode.Forbidden || exception.status == HttpStatusCode.NotFound) {
+                null
+            } else {
+                logger.error("Couldn't refresh the static message with id ${staticMessage.id}, retrying again later...", exception)
+                return
+            }
         }
 
         if(channel == null) {
-            logger.warn("Couldn't find channel with id ${staticMessage.channelId}.")
+            logger.warn("Couldn't find channel with id ${staticMessage.channelId}, deactivating the static message ${staticMessage.id}.")
+
+            val updateModel = staticMessage.getUpdateModel()
+            updateModel.active = false
+            StaticMessageConnection[staticMessage.server.id].authenticated().updateStaticMessage(staticMessage.id, updateModel)
+
             return
         }
 
@@ -302,7 +318,7 @@ object StaticMessageService : StartupListener {
                 val leaderboards: MutableList<ScoreLeaderboard> = mutableListOf()
 
                 for (scoreType in ScoreType.entries) {
-                    if (scoreType == ScoreType.Event && ServerProperty.TOTAL_SCORE_EVENT.getValue(staticMessage.server.id)?.let { it == "true" } == false) {
+                    if (scoreType == ScoreType.Event && !ServerProperty.TOTAL_SCORE_EVENT.getValue(staticMessage.server.id).let { it == "true" }) {
                         continue
                     }
 
@@ -394,7 +410,6 @@ object StaticMessageService : StartupListener {
         return embeds
     }
 
-    @OptIn(ExperimentalTime::class)
     suspend fun getPriceEmbed(carryTier: CarryTierModel): EmbedBuilder {
         val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().getAllCarryDifficulties() ?: listOf()
 
@@ -404,7 +419,7 @@ object StaticMessageService : StartupListener {
         val description = title + priceDescription + if (carryDifficulties.isNotEmpty()) {
             carryDifficulties.joinToString("\n") { carryDifficulty ->
                 val result = StringBuilder()
-                if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
+                if (carryDifficulty.bulkPrices.isNotEmpty()) {
                     result.append("\n")
                 }
 
@@ -418,11 +433,11 @@ object StaticMessageService : StartupListener {
 
                 result.append(priceText)
 
-                if (carryDifficulty.bulkAmount != null && carryDifficulty.bulkPrice != null) {
+                for (bulkPrice in carryDifficulty.bulkPrices) {
                     result.append("\n\\*")
-                        .append(FormattingService.makeNumberReadable(carryDifficulty.bulkPrice!!.toLong()))
+                        .append(FormattingService.makeNumberReadable(bulkPrice.price.toLong()))
                         .append(" per carry if you buy ")
-                        .append(carryDifficulty.bulkAmount)
+                        .append(bulkPrice.amount)
                         .append("+ carries.")
                 }
                 result
@@ -438,7 +453,6 @@ object StaticMessageService : StartupListener {
         }
     }
 
-    @OptIn(ExperimentalTime::class)
     private fun handleScoreLeaderboards(guildId: Long, leaderboards: List<ScoreLeaderboard>): MutableList<EmbedBuilder> {
         val embeds = mutableListOf<EmbedBuilder>()
 

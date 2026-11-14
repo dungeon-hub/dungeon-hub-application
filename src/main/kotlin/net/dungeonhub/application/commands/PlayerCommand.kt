@@ -19,7 +19,9 @@ import net.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.hypixel.client.responses.ValueResponse
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
+import net.dungeonhub.i18n.Translations
 import net.dungeonhub.i18n.Translations.Command.Player
 import net.dungeonhub.mojang.entity.toUUID
 import org.slf4j.LoggerFactory
@@ -82,8 +84,8 @@ class PlayerCommand : Extension() {
         }
 
         ephemeralSlashCommand(::SetProfileArguments) {
-            name = "set-primary-profile".toKey()
-            description = "Set your primary skyblock profile.".toKey()
+            name = Translations.Command.SetPrimaryProfile.name
+            description = Translations.Command.SetPrimaryProfile.description
 
             // TODO replace with something like /settings - this should only be temporary
             action {
@@ -99,8 +101,19 @@ class PlayerCommand : Extension() {
                     return@action
                 }
 
-                val profiles = HypixelApiConnection().getSkyblockProfiles(discordUser.minecraftId!!)?.profiles
-                if(profiles == null) {
+                val profilesResponse = HypixelApiConnection().getSkyblockProfiles(discordUser.minecraftId!!)
+                if(profilesResponse !is ValueResponse) {
+                    respond {
+                        addEmbed {
+                            description = "An issue occurred while contacting the Hypixel API - please try again later."
+                            color(EmbedColor.Negative)
+                        }
+                    }
+                    return@action
+                }
+
+                val profiles = profilesResponse.value.profiles
+                if(profiles.isEmpty()) {
                     respond {
                         addEmbed {
                             description = "It seems like you don't have any profiles - please try again later."
@@ -122,16 +135,24 @@ class PlayerCommand : Extension() {
                 }
 
                 respond {
+                    val updateModel = discordUser.getUpdateModel()
+                    updateModel.primarySkyblockProfile = profile.profileId
+
+                    val updatedUser = DiscordUserConnection.authenticated().updateUser(discordUser.id, updateModel)
+
+                    if(updatedUser == null) {
+                        addEmbed {
+                            description = "An issue occurred while trying to save your primary profile."
+                            color(EmbedColor.Negative)
+                        }
+                        return@respond
+                    }
+
                     addEmbed {
                         description = "Your primary profile has been set to ${profile.cuteName}."
                         color(EmbedColor.Positive)
                     }
                 }
-
-                val updateModel = discordUser.getUpdateModel()
-                updateModel.primarySkyblockProfile = profile.profileId
-
-                DiscordUserConnection.authenticated().updateUser(discordUser.id, updateModel)
             }
         }
     }
@@ -153,7 +174,7 @@ class PlayerCommand : Extension() {
     class SetProfileArguments : Arguments() {
         val profile by string {
             name = Player.Arguments.Profile.name
-            description = "Select your main profile, which will then be used to display your stats across multiple features.".toKey()
+            description = Translations.Command.SetPrimaryProfile.Arguments.Profile.description
             autoCompleteCallback = AutoCompletionService.skyblockProfile
         }
     }

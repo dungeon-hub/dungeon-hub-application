@@ -44,8 +44,6 @@ class ExceptionAppender : AppenderBase<ILoggingEvent>() {
             }
         }
 
-        embed.title = logEvent.formattedMessage
-
         if (throwable?.throwable != null) {
             var description = getExceptionMessage(throwable.throwable)
 

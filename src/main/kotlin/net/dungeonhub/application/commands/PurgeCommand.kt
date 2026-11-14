@@ -11,7 +11,6 @@ import dev.kordex.core.commands.converters.impl.long
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -69,8 +68,8 @@ class PurgeCommand : Extension() {
             allowInDms = false
 
             publicSubCommand(::PurgeArguments) {
-                name = "show".toKey()
-                description = "Shows which users would be affected by the purge.".toKey()
+                name = Purge.Show.name
+                description = Purge.Show.description
 
                 action {
                     val response = respond {
@@ -177,8 +176,8 @@ class PurgeCommand : Extension() {
             }
 
             publicSubCommand(::PurgeArguments) {
-                name = "add".toKey()
-                description = "Adds the users to the current purge wave.".toKey()
+                name = Purge.Add.name
+                description = Purge.Add.description
 
                 action {
                     val purgeImmunityRole = ServerProperty.PURGE_IMMUNITY_ROLE
@@ -303,8 +302,8 @@ class PurgeCommand : Extension() {
             }
 
             publicSubCommand {
-                name = "start".toKey()
-                description = "Starts the current purge wave.".toKey()
+                name = Purge.Start.name
+                description = Purge.Start.description
 
                 action {
                     respond {
@@ -320,8 +319,8 @@ class PurgeCommand : Extension() {
             }
 
             publicSubCommand {
-                name = "progress".toKey()
-                description = "Shows you the progress of the current purge wave.".toKey()
+                name = Purge.Progress.name
+                description = Purge.Progress.description
 
                 action {
                     respond {
@@ -348,8 +347,8 @@ class PurgeCommand : Extension() {
             }
 
             publicSubCommand {
-                name = "clear".toKey()
-                description = "Clears the current purge wave.".toKey()
+                name = Purge.Clear.name
+                description = Purge.Clear.description
 
                 action {
                     respond {
@@ -388,15 +387,15 @@ class PurgeCommand : Extension() {
         }
 
         val purgeType by string {
-            name = "purge-type".toKey()
-            description = "The identifier of the purge type".toKey()
+            name = Purge.Arguments.PurgeType.name
+            description = Purge.Arguments.PurgeType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.purgeType
         }
 
         val threshold by long {
-            name = "threshold".toKey()
-            description = "The score-threshold.".toKey()
+            name = Purge.Arguments.Threshold.name
+            description = Purge.Arguments.Threshold.description
             minValue = 0
             maxValue = 100
         }

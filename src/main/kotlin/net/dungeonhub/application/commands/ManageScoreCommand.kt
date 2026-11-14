@@ -11,19 +11,19 @@ import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.message.create.FollowupMessageCreateBuilder
 import dev.kordex.core.checks.hasPermission
 import dev.kordex.core.commands.Arguments
-import dev.kordex.core.commands.application.slash.converters.impl.enumChoice
+import dev.kordex.core.commands.application.slash.converters.impl.stringChoice
 import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.long
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.commands.converters.impl.user
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import net.dungeonhub.application.enums.EmbedColor
 import net.dungeonhub.application.enums.ServerProperty
+import net.dungeonhub.application.enums.readableName
 import net.dungeonhub.application.exceptions.CommandExecutionException
 import net.dungeonhub.application.exceptions.InvalidOptionException
 import net.dungeonhub.application.exceptions.MissingPermissionException
@@ -38,6 +38,7 @@ import net.dungeonhub.connection.ScoreConnection
 import net.dungeonhub.enums.ScoreResetType
 import net.dungeonhub.enums.ScoreType
 import net.dungeonhub.i18n.Translations.Command.ManageScore
+import net.dungeonhub.i18n.Translations.CommonArguments
 import net.dungeonhub.model.score.ScoreModel
 import net.dungeonhub.model.score.ScoreUpdateModel
 
@@ -57,8 +58,8 @@ class ManageScoreCommand : Extension() {
             allowInDms = false
 
             publicSubCommand(::ManageScoreArguments) {
-                name = "add".toKey()
-                description = "Add score.".toKey()
+                name = ManageScore.Add.name
+                description = ManageScore.Add.description
 
                 action {
                     respond {
@@ -68,8 +69,8 @@ class ManageScoreCommand : Extension() {
             }
 
             publicSubCommand(::ManageScoreArguments) {
-                name = "remove".toKey()
-                description = "Remove score.".toKey()
+                name = ManageScore.Remove.name
+                description = ManageScore.Remove.description
 
                 action {
                     respond {
@@ -79,8 +80,8 @@ class ManageScoreCommand : Extension() {
             }
 
             publicSubCommand(::ResetScoreArguments) {
-                name = "reset".toKey()
-                description = "Reset score for a given carry type.".toKey()
+                name = ManageScore.Reset.name
+                description = ManageScore.Reset.description
 
                 check {
                     hasPermission(Permission.Administrator)
@@ -93,13 +94,13 @@ class ManageScoreCommand : Extension() {
                                 .getByIdentifier(arguments.carryType)
                                 ?: throw InvalidOptionException("carry-type")
 
-                        val resetModel = ScoreConnection[carryType].authenticated().resetScore(arguments.resetType)
+                        val resetModel = ScoreConnection[carryType].authenticated().resetScore(arguments.resetTypeEnum)
                             ?: throw CommandExecutionException("Error while getting a response when resetting score.")
 
                         val embed = ApplicationService.embed
                         embed.color = EmbedColor.Information.color
                         embed.title = "Score for ${carryType.displayName} successfully reset!"
-                        embed.description = when (arguments.resetType) {
+                        embed.description = when (arguments.resetTypeEnum) {
                             ScoreResetType.Default -> "Default score of ${resetModel.defaultCount} users were reset. ${
                                 if (resetModel.eventCount != 0L) "\nSomehow also ${resetModel.eventCount} users got their event score reset?" else ""
                             }"
@@ -177,20 +178,20 @@ class ManageScoreCommand : Extension() {
 
     class ManageScoreArguments : Arguments() {
         val user by user {
-            name = "user".toKey()
-            description = "The user to manage score.".toKey()
+            name = ManageScore.Arguments.User.name
+            description = ManageScore.Arguments.User.description
         }
 
         val carryType by string {
-            name = "carry-type".toKey()
-            description = "The identifier of the carry type".toKey()
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
         val amount by long {
-            name = "amount".toKey()
-            description = "The amount of score to add/remove.".toKey()
+            name = ManageScore.Arguments.Amount.name
+            description = ManageScore.Arguments.Amount.description
             maxValue = 10000
             minValue = 0
         }
@@ -198,16 +199,19 @@ class ManageScoreCommand : Extension() {
 
     class ResetScoreArguments : Arguments() {
         val carryType by string {
-            name = "carry-type".toKey()
-            description = "The identifier of the carry type".toKey()
+            name = CommonArguments.CarryType.name
+            description = CommonArguments.CarryType.description
             maxLength = 30
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
-        val resetType by enumChoice<ScoreResetType> {
-            name = "reset-type".toKey()
-            description = "Choose which score should be reset".toKey()
-            typeName = "ScoreResetType".toKey()
+        val resetType by stringChoice {
+            name = ManageScore.Reset.Arguments.ResetType.name
+            description = ManageScore.Reset.Arguments.ResetType.description
+            choices = ScoreResetType.entries.associate { it.readableName to it.name }.toMutableMap()
         }
+
+        val resetTypeEnum: ScoreResetType
+            get() = ScoreResetType.valueOf(resetType)
     }
 }

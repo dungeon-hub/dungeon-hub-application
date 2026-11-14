@@ -40,7 +40,10 @@ import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.application.service.MessagesService
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
-import net.dungeonhub.connection.*
+import net.dungeonhub.connection.CarryDifficultyConnection
+import net.dungeonhub.connection.DiscordUserConnection
+import net.dungeonhub.connection.TicketConnection
+import net.dungeonhub.connection.TicketPanelConnection
 import net.dungeonhub.enums.FormType
 import net.dungeonhub.enums.TicketState
 import net.dungeonhub.hypixel.entities.skyblock.statsoverview.BuiltInStatsOverviewType
@@ -57,7 +60,6 @@ import org.slf4j.LoggerFactory
 @LoadExtension
 class TicketCreateListener : Extension() {
     override val name = "ticket-create-listener"
-    private val logger = LoggerFactory.getLogger(javaClass)
 
     override suspend fun setup() {
         event<GuildButtonInteractionCreateEvent> {
@@ -113,12 +115,7 @@ class TicketCreateListener : Extension() {
                             "-# If that seems incorrect, please unlink using `/unlink` and then `/link` to the correct account."
                 }
             } else if(data == "carry-difficulty") { // TODO enum?
-                // TODO dedicated endpoint
-                val carryTier = DiscordServerConnection.authenticated()
-                    .getAllCarryTiers(ticketPanel.discordServer.id)
-                    ?.firstOrNull { carryTier ->
-                        carryTier.relatedTicketPanel?.id == ticketPanel.id
-                    } ?: return
+                val carryTier = ticketPanel.relatedCarryTier ?: return
 
                 val carryDifficulties = CarryDifficultyConnection[carryTier].authenticated().getAllCarryDifficulties()
                     ?: return
@@ -178,16 +175,16 @@ class TicketCreateListener : Extension() {
                         description = labelDescription
 
                         stringSelect("form-question-$index") {
-                            options.forEach { option -> // TODO support requirements for the options
-                                if(option.contains(":")) {
-                                    val split = option.split(":", limit = 2)
+                            options.forEach { selectOption -> // TODO support requirements for the options
+                                if(selectOption.contains(":")) {
+                                    val split = selectOption.split(":", limit = 2)
 
                                     val value = split[0]
                                     val label = split[1]
 
                                     option(label, value)
                                 } else {
-                                    option(option, option)
+                                    option(selectOption, selectOption)
                                 }
                             }
 
@@ -211,6 +208,7 @@ class TicketCreateListener : Extension() {
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(TicketCreateListener::class.java)
         const val DEFAULT_CONTENT = "Welcome, {user.mention}!\nPlease describe your {panel.name} request below further."
 
         suspend fun checkTicketOpen(
@@ -244,6 +242,13 @@ class TicketCreateListener : Extension() {
                 return false
             }
 
+            TicketSystem.checkOpenTicketLimit(event.interaction.user, ticketPanel)?.let { embed ->
+                event.interaction.deferEphemeralResponse().respond {
+                    embeds = mutableListOf(embed)
+                }
+                return false
+            }
+
             return true
         }
 
@@ -255,8 +260,6 @@ class TicketCreateListener : Extension() {
             val response = event.interaction.deferEphemeralResponse()
 
             response.respond {
-                // TODO check for ticket limit
-
                 val member = event.interaction.user.asMember(Snowflake(ticketPanel.discordServer.id))
 
                 val ticket = createTicketModel(ticketPanel, member, responses)
@@ -269,22 +272,38 @@ class TicketCreateListener : Extension() {
                     return@respond
                 }
 
-                val ticketChannel = createTicketChannel(ticketPanel, ticket, member)
-                updateTicketChannel(ticket, ticketChannel)
+                val ticketChannel = try {
+                    createTicketChannel(ticketPanel, ticket, member)
+                } catch (_: Exception) {
+                    addEmbed {
+                        description = "Couldn't create the ticket channel."
+                        color(EmbedColor.Negative)
+                    }
+                    return@respond
+                }
+                val updatedTicket = updateTicketChannel(ticket, ticketChannel)
+
+                if (updatedTicket == null) {
+                    addEmbed {
+                        description = "Error while persisting ticket channel creation. Please report this!"
+                        color(EmbedColor.Negative)
+                    }
+                    return@respond
+                }
 
                 addEmbed {
                     description = "Ticket created: ${ticketChannel.mention}."
                     color(EmbedColor.Positive)
                 }
 
-                TicketSystem.logTicketAction(member.guild, ticket) {
-                    description = "Ticket #${ticket.id} created by ${member.mention}."
+                TicketSystem.logTicketAction(member.guild, updatedTicket) {
+                    description = "Ticket #${updatedTicket.id} created by ${member.mention}."
 
                     field("Channel", true) { ticketChannel.mention }
                 }
 
                 scheduler.launch {
-                    sendInitialTicketMessage(ticketPanel, ticket, ticketChannel, member)
+                    sendInitialTicketMessage(ticketPanel, updatedTicket, ticketChannel, member)
                 }
             }
         }
@@ -306,16 +325,21 @@ class TicketCreateListener : Extension() {
         suspend fun createTicketChannel(ticketPanel: TicketPanelModel, ticket: TicketModel, member: Member): TextChannel {
             val name = TicketSystem.buildTicketName(ticketPanel, ticket, member, null)
 
-            return member.guild.createTextChannel(name ?: ticketPanel.name) {
-                permissionOverwrites.clear()
-                updateTicketPermissions(ticketPanel, ticket)
+            try {
+                return member.guild.createTextChannel(name ?: ticketPanel.name) {
+                    permissionOverwrites.clear()
+                    updateTicketPermissions(ticketPanel, ticket)
 
-                val categories = if (ticket.state in listOf(TicketState.Creating, TicketState.Open)) {
-                    ticketPanel.openCategories
-                } else {
-                    ticketPanel.closedCategories
+                    val categories = if (ticket.state in listOf(TicketState.Creating, TicketState.Open)) {
+                        ticketPanel.openCategories
+                    } else {
+                        ticketPanel.closedCategories
+                    }
+                    getCategory(categories)?.let { parentId = Snowflake(it) }
                 }
-                getCategory(categories)?.let { parentId = Snowflake(it) }
+            } catch (exception: Exception) {
+                logger.error("Couldn't create ticket channel with name '$name'", exception)
+                throw exception
             }
         }
 
@@ -464,8 +488,8 @@ class TicketCreateListener : Extension() {
                         e.embed
                     }
                 }
-                "price-overview" -> placeholders.carryTier.await()?.let { MessagesService.getPriceEmbed(it) }
-                "carry-price" -> placeholders.formCarryDifficulty.await()?.let { carryDifficulty ->
+                "price-overview" -> placeholders.carryTier?.let { MessagesService.getPriceEmbed(it) }
+                "carry-price" -> placeholders.carryDifficulty.await()?.let { carryDifficulty ->
                     placeholders.formCarryAmount?.toIntOrNull()?.let { carryAmount ->
                         CalcPriceCommand.generateCalculatedPriceEmbed(carryDifficulty, carryAmount)
                     }

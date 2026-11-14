@@ -8,17 +8,18 @@ import dev.kord.core.event.interaction.GuildButtonInteractionCreateEvent
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kordex.core.annotations.AlwaysPublicResponse
 import dev.kordex.core.commands.Arguments
-import dev.kordex.core.commands.application.slash.converters.impl.optionalEnumChoice
+import dev.kordex.core.commands.application.slash.converters.impl.optionalStringChoice
 import dev.kordex.core.commands.application.slash.publicSubCommand
 import dev.kordex.core.commands.converters.impl.optionalString
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.pagination.pages.Page
 import dev.kordex.core.utils.getLocale
 import net.dungeonhub.application.connection.copy
 import net.dungeonhub.application.enums.HelpTopic
+import net.dungeonhub.application.enums.getLeaderboardTitle
+import net.dungeonhub.application.enums.readableName
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.AutoCompletionService
 import net.dungeonhub.application.service.LeaderboardService
@@ -90,7 +91,7 @@ class LeaderboardCommand : Extension() {
                         CarryTypeConnection[guild?.id?.value!!.toLong()].authenticated()
                             .getByIdentifier(arguments.carryType)
 
-                    val scoreType: ScoreType = arguments.scoreType ?: ScoreType.Default
+                    val scoreType: ScoreType = arguments.scoreTypeEnum ?: ScoreType.Default
 
                     val leaderboardTitle = scoreType.getLeaderboardTitle(carryType, event.getLocale())
 
@@ -186,11 +187,14 @@ class LeaderboardCommand : Extension() {
             autoCompleteCallback = AutoCompletionService.carryType
         }
 
-        val scoreType by optionalEnumChoice<ScoreType> {
-            name = "score-type".toKey()
-            description = "Select which type of score you want.".toKey()
-            typeName = "ScoreType".toKey()
+        val scoreType by optionalStringChoice {
+            name = Leaderboard.Score.Arguments.ScoreType.name
+            description = Leaderboard.Score.Arguments.ScoreType.description
+            choices = ScoreType.entries.associate { it.readableName to it.name }.toMutableMap()
         }
+
+        val scoreTypeEnum: ScoreType?
+            get() = scoreType?.let { ScoreType.valueOf(it) }
     }
 }
 

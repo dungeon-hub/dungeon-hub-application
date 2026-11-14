@@ -4,11 +4,11 @@ import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.ephemeralSlashCommand
-import dev.kordex.core.i18n.toKey
 import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.ApplicationService
 import net.dungeonhub.connection.ContentConnection
+import net.dungeonhub.i18n.Translations
 import net.dungeonhub.wrapper.kord.createTranscript
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -25,8 +25,8 @@ class TestTranscriptCommand : Extension() {
 
     override suspend fun setup() {
         ephemeralSlashCommand {
-            name = "test-transcript".toKey()
-            description = "Tests the transcript feature.".toKey()
+            name = Translations.Command.TestTranscript.name
+            description = Translations.Command.TestTranscript.description
             allowInDms = false
             check {
                 failIfNot("You aren't allowed to use this command.") {

@@ -26,10 +26,8 @@ import java.util.stream.Collectors
 import kotlin.math.roundToInt
 import kotlin.time.Clock
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
 import kotlin.time.toJavaInstant
 
-@OptIn(ExperimentalTime::class)
 object RolesService {
     val scheduler = DhScheduler()
 
@@ -133,7 +131,7 @@ object RolesService {
 
         val profiles = suspendLazy {
             val uuid = uuid.get() ?: return@suspendLazy null
-            hypixelApiConnection.getSkyblockProfiles(uuid)
+            hypixelApiConnection.getSkyblockProfiles(uuid).valueOrNull
         }
 
         val selectedProfiles = suspendLazy {
@@ -153,16 +151,21 @@ object RolesService {
 
         val playerData = suspendLazy {
             val uuid = uuid.get() ?: return@suspendLazy null
-            hypixelApiConnection.getPlayerData(uuid)
+            hypixelApiConnection.getPlayerData(uuid).valueOrNull
         }
 
-        val guild by lazy {
-            roleRequirement.extraData?.let { HypixelApiConnection().withCacheExpiration(5).getGuild(it) }
+        val roleRequirementGuild by lazy {
+            roleRequirement.extraData?.let { HypixelApiConnection().withCacheExpiration(5).getGuild(it).valueOrNull }
+        }
+
+        val usersGuild = suspendLazy {
+            val uuid = uuid.get() ?: return@suspendLazy null
+            hypixelApiConnection.getPlayerGuild(uuid).valueOrNull
         }
 
         val bingoData = suspendLazy {
             val uuid = uuid.get() ?: return@suspendLazy null
-            hypixelApiConnection.getBingoData(uuid)
+            hypixelApiConnection.getBingoData(uuid).valueOrNull
         }
 
         //TODO add check for legendary griffin pet
@@ -317,12 +320,16 @@ object RolesService {
             }
 
             RoleRequirementType.GuildMembership -> {
+                val guild = usersGuild.get()?.takeIf { it.name == roleRequirement.extraData } ?: roleRequirementGuild
+
                 roleRequirement.compare(
                     if (guild?.members?.any { it.uuid == uuid.get() } == true) 1 else 0
                 )
             }
 
             RoleRequirementType.GuildRank -> {
+                val guild = usersGuild.get()?.takeIf { it.name == roleRequirement.extraData } ?: roleRequirementGuild
+
                 roleRequirement.compare(
                     guild?.members?.firstOrNull { it.uuid == uuid.get() }?.rank?.priority ?: 0
                 )

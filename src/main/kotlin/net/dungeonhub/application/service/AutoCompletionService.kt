@@ -2,9 +2,7 @@ package net.dungeonhub.application.service
 
 import dev.kord.common.entity.Choice
 import dev.kord.common.entity.optional.Optional
-import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.interaction.suggest
-import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kord.core.event.interaction.AutoCompleteInteractionCreateEvent
 import dev.kordex.core.commands.converters.AutoCompleteCallback
 import net.dungeonhub.application.enums.KnownStaticResource
@@ -31,7 +29,7 @@ object AutoCompletionService {
                         value = carryType.identifier,
                         nameLocalizations = Optional()
                     )
-                } ?: listOf()
+                }?.take(25) ?: listOf()
         )
     }
 
@@ -60,7 +58,7 @@ object AutoCompletionService {
                             value = carryTier.identifier,
                             nameLocalizations = Optional()
                         )
-                    } ?: listOf()
+                    }?.take(25) ?: listOf()
             )
         }
     }
@@ -99,7 +97,7 @@ object AutoCompletionService {
                                 value = carryDifficulty.identifier,
                                 nameLocalizations = Optional()
                             )
-                        } ?: listOf()
+                        }?.take(25) ?: listOf()
                 )
             }
         } else {
@@ -107,19 +105,11 @@ object AutoCompletionService {
 
             val ticket = DiscordServerConnection.authenticated().findTickets(guildId, channelId = channel.id.value.toLong())?.firstOrNull()
 
-            val carryTierByCategory = ticket?.let { getCarryTierFromTicket(guildId, it) }
-                ?: channel.asChannelOfOrNull<CategorizableChannel>()
-                    ?.categoryId
-                    ?.let { categoryId ->
-                        DiscordServerConnection.authenticated().getCarryTierFromCategory(
-                            guildId,
-                            categoryId.value.toLong()
-                        )
-                    }
+            val ticketCarryTier = ticket?.let { getCarryTierFromTicket(it) }
 
-            if (carryTierByCategory != null) {
+            if (ticketCarryTier != null) {
                 suggest(
-                    CarryDifficultyConnection[carryTierByCategory].authenticated()
+                    CarryDifficultyConnection[ticketCarryTier].authenticated()
                         .getAllCarryDifficulties()
                         ?.filter { carryDifficulty ->
                             focusedOption.value.isEmpty()
@@ -132,7 +122,7 @@ object AutoCompletionService {
                                 value = carryDifficulty.identifier,
                                 nameLocalizations = Optional()
                             )
-                        } ?: listOf()
+                        }?.take(25) ?: listOf()
                 )
             }
         }
@@ -211,7 +201,7 @@ object AutoCompletionService {
 
         if(uuid != null) {
             suggest(
-                HypixelApiConnection().getSkyblockProfiles(uuid)?.profiles?.map {
+                HypixelApiConnection().getSkyblockProfiles(uuid).valueOrNull?.profiles?.map {
                     it.cuteName to it.profileId
                 }?.map { (name, uuid) ->
                     Choice.StringChoice(
@@ -224,11 +214,8 @@ object AutoCompletionService {
         }
     }
 
-    suspend fun getCarryTierFromTicket(guildId: Long, ticket: TicketModel): CarryTierModel? {
-        // TODO dedicated endpoint
-        return DiscordServerConnection.authenticated().getAllCarryTiers(guildId)?.firstOrNull { carryTier ->
-            carryTier.relatedTicketPanel?.id == ticket.ticketPanel.id
-        }
+    fun getCarryTierFromTicket(ticket: TicketModel): CarryTierModel? {
+        return ticket.ticketPanel.relatedCarryTier
     }
 }
 

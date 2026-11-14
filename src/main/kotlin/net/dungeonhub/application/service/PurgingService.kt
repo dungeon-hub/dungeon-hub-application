@@ -106,7 +106,7 @@ object PurgingService : StartupListener {
                 )
 
                 scheduler.launch {
-                    delay(5000)
+                    delay(5.seconds)
 
                     val reloadedMember =
                         member.withStrategy(EntitySupplyStrategy.cacheWithCachingRestFallback).fetchMember()

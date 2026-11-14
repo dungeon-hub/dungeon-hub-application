@@ -21,7 +21,6 @@ import dev.kordex.core.commands.converters.impl.optionalInt
 import dev.kordex.core.commands.converters.impl.string
 import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.publicSlashCommand
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.getJumpUrl
 import net.dungeonhub.application.config.ConfigProperty
 import net.dungeonhub.application.connection.applyJson
@@ -64,8 +63,8 @@ class EmbedCommand : Extension() {
             defaultMemberPermissions = Permissions(Permission.ManageMessages)
 
             publicSubCommand(::GetArguments) {
-                name = "get".toKey()
-                description = "Gets the embed data of a message.".toKey()
+                name = Embed.Get.name
+                description = Embed.Get.description
 
                 action {
                     respond {
@@ -138,8 +137,8 @@ class EmbedCommand : Extension() {
             }
 
             publicSubCommand(::SendArguments) {
-                name = "send".toKey()
-                description = "Sends a custom embed.".toKey()
+                name = Embed.Send.name
+                description = Embed.Send.description
 
                 action {
                     respond {
@@ -222,8 +221,8 @@ class EmbedCommand : Extension() {
             }
 
             publicSubCommand(::MessageLinkEmbedArguments) {
-                name = "add".toKey()
-                description = "Add an embed to a message sent by this bot.".toKey()
+                name = Embed.Add.name
+                description = Embed.Add.description
 
                 action {
                     respond {
@@ -309,8 +308,8 @@ class EmbedCommand : Extension() {
             }
 
             publicSubCommand(::EditArguments) {
-                name = "edit".toKey()
-                description = "Edit an embed sent by this bot.".toKey()
+                name = Embed.Edit.name
+                description = Embed.Edit.description
 
                 action {
                     respond {
@@ -381,8 +380,8 @@ class EmbedCommand : Extension() {
 
     open inner class MessageLinkArguments : Arguments() {
         private val messageLink by string {
-            name = "link".toKey()
-            description = "Please paste the link to the message here.".toKey()
+            name = Embed.Arguments.Link.name
+            description = Embed.Arguments.Link.description
         }
 
         suspend fun getMessage(): Message? {
@@ -392,15 +391,19 @@ class EmbedCommand : Extension() {
 
     inner class GetArguments : MessageLinkArguments() {
         val type by optionalStringChoice {
-            name = "type".toKey()
-            description = "Select how you want to get the embed data.".toKey()
+            name = Embed.Get.Arguments.Type.name
+            description = Embed.Get.Arguments.Type.description
             choices =
-                mutableMapOf("beautiful".toKey() to "beautiful", "source".toKey() to "source", "cdn".toKey() to "cdn")
+                mutableMapOf(
+                    Embed.Get.Arguments.Type.Choices.beautiful to "beautiful",
+                    Embed.Get.Arguments.Type.Choices.source to "source",
+                    Embed.Get.Arguments.Type.Choices.cdn to "cdn"
+                )
         }
 
         val count by optionalInt {
-            name = "count".toKey()
-            description = "Select which embed you want to get (0-based counting).".toKey()
+            name = Embed.Get.Arguments.Count.name
+            description = Embed.Get.Arguments.Count.description
             minValue = 0
             maxValue = 25
         }
@@ -408,20 +411,20 @@ class EmbedCommand : Extension() {
 
     open inner class MessageLinkEmbedArguments : MessageLinkArguments() {
         val embed by string {
-            name = "embed".toKey()
-            description = "The embed data to send.".toKey()
+            name = Embed.Arguments.Embed.name
+            description = Embed.Arguments.Embed.description
         }
     }
 
     class SendArguments : Arguments() {
         val embed by string {
-            name = "embed".toKey()
-            description = "The embed data to send.".toKey()
+            name = Embed.Arguments.Embed.name
+            description = Embed.Arguments.Embed.description
         }
 
         val channel by optionalChannel {
-            name = "channel".toKey()
-            description = "The channel to send the embed into.".toKey()
+            name = Embed.Send.Arguments.Channel.name
+            description = Embed.Send.Arguments.Channel.description
 
             requiredChannelTypes = mutableSetOf(
                 ChannelType.GuildText,
@@ -434,8 +437,8 @@ class EmbedCommand : Extension() {
 
     inner class EditArguments : MessageLinkEmbedArguments() {
         val count by optionalInt {
-            name = "count".toKey()
-            description = "Select which embed you want to edit (0-based counting).".toKey()
+            name = Embed.Edit.Arguments.Count.name
+            description = Embed.Edit.Arguments.Count.description
             minValue = 0
             maxValue = 25
         }

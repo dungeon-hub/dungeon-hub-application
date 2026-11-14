@@ -28,7 +28,6 @@ import dev.kordex.core.extensions.Extension
 import dev.kordex.core.extensions.event
 import dev.kordex.core.extensions.publicSlashCommand
 import dev.kordex.core.extensions.publicUserCommand
-import dev.kordex.core.i18n.toKey
 import dev.kordex.core.utils.scheduling.Scheduler
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filter
@@ -42,6 +41,7 @@ import net.dungeonhub.application.misc.DhScheduler
 import net.dungeonhub.application.service.*
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.exception.PlayerNotFoundException
+import net.dungeonhub.hypixel.client.responses.ValueResponse
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
 import net.dungeonhub.i18n.Translations
 import net.dungeonhub.i18n.Translations.Command.FindUser
@@ -143,8 +143,8 @@ class LinkingSystem : Extension() {
         listOf(693263712626278553L, 633621474183217163L, 1023684107877761196L).map { Snowflake(it) }
             .forEach { guildId ->
                 publicSlashCommand(::SingleIgnArguments) {
-                    name = "manual-link".toKey()
-                    description = "Manually link someone by IGN.".toKey()
+                    name = Translations.Command.ManualLink.name
+                    description = Translations.Command.ManualLink.description
                     guild(guildId)
                     check {
                         failIfNot("You aren't allowed to use this command.") {
@@ -156,12 +156,21 @@ class LinkingSystem : Extension() {
                         respond {
                             val uuid = MojangConnection.getUUIDByName(arguments.ign)
 
-                            val discordUser = HypixelApiConnection().getHypixelLinkedDiscord(uuid)
-                                ?: throw InvalidOptionWarning(
-                                    "ign",
-                                    "Please add the correct discord-account to your hypixel social menu.\n"
-                                            + "To learn more about how to do this, use `/help verification`."
-                                )
+                            val discordUserResponse = HypixelApiConnection().getHypixelLinkedDiscord(uuid)
+
+                            if(discordUserResponse !is ValueResponse) {
+                                addEmbed {
+                                    description = "There was an issue fetching your Hypixel data. Please try again later."
+                                    color(EmbedColor.Negative)
+                                }
+                                return@respond
+                            }
+
+                            val discordUser = discordUserResponse.value ?: throw InvalidOptionWarning(
+                                "ign",
+                                "Please add the correct discord-account to your Hypixel social menu.\n"
+                                        + "To learn more about how to do this, use `/help verification`."
+                            )
 
                             val users = guild!!.requestMembers { query = discordUser; limit = 5 }
                                 .map { it.members }
@@ -187,14 +196,14 @@ class LinkingSystem : Extension() {
             }
 
         publicSlashCommand {
-            name = "mass-sync".toKey()
-            description = "Queue many users for role/nickname syncing.".toKey()
+            name = Translations.Command.MassSync.name
+            description = Translations.Command.MassSync.description
             allowInDms = false
             defaultMemberPermissions = Permissions(Permission.Administrator)
 
             publicSubCommand(::MassSyncRoleArguments) {
-                name = "role".toKey()
-                description = "Adds users in a role to the mass sync queue.".toKey()
+                name = Translations.Command.MassSync.Role.name
+                description = Translations.Command.MassSync.Role.description
 
                 action {
                     respond {
@@ -217,14 +226,14 @@ class LinkingSystem : Extension() {
             }
 
             publicSubCommand(::MassSyncGuildArguments) {
-                name = "guild".toKey()
-                description = "Adds users in a guild to the mass sync queue.".toKey()
+                name = Translations.Command.MassSync.Guild.name
+                description = Translations.Command.MassSync.Guild.description
 
                 action {
                     val guildId = guild!!.id
 
                     respond {
-                        val guild = HypixelApiConnection().getGuild(arguments.guild)
+                        val guild = HypixelApiConnection().getGuild(arguments.guild).valueOrNull
 
                         if (guild == null) {
                             addEmbed {
@@ -263,8 +272,8 @@ class LinkingSystem : Extension() {
             }
 
             publicSubCommand {
-                name = "list".toKey()
-                description = "Show the number of users currently queued for mass syncing.".toKey()
+                name = Translations.Command.MassSync.List.name
+                description = Translations.Command.MassSync.List.description
 
                 action {
                     respond {
@@ -278,8 +287,8 @@ class LinkingSystem : Extension() {
             }
 
             publicSubCommand {
-                name = "clear".toKey()
-                description = "Clear all users currently queued for mass syncing.".toKey()
+                name = Translations.Command.MassSync.Clear.name
+                description = Translations.Command.MassSync.Clear.description
 
                 action {
                     respond {
@@ -325,8 +334,8 @@ class LinkingSystem : Extension() {
                         NicknameService.updateNickname(member, userModel, roles)
                     } catch (_: NoNameSchemaWarning) {
                         nicknameChanged = false
-                    } catch (notLinkedException: NotLinkedException) {
-                        embeds = mutableListOf(ApplicationService.getErrorEmbed(notLinkedException))
+                    } catch (notLinkedWarning: NotLinkedWarning) {
+                        embeds = mutableListOf(ApplicationService.getErrorEmbed(notLinkedWarning))
                         return@respond
                     }
 
@@ -339,7 +348,16 @@ class LinkingSystem : Extension() {
             }
         }
 
-        fun respondToForceSync(target: Member): suspend FollowupMessageCreateBuilder.() -> Unit {
+        fun respondToForceSync(target: Member?): suspend FollowupMessageCreateBuilder.() -> Unit {
+            if(target == null) {
+                return {
+                    addEmbed {
+                        color(EmbedColor.Negative)
+                        description = "That user isn't a member of this server!"
+                    }
+                }
+            }
+
             return {
                 val roles = RolesService.updateRoles(target, cacheExpiration = 5)
 
@@ -350,7 +368,7 @@ class LinkingSystem : Extension() {
 
                     embed.color = EmbedColor.Positive.color
                     embed.description = "Username and roles of ${target.mention} were synced!"
-                } catch (_: NotLinkedException) {
+                } catch (_: NotLinkedWarning) {
                     embed.color = EmbedColor.Negative.color
                     embed.description = "${target.mention} is not linked, their roles were synced!"
                 }
@@ -367,7 +385,7 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val target = arguments.user.asMember(guild!!.id)
+                    val target = arguments.user.asMemberOrNull(guild!!.id)
 
                     respondToForceSync(target)()
                 }
@@ -381,7 +399,7 @@ class LinkingSystem : Extension() {
 
             action {
                 respond {
-                    val target = targetUsers.first().asMember(guild!!.id)
+                    val target = targetUsers.first().asMemberOrNull(guild!!.id)
 
                     respondToForceSync(target)()
                 }
@@ -396,7 +414,7 @@ class LinkingSystem : Extension() {
             action {
                 respond {
                     val oldUserModel = DiscordUserConnection.authenticated().getLinkedById(user.id.value.toLong())
-                        ?: throw NotLinkedException()
+                        ?: throw NotLinkedWarning()
 
                     val updateModel = oldUserModel.getUpdateModel()
                     updateModel.minecraftId = null
@@ -420,7 +438,7 @@ class LinkingSystem : Extension() {
 
                     try {
                         NicknameService.updateNickname(user, roles)
-                    } catch (_: NotLinkedException) {
+                    } catch (_: NotLinkedWarning) {
                         // Do nothing
                     }
                 }
@@ -586,37 +604,37 @@ class LinkingSystem : Extension() {
 
     class SingleIgnArguments : Arguments() {
         val ign by string {
-            name = "ign".toKey()
-            description = "The users ingame-name".toKey()
+            name = Translations.CommonArguments.Ign.name
+            description = Translations.CommonArguments.Ign.description
             minLength = 2
         }
     }
 
     class ForceSyncArguments : Arguments() {
         val user by user {
-            name = "user".toKey()
-            description = "The user to sync.".toKey()
+            name = ForceSync.Arguments.User.name
+            description = ForceSync.Arguments.User.description
         }
     }
 
     class IgnArguments : Arguments() {
         val user by user {
-            name = "user".toKey()
-            description = "The user to show the IGN for.".toKey()
+            name = Ign.Arguments.User.name
+            description = Ign.Arguments.User.description
         }
     }
 
     class MassSyncRoleArguments : Arguments() {
         val role by role {
-            name = "role".toKey()
-            description = "The role in which users should be synced.".toKey()
+            name = Translations.Command.MassSync.Role.Arguments.Role.name
+            description = Translations.Command.MassSync.Role.Arguments.Role.description
         }
     }
 
     class MassSyncGuildArguments : Arguments() {
         val guild by string {
-            name = "guild".toKey()
-            description = "The guild in which users should be synced.".toKey()
+            name = Translations.Command.MassSync.Guild.Arguments.Guild.name
+            description = Translations.Command.MassSync.Guild.Arguments.Guild.description
         }
     }
 

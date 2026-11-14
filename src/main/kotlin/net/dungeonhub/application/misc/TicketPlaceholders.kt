@@ -7,9 +7,8 @@ import dev.kord.core.entity.effectiveName
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import net.dungeonhub.application.connection.DiscordConnection
-import net.dungeonhub.application.exceptions.NotLinkedException
+import net.dungeonhub.application.exceptions.NotLinkedWarning
 import net.dungeonhub.connection.CarryDifficultyConnection
-import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.DiscordUserConnection
 import net.dungeonhub.connection.TicketConnection
 import net.dungeonhub.hypixel.connection.HypixelApiConnection
@@ -18,6 +17,7 @@ import net.dungeonhub.model.ticket_panel.TicketPanelModel
 import net.dungeonhub.mojang.connection.MojangConnection
 
 // TODO implement more placeholders
+// TODO check if a NotLinkedWarning is thrown anywhere, that could break the placeholder evaluation
 class TicketPlaceholders(
     val ticketPanel: TicketPanelModel,
     val ticket: TicketModel,
@@ -43,21 +43,18 @@ class TicketPlaceholders(
         DiscordUserConnection.authenticated().getByIdOrCreate(ticketUserId)
     }
 
-    val carryTier = scheduler.async(start = CoroutineStart.LAZY) {
-        // TODO dedicated endpoint
-        DiscordServerConnection.authenticated().getAllCarryTiers(ticketPanel.discordServer.id)
-            ?.firstOrNull { carryTier ->
-                carryTier.relatedTicketPanel?.id == ticket.ticketPanel.id
-            }
-    }
+    val carryTier = ticketPanel.relatedCarryTier
 
     val formCarryDifficultyName by lazy { ticket.formResponses.firstOrNull { it.customId == "carry-difficulty" }?.value }
     val formCarryDifficulty = scheduler.async(start = CoroutineStart.LAZY) {
         formCarryDifficultyName?.let { formCarryDifficultyName ->
-            carryTier.await()?.let { carryTier ->
+            carryTier?.let { carryTier ->
                 CarryDifficultyConnection[carryTier].authenticated().findCarryDifficultyByString(formCarryDifficultyName)
             }
         }
+    }
+    val carryDifficulty = scheduler.async(start = CoroutineStart.LAZY) {
+        formCarryDifficulty.await() ?: ticketPanel.relatedCarryDifficulty
     }
 
     val formCarryAmount by lazy { ticket.formResponses.firstOrNull { it.customId == "carry-amount" }?.value }
@@ -65,9 +62,9 @@ class TicketPlaceholders(
     private val hypixelApiConnection = HypixelApiConnection().withCacheExpiration(cacheExpiration)
 
     val skyblockProfiles = scheduler.async(start = CoroutineStart.LAZY) {
-        hypixelApiConnection.getSkyblockProfiles(
-            ticketUserModel.await()?.minecraftId ?: throw NotLinkedException()
-        )?.profiles
+        ticketUserModel.await()?.minecraftId?.let {
+            hypixelApiConnection.getSkyblockProfiles(it).valueOrNull?.profiles
+        }
     }
 
     val selectedSkyblockProfiles = scheduler.async(start = CoroutineStart.LAZY) {
@@ -84,7 +81,7 @@ class TicketPlaceholders(
             replacements["user.mention"] = { "<@${ticketUserId}>" }
             replacements["claimer.mention"] = {
                 if(ticket.claimer != null) {
-                    "<@${ticket.claimer?.id}"
+                    "<@${ticket.claimer?.id}>"
                 } else {
                     "unknown"
                 }
@@ -99,14 +96,14 @@ class TicketPlaceholders(
             replacements["user.minecraft.name"] = { ticketUserIgn.await() ?: "unlinked" }
             replacements["user.skyblock.level"] = {
                 selectedSkyblockProfiles.await()?.maxOfOrNull {
-                    it.getCurrentMember(ticketUserModel.await()?.minecraftId ?: throw NotLinkedException())?.leveling?.level
+                    it.getCurrentMember(ticketUserModel.await()?.minecraftId ?: throw NotLinkedWarning())?.leveling?.level
                         ?: 0
                 }?.toString() ?: "?"
             }
             replacements["user.catacombs.level"] = {
                 selectedSkyblockProfiles.await()?.maxOfOrNull {
                     it.getCurrentMember(
-                        ticketUserModel.await()?.minecraftId ?: throw NotLinkedException()
+                        ticketUserModel.await()?.minecraftId ?: throw NotLinkedWarning()
                     )?.dungeons?.catacombsLevel
                         ?: 0
                 }?.toString() ?: "?"
@@ -122,8 +119,8 @@ class TicketPlaceholders(
             }
             replacements["ticket.name"] = { ticketChannel?.name ?: "not-set" }
             replacements["transcript.url"] = { transcriptUrl ?: "unknown" }
-            replacements["carry-tier.name"] = { carryTier.await()?.displayName ?: "unknown" }
-            replacements["carry-difficulty.name"] = { formCarryDifficulty.await()?.displayName ?: "unknown" }
+            replacements["carry-tier.name"] = { carryTier?.displayName ?: "unknown" }
+            replacements["carry-difficulty.name"] = { carryDifficulty.await()?.displayName ?: "unknown" }
             replacements["ticket.form.1"] = { ticket.formResponses.firstOrNull { it.ordinal == 0 }?.value ?: "unknown" }
             replacements["ticket.form.2"] = { ticket.formResponses.firstOrNull { it.ordinal == 1 }?.value ?: "unknown" }
             replacements["ticket.form.3"] = { ticket.formResponses.firstOrNull { it.ordinal == 2 }?.value ?: "unknown" }

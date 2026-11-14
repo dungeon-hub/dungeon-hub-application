@@ -12,7 +12,6 @@ import net.dungeonhub.application.loader.LoadExtension
 import net.dungeonhub.application.service.addEmbed
 import net.dungeonhub.application.service.color
 import net.dungeonhub.connection.CarryDifficultyConnection
-import net.dungeonhub.connection.DiscordServerConnection
 import net.dungeonhub.connection.TicketPanelConnection
 import net.dungeonhub.enums.FormType
 import net.dungeonhub.model.ticket.TicketFormResponseModel
@@ -40,10 +39,10 @@ class TicketFormListener : Extension() {
 
                 val responses = mutableListOf<TicketFormResponseModel>()
                 var responseCounter = 0
-                for (input in event.interaction.responseComponents) {
-                    val textInput = (input.value as? TextInputComponent)?.value
-                        ?: (input.value as? StringSelectComponent)?.values?.firstOrNull()
-                    val validationResult = validateForm(ticketPanel!!, input.key, textInput)
+                for ((key, value) in event.interaction.responseComponents) {
+                    val textInput = (value as? TextInputComponent)?.value
+                        ?: (value as? StringSelectComponent)?.values?.firstOrNull()
+                    val validationResult = validateForm(ticketPanel!!, key, textInput)
 
                     if(validationResult != null) {
                         event.interaction.deferEphemeralResponse().respond {
@@ -58,7 +57,7 @@ class TicketFormListener : Extension() {
 
                     responses += TicketFormResponseModel(
                         responseCounter++,
-                        input.key,
+                        key,
                         textInput ?: "no-input"
                     )
                 }
@@ -97,10 +96,7 @@ class TicketFormListener : Extension() {
             "carry-difficulty" -> {
                 if(value == null) return null // TODO setting about "required"?
 
-                // TODO dedicated endpoint
-                val carryTier = DiscordServerConnection.authenticated().getAllCarryTiers(ticketPanel.discordServer.id)?.firstOrNull { carryTier ->
-                    carryTier.relatedTicketPanel?.id == ticketPanel.id
-                } ?: return "This ticket panel doesn't have a linked carry tier."
+                val carryTier = ticketPanel.relatedCarryTier ?: return "This ticket panel doesn't have a linked carry tier."
 
                 val carryDifficultyConnection = CarryDifficultyConnection[carryTier].authenticated()
 
